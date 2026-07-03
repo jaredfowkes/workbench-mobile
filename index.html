@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Workbench</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,10 @@
     --ease:cubic-bezier(.25,.1,.25,1);
   }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0}
+  /* text-size-adjust off: iOS otherwise auto-boosts some text blocks and not
+     others (nowrap/ellipsized lines are exempt), making sizes look inconsistent
+     between views — authored sizes + explicit mobile bumps instead */
+  html,body{margin:0;padding:0;-webkit-text-size-adjust:100%;text-size-adjust:100%}
   body{
     background:var(--bg); color:var(--ink); font-family:var(--font);
     font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh;
@@ -528,7 +531,9 @@
   .unsupported{color:var(--accent);font-size:13px;margin-top:16px;display:none}
 
   .toast{
-    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);
+    /* hidden state must clear the raised mobile resting position too (bottom
+       ~70px + safe-area), or its top edge peeks out above the tab bar */
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(220px);
     background:var(--ink);color:#fff;font-size:13px;font-weight:500;
     padding:10px 22px;border-radius:999px;z-index:95;
     transition:transform .26s var(--ease);box-shadow:0 8px 24px rgba(29,29,31,.25);
@@ -571,19 +576,26 @@
     .mobiletabs{
       display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
       background:var(--bg);border-top:1px solid var(--hair);
-      padding:4px 4px calc(4px + env(safe-area-inset-bottom));
+      padding:6px 6px calc(14px + env(safe-area-inset-bottom));
     }
     .mobiletabs .navlink{
-      flex:1;flex-direction:column;gap:2px;padding:9px 4px;text-align:center;
-      justify-content:center;font-size:11.5px;
+      flex:1;flex-direction:column;gap:2px;padding:11px 4px 9px;text-align:center;
+      justify-content:center;font-size:12.5px;
     }
-    .main{padding:22px 18px calc(80px + env(safe-area-inset-bottom))}
-    .toast{bottom:calc(70px + env(safe-area-inset-bottom))}
+    .main{padding:22px 18px calc(96px + env(safe-area-inset-bottom))}
+    .toast{bottom:calc(84px + env(safe-area-inset-bottom))}
     .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}
     table.ptable{min-width:640px}
     .landing{margin-top:8vh;padding:36px 24px 32px;max-width:calc(100vw - 32px)}
     .kscrim{padding-top:8vh;align-items:flex-start}
     .detail{padding:30px 20px 60px}
+    /* knowledge rows: full-width main line, wrapping summary, bigger type */
+    .krow{flex-wrap:wrap;gap:6px 10px;padding:14px 2px}
+    .krow .kmain{flex-basis:100%}
+    .krow .kn{font-size:16px}
+    .krow .ks{font-size:13.5px;white-space:normal}
+    .krow .kd{font-size:12px}
+    .krow .arr{display:none}
   }
 </style>
 </head>
