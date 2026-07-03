@@ -760,7 +760,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.6';
+  const WB_VERSION = '2026-07-03.7';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1090,7 +1090,7 @@
       }catch{}
     }
     const res = await ghFetch(`/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1`);
-    if(!res.ok) throw new Error('Could not list repo tree ('+res.status+')');
+    if(!res.ok) throw Object.assign(new Error('Could not list repo tree ('+res.status+')'), {status: res.status});
     const json = await res.json();
     const tree = (json.tree||[]).filter(t=>t.type==='blob').map(t=>t.path);
     localStorage.setItem(GH_TREE_KEY, JSON.stringify({owner:cfg.owner, repo:cfg.repo, branch:cfg.branch, at:Date.now(), tree}));
@@ -1200,6 +1200,30 @@
     if(btn){
       btn.textContent = 'Reload';
       btn.onclick = ()=>location.replace(location.pathname + '?_r=' + Date.now());
+    }
+  }
+  /* Cold-launching the iOS home-screen app sometimes fires this first fetch
+     before the WKWebView's network stack is actually ready, so the very
+     first attempt can fail even with a good, saved token — that used to
+     dump the user back on the landing page needing to re-submit the
+     (autofilled) connect form. Retry a few times with backoff before
+     giving up; only stop immediately on a real credential rejection
+     (401/403), which no amount of retrying will fix. */
+  async function connectGithubAuto(cfg, attempt=1){
+    const MAX_ATTEMPTS = 4;
+    try{
+      await connectGithub(cfg);
+    }catch(e){
+      if(e.status===401 || e.status===403){
+        $('#landingNote').textContent = 'Your saved GitHub token was rejected — it may have expired or been revoked. Reconnect below.';
+        return;
+      }
+      if(attempt>=MAX_ATTEMPTS){
+        $('#landingNote').textContent = `Could not reach GitHub (${e.message}). Check your connection, or reconnect below.`;
+        return;
+      }
+      $('#landingNote').textContent = 'Reconnecting…';
+      setTimeout(()=>connectGithubAuto(cfg, attempt+1), attempt*1200);
     }
   }
   function openGithubConnect(){
@@ -3181,7 +3205,7 @@ ${text||''}
   const ghCfg = ghConfig();
   if(ghCfg){
     state.backend = 'github';
-    connectGithub(ghCfg).catch(e=>toast('GitHub reconnect failed: '+e.message));
+    connectGithubAuto(ghCfg);
   }
 })();
 </script>
