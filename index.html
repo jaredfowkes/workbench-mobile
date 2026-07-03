@@ -611,6 +611,9 @@
   .usagefig{font-size:13px;font-weight:600;color:var(--ink)}
   .usagepct{display:none;font-size:13px;font-weight:600;color:var(--ink)}
   .usagereset{margin-left:auto;font-size:12px;color:var(--sec)}
+  .usageage{font-size:12px;color:var(--sec)}
+  .usageage.stale{color:var(--accent);font-weight:500}
+  .usagestalebadge{display:none;font-size:12px;font-weight:600;color:var(--accent)}
   .usageerr{font-size:13px;color:var(--accent);font-weight:500}
   .usagetrack{height:6px;border-radius:99px;background:var(--hair);overflow:hidden}
   .usagefill{height:100%;background:var(--link);border-radius:99px;transition:width .3s var(--ease)}
@@ -622,9 +625,11 @@
     .usagechev{display:inline-flex}
     .usagestrip:not(.expanded) .usagefig,
     .usagestrip:not(.expanded) .usagetrack,
-    .usagestrip:not(.expanded) .usagereset{display:none}
+    .usagestrip:not(.expanded) .usagereset,
+    .usagestrip:not(.expanded) .usageage{display:none}
     .usagestrip.expanded .usagepct{display:none}
     .usagestrip:not(.expanded) .usagepct{display:inline}
+    .usagestrip:not(.expanded) .usagestalebadge{display:inline}
   }
 
   /* ============ mobile shell ============
@@ -1419,17 +1424,35 @@
      the Sessions strip; hidden entirely until that file exists at all (i.e.
      the scraper has never run on any machine feeding this repo). */
   const USAGE_EXPAND_KEY = 'wb-usage-expanded';
+  /* scraper ticks every 10 min and self-throttles to ~30 when idle, so a
+     timestamp older than this means the scraper (or the repo sync feeding
+     this backend) has stopped delivering fresh numbers */
+  const USAGE_STALE_AFTER = 45*60*1000;
+  function usageAge(u){
+    if(!u.updated) return null;
+    const age = Math.max(0, Date.now() - u.updated);
+    const stale = age >= USAGE_STALE_AFTER;
+    let label;
+    if(age < 90*1000) label = 'checked just now';
+    else if(age < 60*60*1000) label = `checked ${Math.round(age/60000)}m ago`;
+    else if(age < 24*60*60*1000) label = 'as of ' + new Date(u.updated).toLocaleTimeString('en-US',{hour:'numeric', minute:'2-digit'});
+    else label = 'as of ' + new Date(u.updated).toLocaleDateString('en-US',{month:'short', day:'numeric'}) + ', ' + new Date(u.updated).toLocaleTimeString('en-US',{hour:'numeric', minute:'2-digit'});
+    return {stale, label};
+  }
   function renderUsage(){
     const el = $('#usageStrip'); if(!el) return;
     const u = state.usage;
     if(!u){ el.classList.add('hidden'); el.innerHTML=''; return; }
     el.classList.remove('hidden');
     el.classList.toggle('expanded', localStorage.getItem(USAGE_EXPAND_KEY)==='1');
+    const age = usageAge(u);
+    const ageHtml = age ? `<span class="usageage${age.stale?' stale':''}">${age.stale ? 'Stale · '+age.label : age.label.charAt(0).toUpperCase()+age.label.slice(1)}</span>` : '';
     if(u.error){
       el.innerHTML = `
         <div class="usagehead">
           <span class="eyebrow">Usage</span>
           <span class="usageerr">${u.error==='not logged in' ? 'Needs re-login' : 'Could not read usage'}</span>
+          ${ageHtml}
         </div>`;
       return;
     }
@@ -1440,6 +1463,8 @@
         <span class="eyebrow">Usage</span>
         <span class="usagefig">$${u.spend.toFixed(2)} of $${u.limit.toFixed(0)} · ${pct}% used</span>
         <span class="usagepct">${pct}% used</span>
+        ${age && age.stale ? '<span class="usagestalebadge">Stale</span>' : ''}
+        ${ageHtml}
         ${u.resetLabel ? `<span class="usagereset">Resets ${esc(u.resetLabel)}</span>` : ''}
         <svg class="chev usagechev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.2 5 6.4 8 3.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
       </div>
