@@ -1222,6 +1222,7 @@
     const el = $('#liveStrip'); if(!el) return;
     const rows = sessionRows();
     if(!rows.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
+    el.classList.remove('hidden');
     const running = rows.filter(r=>r.live).length;
     el.innerHTML = `
       <div class="livehead"><span class="eyebrow">${running?'Running now':'Recent sessions'}</span>
