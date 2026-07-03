@@ -1418,11 +1418,13 @@
      no API for a personal Enterprise seat spend limit). Sits directly below
      the Sessions strip; hidden entirely until that file exists at all (i.e.
      the scraper has never run on any machine feeding this repo). */
+  const USAGE_EXPAND_KEY = 'wb-usage-expanded';
   function renderUsage(){
     const el = $('#usageStrip'); if(!el) return;
     const u = state.usage;
     if(!u){ el.classList.add('hidden'); el.innerHTML=''; return; }
     el.classList.remove('hidden');
+    el.classList.toggle('expanded', localStorage.getItem(USAGE_EXPAND_KEY)==='1');
     if(u.error){
       el.innerHTML = `
         <div class="usagehead">
@@ -1434,12 +1436,19 @@
     const pct = Math.max(0, Math.min(100, u.percent==null ? 0 : u.percent));
     const hot = pct >= 90;
     el.innerHTML = `
-      <div class="usagehead">
+      <div class="usagehead" id="usageHeadToggle">
         <span class="eyebrow">Usage</span>
         <span class="usagefig">$${u.spend.toFixed(2)} of $${u.limit.toFixed(0)} · ${pct}% used</span>
+        <span class="usagepct">${pct}% used</span>
         ${u.resetLabel ? `<span class="usagereset">Resets ${esc(u.resetLabel)}</span>` : ''}
+        <svg class="chev usagechev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.2 5 6.4 8 3.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
       </div>
       <div class="usagetrack"><div class="usagefill ${hot?'hot':''}" style="width:${pct}%"></div></div>`;
+    $('#usageHeadToggle').onclick = ()=>{
+      const expanded = !el.classList.contains('expanded');
+      el.classList.toggle('expanded', expanded);
+      localStorage.setItem(USAGE_EXPAND_KEY, expanded?'1':'0');
+    };
   }
   /* tick running timers every second (also re-flags long-running sessions the
      instant they cross the 4h mark); re-evaluate liveness once a minute and
