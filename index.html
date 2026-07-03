@@ -109,6 +109,8 @@
   /* ============ KPI strip (Console) ============ */
   .kpis{display:flex;margin:34px 0 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);flex-wrap:wrap}
   .kpi{flex:1;min-width:140px;padding:18px 20px 15px;display:flex;flex-direction:column;gap:1px}
+  .kpi[data-kpi]{cursor:pointer;transition:background .15s ease}
+  .kpi[data-kpi]:hover{background:var(--panel)}
   .kpi + .kpi{border-left:1px solid var(--hair)}
   .kpi .v{font-size:32px}
   .kpi .l{font-size:12px;color:var(--sec)}
@@ -1041,7 +1043,10 @@
         if(!res.ok) return;
         const json = await res.json();
         const sha = json.sha;
-        if(ghLastSeenSha && sha!==ghLastSeenSha){ ghLastSeenSha = sha; await ghGetTree(true); await scan(); toast('Refreshed — new changes pulled in'); }
+        /* refresh silently — during an active Claude session the repo gets a
+           new commit every few minutes, and a toast per tick never leaves the
+           screen; the updated content is its own signal */
+        if(ghLastSeenSha && sha!==ghLastSeenSha){ ghLastSeenSha = sha; await ghGetTree(true); await scan(); }
         else ghLastSeenSha = sha;
       }catch{}
     }, 60000);
@@ -1285,6 +1290,39 @@
     out.sort((a,b)=> b.ts.localeCompare(a.ts));
     return out.slice(0, limit);
   }
+  /* KPI drill-down: every matching item across projects, in a slide-over;
+     rows jump into the project pre-filtered to the same status */
+  const KPI_DEFS = {
+    open:   {label:'Open tasks',     pf:'open',    match: it=>it.status==='todo'||it.status==='doing'||it.status==='blocked'},
+    doing:  {label:'In progress',    pf:'doing',   match: it=>it.status==='doing'},
+    blocked:{label:'Blocked',        pf:'blocked', match: it=>it.status==='blocked'},
+    week:   {label:'Done this week', pf:'done',    match: it=>it.status==='done' && it.completed && it.completed>=daysAgoISO(7)},
+    idea:   {label:'Ideas on the shelf', pf:'idea', match: it=>it.status==='idea'},
+  };
+  function openKpiList(kind){
+    const def = KPI_DEFS[kind]; if(!def) return;
+    const rows = [];
+    for(const p of state.projects) for(const g of p.data.groups||[]) for(const it of g.items||[])
+      if(def.match(it)) rows.push({p, g, it});
+    if(kind==='week') rows.sort((a,b)=>(b.it.completed||'').localeCompare(a.it.completed||''));
+    else rows.sort((a,b)=> a.p.data.project.localeCompare(b.p.data.project) || (a.g.name).localeCompare(b.g.name));
+    const nProj = new Set(rows.map(r=>r.p)).size;
+    const {scrim, close} = panel(`
+      <h2>${esc(def.label)}</h2>
+      <span class="d-path">${rows.length} item${rows.length===1?'':'s'}${nProj?` across ${nProj} project${nProj===1?'':'s'}`:''}</span>
+      <div class="queue">${rows.length ? rows.map((r,i)=>`
+        <div class="qrow ${r.it.status==='doing'?'doing':r.it.status==='blocked'?'':'log'}" data-i="${i}">
+          <span class="qt">${esc(r.it.text)}</span>
+          <span class="chipx">${esc(r.p.data.project)}</span>
+          <span class="chipx">${esc(kind==='week' ? (r.it.completed||'') : r.g.name)}</span>
+          <span class="arr">→</span>
+        </div>`).join('') : '<div class="calm">Nothing here right now.</div>'}
+      </div>`, def.label);
+    scrim.querySelectorAll('.qrow[data-i]').forEach(el=>el.onclick=()=>{
+      const r = rows[+el.dataset.i];
+      close(); openProject(r.p, def.pf);
+    });
+  }
 
   /* ================= routing & nav ================= */
   function routeHash(){
@@ -1494,13 +1532,13 @@
           Jump to… <kbd>⌘K</kbd></button>
       </div>
       <div class="kpis reveal">${[
-        ['Open tasks', s.open, `across ${s.openProjects} project${s.openProjects===1?'':'s'}`, ''],
-        ['In progress', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'nothing picked up', ''],
-        ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'all clear', 'warn'],
-        ['Done this week', s.week, s.week>s.prevWeek?`▲ up from ${s.prevWeek} last week`:`${s.prevWeek} last week`, s.week>s.prevWeek?'up':''],
-        ['Ideas', s.idea, 'on the shelf', ''],
-      ].map(([l,v,sub,mood])=>`
-        <div class="kpi">
+        ['Open tasks', s.open, `across ${s.openProjects} project${s.openProjects===1?'':'s'}`, '', 'open'],
+        ['In progress', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'nothing picked up', '', 'doing'],
+        ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'all clear', 'warn', 'blocked'],
+        ['Done this week', s.week, s.week>s.prevWeek?`▲ up from ${s.prevWeek} last week`:`${s.prevWeek} last week`, s.week>s.prevWeek?'up':'', 'week'],
+        ['Ideas', s.idea, 'on the shelf', '', 'idea'],
+      ].map(([l,v,sub,mood,kind])=>`
+        <div class="kpi" data-kpi="${kind}" role="button" tabindex="0" title="See the list">
           <span class="v num"><span data-count="${v}">${v}</span>${mood==='warn'&&v?'<span class="flg">⚑</span>':''}</span>
           <span class="l">${l}</span>
           <span class="s ${mood==='up'?'upc':''}" title="${esc(sub)}">${esc(sub)}</span>
@@ -1562,6 +1600,10 @@
     const more = el.querySelector('[data-nav-projects]');
     if(more) more.onclick = ()=>go('projects',{area:'All'});
     el.querySelector('[data-palette]').onclick = openPalette;
+    el.querySelectorAll('.kpi[data-kpi]').forEach(k=>{
+      k.onclick = ()=>openKpiList(k.dataset.kpi);
+      k.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openKpiList(k.dataset.kpi); } };
+    });
     bindOpeners(el); fillCovers(el); arm(el);
   }
 
@@ -2822,8 +2864,17 @@ ${text||''}
   $('#pullBtn').onclick = ()=>runHelper($('#pullBtn'), '/pull', 'Pull failed');
 
   /* ================= toast & boot ================= */
-  let toastT;
-  function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900); }
+  let toastT, toastShownAt = 0;
+  function toast(msg){
+    const t=$('#toast'); t.textContent=msg; t.classList.add('show'); toastShownAt = Date.now();
+    clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900);
+  }
+  /* iOS suspends (and can drop) timers when a home-screen app backgrounds —
+     if the hide timer died while suspended, clear the toast on return */
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.visibilityState==='visible' && Date.now()-toastShownAt>2200)
+      $('#toast').classList.remove('show');
+  });
 
   const supported = 'showDirectoryPicker' in window;
   if(!supported){
