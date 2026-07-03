@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Workbench">
 <title>Workbench</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +27,9 @@
   /* text-size-adjust off: iOS otherwise auto-boosts some text blocks and not
      others (nowrap/ellipsized lines are exempt), making sizes look inconsistent
      between views — authored sizes + explicit mobile bumps instead */
-  html,body{margin:0;padding:0;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  /* touch-action:manipulation kills iOS double-tap-to-zoom on taps (nav
+     buttons were zooming the page); scrolling and pinch still work */
+  html,body{margin:0;padding:0;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
   body{
     background:var(--bg); color:var(--ink); font-family:var(--font);
     font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased; min-height:100vh;
@@ -598,6 +604,9 @@
     .krow .ks{font-size:13.5px;white-space:normal}
     .krow .kd{font-size:12px}
     .krow .arr{display:none}
+    /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px —
+       every input must be at least 16px on mobile so focus never zooms */
+    input, select, textarea{font-size:16px !important}
   }
 </style>
 </head>
