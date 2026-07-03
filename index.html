@@ -586,9 +586,9 @@
   .livedot.idle{color:var(--idle)}
   .livedot.waiting{color:var(--link)}
   .livedot.error{color:var(--accent)}
-  .livewho{font-weight:500;white-space:nowrap;flex:none}
+  .livewho{font-weight:400;color:var(--sec);white-space:nowrap;flex:none}
   .livewho .sep{color:var(--sec);font-weight:400}
-  .liveprompt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+  .liveprompt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);font-weight:600}
   .livetime{flex:none;font-variant-numeric:tabular-nums;color:var(--sec);font-size:12px;white-space:nowrap}
   .liverow.running .livetime{color:var(--up);font-weight:500}
   .liverow.waiting .livetime{color:var(--link);font-weight:500}
@@ -760,12 +760,12 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.3';
+  const WB_VERSION = '2026-07-03.4';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
   const state = {
-    root:null, projects:[], kb:[], sessions:[],
+    root:null, projects:[], kb:[], sessions:[], machineAliases:{},
     backend:'fsa',            // 'fsa' (File System Access, desktop) | 'github' (API + PAT, mobile)
     view:'overview',          // overview | projects | knowledge | project
     proj:null, area:'All', pview:'gallery', pq:'',
@@ -828,6 +828,7 @@
     state.projects = []; state.kb = [];
     await Backends[state.backend].scan();
     state.sessions = await Backends[state.backend].loadSessions();
+    state.machineAliases = await loadMachineAliases();
     renderSessions();
     state.projects.sort((a,b)=> (a.section+a.data.project).localeCompare(b.section+b.data.project));
     state.kb.sort((a,b)=> (a.sub+a.title).localeCompare(b.sub+b.title));
@@ -1268,6 +1269,18 @@
     else if(t.length>100) t = t.slice(0,100).replace(/\s+\S*$/,'') + '…';
     return t.charAt(0).toUpperCase()+t.slice(1);
   }
+  /* optional tools/machine-aliases.json ({"hostname":"Friendly Name"}) lets a
+     machine's raw hostname (e.g. an IT-assigned asset tag like "ax-pf5qch3r")
+     show as something recognizable — no OS rename needed, just edit the file */
+  async function loadMachineAliases(){
+    try{
+      const text = await Backends[state.backend].readText('tools/machine-aliases.json');
+      return text ? JSON.parse(text) : {};
+    }catch{ return {}; }
+  }
+  function machineLabel(machine){
+    return (state.machineAliases && state.machineAliases[machine]) || machine || '?';
+  }
   function sessionRows(){
     const now = Date.now();
     return (state.sessions||[])
@@ -1286,7 +1299,7 @@
     const time = s.active ? fmtRun(Date.now()-(+s.promptStart||Date.now()))+suffix : relTime(+s.updated||Date.now());
     return `<div class="liverow ${s.status}">
       <span class="livedot ${s.status}"></span>
-      <span class="livewho">${esc(s.machine||'?')}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
+      <span class="livewho">${esc(machineLabel(s.machine))}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
       <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(humanizePrompt(s.prompt))}</span>
       <span class="livetime ${s.stale?'longrun':''}"
         ${s.active?`data-run="${+s.promptStart}" data-status="${s.status}"`:''}
