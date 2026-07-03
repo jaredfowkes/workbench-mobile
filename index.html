@@ -708,7 +708,7 @@
 
 <div class="app hidden" id="app">
   <div class="mobiletop">
-    <span class="wordmark">Workbench <span class="ver"></span></span>
+    <span class="wordmark">Workbench</span>
     <span class="icons">
       <button class="icon-btn" id="mobileCaptureBtn" aria-label="Capture">
         <svg width="15" height="15" viewBox="0 0 14 14"><line x1="7" y1="1.5" x2="7" y2="12.5" stroke="currentColor" stroke-width="1.6"/><line x1="1.5" y1="7" x2="12.5" y2="7" stroke="currentColor" stroke-width="1.6"/></svg>
@@ -760,7 +760,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.5';
+  const WB_VERSION = '2026-07-03.6';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
