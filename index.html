@@ -607,6 +607,15 @@
     /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px —
        every input must be at least 16px on mobile so focus never zooms */
     input, select, textarea{font-size:16px !important}
+    /* page headers are non-wrapping flex rows sized for desktop — the Overview
+       greeting + ⌘K pill and the Knowledge title + search + button both
+       exceed a phone's width unless they're allowed to wrap */
+    body{overflow-x:hidden}
+    .ovhead{flex-wrap:wrap;gap:14px}
+    .ovhead .searchpill{margin-left:0;margin-top:0}
+    .pagehead{flex-wrap:wrap}
+    .pagehead .right{margin-left:0;width:100%;flex-wrap:wrap}
+    .pagehead .right .filterinput{flex:1;min-width:0}
   }
 </style>
 </head>
