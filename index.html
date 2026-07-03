@@ -599,6 +599,19 @@
     50%{box-shadow:0 0 0 5px color-mix(in srgb, currentColor 0%, transparent)}
   }
 
+  /* ============ usage strip ============
+     Sits directly below Sessions — one line for the personal Claude spend
+     limit, fed by tools/usage.json (a scheduled browser-scrape; there's no
+     API for this number — see tools/usage-scraper.py). */
+  .usagestrip{margin:0 0 26px}
+  .usagehead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .usagefig{font-size:13px;font-weight:600;color:var(--ink)}
+  .usagereset{margin-left:auto;font-size:12px;color:var(--sec)}
+  .usageerr{font-size:13px;color:var(--accent);font-weight:500}
+  .usagetrack{height:6px;border-radius:99px;background:var(--hair);overflow:hidden}
+  .usagefill{height:100%;background:var(--link);border-radius:99px;transition:width .3s var(--ease)}
+  .usagefill.hot{background:var(--accent)}
+
   /* ============ mobile shell ============
      Placed last on purpose: several rules here override earlier desktop
      rules of equal specificity (e.g. .side), and CSS resolves ties by
@@ -748,6 +761,7 @@
   </nav>
   <main class="main">
     <div id="liveStrip" class="livestrip hidden"></div>
+    <div id="usageStrip" class="usagestrip hidden"></div>
     <div id="view-overview" class="hidden"></div>
     <div id="view-projects" class="hidden"></div>
     <div id="view-knowledge" class="hidden"></div>
@@ -828,8 +842,10 @@
     state.projects = []; state.kb = [];
     await Backends[state.backend].scan();
     state.sessions = await Backends[state.backend].loadSessions();
+    state.usage = await Backends[state.backend].loadUsage();
     state.machineAliases = await loadMachineAliases();
     renderSessions();
+    renderUsage();
     state.projects.sort((a,b)=> (a.section+a.data.project).localeCompare(b.section+b.data.project));
     state.kb.sort((a,b)=> (a.sub+a.title).localeCompare(b.sub+b.title));
     state.connected = true;
@@ -1381,6 +1397,35 @@
       localStorage.setItem(LIVE_COLLAPSE_KEY, collapsed?'1':'0');
     };
   }
+  /* ============ usage strip =============
+     tools/usage.json, written by a scheduled tools/usage-scraper.py run
+     (Playwright login-scrapes claude.ai's Settings -> Usage panel — there's
+     no API for a personal Enterprise seat spend limit). Sits directly below
+     the Sessions strip; hidden entirely until that file exists at all (i.e.
+     the scraper has never run on any machine feeding this repo). */
+  function renderUsage(){
+    const el = $('#usageStrip'); if(!el) return;
+    const u = state.usage;
+    if(!u){ el.classList.add('hidden'); el.innerHTML=''; return; }
+    el.classList.remove('hidden');
+    if(u.error){
+      el.innerHTML = `
+        <div class="usagehead">
+          <span class="eyebrow">Usage</span>
+          <span class="usageerr">${u.error==='not logged in' ? 'Needs re-login' : 'Could not read usage'}</span>
+        </div>`;
+      return;
+    }
+    const pct = Math.max(0, Math.min(100, u.percent==null ? 0 : u.percent));
+    const hot = pct >= 90;
+    el.innerHTML = `
+      <div class="usagehead">
+        <span class="eyebrow">Usage</span>
+        <span class="usagefig">$${u.spend.toFixed(2)} of $${u.limit.toFixed(0)} · ${pct}% used</span>
+        ${u.resetLabel ? `<span class="usagereset">Resets ${esc(u.resetLabel)}</span>` : ''}
+      </div>
+      <div class="usagetrack"><div class="usagefill ${hot?'hot':''}" style="width:${pct}%"></div></div>`;
+  }
   /* tick running timers every second (also re-flags long-running sessions the
      instant they cross the 4h mark); re-evaluate liveness once a minute and
      (on FSA, which has no commit poll) re-read the beacon files themselves */
@@ -1394,8 +1439,12 @@
   }, 1000);
   setInterval(async ()=>{
     if(!state.connected || document.visibilityState!=='visible') return;
-    if(state.backend==='fsa') state.sessions = await Backends.fsa.loadSessions();
+    if(state.backend==='fsa'){
+      state.sessions = await Backends.fsa.loadSessions();
+      state.usage = await Backends.fsa.loadUsage();
+    }
     renderSessions();
+    renderUsage();
   }, 60000);
 
   /* p.cover / p.logo are FSA file handles on the fsa backend, repo-relative
