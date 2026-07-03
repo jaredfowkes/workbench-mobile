@@ -760,7 +760,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.4';
+  const WB_VERSION = '2026-07-03.5';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1192,9 +1192,15 @@
     await scan();
     ghStartPoll();
     /* Home-screen bookmarks have no browser chrome, so "refresh" must be a
-       real page reload — boot re-connects with a forced tree fetch anyway. */
+       real page reload — boot re-connects with a forced tree fetch anyway.
+       Plain location.reload() is a known no-op in iOS's standalone
+       (Add to Home Screen) WKWebView — it can skip the actual re-navigation.
+       A cache-busted location.replace() forces a real network fetch instead. */
     const btn = $('#connectBtn');
-    if(btn){ btn.textContent = 'Reload'; btn.onclick = ()=>location.reload(); }
+    if(btn){
+      btn.textContent = 'Reload';
+      btn.onclick = ()=>location.replace(location.pathname + '?_r=' + Date.now());
+    }
   }
   function openGithubConnect(){
     const cfg = ghConfig() || {owner:'', repo:'workbench', branch:'main', pat:''};
