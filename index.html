@@ -956,6 +956,13 @@
         }catch{}
         return out;
       },
+      async loadUsage(){
+        try{
+          const tools = await state.root.getDirectoryHandle('tools');
+          const fh = await tools.getFileHandle('usage.json');
+          return JSON.parse(await (await fh.getFile()).text());
+        }catch{ return null; }
+      },
     },
     github: {
       async scan(){
@@ -1042,6 +1049,12 @@
           });
         }catch{}
         return out;
+      },
+      async loadUsage(){
+        try{
+          const f = await ghGetFile('tools/usage.json');
+          return f ? JSON.parse(f.text) : null;
+        }catch{ return null; }
       },
     },
   };
@@ -3021,11 +3034,26 @@ ${text||''}
   }
 
   /* ================= ⌘K palette ================= */
+  /* most-recent-first ordering for the palette's Projects group: last
+     log.md entry (newest-at-bottom per the Activity Log Rule) if present,
+     else the latest completed/created date found in tasks.json */
+  function projLastActivity(p){
+    if(p.log && p.log.length) return p.log[p.log.length-1].ts;
+    let best = '';
+    for(const g of p.data.groups||[]) for(const it of g.items||[]){
+      const d = it.completed || it.created;
+      if(d && d > best) best = d;
+    }
+    return best;
+  }
+  function projectsByRecency(){
+    return [...state.projects].sort((a,b)=> projLastActivity(b).localeCompare(projLastActivity(a)));
+  }
   function paletteItems(q){
     const words = q.trim().toLowerCase();
     const has = s => !words || s.toLowerCase().includes(words);
     const items = [];
-    for(const p of state.projects)
+    for(const p of projectsByRecency())
       if(has(p.data.project+' '+(p.data.tagline||'')+' '+p.section)){
         const c = projCounts(p);
         items.push({group:'Projects', label:p.data.project, sub:p.section,
