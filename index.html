@@ -16,7 +16,7 @@
   :root{
     --bg:#FFFFFF; --panel:#F5F5F7; --surface:#FFFFFF;
     --ink:#1D1D1F; --sec:#6E6E73; --hair:#E5E5EA; --hair2:#F1F1F4;
-    --link:#0066CC; --accent:#C0452F; --accent-soft:#FBF1EF; --up:#2E7D4F;
+    --link:#0066CC; --accent:#C0452F; --accent-soft:#FBF1EF; --up:#2E7D4F; --idle:#B8860B;
     --radius:18px;
     --shadow-sm:0 1px 2px rgba(29,29,31,.05);
     --shadow:0 2px 6px rgba(29,29,31,.06), 0 16px 40px rgba(29,29,31,.09);
@@ -99,7 +99,14 @@
   .searchpill:hover{border-color:var(--sec);color:var(--ink)}
   .searchpill kbd{font-family:inherit;font-size:10.5px;border:1px solid var(--hair);border-radius:4px;padding:0 5px;color:var(--sec)}
 
-  .main{padding:38px 48px 110px;max-width:1120px}
+  /* min-width:0 — .main is a grid item in a minmax(0,1fr) track, but grid
+     items still get an "automatic minimum size" from their content's
+     min-content width unless overridden. Any nowrap descendant (table cell,
+     pill, tag) can silently inflate .main past the viewport on mobile, and
+     since overflow-x is hidden (not scrollable) that content becomes
+     unreachable rather than just requiring a scroll. This is the single
+     fix point instead of patching every nowrap element individually. */
+  .main{padding:38px 48px 110px;max-width:1120px;min-width:0}
   @media (max-width:860px){.main{padding:26px 20px 90px}}
 
   /* ============ overview header (Editorial) ============ */
@@ -551,29 +558,45 @@
 
   /* ============ live sessions strip ============
      Sits above every view — one compact row per Claude Code session, fed by
-     the beacon files in tools/sessions/ (written by hooks on each machine). */
+     the beacon files in tools/sessions/ (written by hooks on each machine).
+     Two groups: active (running/waiting/error) and recently completed (idle),
+     both under one collapsible header. */
   /* contain:inline-size — the nowrap prompt must never widen .main (a grid
      item with min-width:auto) via intrinsic sizing; the strip sizes from its
      container only, and the prompt then shrinks + ellipsizes normally */
-  .livestrip{display:flex;flex-direction:column;gap:6px;margin:0 0 26px;contain:inline-size}
-  .livehead{display:flex;align-items:baseline;gap:10px;margin-bottom:2px}
+  .livestrip{margin:0 0 26px;contain:inline-size}
+  .livehead{display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;user-select:none}
   .livehead .n{font-size:12px;color:var(--sec)}
+  .livehead .chev{margin-left:auto;color:var(--sec);transition:transform .2s var(--ease);flex:none}
+  .livestrip.collapsed .chev{transform:rotate(-90deg)}
+  .livegroup{display:flex;flex-direction:column;gap:6px}
+  .livegroup + .livegroup{margin-top:14px}
+  .livesub{font-size:11px;color:var(--sec);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px 2px}
+  .livestrip.collapsed .livebody{display:none}
   .liverow{
     display:flex;align-items:center;gap:10px;min-width:0;
     border:1px solid var(--hair);border-radius:12px;background:var(--surface);
     padding:9px 14px;font-size:13px;box-shadow:var(--shadow-sm);
   }
-  .livedot{width:8px;height:8px;border-radius:50%;background:var(--up);flex:none;animation:livepulse 2.2s ease-in-out infinite}
-  .liverow.idle .livedot{background:var(--hair);animation:none}
+  .liverow.idle{background:var(--panel);box-shadow:none}
   .liverow.idle .liveprompt{color:var(--sec)}
+  /* dot color carried via `color` so the pulse (currentColor) matches */
+  .livedot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;animation:livepulse 2.2s ease-in-out infinite}
+  .livedot.running{color:var(--up)}
+  .livedot.idle{color:var(--idle)}
+  .livedot.waiting{color:var(--link)}
+  .livedot.error{color:var(--accent)}
   .livewho{font-weight:500;white-space:nowrap;flex:none}
   .livewho .sep{color:var(--sec);font-weight:400}
   .liveprompt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
   .livetime{flex:none;font-variant-numeric:tabular-nums;color:var(--sec);font-size:12px;white-space:nowrap}
-  .liverow:not(.idle) .livetime{color:var(--up);font-weight:500}
+  .liverow.running .livetime{color:var(--up);font-weight:500}
+  .liverow.waiting .livetime{color:var(--link);font-weight:500}
+  .liverow.error .livetime{color:var(--accent);font-weight:500}
+  .livetime.longrun{color:var(--accent) !important}
   @keyframes livepulse{
-    0%,100%{box-shadow:0 0 0 0 rgba(46,125,79,.35)}
-    50%{box-shadow:0 0 0 5px rgba(46,125,79,0)}
+    0%,100%{box-shadow:0 0 0 0 color-mix(in srgb, currentColor 40%, transparent)}
+    50%{box-shadow:0 0 0 5px color-mix(in srgb, currentColor 0%, transparent)}
   }
 
   /* ============ mobile shell ============
@@ -737,7 +760,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.2';
+  const WB_VERSION = '2026-07-03.3';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -811,9 +834,22 @@
     state.connected = true;
     $('#landing').classList.add('hidden');
     $('#app').classList.remove('hidden');
-    syncFromHash(true);
+    if(!bootDone){
+      /* first render of this page load always opens on Overview, even if the
+         URL carries a stale hash — a home-screen bookmark saves whatever hash
+         was open when it was added, so without this a phone icon could be
+         permanently stuck reopening on Projects or a project page. In-session
+         navigation (hashchange, back/forward) still works normally after. */
+      bootDone = true;
+      state.view = 'overview'; state.proj = null; state.area = 'All';
+      history.replaceState(null, '', location.pathname + location.search);
+      render(true); window.scrollTo(0,0);
+    }else{
+      syncFromHash(true);
+    }
     if(state.backend==='fsa') refreshGit();
   }
+  let bootDone = false;
   function saveProjectData(p){ return Backends[state.backend].saveProjectData(p); }
   /* generic repo-relative-path read/write, backend-dispatched */
   const readPath = path => Backends[state.backend].readText(path);
@@ -1199,10 +1235,17 @@
 
   /* ================= live sessions strip =================
      tools/sessions/*.json beacons, one per Claude Code session (written by
-     hooks — see tools/session-beacon.ps1). Running entries older than 4h and
-     idle ones older than 2h are treated as dead (crashed sessions never send
-     their SessionEnd) and hidden; a GC in the beacon deletes the files. */
-  const LIVE_RUN_MAX = 4*3600e3, LIVE_IDLE_MAX = 2*3600e3;
+     hooks — see tools/session-beacon.ps1). status is one of running / waiting
+     (blocked on a permission prompt or question) / error (a tool call just
+     failed) / idle (finished its last turn). Active sessions are never hidden
+     for age — a run stuck for hours should be visible, not disappear — but
+     get flagged (accent-colored runtime) past LIVE_STALE_AFTER. Idle entries
+     ("recently completed") drop off after LIVE_IDLE_MAX; a GC in the beacon
+     deletes files after 48h so crashed sessions don't linger forever. */
+  const LIVE_IDLE_MAX = 2*3600e3;
+  const LIVE_STALE_AFTER = 4*3600e3;
+  const LIVE_COLLAPSE_KEY = 'wb-live-collapsed';
+  const LIVE_STATUSES = ['running','waiting','error','idle'];
   function fmtRun(ms){
     const s = Math.max(0, Math.floor(ms/1000));
     if(s < 60) return s+'s';
@@ -1210,41 +1253,81 @@
     if(m < 60) return m+'m '+String(s%60).padStart(2,'0')+'s';
     return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
   }
+  /* turn a raw prompt (or hook-supplied notification/error text) into a short
+     plain-English line: strip code fences/inline code/links/urls, collapse
+     whitespace, then cut at the first sentence end or ~100 chars */
+  function humanizePrompt(text){
+    let t = String(text||'').trim();
+    if(!t) return 'Working on something';
+    t = t.replace(/```[\s\S]*?```/g,' ').replace(/`([^`]*)`/g,'$1')
+         .replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/https?:\/\/\S+/g,' ')
+         .replace(/[*_#>]+/g,' ').replace(/\s+/g,' ').trim();
+    if(!t) return 'Working on something';
+    const cut = t.match(/^.{12,110}?[.!?](?=\s|$)/);
+    if(cut) t = cut[0];
+    else if(t.length>100) t = t.slice(0,100).replace(/\s+\S*$/,'') + '…';
+    return t.charAt(0).toUpperCase()+t.slice(1);
+  }
   function sessionRows(){
     const now = Date.now();
     return (state.sessions||[])
       .map(s=>{
-        const live = s.status==='running' && (now - (+s.promptStart||0)) < LIVE_RUN_MAX;
-        const idle = s.status==='idle' && (now - (+s.updated||0)) < LIVE_IDLE_MAX;
-        return (live||idle) ? {...s, live} : null;
+        const status = LIVE_STATUSES.includes(s.status) ? s.status : 'running';
+        if(status==='idle' && (now-(+s.updated||0)) >= LIVE_IDLE_MAX) return null;
+        const active = status!=='idle';
+        return {...s, status, active, stale: active && (now-(+s.promptStart||0)) >= LIVE_STALE_AFTER};
       })
       .filter(Boolean)
-      .sort((a,b)=> (b.live-a.live) || (+b.promptStart||0)-(+a.promptStart||0));
+      .sort((a,b)=> (b.active-a.active) || (+b.promptStart||0)-(+a.promptStart||0));
+  }
+  function liveRowHTML(s){
+    const proj = (s.cwd||'').split('/').filter(Boolean).pop() || '';
+    const suffix = s.status==='waiting' ? ' · waiting' : s.status==='error' ? ' · error' : '';
+    const time = s.active ? fmtRun(Date.now()-(+s.promptStart||Date.now()))+suffix : relTime(+s.updated||Date.now());
+    return `<div class="liverow ${s.status}">
+      <span class="livedot ${s.status}"></span>
+      <span class="livewho">${esc(s.machine||'?')}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
+      <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(humanizePrompt(s.prompt))}</span>
+      <span class="livetime ${s.stale?'longrun':''}"
+        ${s.active?`data-run="${+s.promptStart}" data-status="${s.status}"`:''}
+        ${s.stale?'title="Running longer than 4 hours — worth checking it isn’t stuck"':''}>${esc(time)}</span>
+    </div>`;
   }
   function renderSessions(){
     const el = $('#liveStrip'); if(!el) return;
     const rows = sessionRows();
     if(!rows.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
     el.classList.remove('hidden');
-    const running = rows.filter(r=>r.live).length;
+    el.classList.toggle('collapsed', localStorage.getItem(LIVE_COLLAPSE_KEY)==='1');
+    const active = rows.filter(r=>r.active), completed = rows.filter(r=>!r.active);
+    const staleN = active.filter(r=>r.stale).length;
+    const summary = active.length
+      ? `${active.length} active${staleN?` · ${staleN} running a long time`:''}`
+      : (completed.length ? `${completed.length} recent` : '');
     el.innerHTML = `
-      <div class="livehead"><span class="eyebrow">${running?'Running now':'Recent sessions'}</span>
-        <span class="n">${running?`${running} prompt${running===1?'':'s'} in flight`:'idle'}</span></div>`
-      + rows.map(s=>{
-        const proj = (s.cwd||'').split('/').filter(Boolean).pop() || '';
-        return `<div class="liverow ${s.live?'':'idle'}">
-          <span class="livedot"></span>
-          <span class="livewho">${esc(s.machine||'?')}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
-          <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(s.prompt||'—')}</span>
-          <span class="livetime" ${s.live?`data-run="${+s.promptStart}"`:''}>${
-            s.live ? fmtRun(Date.now()-(+s.promptStart)) : 'idle · '+relTime(+s.updated)}</span>
-        </div>`; }).join('');
+      <div class="livehead" id="liveHeadToggle">
+        <span class="eyebrow">Sessions</span><span class="n">${summary}</span>
+        <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.2 5 6.4 8 3.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+      </div>
+      <div class="livebody">
+        ${active.length ? `<div class="livegroup"><div class="livesub">Active now</div>${active.map(liveRowHTML).join('')}</div>` : ''}
+        ${completed.length ? `<div class="livegroup"><div class="livesub">Recently completed</div>${completed.map(liveRowHTML).join('')}</div>` : ''}
+      </div>`;
+    $('#liveHeadToggle').onclick = ()=>{
+      const collapsed = !el.classList.contains('collapsed');
+      el.classList.toggle('collapsed', collapsed);
+      localStorage.setItem(LIVE_COLLAPSE_KEY, collapsed?'1':'0');
+    };
   }
-  /* tick running timers every second; re-evaluate liveness once a minute and
+  /* tick running timers every second (also re-flags long-running sessions the
+     instant they cross the 4h mark); re-evaluate liveness once a minute and
      (on FSA, which has no commit poll) re-read the beacon files themselves */
   setInterval(()=>{
     document.querySelectorAll('#liveStrip .livetime[data-run]').forEach(t=>{
-      t.textContent = fmtRun(Date.now() - +t.dataset.run);
+      const elapsed = Date.now() - +t.dataset.run;
+      const suffix = t.dataset.status==='waiting' ? ' · waiting' : t.dataset.status==='error' ? ' · error' : '';
+      t.textContent = fmtRun(elapsed) + suffix;
+      t.classList.toggle('longrun', elapsed >= LIVE_STALE_AFTER);
     });
   }, 1000);
   setInterval(async ()=>{
