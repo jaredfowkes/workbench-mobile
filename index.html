@@ -1452,7 +1452,21 @@
     else if(state.view==='projects') renderProjects(entrance);
     else if(state.view==='knowledge') renderKnowledge(entrance);
     else renderProjectPage(entrance);
+    requestAnimationFrame(moveTabPill);
   }
+  /* slide the bottom-bar underline to the active tab (measured, so it stays
+     correct across font-weight shifts, rotation, and label lengths) */
+  function moveTabPill(){
+    const bar = document.querySelector('.mobiletabs'), pill = $('#tabPill');
+    if(!bar || !pill || getComputedStyle(bar).display==='none') return;
+    const active = bar.querySelector('.navlink.active');
+    if(!active){ pill.style.opacity = '0'; return; }
+    const b = bar.getBoundingClientRect(), a = active.getBoundingClientRect();
+    pill.style.opacity = '1';
+    pill.style.width = a.width + 'px';
+    pill.style.transform = `translate(${a.left - b.left}px, ${a.bottom - b.top - 2}px)`;
+  }
+  window.addEventListener('resize', ()=>requestAnimationFrame(moveTabPill));
   document.querySelectorAll('.navlink').forEach(nl=>nl.onclick=()=>{
     go(nl.dataset.nav, {area: nl.dataset.area || (nl.dataset.nav==='projects' ? 'All' : undefined)});
     toggleSideSheet(false);
