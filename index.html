@@ -549,6 +549,30 @@
   }
   .toast.show{transform:translateX(-50%) translateY(0)}
 
+  /* ============ live sessions strip ============
+     Sits above every view — one compact row per Claude Code session, fed by
+     the beacon files in tools/sessions/ (written by hooks on each machine). */
+  .livestrip{display:flex;flex-direction:column;gap:6px;margin:0 0 26px}
+  .livehead{display:flex;align-items:baseline;gap:10px;margin-bottom:2px}
+  .livehead .n{font-size:12px;color:var(--sec)}
+  .liverow{
+    display:flex;align-items:center;gap:10px;min-width:0;
+    border:1px solid var(--hair);border-radius:12px;background:var(--surface);
+    padding:9px 14px;font-size:13px;box-shadow:var(--shadow-sm);
+  }
+  .livedot{width:8px;height:8px;border-radius:50%;background:var(--up);flex:none;animation:livepulse 2.2s ease-in-out infinite}
+  .liverow.idle .livedot{background:var(--hair);animation:none}
+  .liverow.idle .liveprompt{color:var(--sec)}
+  .livewho{font-weight:500;white-space:nowrap;flex:none}
+  .livewho .sep{color:var(--sec);font-weight:400}
+  .liveprompt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+  .livetime{flex:none;font-variant-numeric:tabular-nums;color:var(--sec);font-size:12px;white-space:nowrap}
+  .liverow:not(.idle) .livetime{color:var(--up);font-weight:500}
+  @keyframes livepulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(46,125,79,.35)}
+    50%{box-shadow:0 0 0 5px rgba(46,125,79,0)}
+  }
+
   /* ============ mobile shell ============
      Placed last on purpose: several rules here override earlier desktop
      rules of equal specificity (e.g. .side), and CSS resolves ties by
@@ -628,6 +652,10 @@
     /* nothing fixed-width may ever force a sideways pan */
     img,svg,iframe,video{max-width:100%}
     .qrow{flex-wrap:wrap;row-gap:4px}
+    /* live strip: who + runtime on line one, prompt snippet below */
+    .liverow{flex-wrap:wrap;row-gap:2px}
+    .liverow .liveprompt{flex-basis:100%;order:3;font-size:12.5px}
+    .liverow .livetime{margin-left:auto}
     .viewbar .filterinput{width:130px}
     .viewbar .filterinput:focus{width:150px}
   }
@@ -693,6 +721,7 @@
     <button class="navlink" data-nav="knowledge">Knowledge</button>
   </nav>
   <main class="main">
+    <div id="liveStrip" class="livestrip hidden"></div>
     <div id="view-overview" class="hidden"></div>
     <div id="view-projects" class="hidden"></div>
     <div id="view-knowledge" class="hidden"></div>
@@ -705,12 +734,12 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.1';
+  const WB_VERSION = '2026-07-03.2';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
   const state = {
-    root:null, projects:[], kb:[],
+    root:null, projects:[], kb:[], sessions:[],
     backend:'fsa',            // 'fsa' (File System Access, desktop) | 'github' (API + PAT, mobile)
     view:'overview',          // overview | projects | knowledge | project
     proj:null, area:'All', pview:'gallery', pq:'',
@@ -772,6 +801,8 @@
   async function scan(){
     state.projects = []; state.kb = [];
     await Backends[state.backend].scan();
+    state.sessions = await Backends[state.backend].loadSessions();
+    renderSessions();
     state.projects.sort((a,b)=> (a.section+a.data.project).localeCompare(b.section+b.data.project));
     state.kb.sort((a,b)=> (a.sub+a.title).localeCompare(b.sub+b.title));
     state.connected = true;
@@ -873,6 +904,18 @@
         const fh = await dir.getFileHandle(name, {create:true});
         const w = await fh.createWritable(); await w.write(blob); await w.close();
       },
+      async loadSessions(){
+        const out = [];
+        try{
+          const tools = await state.root.getDirectoryHandle('tools');
+          const dir = await tools.getDirectoryHandle('sessions');
+          for await (const [name, h] of dir.entries()){
+            if(h.kind!=='file' || !name.endsWith('.json')) continue;
+            try{ out.push(JSON.parse(await (await h.getFile()).text())); }catch{}
+          }
+        }catch{}
+        return out;
+      },
     },
     github: {
       async scan(){
@@ -948,6 +991,17 @@
       async writeBinary(path, blob){
         const bytes = new Uint8Array(await blob.arrayBuffer());
         await ghPutRaw(path, b64FromBytes(bytes), 'Dashboard: add '+path);
+      },
+      async loadSessions(){
+        const out = [];
+        try{
+          const tree = await ghGetTree();
+          const paths = tree.filter(p=>/^tools\/sessions\/[^/]+\.json$/.test(p));
+          await ghBatch(paths, async path=>{
+            try{ const f = await ghGetFile(path); if(f) out.push(JSON.parse(f.text)); }catch{}
+          });
+        }catch{}
+        return out;
       },
     },
   };
@@ -1139,6 +1193,61 @@
       }
     };
   }
+
+  /* ================= live sessions strip =================
+     tools/sessions/*.json beacons, one per Claude Code session (written by
+     hooks — see tools/session-beacon.ps1). Running entries older than 4h and
+     idle ones older than 2h are treated as dead (crashed sessions never send
+     their SessionEnd) and hidden; a GC in the beacon deletes the files. */
+  const LIVE_RUN_MAX = 4*3600e3, LIVE_IDLE_MAX = 2*3600e3;
+  function fmtRun(ms){
+    const s = Math.max(0, Math.floor(ms/1000));
+    if(s < 60) return s+'s';
+    const m = Math.floor(s/60);
+    if(m < 60) return m+'m '+String(s%60).padStart(2,'0')+'s';
+    return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m';
+  }
+  function sessionRows(){
+    const now = Date.now();
+    return (state.sessions||[])
+      .map(s=>{
+        const live = s.status==='running' && (now - (+s.promptStart||0)) < LIVE_RUN_MAX;
+        const idle = s.status==='idle' && (now - (+s.updated||0)) < LIVE_IDLE_MAX;
+        return (live||idle) ? {...s, live} : null;
+      })
+      .filter(Boolean)
+      .sort((a,b)=> (b.live-a.live) || (+b.promptStart||0)-(+a.promptStart||0));
+  }
+  function renderSessions(){
+    const el = $('#liveStrip'); if(!el) return;
+    const rows = sessionRows();
+    if(!rows.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
+    const running = rows.filter(r=>r.live).length;
+    el.innerHTML = `
+      <div class="livehead"><span class="eyebrow">${running?'Running now':'Recent sessions'}</span>
+        <span class="n">${running?`${running} prompt${running===1?'':'s'} in flight`:'idle'}</span></div>`
+      + rows.map(s=>{
+        const proj = (s.cwd||'').split('/').filter(Boolean).pop() || '';
+        return `<div class="liverow ${s.live?'':'idle'}">
+          <span class="livedot"></span>
+          <span class="livewho">${esc(s.machine||'?')}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
+          <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(s.prompt||'—')}</span>
+          <span class="livetime" ${s.live?`data-run="${+s.promptStart}"`:''}>${
+            s.live ? fmtRun(Date.now()-(+s.promptStart)) : 'idle · '+relTime(+s.updated)}</span>
+        </div>`; }).join('');
+  }
+  /* tick running timers every second; re-evaluate liveness once a minute and
+     (on FSA, which has no commit poll) re-read the beacon files themselves */
+  setInterval(()=>{
+    document.querySelectorAll('#liveStrip .livetime[data-run]').forEach(t=>{
+      t.textContent = fmtRun(Date.now() - +t.dataset.run);
+    });
+  }, 1000);
+  setInterval(async ()=>{
+    if(!state.connected || document.visibilityState!=='visible') return;
+    if(state.backend==='fsa') state.sessions = await Backends.fsa.loadSessions();
+    renderSessions();
+  }, 60000);
 
   /* p.cover / p.logo are FSA file handles on the fsa backend, repo-relative
      path strings on the github backend — assetURL resolves either to a URL */
