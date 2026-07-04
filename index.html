@@ -590,6 +590,72 @@
   .khint{padding:9px 18px;border-top:1px solid var(--hair);font-size:11.5px;color:var(--sec);display:flex;gap:16px}
   .khint kbd{font-family:inherit;font-size:10.5px;border:1px solid var(--hair);border-radius:4px;padding:0 5px}
 
+  /* ============ capture — editorial modal ============ */
+  .capscrim{
+    position:fixed;inset:0;z-index:62;background:rgba(24,24,27,.38);
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    animation:fadein .2s ease;
+  }
+  .capbox{
+    width:min(560px,94vw);max-height:min(88vh,760px);overflow-y:auto;
+    background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lift);
+    padding:34px 34px 28px;position:relative;
+    animation:cappop .3s var(--ease);
+  }
+  @keyframes cappop{from{transform:scale(.965) translateY(14px);opacity:0}}
+  .capbox .cap-eyebrow{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;margin:0 0 8px}
+  .capbox h2{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.12;margin:0 0 8px;padding-right:52px}
+  .capbox .cap-lede{font-size:14px;color:var(--sec);margin:0 0 22px;line-height:1.45}
+  .capbox .cap-type{margin:0 0 20px;flex-wrap:wrap}
+  .capbox .f-row textarea.cap-input{
+    min-height:128px;font-size:16px;line-height:1.55;border:none;background:var(--panel);
+    border-radius:var(--radius);padding:14px 16px;resize:vertical;
+    transition:background .15s, box-shadow .15s;
+  }
+  .capbox .f-row textarea.cap-input:focus{
+    outline:none;background:var(--surface);
+    box-shadow:inset 0 0 0 1px var(--hair), 0 0 0 3px color-mix(in srgb, var(--ink) 8%, transparent);
+  }
+  .capbox .f-btns{margin-top:22px}
+  .cap-close{
+    position:absolute;top:18px;right:18px;border:none;background:var(--panel);
+    border-radius:999px;font-size:11px;padding:7px 13px;color:var(--sec);
+    transition:background .15s ease,color .15s ease;
+  }
+  .cap-close:hover{color:var(--ink);background:var(--hair)}
+
+  /* ============ mobile more — bottom sheet ============ */
+  .morescrim{
+    position:fixed;inset:0;z-index:68;background:rgba(24,24,27,.32);
+    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    display:flex;align-items:flex-end;animation:fadein .18s ease;
+  }
+  .morebox{
+    width:100%;max-height:min(82vh,560px);overflow-y:auto;
+    background:var(--surface);border-top:1px solid var(--hair);
+    border-top-left-radius:20px;border-top-right-radius:20px;
+    box-shadow:0 -14px 48px rgba(24,24,27,.18);
+    padding:8px 12px calc(16px + env(safe-area-inset-bottom));
+    animation:moreslide .32s var(--ease);
+  }
+  @keyframes moreslide{from{transform:translateY(100%)}}
+  .more-handle{width:36px;height:4px;border-radius:99px;background:var(--hair);margin:6px auto 14px}
+  .morehead{display:flex;align-items:baseline;justify-content:space-between;padding:0 10px 10px;border-bottom:1px solid var(--hair2);margin-bottom:6px}
+  .morehead .ver{font-size:9px;color:var(--sec);opacity:.65}
+  .more-item{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;
+    font-size:15px;color:var(--ink);border:none;background:none;text-align:left;
+    padding:13px 10px;border-radius:var(--radius);transition:background .12s;
+  }
+  .more-item:hover,.more-item:active{background:var(--panel)}
+  .more-item .more-meta{font-size:12px;color:var(--sec);font-variant-numeric:tabular-nums}
+  .more-item.warn{color:var(--accent)}
+  .more-sep{height:1px;background:var(--hair2);margin:6px 10px}
+  .more-foot{padding:12px 10px 4px;font-size:11px;color:var(--sec);display:flex;flex-direction:column;gap:8px}
+  .more-foot .syncrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .more-foot .btn{padding:10px;font-size:13px}
+
   /* ============ landing ============ */
   .landing{
     max-width:420px;margin:12vh auto 0;padding:36px 32px 40px;text-align:left;
@@ -870,10 +936,11 @@
      Placed last on purpose: several rules here override earlier desktop
      rules of equal specificity (e.g. .side), and CSS resolves ties by
      source order regardless of whether a rule sits inside @media. */
-  .mobiletop, .mobiletabs, .side-backdrop{display:none}
+  .mobiletop, .mobiletabs{display:none}
   @media (max-width:860px){
     .app{grid-template-columns:1fr}
     .deskbar{display:none}
+    .side{display:none !important}
     .content-col{min-height:auto}
     .mobiletop{
       display:flex;align-items:center;justify-content:space-between;
@@ -887,20 +954,14 @@
       color:var(--ink);display:flex;align-items:center;justify-content:center;padding:0;
     }
     .icon-btn:active{background:var(--hair)}
-    .side{
-      display:flex;position:fixed;inset:auto 0 0 0;top:auto;height:auto;max-height:80vh;
-      border-right:none;border-top:1px solid var(--hair);
-      border-top-left-radius:20px;border-top-right-radius:20px;
-      box-shadow:0 -14px 40px rgba(29,29,31,.18);
-      transform:translateY(105%);transition:transform .3s var(--ease);
-      z-index:70;padding-bottom:calc(20px + env(safe-area-inset-bottom));overflow-y:auto;
+    .capscrim{align-items:flex-end;padding:0}
+    .capbox{
+      width:100%;max-height:92vh;border-radius:20px 20px 0 0;
+      padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+      animation:capslide .32s var(--ease);
     }
-    #app.side-open .side{transform:translateY(0)}
-    .side-backdrop{
-      display:block;position:fixed;inset:0;background:rgba(29,29,31,.32);z-index:65;
-      opacity:0;pointer-events:none;transition:opacity .3s ease;
-    }
-    #app.side-open .side-backdrop{opacity:1;pointer-events:auto}
+    @keyframes capslide{from{transform:translateY(100%)}}
+    .capbox h2{font-size:24px;padding-right:48px}
     .mobiletabs{
       display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;
       background:var(--bg);border-top:1px solid var(--hair);
@@ -931,6 +992,7 @@
     .krow .kmeta{flex-basis:100%;max-width:100%;flex-wrap:wrap}
     .krow .kn{font-size:16px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
     .krow .ks{font-size:13.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .krow .arr{display:none}
     /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px —
        every input must be at least 16px on mobile so focus never zooms */
     input, select, textarea{font-size:16px !important}
@@ -992,7 +1054,6 @@
       </button>
     </span>
   </div>
-  <div class="side-backdrop" id="sideBackdrop"></div>
   <aside class="side">
     <div class="wordmark">Workbench <span class="ver"></span></div>
     <div class="side-actions">
@@ -1054,7 +1115,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.20';
+  const WB_VERSION = '2026-07-03.21';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -2797,22 +2858,56 @@
   window.addEventListener('resize', ()=>requestAnimationFrame(moveTabPill));
   document.querySelectorAll('.navlink').forEach(nl=>nl.onclick=()=>{
     go(nl.dataset.nav, {area: nl.dataset.area || (nl.dataset.nav==='projects' ? 'All' : undefined)});
-    toggleSideSheet(false);
+    closeMoreMenu();
   });
 
   /* ================= mobile shell ================= */
-  function toggleSideSheet(open){
-    const app = $('#app');
-    app.classList.toggle('side-open', open===undefined ? !app.classList.contains('side-open') : open);
+  function closeMoreMenu(){ document.querySelector('.morescrim')?.remove(); }
+  async function openMoreMenu(){
+    if(document.querySelector('.morescrim,.capscrim,.kscrim')) return;
+    const intake = await pendingIntake();
+    const wc = state.projects.filter(p=>p.section==='Work').length;
+    const pc = state.projects.length - wc;
+    const scrim = document.createElement('div'); scrim.className = 'morescrim';
+    scrim.innerHTML = `<div class="morebox" role="dialog" aria-label="More">
+      <div class="more-handle" aria-hidden="true"></div>
+      <div class="morehead"><span class="eyebrow">Workbench</span><span class="ver">v${WB_VERSION}</span></div>
+      <button type="button" class="more-item" data-go="skills">Skills <span class="more-meta">${state.skillCatalog?.total ?? ''}</span></button>
+      <button type="button" class="more-item" data-go="instructions">Instructions</button>
+      <button type="button" class="more-item" data-go="about">About</button>
+      <div class="more-sep"></div>
+      <button type="button" class="more-item" data-area="Work">Work <span class="more-meta">${wc} projects</span></button>
+      <button type="button" class="more-item" data-area="Personal">Personal <span class="more-meta">${pc} projects</span></button>
+      <div class="more-sep"></div>
+      <button type="button" class="more-item" data-wrap>Wrap session</button>
+      ${intake.length ? `<button type="button" class="more-item warn" data-triage>Triage intake <span class="more-meta">${intake.length} pending</span></button>` : ''}
+      <div class="more-foot">
+        <span id="moreGitline">${esc($('#gitline')?.textContent || '')}</span>
+        ${state.helperUp ? `<div class="syncrow"><button type="button" class="btn ghost" data-pull>Pull</button><button type="button" class="btn ghost" data-sync>Sync</button></div>` : ''}
+        <button type="button" class="btn ghost" data-reconnect>Reconnect</button>
+      </div>
+    </div>`;
+    const close = ()=> scrim.remove();
+    scrim.onclick = e=>{ if(e.target===scrim) close(); };
+    scrim.querySelector('[data-go="skills"]')?.addEventListener('click', ()=>{ close(); go('skills'); });
+    scrim.querySelector('[data-go="instructions"]')?.addEventListener('click', ()=>{ close(); go('instructions'); });
+    scrim.querySelector('[data-go="about"]')?.addEventListener('click', ()=>{ close(); go('about'); });
+    scrim.querySelector('[data-area="Work"]')?.addEventListener('click', ()=>{ close(); go('projects', {area:'Work'}); });
+    scrim.querySelector('[data-area="Personal"]')?.addEventListener('click', ()=>{ close(); go('projects', {area:'Personal'}); });
+    scrim.querySelector('[data-wrap]')?.addEventListener('click', ()=>{ close(); openWrapSession(); });
+    scrim.querySelector('[data-triage]')?.addEventListener('click', ()=>{ close(); openIntakeFlow(); });
+    scrim.querySelector('[data-pull]')?.addEventListener('click', ()=>{ close(); $('#pullBtn')?.click(); });
+    scrim.querySelector('[data-sync]')?.addEventListener('click', ()=>{ close(); $('#syncBtn')?.click(); });
+    scrim.querySelector('[data-reconnect]')?.addEventListener('click', ()=>{ close(); $('#connectBtn')?.click(); });
+    document.body.appendChild(scrim);
   }
-  $('#mobileMoreBtn').onclick = ()=>toggleSideSheet();
+  $('#mobileMoreBtn').onclick = ()=>openMoreMenu();
   $('#mobileSearchBtn').onclick = ()=>openPalette();
   $('#mobileReloadBtn').onclick = ()=>doReload();
   $('#mobileCaptureBtn').onclick = ()=>openCapture();
-  $('#captureBtn').onclick = ()=>{ toggleSideSheet(false); openCapture(); };
-  $('#triageBtn').onclick = ()=>{ toggleSideSheet(false); openIntakeFlow(); };
-  $('#wrapBtn').onclick = ()=>{ toggleSideSheet(false); openWrapSession(); };
-  $('#sideBackdrop').onclick = ()=>toggleSideSheet(false);
+  $('#captureBtn').onclick = ()=>openCapture();
+  $('#triageBtn').onclick = ()=>openIntakeFlow();
+  $('#wrapBtn').onclick = ()=>openWrapSession();
   $('#deskSearchBtn')?.addEventListener('click', ()=>openPalette());
 
   /* ================= OVERVIEW ================= */
@@ -3925,7 +4020,7 @@
           <ul>
             <li>tasks.json task boards per project</li>
             <li>status.md + log.md tracking</li>
-            <li>Capture sheet for mobile intake</li>
+            <li>Editorial capture modal — centered card on desktop, bottom sheet on phone</li>
             <li>Covers, logos, HTML docs</li>
           </ul>
         </div>
@@ -4042,6 +4137,32 @@
     document.body.appendChild(scrim);
     return {scrim, close};
   }
+  function capturePanel(inner){
+    if(document.querySelector('.capscrim,.morescrim,.kscrim')) return {scrim:null, close:()=>{}};
+    const scrim = document.createElement('div'); scrim.className = 'capscrim';
+    scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Capture">
+      <button type="button" class="cap-close">esc</button>${inner}</div>`;
+    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = e=>{ if(e.key==='Escape') close(); };
+    scrim.onclick = e=>{ if(e.target===scrim) close(); };
+    scrim.querySelector('.cap-close').onclick = close;
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(scrim);
+    scrim.querySelector('#capText')?.focus();
+    return {scrim, close};
+  }
+  function capturePanel(inner){
+    const scrim = document.createElement('div'); scrim.className='capscrim';
+    scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Capture">
+      <button type="button" class="cap-close" aria-label="Close">esc</button>${inner}</div>`;
+    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey, true); };
+    const onKey = e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+    scrim.onclick = e=>{ if(e.target===scrim) close(); };
+    scrim.querySelector('.cap-close').onclick = close;
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(scrim);
+    return {scrim, close};
+  }
   async function openHtmlEntry(e){
     try{
       const text = await readPath(`${e.section}/${e.sub}/${e.fileName}`);
@@ -4138,20 +4259,21 @@
     if(!state.connected){ toast('Connect the workbench first'); return; }
     let type = 'task';
     let files = [];
-    const {scrim, close} = panel(`
-      <h2>Capture</h2>
-      <span class="d-path">Route it to the right place now — nothing to triage later.</span>
-      <div class="seg" id="capType" style="margin:0 0 18px;flex-wrap:wrap">${CAP_TYPES.map(([k,l])=>`<button class="chip ${k==='task'?'active':''}" data-t="${k}">${l}</button>`).join('')}</div>
+    const {scrim, close} = capturePanel(`
+      <p class="cap-eyebrow">Quick capture</p>
+      <h2>What's on your mind?</h2>
+      <p class="cap-lede">Route it to the right place now — nothing to triage later.</p>
+      <div class="seg cap-type" id="capType">${CAP_TYPES.map(([k,l])=>`<button type="button" class="chip ${k==='task'?'active':''}" data-t="${k}">${l}</button>`).join('')}</div>
       <div id="capDest"></div>
-      <div class="f-row"><label id="capTextLbl">Task</label><textarea id="capText" rows="3"></textarea></div>
+      <div class="f-row"><label id="capTextLbl">Task</label><textarea id="capText" class="cap-input" rows="4" placeholder="Describe it in a sentence or two…"></textarea></div>
       <div class="f-row" id="capFilesRow"><label>Attachments — optional</label>
         <input type="file" id="capFiles" multiple>
         <div id="capFileList" style="font-size:12px;color:var(--sec);margin-top:4px"></div>
       </div>
       <div class="f-btns">
-        <button class="btn" id="capSave">Save</button>
-        <button class="btn ghost" id="capCancel">Cancel</button>
-      </div>`, 'Capture');
+        <button type="button" class="btn" id="capSave">Save</button>
+        <button type="button" class="btn ghost" id="capCancel">Cancel</button>
+      </div>`);
     const destEl = scrim.querySelector('#capDest');
     const textLbl = scrim.querySelector('#capTextLbl');
     const filesRow = scrim.querySelector('#capFilesRow');
@@ -4207,6 +4329,7 @@
         close(); render(false);
       }catch(e){ toast('Capture failed: '+e.message); btn.disabled = false; btn.textContent = 'Save'; }
     };
+    requestAnimationFrame(()=> scrim.querySelector('#capText')?.focus());
   }
   async function uploadCaptureFiles(files, baseDir){
     const names = [];
@@ -4373,7 +4496,7 @@ Append-only. One line per finished task, newest at the bottom.
     return items.slice(0, 40);
   }
   function openPalette(){
-    if($('.kscrim') || !state.connected) return;
+    if($('.kscrim,.capscrim,.morescrim') || !state.connected) return;
     const scrim = document.createElement('div'); scrim.className='kscrim';
     scrim.innerHTML = `<div class="kbox">
       <input type="text" placeholder="Jump to a project, note, or action…" aria-label="Search">
@@ -4417,8 +4540,8 @@ Append-only. One line per finished task, newest at the bottom.
     if(((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k') || (e.key==='/' && !typing)){
       e.preventDefault(); openPalette(); return;
     }
-    if(e.key==='Escape' && $('#app').classList.contains('side-open')){ toggleSideSheet(false); return; }
-    if(e.key==='Escape' && !typing && state.view==='project' && !document.querySelector('.scrim,.kscrim,.lightbox'))
+    if(e.key==='Escape' && document.querySelector('.morescrim')){ closeMoreMenu(); return; }
+    if(e.key==='Escape' && !typing && state.view==='project' && !document.querySelector('.scrim,.kscrim,.capscrim,.morescrim,.lightbox'))
       go('projects');
   });
 
