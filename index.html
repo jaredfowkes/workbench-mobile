@@ -902,10 +902,10 @@
   .skillcard{
     text-align:left;padding:0;border:1px solid var(--hair);border-radius:var(--radius-lg);
     background:var(--surface);cursor:pointer;overflow:hidden;
-    transition:transform .26s var(--ease), box-shadow .26s var(--ease), border-color .15s;
-    box-shadow:var(--shadow-sm);transform-style:preserve-3d;
+    transition:transform .18s var(--ease), box-shadow .18s var(--ease), border-color .15s;
+    box-shadow:var(--shadow-sm);
   }
-  .skillcard:hover{transform:perspective(800px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px) rotate(var(--tr,.5deg)) scale(1.012);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb, var(--muted) 40%, var(--hair))}
+  .skillcard:hover{transform:translateY(-3px) rotate(var(--tr,.4deg)) scale(1.01);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb, var(--muted) 40%, var(--hair))}
   .skillcard:active{transform:translateY(-1px) scale(.99)}
   .skillcard .skillart{aspect-ratio:16/9;background:linear-gradient(135deg, var(--panel), color-mix(in srgb, var(--link) 8%, var(--panel)));display:flex;align-items:center;justify-content:center;font-size:36px;border-bottom:1px solid var(--hair2);position:relative;overflow:hidden}
   .skillcard .skillart img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s var(--ease)}
@@ -1149,7 +1149,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.25';
+  const WB_VERSION = '2026-07-03.26';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -2697,7 +2697,7 @@
   function skillCardHTML(s, i){
     const tr = (((i%2)?1:-1) * (0.5 + (i*37)%8/10)).toFixed(2);
     const acts = (s.actions||[]).slice(0,3);
-    return `<button type="button" class="skillcard ${s.kind==='custom'?'custom':''} reveal" data-si="${i}" style="--tr:${tr}deg" data-tilt>
+    return `<button type="button" class="skillcard ${s.kind==='custom'?'custom':''} reveal" data-si="${i}" style="--tr:${tr}deg">
       <div class="skillart">${s.icon||'⚡'}</div>
       <div class="skillbody">
         <div class="cat">${esc(s.category||'')}</div>
@@ -2802,7 +2802,11 @@
 
   /* ================= motion ================= */
   const io = new IntersectionObserver(es=>es.forEach(e=>{
-    if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      e.target.style.transitionDelay = '';
+      io.unobserve(e.target);
+    }
   }),{threshold:.06});
   function bindTilt(scope){
     if(RM.matches) return;
@@ -3063,7 +3067,7 @@
       ].map(([l,v,sub,mood,kind],i)=>{
         const tr = (((i%2)?1:-1) * (0.4 + (i*41)%6/10)).toFixed(2);
         return `
-        <div class="stat ${mood||''}" data-kpi="${kind}" data-tilt role="button" tabindex="0" style="--tr:${tr}deg">
+        <div class="stat ${mood||''}" data-kpi="${kind}" role="button" tabindex="0" style="--tr:${tr}deg">
           <div class="v num"><span data-count="${v}">${v}</span>${mood==='warn'&&v?' <span class="flg">⚑</span>':''}</div>
           <div class="l">${l}</div>
           <div class="s" title="${esc(sub)}">${esc(sub)}</div>
@@ -3993,7 +3997,7 @@
       const hit = lookup.find(c=>c.idx === +btn.dataset.si);
       if(hit) btn.onclick = ()=> openSkillDetail(hit.skill);
     });
-    bindTilt(el);
+    arm(el);
   }
   const INSTRUCTION_LINKS = [
     {title:'Set up a new Mac', path:'Personal/Processes/setup-workbench-new-mac.html'},
