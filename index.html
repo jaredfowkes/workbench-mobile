@@ -12,7 +12,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ============ tokens — v5 (blank slate) ============ */
+  /* ============ tokens - v5 (blank slate) ============ */
   :root{
     --bg:#FAFAFA; --surface:#FFFFFF; --panel:#F4F4F5;
     --ink:#18181B; --sec:#71717A; --muted:#A1A1AA;
@@ -45,7 +45,7 @@
   *{box-sizing:border-box}
   /* text-size-adjust off: iOS otherwise auto-boosts some text blocks and not
      others (nowrap/ellipsized lines are exempt), making sizes look inconsistent
-     between views — authored sizes + explicit mobile bumps instead */
+     between views - authored sizes + explicit mobile bumps instead */
   /* touch-action:manipulation kills iOS double-tap-to-zoom on taps (nav
      buttons were zooming the page); scrolling and pinch still work */
   html,body{margin:0;padding:0;-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
@@ -64,7 +64,7 @@
     text-transform:uppercase;padding:20px 12px 5px;margin:0;
   }
 
-  /* subtle entrance — dashboard, not marketing */
+  /* subtle entrance - dashboard, not marketing */
   .reveal{opacity:0;transform:translateY(6px);transition:opacity .35s var(--ease), transform .35s var(--ease)}
   .reveal.in{opacity:1;transform:none}
   .bar{height:3px;border-radius:2px;background:var(--hair);overflow:hidden;position:relative;flex-shrink:0}
@@ -164,7 +164,7 @@
   .main{padding:24px 28px 72px;max-width:1040px;width:100%;min-width:0;flex:1}
   @media (max-width:860px){.main{padding:20px 18px calc(72px + env(safe-area-inset-bottom))}}
 
-  /* ============ overview — command center ============ */
+  /* ============ overview - command center ============ */
   .ovhead{margin:0 0 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
   .ovhead .dateline{font-size:12px;color:var(--muted);font-weight:400;display:block;margin-bottom:4px}
   .ovhead h1{font-size:26px;font-weight:600;letter-spacing:-.025em;line-height:1.15;margin:0}
@@ -191,7 +191,7 @@
   .bento .panel.full{grid-column:span 12}
   @media(max-width:900px){.bento .panel,.bento .panel.wide{grid-column:span 12}}
 
-  /* legacy kpi strip — hidden when statrow used */
+  /* legacy kpi strip - hidden when statrow used */
   .kpis{display:none}
 
   /* ============ charts / panels ============ */
@@ -616,7 +616,7 @@
   .khint{padding:9px 18px;border-top:1px solid var(--hair);font-size:11.5px;color:var(--sec);display:flex;gap:16px}
   .khint kbd{font-family:inherit;font-size:10.5px;border:1px solid var(--hair);border-radius:4px;padding:0 5px}
 
-  /* ============ capture — editorial modal ============ */
+  /* ============ capture - editorial modal ============ */
   .capscrim{
     position:fixed;inset:0;z-index:62;background:rgba(24,24,27,.38);
     backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
@@ -651,7 +651,7 @@
   }
   .cap-close:hover{color:var(--ink);background:var(--hair)}
 
-  /* ============ mobile more — bottom sheet ============ */
+  /* ============ mobile more - bottom sheet ============ */
   .morescrim{
     position:fixed;inset:0;z-index:68;background:rgba(24,24,27,.32);
     backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
@@ -703,11 +703,11 @@
   .toast.show{transform:translateX(-50%) translateY(0)}
 
   /* ============ live sessions strip ============
-     Sits above every view — one compact row per Claude Code session, fed by
+     Sits above every view - one compact row per Claude Code session, fed by
      the beacon files in tools/sessions/ (written by hooks on each machine).
      Two groups: active (running/waiting/error) and recently completed (idle),
      both under one collapsible header. */
-  /* contain:inline-size — the nowrap prompt must never widen .main (a grid
+  /* contain:inline-size - the nowrap prompt must never widen .main (a grid
      item with min-width:auto) via intrinsic sizing; the strip sizes from its
      container only, and the prompt then shrinks + ellipsizes normally */
   /* ============ unified status rail ============ */
@@ -1050,10 +1050,10 @@
     .krow .kn{font-size:16px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
     .krow .ks{font-size:13.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
     .krow .arr{display:none}
-    /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px —
+    /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px -
        every input must be at least 16px on mobile so focus never zooms */
     input, select, textarea{font-size:16px !important}
-    /* page headers are non-wrapping flex rows sized for desktop — the Overview
+    /* page headers are non-wrapping flex rows sized for desktop - the Overview
        greeting + ⌘K pill and the Knowledge title + search + button both
        exceed a phone's width unless they're allowed to wrap */
     html,body{overflow-x:hidden;max-width:100vw}
@@ -1077,10 +1077,10 @@
   }
 
 
-  /* ============ dashboard design-system prototype — neutral cockpit ============ */
+  /* ============ dashboard design-system prototype - neutral cockpit ============ */
   :root{
     /* neutral-white cockpit foundation */
-    --bg:#FAFAFA; --surface:#FFFFFF; --panel:#F4F4F5; --panel2:#EFEFF1; --tint:#F7F7F8;
+    --bg:#FAFAFA; --surface:#FEFEFE; --panel:#F4F4F5; --panel2:#EFEFF1; --tint:#F7F7F8;
     --ink:#171717; --sec:#666A70; --muted:#9A9EA6;
     --hair:#E4E4E7; --hair2:#F0F0F2;
     --link:#171717; --link-soft:#F1F1F3;
@@ -1352,9 +1352,9 @@
 
 <script>
 (() => {
-  /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
+  /* BUMP ON EVERY EDIT to this file - shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-04.03';
+  const WB_VERSION = '2026-07-04.04';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1447,7 +1447,7 @@
     $('#app').classList.remove('hidden');
     if(!bootDone){
       /* first render of this page load always opens on Overview, even if the
-         URL carries a stale hash — a home-screen bookmark saves whatever hash
+         URL carries a stale hash - a home-screen bookmark saves whatever hash
          was open when it was added, so without this a phone icon could be
          permanently stuck reopening on Projects or a project page. In-session
          navigation (hashchange, back/forward) still works normally after. */
@@ -1477,7 +1477,7 @@
     if(!text) return [];
     const out = [];
     for(const line of text.split(/\r?\n/)){
-      const m = line.match(/^-\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*—\s*(.+)$/);
+      const m = line.match(/^-\s*(\d{4}-\d{2}-\d{2} \d{2}:\d{2})\s*(?:—|-)\s*(.+)$/);
       if(m) out.push({ts:m[1], text:m[2].trim()});
     }
     return out.slice(-5);
@@ -1544,7 +1544,7 @@
     if(!items.length){ toast('No pending intake'); return; }
     const {scrim, close} = modalPanel(`
       <h2>Intake triage</h2>
-      <span class="modal-path">${items.length} item${items.length===1?'':'s'} waiting — handled by /triage-intake, not manual filing.</span>
+      <span class="modal-path">${items.length} item${items.length===1?'':'s'} waiting - handled by /triage-intake, not manual filing.</span>
       <div class="queue">${items.slice(0,12).map(it=>`
         <div class="qrow"><span class="qt">${esc(it.text.slice(0,120))}</span>
         <span class="chipx">${esc(it.kind)}</span></div>`).join('')}</div>
@@ -1553,7 +1553,7 @@
         <button class="btn ghost" id="closeIntake">Close</button>
       </div>`, 'Intake');
     scrim.querySelector('#copyTriage').onclick = async ()=>{
-      try{ await navigator.clipboard.writeText(triagePromptText(items)); toast('Copied — paste in Claude Code or Cursor'); }
+      try{ await navigator.clipboard.writeText(triagePromptText(items)); toast('Copied - paste in Claude Code or Cursor'); }
       catch{ toast('Copy failed'); }
     };
     scrim.querySelector('#closeIntake').onclick = close;
@@ -1576,7 +1576,7 @@
                 p.logo = await findLogo(h);
                 p.log = parseActivityLogText(await readText(h, 'log.md'));
                 state.projects.push(p);
-              }catch(e){ toast(`Skipped ${name}/tasks.json — invalid JSON`); }
+              }catch(e){ toast(`Skipped ${name}/tasks.json - invalid JSON`); }
             }
           }catch{}
           for(const sub of SUBS){
@@ -1713,7 +1713,7 @@
               try{ const lf = await ghGetFile(logPath); p.log = parseActivityLogText(lf?.text); }catch{}
             }
             state.projects.push(p);
-          }catch(e){ toast(`Skipped ${dirName}/tasks.json — ${e.message}`); }
+          }catch(e){ toast(`Skipped ${dirName}/tasks.json - ${e.message}`); }
         });
         await ghBatch(kbPaths, async path=>{
           const m = path.match(/^(Work|Personal)\/(Glossary|Processes|Decisions)\/([^/]+)\.(md|html)$/);
@@ -1890,7 +1890,7 @@
       body: JSON.stringify({ message, content: b64EncodeUtf8(text), branch: cfg.branch, ...(sha?{sha}:{}) }),
     });
     if(res.status===409){
-      throw Object.assign(new Error('Save conflict — this file changed elsewhere. Reload before editing further.'), {conflict:true});
+      throw Object.assign(new Error('Save conflict - this file changed elsewhere. Reload before editing further.'), {conflict:true});
     }
     if(!res.ok){
       let detail=''; try{ detail = (await res.json()).message||''; }catch{}
@@ -1903,7 +1903,7 @@
   const MIME_BY_EXT = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', webp:'image/webp',
     gif:'image/gif', svg:'image/svg+xml', html:'text/html', htm:'text/html', pdf:'application/pdf' };
   const ghBinaryURLs = new Map();
-  /* fetch a repo file as a blob: URL (correct MIME from extension) — for covers,
+  /* fetch a repo file as a blob: URL (correct MIME from extension) - for covers,
      screenshots, and opening docs on the GitHub backend, where relative hrefs
      can't work (the page origin doesn't host the private repo's files) */
   async function ghGetBinaryURL(path){
@@ -1926,7 +1926,7 @@
     });
     if(!res.ok){
       let detail=''; try{ detail = (await res.json()).message||''; }catch{}
-      throw new Error(`Upload failed (${res.status})${detail?': '+detail:''}${res.status===422?' — a file with that name may already exist':''}`);
+      throw new Error(`Upload failed (${res.status})${detail?': '+detail:''}${res.status===422?' - a file with that name may already exist':''}`);
     }
     return res.json();
   }
@@ -1950,7 +1950,7 @@
         if(!res.ok) return;
         const json = await res.json();
         const sha = json.sha;
-        /* refresh silently — during an active Claude session the repo gets a
+        /* refresh silently - during an active Claude session the repo gets a
            new commit every few minutes, and a toast per tick never leaves the
            screen; the updated content is its own signal */
         if(ghLastSeenSha && sha!==ghLastSeenSha){ ghLastSeenSha = sha; await ghGetTree(true); await scan(); }
@@ -1969,15 +1969,15 @@
     await scan();
     ghStartPoll();
     /* Home-screen bookmarks have no browser chrome, so "refresh" must be a
-       real page reload — boot re-connects with a forced tree fetch anyway.
+       real page reload - boot re-connects with a forced tree fetch anyway.
        Plain location.reload() is a known no-op in iOS's standalone
-       (Add to Home Screen) WKWebView — it can skip the actual re-navigation.
+       (Add to Home Screen) WKWebView - it can skip the actual re-navigation.
        A cache-busted location.replace() forces a real network fetch instead. */
     const btn = $('#connectBtn');
     if(btn){
       /* boot disables this button when File System Access is unsupported
          (true for all of iOS Safari) since it starts life as the FSA
-         "Reconnect" action — but once GitHub connects it's repurposed as
+         "Reconnect" action - but once GitHub connects it's repurposed as
          Reload, so that disabled state must be cleared or it never receives
          clicks again (looks like a dead button, not just a dead handler). */
       btn.disabled = false;
@@ -1999,7 +1999,7 @@
   }
   /* Cold-launching the iOS home-screen app sometimes fires this first fetch
      before the WKWebView's network stack is actually ready, so the very
-     first attempt can fail even with a good, saved token — that used to
+     first attempt can fail even with a good, saved token - that used to
      dump the user back on the landing page needing to re-submit the
      (autofilled) connect form. Retry a few times with backoff before
      giving up; only stop immediately on a real credential rejection
@@ -2018,7 +2018,7 @@
         $('#landing').classList.remove('hidden');
         $('#app').classList.add('hidden');
         ghDisconnect();
-        $('#landingNote').textContent = 'Your saved GitHub token was rejected — it may have expired or been revoked. Reconnect below.';
+        $('#landingNote').textContent = 'Your saved GitHub token was rejected - it may have expired or been revoked. Reconnect below.';
         return;
       }
       if(attempt>=MAX_ATTEMPTS){
@@ -2035,11 +2035,11 @@
     const cfg = ghConfig() || {owner:'', repo:'workbench', branch:'main'};
     const savedToken = ghToken();
     const tokenHint = savedToken
-      ? `<p style="font-size:12px;color:var(--sec);margin:0">Saved token found on this device — leave the field blank to keep using it.</p>`
+      ? `<p style="font-size:12px;color:var(--sec);margin:0">Saved token found on this device - leave the field blank to keep using it.</p>`
       : '';
     const {scrim, close} = modalPanel(`
       <h2>Connect via GitHub</h2>
-      <span class="modal-path">Reads and writes the private repo directly over the GitHub API — no local folder needed.</span>
+      <span class="modal-path">Reads and writes the private repo directly over the GitHub API - no local folder needed.</span>
       <div class="f-row"><label>Owner</label><input type="text" id="ghOwner" value="${esc(cfg.owner)}" placeholder="jaredfowkes"></div>
       <div class="f-two">
         <div class="f-row"><label>Repo</label><input type="text" id="ghRepo" value="${esc(cfg.repo)}" placeholder="workbench"></div>
@@ -2076,10 +2076,10 @@
 
   /* ================= live sessions strip =================
      tools/sessions/*.json beacons, one per agent session (Claude Code or Cursor;
-     written by hooks — see tools/session-beacon.py and tools/cursor-session-hook.py).
+     written by hooks - see tools/session-beacon.py and tools/cursor-session-hook.py).
      status is one of running / waiting (blocked on a permission prompt or question)
      / error (a tool call just failed) / idle (finished its last turn). Active
-     for age — a run stuck for hours should be visible, not disappear — but
+     for age - a run stuck for hours should be visible, not disappear - but
      get flagged (accent-colored runtime) past LIVE_STALE_AFTER. Idle entries
      ("recently completed") drop off after LIVE_IDLE_MAX; a GC in the beacon
      deletes files after 48h so crashed sessions don't linger forever. */
@@ -2114,7 +2114,7 @@
     t = t.replace(/^#+\s*/gm,'');
     t = t.replace(/\[(.*?)\]\([^)]+\)/g,'$1');
     t = t.replace(/^[a-z]{2,5}-\d+\s*[-:]\s*/i,'');
-    t = t.replace(/^(?:OWNER|PUBLISH|TODO|FIXED|CLOSED|SHIPPED)\s*[-—:]\s*/i,'');
+    t = t.replace(/^(?:OWNER|PUBLISH|TODO|FIXED|CLOSED|SHIPPED)\s*[--:]\s*/i,'');
     t = t.replace(/\(\s*[a-z]{2,5}-\d+\s*\)/gi,'');
     t = t.replace(/\b[a-z]{2,5}-\d+\b/gi,'');
     t = t.replace(/\(\s*files\/[^)]+\)/gi,'');
@@ -2123,17 +2123,17 @@
     t = t.replace(/\b[A-Za-z0-9_-]+\.(?:html|md|yaml|json|zip|msapp|pa\.yaml)\b/gi,'');
     t = t.replace(/\b([A-Z][A-Z0-9_]{3,})\b/g, humanizeCapsToken);
     t = t.replace(/\b([A-Z]{6,})\b/g, w=> w.charAt(0)+w.slice(1).toLowerCase());
-    t = t.replace(/\s*(?:->|→)\s*/g,' — ');
+    t = t.replace(/\s*(?:->|→)\s*/g,' - ');
     t = t.replace(/\(([^)]{45,})\)/g,(m,inner)=>{
       const parts = inner.split(/[,;]\s*/);
       return parts.length > 2 ? `(${parts.slice(0,2).join(', ')}, …)` : m;
     });
-    t = t.replace(/[—–]/g,'—');
+    t = t.replace(/[--]/g,'-');
     t = t.replace(/\s+/g,' ').trim();
     t = t.replace(/\(\s*[,;…]\s*\)/g,'');
     t = t.replace(/\(\s*\)/g,'');
     t = t.replace(/\s+:\s+/g, ': ');
-    t = t.replace(/\s*[,;—]\s*$/,'');
+    t = t.replace(/\s*[,;-]\s*$/,'');
     if(t.length>maxLen) t = t.slice(0, maxLen).replace(/\s+\S*$/,'')+'…';
     if(!t) return '';
     return t.charAt(0).toUpperCase()+t.slice(1);
@@ -2152,7 +2152,7 @@
   }
   /* optional tools/machine-aliases.json ({"hostname":"Friendly Name"}) lets a
      machine's raw hostname (e.g. an IT-assigned asset tag like "ax-pf5qch3r")
-     show as something recognizable — no OS rename needed, just edit the file */
+     show as something recognizable - no OS rename needed, just edit the file */
   async function loadMachineAliases(){
     try{
       const text = await Backends[state.backend].readText('tools/machine-aliases.json');
@@ -2211,7 +2211,7 @@
       <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(humanizePrompt(s.prompt))}</span>
       <span class="livetime ${s.stale?'longrun':''}"
         ${s.active?`data-run="${+s.promptStart}" data-status="${s.status}"`:''}
-        ${s.stale?'title="Running longer than 4 hours — worth checking it isn’t stuck"':''}>${esc(time)}</span>
+        ${s.stale?'title="Running longer than 4 hours - worth checking it isn’t stuck"':''}>${esc(time)}</span>
     </div>`;
   }
   function sessionsBlockHTML(rows){
@@ -2336,7 +2336,7 @@
   function renderSessions(){ renderStatusRail(); }
   /* ============ usage strip =============
      tools/usage.json, written by a scheduled tools/usage-scraper.py run
-     (Playwright login-scrapes claude.ai's Settings -> Usage panel — there's
+     (Playwright login-scrapes claude.ai's Settings -> Usage panel - there's
      no API for a personal Enterprise seat spend limit). Sits directly below
      the Sessions strip; hidden entirely until that file exists at all (i.e.
      the scraper has never run on any machine feeding this repo). */
@@ -2363,7 +2363,7 @@
     return Math.max(0, Math.min(100, u.percent==null?0:u.percent));
   }
   function creditCompactLine(label, u){
-    if(!u) return `<span class="dim">${label} —</span>`;
+    if(!u) return `<span class="dim">${label} -</span>`;
     if(u.error) return `<span class="dim">${label} login</span>`;
     const pct = creditPct(u);
     const cls = pct >= 90 ? 'hot' : 'dim';
@@ -2408,7 +2408,7 @@
   }, 60000);
 
   /* p.cover / p.logo are FSA file handles on the fsa backend, repo-relative
-     path strings on the github backend — assetURL resolves either to a URL */
+     path strings on the github backend - assetURL resolves either to a URL */
   async function assetURL(ref){
     if(!ref) return null;
     try{
@@ -2471,7 +2471,7 @@
 
   const saveTimers = new Map();
   function saveProject(p){
-    if(p._saveConflict){ toast('Save blocked — reload this project before editing further'); return; }
+    if(p._saveConflict){ toast('Save blocked - reload this project before editing further'); return; }
     clearTimeout(saveTimers.get(p));
     saveTimers.set(p, setTimeout(async ()=>{
       try{
@@ -2801,7 +2801,7 @@
   function actionPrompt(a){
     const project = a.p;
     const task = a.display || displayCleanText(a.text);
-    const recent = (project.log||[]).slice(-3).map(l=>`- ${l.ts} — ${l.text}`).join('\n') || '- No recent log entries.';
+    const recent = (project.log||[]).slice(-3).map(l=>`- ${l.ts} - ${l.text}`).join('\n') || '- No recent log entries.';
     const next = (project.nextSteps||[]).slice(0,3).map(x=>`- ${x}`).join('\n') || '- No status next steps found.';
     const taskLine = a.it ? `Task (${a.it.status}${a.g?`, ${a.g.name}`:''}): ${a.it.text}` : `Status next step: ${a.text}`;
     const docs = (project._about?.docs||project._docPaths||[]).slice(0,5).map(d=>`- ${typeof d==='string'?d:d.path||d.name}`).join('\n') || '- No HTML docs found yet.';
@@ -3359,7 +3359,7 @@
         <span class="tn">${esc(p.data.project)}${pinned?' <span class="chipx" style="font-size:10px;vertical-align:2px">focus</span>':''}</span>
         <span class="tt">${esc(p.data.tagline||'')}</span>
         <span class="tc">${counts}</span>
-        <span class="tfoot">${barHTML(c.pct)}<span class="pp">${c.pct===null?'—':c.pct+'%'}</span></span>
+        <span class="tfoot">${barHTML(c.pct)}<span class="pp">${c.pct===null?'-':c.pct+'%'}</span></span>
       </span>
     </button>`;
   }
@@ -3565,11 +3565,11 @@
             <td style="width:56px">${p.cover?`<img class="thumb" data-cover="${esc(p.dirName)}" alt="">`:`<span class="thumb" style="display:block"></span>`}</td>
             <td><span class="pname">${esc(p.data.project)}</span><span class="ptag">${esc(p.data.tagline||'')}</span></td>
             <td class="areac">${p.section}</td>
-            <td><span class="progcell">${barHTML(c.pct)}<span class="p">${c.pct===null?'—':c.pct+'%'}</span></span></td>
+            <td><span class="progcell">${barHTML(c.pct)}<span class="p">${c.pct===null?'-':c.pct+'%'}</span></span></td>
             <td class="tnum ${c.open?'':'zero'}">${c.open||'0'}</td>
             <td class="tnum ${c.blocked?'':'zero'}">${c.blocked?`<span class="flagc">⚑ ${c.blocked}</span>`:'0'}</td>
             <td class="tnum ${c.idea?'':'zero'}">${c.idea||'0'}</td>
-            <td class="updc">${lastTouch(p)||'—'}</td>
+            <td class="updc">${lastTouch(p)||'-'}</td>
           </tr>`;}).join('')}</tbody></table></div>`;
       el.querySelectorAll('th').forEach(th=>th.onclick=()=>{
         const k = th.dataset.k; if(!k) return;
@@ -3591,7 +3591,7 @@
     file:(a,b)=> a.idx-b.idx,
   };
   const SORT_LABELS = [['importance','Importance'],['newest','Newest'],['oldest','Oldest'],
-                       ['completed','Recently completed'],['az','A–Z'],['file','As written']];
+                       ['completed','Recently completed'],['az','A-Z'],['file','As written']];
   const STATUS_SECTIONS = [['blocked','Blocked'],['doing','In progress'],['todo','To do'],['idea','Ideas'],['done','Done']];
 
   function matchesPFilter(it){
@@ -3683,7 +3683,7 @@
     arm(el);
   }
   function renderPHero(c){
-    $('#pnum').textContent = c.pct===null ? '—' : c.pct+'%';
+    $('#pnum').textContent = c.pct===null ? '-' : c.pct+'%';
     const bi = $('#pbar')?.querySelector('i');
     if(bi){ bi.dataset.w = c.pct??0; bi.style.width = (c.pct??0)+'%'; }
     $('#psub').innerHTML = c.all===0 ? 'No tasks yet' :
@@ -3776,8 +3776,8 @@
       const f = state.pfilter;
       list.innerHTML = `<div class="pempty">${
         (state.pq2||'').trim() ? 'Nothing matches the filter here.' :
-        f==='open' ? 'Nothing open — all caught up.' :
-        f==='all' ? 'No tasks yet — add the first one below.' :
+        f==='open' ? 'Nothing open - all caught up.' :
+        f==='all' ? 'No tasks yet - add the first one below.' :
         `Nothing ${f==='idea'?'in ideas':f}.`}</div>`;
     }
   }
@@ -4016,7 +4016,7 @@
       }
       strip.appendChild(wrap);
     }
-    /* add tile: click to pick, or drop files anywhere on the strip — FSA-only, needs a local folder */
+    /* add tile: click to pick, or drop files anywhere on the strip - FSA-only, needs a local folder */
     if(state.backend!=='fsa') return;
     const add = document.createElement('button');
     add.className = 'addshot';
@@ -4086,13 +4086,13 @@
     const parsedS = p._about.status ? parseFM(p._about.status) : null;
     const parsedO = p._about.overview ? parseFM(p._about.overview) : null;
     if(sSlot) sSlot.innerHTML = parsedS ? digestHTML('status', parsedS.fm, parsedS.body)
-      : '<span class="d-empty">No status.md yet — it will appear once a Claude session writes one.</span>';
+      : '<span class="d-empty">No status.md yet - it will appear once a Claude session writes one.</span>';
     if(oSlot) oSlot.innerHTML = parsedO ? digestHTML('overview', parsedO.fm, parsedO.body)
       : '<span class="d-empty">No overview.md found.</span>';
     el.querySelectorAll('[data-full]').forEach(b=>b.onclick=()=>{
       const kind = b.dataset.full;
       const parsed = kind==='status' ? parsedS : parsedO;
-      const title = kind==='status' ? `Status — ${p.data.project}` : `Overview — ${p.data.project}`;
+      const title = kind==='status' ? `Status - ${p.data.project}` : `Overview - ${p.data.project}`;
       docPanel({title, summary: parsed.fm.summary,
         path: `${p.section}/Projects/${p.dirName}/${kind}.md${parsed.fm.date?' · '+parsed.fm.date:''}`,
         body: parsed.body});
@@ -4147,7 +4147,7 @@
       let mf = null;
       try{ const t = await readPath(`${p.section}/Projects/${p.dirName}/docs.json`); if(t) mf = JSON.parse(t); }catch{}
       p._docsManifest = mf || {};
-      // keys may use files/ prefix or not — normalize both directions
+      // keys may use files/ prefix or not - normalize both directions
       for(const k of Object.keys(p._docsManifest))
         if(!k.includes('/') ) p._docsManifest['files/'+k] = p._docsManifest[k];
     }
@@ -4157,7 +4157,7 @@
     const tags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,12);
     let q = '', tag = null, sel = -1;
     const {scrim} = modalPanel(`
-      <h2>Docs — ${esc(p.data.project)}</h2>
+      <h2>Docs - ${esc(p.data.project)}</h2>
       <span class="modal-path">${items.length} HTML readouts in ${esc(p.section)}/Projects/${esc(p.dirName)}
         ${state.helperUp?` · <button class="readmore" data-openfolder>Open folder in Explorer →</button>`:''}</span>
       <div class="docsbar">
@@ -4172,7 +4172,7 @@
         <div class="docprev" data-prev>
           <div class="prevempty">Select a doc to preview it here.</div>
         </div>
-      </div>`, 'Docs — '+p.data.project, 'wide');
+      </div>`, 'Docs - '+p.data.project, 'wide');
     const idx = scrim.querySelector('[data-idx]');
     const prev = scrim.querySelector('[data-prev]');
     const visible = ()=> items.filter(d=>
@@ -4260,7 +4260,7 @@
 
     el.innerHTML = `
       <div class="pagehead reveal">
-        <div><h1>Knowledge</h1><div class="sub">${state.kb.length} notes — glossary, processes, decisions</div></div>
+        <div><h1>Knowledge</h1><div class="sub">${state.kb.length} notes - glossary, processes, decisions</div></div>
         <div class="right">
           <input class="filterinput" id="kFilter" type="search" placeholder="Search notes…" value="${esc(state.kq)}">
           <button class="btn ghost" id="newEntryBtn">+ New entry</button>
@@ -4299,7 +4299,7 @@
           </span>
         </button>`).join('');
     }
-    el.innerHTML = html || `<div class="kempty">${state.kb.length? 'Nothing matches — clear the search or tag.' : 'No knowledge entries yet — create the first one.'}</div>`;
+    el.innerHTML = html || `<div class="kempty">${state.kb.length? 'Nothing matches - clear the search or tag.' : 'No knowledge entries yet - create the first one.'}</div>`;
     el.querySelectorAll('.krow').forEach(r=>{
       r.onclick=()=>{ const e = state.kb.find(x=>`${x.section}/${x.sub}/${x.fileName}`===r.dataset.k); if(e) openEntry(e); };
       r.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); r.click(); } };
@@ -4322,7 +4322,7 @@
       <div class="pagehead reveal">
         <div>
           <h1>Skills</h1>
-          <div class="sub">${cat.total} skills — invoke lines, trigger phrases, and what each skill does</div>
+          <div class="sub">${cat.total} skills - invoke lines, trigger phrases, and what each skill does</div>
         </div>
         <div class="right">
           <input class="filterinput" id="sFilter" type="search" placeholder="Search skills…" value="${esc(state.sq)}">
@@ -4356,23 +4356,23 @@
     const storeCards = cards(storeFiltered);
     const anyMatch = featCards.length || customCards.length || storeCards.length;
     if(!all.length){
-      el.innerHTML = '<div class="calm">No skills catalog loaded yet — connect the workbench folder.</div>';
+      el.innerHTML = '<div class="calm">No skills catalog loaded yet - connect the workbench folder.</div>';
       return;
     }
     if(!anyMatch){
-      el.innerHTML = '<div class="gempty">Nothing matches — clear the search.</div>';
+      el.innerHTML = '<div class="gempty">Nothing matches - clear the search.</div>';
       return;
     }
     el.innerHTML = `
       ${featCards.length ? `
         <div class="skillfeatured">
-          <h2>Featured — workbench essentials</h2>
+          <h2>Featured - workbench essentials</h2>
           <div class="skillgrid">${featCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
       ${customCards.length ? `
         <div class="skillgroup">
           <h2>Custom</h2>
-          <p class="cap">Authored in this repo — design, review, intake, and session tools.</p>
+          <p class="cap">Authored in this repo - design, review, intake, and session tools.</p>
           <div class="skillgrid">${customCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
       ${storeCards.length ? `
@@ -4410,7 +4410,7 @@
       <div class="pagehead reveal">
         <div>
           <h1>Instructions</h1>
-          <div class="sub">How to run the workbench day to day — capture, triage, wrap, and sync</div>
+          <div class="sub">How to run the workbench day to day - capture, triage, wrap, and sync</div>
         </div>
         <div class="right">
           <input class="filterinput" id="iFilter" type="search" placeholder="Search guides…" value="${esc(state.iq)}">
@@ -4420,11 +4420,11 @@
         <div class="aboutcard">
           <h3>Quick commands</h3>
           <ul>
-            <li><b>Capture</b> — add tasks, ideas, notes from anywhere</li>
-            <li><b>Triage</b> — run <code>/triage-intake</code> when intake items appear</li>
-            <li><b>Wrap</b> — run <code>/wrap-session</code> at end of session</li>
-            <li><b>⌘K</b> — jump to any project, note, or skill</li>
-            <li><b>Do next</b> — ROI-ranked stack on Overview</li>
+            <li><b>Capture</b> - add tasks, ideas, notes from anywhere</li>
+            <li><b>Triage</b> - run <code>/triage-intake</code> when intake items appear</li>
+            <li><b>Wrap</b> - run <code>/wrap-session</code> at end of session</li>
+            <li><b>⌘K</b> - jump to any project, note, or skill</li>
+            <li><b>Do next</b> - ROI-ranked stack on Overview</li>
           </ul>
         </div>
         <div class="aboutcard">
@@ -4453,7 +4453,7 @@
         `<button type="button" class="docrow" data-gi="${i}">
           <span class="t">${esc(g.title)}</span><span class="arr">↗</span>
         </button>`).join('')}</div>`
-      : `<div class="gempty">${INSTRUCTION_LINKS.length ? 'Nothing matches — clear the search.' : 'No setup guides yet.'}</div>`;
+      : `<div class="gempty">${INSTRUCTION_LINKS.length ? 'Nothing matches - clear the search.' : 'No setup guides yet.'}</div>`;
     el.querySelectorAll('.docrow[data-gi]').forEach(btn=>{
       btn.onclick = ()=> openGuide(INSTRUCTION_LINKS[+btn.dataset.gi].path);
     });
@@ -4481,8 +4481,8 @@
         <div class="aboutcard">
           <h3>Overview</h3>
           <ul>
-            <li>Do next — ROI-ranked action stack</li>
-            <li>Status rail — sessions, machines, credits</li>
+            <li>Do next - ROI-ranked action stack</li>
+            <li>Status rail - sessions, machines, credits</li>
             <li>Momentum + credits charts</li>
             <li>Project focus pins</li>
             <li>Live Claude Code sessions</li>
@@ -4493,7 +4493,7 @@
           <ul>
             <li>tasks.json task boards per project</li>
             <li>status.md + log.md tracking</li>
-            <li>Editorial capture modal — centered card on desktop, bottom sheet on phone</li>
+            <li>Editorial capture modal - centered card on desktop, bottom sheet on phone</li>
             <li>Covers, logos, HTML docs</li>
           </ul>
         </div>
@@ -4662,11 +4662,11 @@
       </div>`:''}
       <div class="f-row"><label>Title</label><input type="text" id="fTitle" value="${esc(d.title)}" placeholder="e.g. Upfront (ad sales)"></div>
       <div class="f-two">
-        <div class="f-row"><label>Tags — comma separated</label><input type="text" id="fTags" value="${esc(d.tags.join(', '))}" placeholder="finance, streaming"></div>
+        <div class="f-row"><label>Tags - comma separated</label><input type="text" id="fTags" value="${esc(d.tags.join(', '))}" placeholder="finance, streaming"></div>
         <div class="f-row"><label>Date</label><input type="date" id="fDate" value="${esc(d.date||today())}"></div>
       </div>
-      <div class="f-row"><label>Summary — one line</label><textarea id="fSummary" rows="2">${esc(d.summary)}</textarea></div>
-      <div class="f-row"><label>Body — markdown</label><textarea id="fBody" class="body">${esc(d.body.trim())}</textarea></div>
+      <div class="f-row"><label>Summary - one line</label><textarea id="fSummary" rows="2">${esc(d.summary)}</textarea></div>
+      <div class="f-row"><label>Body - markdown</label><textarea id="fBody" class="body">${esc(d.body.trim())}</textarea></div>
       <div class="f-btns">
         <button class="btn" id="fSave">Save</button>
         <button class="btn ghost" id="fCancel">Cancel</button>
@@ -4733,7 +4733,7 @@
       <div class="seg cap-type" id="capType">${CAP_TYPES.map(([k,l])=>`<button type="button" class="chip ${k==='task'?'active':''}" data-t="${k}">${l}</button>`).join('')}</div>
       <div id="capDest"></div>
       <div class="f-row"><label id="capTextLbl">Task</label><textarea id="capText" class="cap-input" rows="4" placeholder="What needs to happen?"></textarea></div>
-      <div class="f-row" id="capFilesRow"><label>Attachments — optional</label>
+      <div class="f-row" id="capFilesRow"><label>Attachments - optional</label>
         <input type="file" id="capFiles" multiple>
         <div id="capFileList" style="font-size:12px;color:var(--sec);margin-top:4px"></div>
       </div>
@@ -4751,7 +4751,7 @@
       scrim.querySelectorAll('#capType .chip').forEach(ch=>ch.classList.toggle('active', ch.dataset.t===type));
       filesRow.style.display = type==='note' ? 'none' : '';
       if(type==='task'){
-        textLbl.textContent = 'Task — what needs to happen?'; scrim.querySelector('#capSave').textContent = 'Add task'; scrim.querySelector('#capText').placeholder = 'What needs to happen?';
+        textLbl.textContent = 'Task - what needs to happen?'; scrim.querySelector('#capSave').textContent = 'Add task'; scrim.querySelector('#capText').placeholder = 'What needs to happen?';
         destEl.innerHTML = `<div class="f-two">
           <div class="f-row"><label>Project</label><select id="capProj">${projOptions()}</select></div>
           <div class="f-row"><label>Group</label><select id="capGroup"></select></div></div>`;
@@ -4763,21 +4763,21 @@
         };
         projSel.onchange = fillGroups; fillGroups();
       }else if(type==='idea'){
-        textLbl.textContent = 'Idea — what might be worth doing later?'; scrim.querySelector('#capSave').textContent = 'Save idea'; scrim.querySelector('#capText').placeholder = 'What might be worth doing later?';
+        textLbl.textContent = 'Idea - what might be worth doing later?'; scrim.querySelector('#capSave').textContent = 'Save idea'; scrim.querySelector('#capText').placeholder = 'What might be worth doing later?';
         destEl.innerHTML = `<div class="f-row"><label>Project</label><select id="capProj">${projOptions()}</select></div>`;
       }else if(type==='project'){
-        textLbl.textContent = 'Project — what is this for?'; scrim.querySelector('#capSave').textContent = 'Seed project'; scrim.querySelector('#capText').placeholder = 'What is this project for?';
+        textLbl.textContent = 'Project - what is this for?'; scrim.querySelector('#capSave').textContent = 'Seed project'; scrim.querySelector('#capText').placeholder = 'What is this project for?';
         destEl.innerHTML = `<div class="f-two">
           <div class="f-row"><label>Area</label><select id="capSection"><option>Personal</option><option>Work</option></select></div>
           <div class="f-row"><label>Project name</label><input type="text" id="capName" placeholder="e.g. Garage Sensor"></div></div>`;
       }else if(type==='kb'){
-        textLbl.textContent = 'KB note — what should future-you know?'; scrim.querySelector('#capSave').textContent = 'Create KB note'; scrim.querySelector('#capText').placeholder = 'What should future-you know?';
+        textLbl.textContent = 'KB note - what should future-you know?'; scrim.querySelector('#capSave').textContent = 'Create KB note'; scrim.querySelector('#capText').placeholder = 'What should future-you know?';
         destEl.innerHTML = `<div class="f-two">
           <div class="f-row"><label>Area</label><select id="capSection"><option>Work</option><option>Personal</option></select></div>
           <div class="f-row"><label>Type</label><select id="capSub"><option>Glossary</option><option>Processes</option><option>Decisions</option></select></div></div>
           <div class="f-row"><label>Title</label><input type="text" id="capTitle" placeholder="e.g. Upfront (ad sales)"></div>`;
       }else{
-        textLbl.textContent = 'Loose note — lands in notes-inbox.md for triage'; scrim.querySelector('#capSave').textContent = 'Add to inbox'; scrim.querySelector('#capText').placeholder = 'Drop the raw note here…';
+        textLbl.textContent = 'Loose note - lands in notes-inbox.md for triage'; scrim.querySelector('#capSave').textContent = 'Add to inbox'; scrim.querySelector('#capText').placeholder = 'Drop the raw note here…';
         destEl.innerHTML = '';
       }
     }
@@ -4857,11 +4857,11 @@ summary: ${(text||'').split('\n')[0].slice(0,160)}
 
 ${text||''}
 
-*(Seeded from a quick capture — flesh out at the first working session.)*
+*(Seeded from a quick capture - flesh out at the first working session.)*
 `);
       await writePath(`${base}/status.md`,
 `---
-title: ${name} — Status
+title: ${name} - Status
 tags: []
 date: ${today()}
 summary: Seeded from dashboard capture; first session should rewrite this.
@@ -4959,7 +4959,7 @@ Append-only. One line per finished task, newest at the bottom.
       if(has(g.title))
         items.push({group:'Instructions', label:g.title, sub:'Setup guide', meta:'↗', run:()=>openGuide(g.path)});
     const acts = [
-      ['Capture — task, idea, project, note…', ()=>openCapture()],
+      ['Capture - task, idea, project, note…', ()=>openCapture()],
       ['Triage captures', ()=>openIntakeFlow()],
       ['Copy wrap-session prompt', ()=>openWrapSession()],
       ['Go to Overview', ()=>go('overview')],
@@ -5060,7 +5060,7 @@ Append-only. One line per finished task, newest at the bottom.
     }
     el.innerHTML = `git ${relTime(commitT)}${dirty? ` · <span class="unsynced">${dirty} unsynced</span>`:''}`;
     el.title = 'Last commit or pull on this machine'
-      + (dirty? ` — ${dirty} tracked file${dirty===1?'':'s'} modified since` : ' — everything committed');
+      + (dirty? ` - ${dirty} tracked file${dirty===1?'':'s'} modified since` : ' - everything committed');
   }
   async function pingHelper(){
     if(state.backend!=='fsa') return false;
@@ -5108,7 +5108,7 @@ Append-only. One line per finished task, newest at the bottom.
       const j = await r.json();
       toast(j.message || (j.ok ? (endpoint==='/pull'?'Pulled latest changes':'Committed and pushed changes') : failMsg));
       if(state.root) await scan();   // a pull may have brought changes; re-render
-    }catch(e){ toast(failMsg+' — is the helper running?'); }
+    }catch(e){ toast(failMsg+' - is the helper running?'); }
     btn.classList.remove('working');
     row.querySelectorAll('.btn').forEach(b=>b.disabled = false);
   }
@@ -5121,7 +5121,7 @@ Append-only. One line per finished task, newest at the bottom.
     const t=$('#toast'); t.textContent=msg; t.classList.add('show'); toastShownAt = Date.now();
     clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),1900);
   }
-  /* iOS suspends (and can drop) timers when a home-screen app backgrounds —
+  /* iOS suspends (and can drop) timers when a home-screen app backgrounds -
      if the hide timer died while suspended, clear the toast on return */
   document.addEventListener('visibilitychange', ()=>{
     if(document.visibilityState==='visible' && Date.now()-toastShownAt>2200)
@@ -5147,12 +5147,12 @@ Append-only. One line per finished task, newest at the bottom.
       $('#connectBtn').onclick = ()=>connect(false);
       /* If Chrome persisted the permission ("Allow on every visit"), connect
          with zero clicks. Otherwise the browser requires one user gesture to
-         re-grant access — accept the first click anywhere as that gesture. */
+         re-grant access - accept the first click anywhere as that gesture. */
       let q = 'prompt';
       try{ q = await h.queryPermission({mode:'readwrite'}); }catch{}
       if(q==='granted'){ await scan(); return; }
       $('#landingNote').textContent =
-        'Chrome needs one click to re-grant file access — click anywhere. '
+        'Chrome needs one click to re-grant file access - click anywhere. '
         + 'If the permission prompt offers “Allow on every visit”, choose it and this step disappears.';
       const once = ()=>{
         document.removeEventListener('click', once, true);
@@ -5161,7 +5161,7 @@ Append-only. One line per finished task, newest at the bottom.
       document.addEventListener('click', once, true);
     }).catch(()=>{});
   }
-  /* GitHub backend auto-reconnect — takes priority when both are configured
+  /* GitHub backend auto-reconnect - takes priority when both are configured
      only in the sense that whichever finishes scanning first wins; in practice
      a given browser profile only ever has one of the two set up. */
   ghLoadConfig().then(ghCfg=>{
