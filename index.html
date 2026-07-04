@@ -21,7 +21,9 @@
     --accent:#DC2626; --accent-soft:#FEF2F2;
     --up:#16A34A; --up-soft:#F0FDF4; --idle:#CA8A04;
     --radius:10px; --radius-lg:14px;
-    --shadow-sm:none; --shadow:none;
+    --shadow-sm:0 1px 2px rgba(24,24,27,.06);
+    --shadow:0 2px 8px rgba(24,24,27,.08), 0 12px 32px rgba(24,24,27,.10);
+    --shadow-lift:0 8px 24px rgba(24,24,27,.12), 0 20px 48px rgba(24,24,27,.08);
     --font:'Instrument Sans','Segoe UI',system-ui,sans-serif;
     --ease:cubic-bezier(.16,1,.3,1);
     --side-w:228px;
@@ -34,6 +36,9 @@
       --link:#3B82F6; --link-soft:#172554;
       --accent:#F87171; --accent-soft:#450A0A;
       --up:#4ADE80; --up-soft:#052E16; --idle:#FACC15;
+      --shadow-sm:0 1px 2px rgba(0,0,0,.35);
+      --shadow:0 2px 8px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+      --shadow-lift:0 8px 24px rgba(0,0,0,.45), 0 20px 48px rgba(0,0,0,.35);
     }
   }
   *{box-sizing:border-box}
@@ -97,10 +102,10 @@
   .navlink{
     display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
     font-size:13px;color:var(--sec);border:none;background:none;text-align:left;
-    padding:7px 10px;border-radius:var(--radius);transition:background .12s ease, color .12s;
+    padding:7px 10px;border-radius:var(--radius);transition:background .12s ease, color .12s, transform .15s var(--ease);
   }
-  .navlink:hover{color:var(--ink);background:var(--panel)}
-  .navlink.active{color:var(--ink);background:var(--panel);font-weight:600}
+  .navlink:hover{color:var(--ink);background:var(--panel);transform:translateX(2px)}
+  .navlink.active{color:var(--ink);background:var(--panel);font-weight:600;box-shadow:inset 2px 0 0 var(--ink)}
   .navlink .n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
   .side-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--hair);font-size:11px;color:var(--sec);display:flex;flex-direction:column;gap:6px}
   .side-foot .unsynced{color:var(--accent)}
@@ -119,8 +124,8 @@
     font-size:12.5px;font-weight:500;background:var(--ink);color:var(--surface);border:none;
     border-radius:var(--radius);padding:8px 14px;transition:opacity .15s, transform .12s;
   }
-  .btn:hover{opacity:.92}
-  .btn:active{transform:scale(.98)}
+  .btn:hover{opacity:1;transform:translateY(-1px);box-shadow:0 4px 14px rgba(24,24,27,.14)}
+  .btn:active{transform:scale(.98) translateY(0);box-shadow:none}
   .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair)}
   .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--muted)}
   .searchpill{
@@ -128,7 +133,8 @@
     background:var(--panel);border:1px solid transparent;border-radius:var(--radius);padding:7px 12px;
     transition:background .15s, color .15s, border-color .15s;
   }
-  .searchpill:hover{background:var(--hair2);color:var(--ink);border-color:var(--hair)}
+  .searchpill:hover{background:var(--hair2);color:var(--ink);border-color:var(--muted);transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+  .searchpill:active{transform:scale(.98)}
   .searchpill kbd{font-family:inherit;font-size:10px;border:1px solid var(--hair);border-radius:4px;padding:1px 5px;color:var(--muted);background:var(--surface)}
 
   .main{padding:24px 28px 72px;max-width:1040px;width:100%;min-width:0;flex:1}
@@ -145,9 +151,11 @@
   .stat{
     flex:1;min-width:100px;padding:12px 14px;border-radius:var(--radius-lg);
     border:1px solid var(--hair);background:var(--surface);cursor:pointer;
-    transition:background .12s, border-color .12s;
+    transition:transform .22s var(--ease), box-shadow .22s var(--ease), background .12s, border-color .12s;
+    box-shadow:var(--shadow-sm);transform-style:preserve-3d;
   }
-  .stat:hover{background:var(--panel);border-color:var(--muted)}
+  .stat:hover{background:var(--panel);border-color:var(--muted);transform:translateY(-3px) rotate(var(--tr,.4deg)) scale(1.02);box-shadow:var(--shadow)}
+  .stat:active{transform:translateY(-1px) scale(.99)}
   .stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1}
   .stat .l{font-size:11px;color:var(--sec);margin-top:4px}
   .stat .s{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -165,7 +173,8 @@
   /* ============ charts / panels ============ */
   .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0}
   .charts.open{margin:0}
-  .panel{border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);padding:16px 18px}
+  .panel{border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);padding:16px 18px;box-shadow:var(--shadow-sm);transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .15s}
+  .bento .panel:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:color-mix(in srgb, var(--muted) 50%, var(--hair))}
   .panel h3{font-size:13px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
   .panel .cap{font-size:12px;color:var(--sec);margin:0 0 14px}
   .panel .cap b{color:var(--ink)}
@@ -210,17 +219,19 @@
   .calm{font-size:13.5px;color:var(--sec);font-style:italic;padding:6px 2px}
 
   /* ============ project gallery ============ */
-  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:16px}
   .tile{
     border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden;
     text-align:left;padding:0;display:flex;flex-direction:column;font-family:var(--font);color:var(--ink);
-    transition:border-color .15s, background .15s;
+    transition:transform .28s var(--ease), box-shadow .28s var(--ease), border-color .15s;
+    box-shadow:var(--shadow-sm);transform-style:preserve-3d;will-change:transform;
   }
-  .tile:hover{border-color:var(--muted);background:var(--panel)}
-  .tile:active{transform:scale(.995)}
+  .tile:hover{transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-5px) rotate(var(--tr,.8deg)) scale(1.014);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb, var(--muted) 40%, var(--hair))}
+  .tile:active{transform:perspective(900px) translateY(-2px) rotate(0deg) scale(.992);box-shadow:var(--shadow-sm)}
   .tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .tile .art{aspect-ratio:16/10;background:var(--panel);position:relative;overflow:hidden}
-  .tile .art img{width:100%;height:100%;object-fit:cover;display:block}
+  .tile .art img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .45s var(--ease)}
+  .tile:hover .art img{transform:scale(1.04)}
   .tile .art .ph{
     position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font-size:34px;font-weight:600;letter-spacing:.02em;color:#fff;
@@ -708,24 +719,29 @@
   /* ============ focus / do-next (overview) ============ */
   .focuscard{
     border:1px solid var(--hair);border-radius:var(--radius-lg);padding:16px 18px;
-    margin:0 0 20px;background:var(--surface);
+    margin:0 0 20px;background:var(--surface);box-shadow:var(--shadow-sm);
+    transition:box-shadow .25s var(--ease), border-color .15s;
   }
+  .focuscard:hover{box-shadow:var(--shadow);border-color:color-mix(in srgb, var(--muted) 35%, var(--hair))}
   .focushead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
   .focushead h2{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
   .focuschips{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;max-width:100%}
   .focuschip{
     font-size:11.5px;padding:3px 10px;border-radius:var(--radius);border:1px solid var(--hair);
     background:var(--panel);cursor:pointer;color:var(--ink);font-weight:500;
+    transition:transform .15s var(--ease), background .12s, border-color .12s, box-shadow .15s;
   }
-  .focuschip.on{border-color:var(--muted);background:var(--surface)}
+  .focuschip:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);border-color:var(--muted)}
+  .focuschip.on{border-color:var(--muted);background:var(--surface);box-shadow:var(--shadow-sm)}
   .actionstack{display:flex;flex-direction:column;gap:2px}
   .actionrow{
     display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:var(--radius);
     border:1px solid transparent;background:transparent;
-    cursor:pointer;transition:background .12s;
+    cursor:pointer;transition:background .14s, transform .18s var(--ease), box-shadow .18s, border-color .14s;
   }
-  .actionrow:hover{background:var(--panel)}
-  .actionrow.hero{background:var(--panel);border-color:var(--hair)}
+  .actionrow:hover{background:var(--panel);transform:translateX(3px);box-shadow:var(--shadow-sm);border-color:var(--hair2)}
+  .actionrow.hero{background:var(--panel);border-color:var(--hair);box-shadow:var(--shadow-sm)}
+  .actionrow.hero:hover{transform:translateX(4px) translateY(-1px);box-shadow:var(--shadow)}
   .actionrow .rank{display:none}
   .actionrow .abody{flex:1;min-width:0}
   .actionrow .atext{
@@ -777,16 +793,48 @@
   .skillgroup{margin:0 0 28px}
   .skillgroup h2{font-size:16px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
   .skillgroup .cap{font-size:13px;color:var(--sec);margin:0 0 12px}
-  .skillgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .skillgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
   .skillcard{
-    text-align:left;padding:12px 14px;border:1px solid var(--hair);border-radius:12px;
-    background:var(--surface);cursor:pointer;transition:transform .15s var(--ease), box-shadow .15s;
+    text-align:left;padding:0;border:1px solid var(--hair);border-radius:var(--radius-lg);
+    background:var(--surface);cursor:pointer;overflow:hidden;
+    transition:transform .26s var(--ease), box-shadow .26s var(--ease), border-color .15s;
+    box-shadow:var(--shadow-sm);transform-style:preserve-3d;
   }
-  .skillcard:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
-  .skillcard .name{font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
-  .skillcard .desc{font-size:12px;color:var(--sec);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
-  .skillcard .src{font-size:11px;color:var(--sec);margin-top:8px}
-  .skillcard.custom{border-color:color-mix(in srgb, var(--ink) 14%, transparent)}
+  .skillcard:hover{transform:perspective(800px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-4px) rotate(var(--tr,.5deg)) scale(1.012);box-shadow:var(--shadow-lift);border-color:color-mix(in srgb, var(--muted) 40%, var(--hair))}
+  .skillcard:active{transform:translateY(-1px) scale(.99)}
+  .skillcard .skillart{aspect-ratio:16/9;background:linear-gradient(135deg, var(--panel), color-mix(in srgb, var(--link) 8%, var(--panel)));display:flex;align-items:center;justify-content:center;font-size:36px;border-bottom:1px solid var(--hair2);position:relative;overflow:hidden}
+  .skillcard .skillart img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s var(--ease)}
+  .skillcard:hover .skillart img{transform:scale(1.05)}
+  .skillcard .skillbody{padding:12px 14px 14px}
+  .skillcard .name{font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+  .skillcard .name .feat{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--link);background:var(--link-soft);padding:2px 6px;border-radius:4px}
+  .skillcard .desc{font-size:12px;color:var(--sec);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+  .skillcard .actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+  .skillcard .actchip{font-size:10px;padding:2px 7px;border-radius:999px;background:var(--panel);color:var(--sec);border:1px solid var(--hair2)}
+  .skillcard .src{font-size:11px;color:var(--muted);margin-top:8px}
+  .skillcard .cat{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:2px}
+  .skillcard.custom{border-color:color-mix(in srgb, var(--ink) 12%, transparent)}
+  .skillcard.custom .skillart{background:linear-gradient(135deg, color-mix(in srgb, var(--ink) 6%, var(--panel)), var(--panel))}
+  .skillfeatured{margin:0 0 28px}
+  .skillfeatured h2{font-size:17px;font-weight:600;margin:0 0 10px;letter-spacing:-.015em}
+  .skillwiki-invoke{
+    margin:16px 0;padding:14px 16px;border-radius:var(--radius-lg);background:var(--panel);
+    border:1px solid var(--hair);font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:13px;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  }
+  .skillwiki-invoke code{flex:1;min-width:0;word-break:break-all;color:var(--ink)}
+  .skillwiki-invoke .copybtn{flex:none;font-size:12px;padding:5px 12px}
+  .skillwiki-actions{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0}
+  .skillwiki-actions .chipx{font-size:12px;padding:4px 10px}
+  .skillwiki-steps{margin:16px 0 0;padding:0 0 0 18px;color:var(--sec);font-size:13px;line-height:1.55}
+  .skillwiki-steps li{margin:6px 0}
+  .skillwiki-links{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+  .skillwiki-links a{font-size:13px;color:var(--link);text-decoration:none;padding:6px 12px;border:1px solid var(--hair);border-radius:999px;background:var(--surface);transition:transform .15s, box-shadow .15s}
+  .skillwiki-links a:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+  .skillwiki-hero{display:flex;align-items:flex-start;gap:14px;margin-bottom:4px}
+  .skillwiki-hero .icon{font-size:40px;line-height:1;flex:none}
+  .skillwiki-hero h2{margin:0;font-size:22px;font-weight:600;letter-spacing:-.02em}
+  .skillwiki-hero .meta{font-size:12px;color:var(--sec);margin-top:4px}
   .doclist{display:flex;flex-direction:column;gap:0;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--surface)}
   .docrow{
     display:flex;align-items:center;gap:12px;padding:12px 16px;border:none;background:none;
@@ -798,7 +846,8 @@
   .docrow .arr{color:var(--sec);opacity:.4;font-size:13px}
   .docrow:hover .arr{opacity:1}
   .aboutgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0 0}
-  .aboutcard{border:1px solid var(--hair);border-radius:12px;padding:16px 18px;background:var(--surface)}
+  .aboutcard{border:1px solid var(--hair);border-radius:12px;padding:16px 18px;background:var(--surface);box-shadow:var(--shadow-sm);transition:transform .22s var(--ease), box-shadow .22s}
+  .aboutcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .aboutcard h3{font-size:14px;font-weight:600;margin:0 0 8px}
   .aboutcard ul{margin:0;padding:0 0 0 18px;font-size:13px;color:var(--sec);line-height:1.55}
   .aboutcard li{margin:4px 0}
@@ -995,14 +1044,14 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.17';
+  const WB_VERSION = '2026-07-03.18';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
   const state = {
     root:null, projects:[], kb:[], sessions:[], machines:[], machineAliases:{},
     usage:null, cursorUsage:null,
-    agentConfig:null, skillsLock:null, skillCatalog:null, mobileVersion:null,
+    agentConfig:null, skillsLock:null, skillsWiki:null, skillCatalog:null, mobileVersion:null,
     backend:'fsa',
     areaFilter: localStorage.getItem('wb-area-filter') || 'All',
     view:'overview',          // overview | projects | knowledge | project
@@ -1076,6 +1125,7 @@
     state.machineAliases = await loadMachineAliases();
     state.agentConfig = await loadJsonPath('tools/agent-config.json');
     state.skillsLock = await loadJsonPath('skills-lock.json');
+    state.skillsWiki = await loadJsonPath('tools/skills-wiki.json');
     state.skillCatalog = await buildSkillCatalog();
     for(const p of state.projects) await enrichProjectStatus(p);
     if(state.backend==='fsa') await pingHelper();
@@ -2381,19 +2431,71 @@
   }
   function parseSkillFrontmatter(text){
     const m = String(text||'').match(/^---\n([\s\S]*?)\n---/);
-    if(!m) return {name:'', description:''};
+    if(!m) return {name:'', description:'', argumentHint:'', disableInvocation:false};
     const yaml = m[1];
-    const name = (yaml.match(/^name:\s*(.+)$/m)||[])[1]?.trim().replace(/^["']|["']$/g,'') || '';
-    let desc = (yaml.match(/^description:\s*(.+)$/m)||[])[1]?.trim() || '';
-    if((desc.startsWith('"')&&desc.endsWith('"'))||(desc.startsWith("'")&&desc.endsWith("'"))) desc = desc.slice(1,-1);
-    return {name, description: desc};
+    const pick = (key)=>{
+      const line = yaml.match(new RegExp(`^${key}:\\s*(.+)$`,'m'));
+      if(!line) return '';
+      let v = line[1].trim();
+      if((v.startsWith('"')&&v.endsWith('"'))||(v.startsWith("'")&&v.endsWith("'"))) v = v.slice(1,-1);
+      return v;
+    };
+    const descBlock = yaml.match(/^description:\s*\|\s*\n([\s\S]*?)(?=^[a-zA-Z-]+:|\s*$)/m);
+    let desc = pick('description');
+    if(descBlock) desc = descBlock[1].split('\n').map(l=>l.replace(/^\s+/,'')).join(' ').trim();
+    return {
+      name: pick('name'),
+      description: desc,
+      argumentHint: pick('argument-hint'),
+      disableInvocation: /^true$/i.test(pick('disable-model-invocation')),
+      version: pick('version'),
+      license: pick('license'),
+    };
+  }
+  function parseSkillActions(desc){
+    const m = String(desc||'').match(/Actions:\s*([^.]+(?:\.|$))/i);
+    if(!m) return [];
+    return m[1].replace(/\.$/,'').split(',').map(s=>s.trim()).filter(Boolean).slice(0,8);
+  }
+  function parseSkillSteps(body){
+    const steps = [];
+    for(const line of String(body||'').split('\n')){
+      const h = line.match(/^##\s+\d+\.\s+(.+)$/);
+      if(h) steps.push(h[1].trim());
+      if(steps.length >= 8) break;
+    }
+    return steps;
+  }
+  function mergeSkillWiki(skill){
+    const wiki = state.skillsWiki?.skills?.[skill.slug] || {};
+    const srcKey = skill.source || wiki.source;
+    const srcMeta = srcKey ? state.skillsWiki?.sources?.[srcKey] : null;
+    const actions = wiki.actions?.length ? wiki.actions : parseSkillActions(skill.description);
+    return {...skill,
+      icon: wiki.icon || (skill.kind==='custom' ? '⚡' : '📦'),
+      featured: !!wiki.featured,
+      category: wiki.category || (skill.kind==='custom' ? 'Custom' : 'Store'),
+      invoke: wiki.invoke || `/${skill.slug}`,
+      invokeHint: skill.argumentHint || wiki.invokeHint || '',
+      actions,
+      when: wiki.when || skill.description || '',
+      site: wiki.site || null,
+      license: skill.license || wiki.license || null,
+      sourceLabel: srcMeta?.label || skill.source || '',
+      sourceUrl: srcMeta?.url || (skill.source ? `https://github.com/${skill.source}` : null),
+      sourceBlurb: srcMeta?.blurb || '',
+      steps: skill.steps || parseSkillSteps(skill.body),
+    };
   }
   async function readSkillMeta(slug, path){
     try{
       const text = await readPath(path || `.claude/skills/${slug}/SKILL.md`);
       if(!text) return {slug, name:slug, description:'', path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom'};
       const fm = parseSkillFrontmatter(text);
-      return {slug, name: fm.name||slug, description: fm.description, path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom', body: text};
+      const steps = parseSkillSteps(text);
+      return {slug, name: fm.name||slug, description: fm.description, argumentHint: fm.argumentHint,
+        disableInvocation: fm.disableInvocation, version: fm.version, license: fm.license,
+        path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom', body: text, steps};
     }catch{ return {slug, name:slug, description:'', path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom'}; }
   }
   async function buildSkillCatalog(){
@@ -2449,16 +2551,62 @@
     }
     custom.sort((a,b)=> a.name.localeCompare(b.name));
     store.sort((a,b)=> a.name.localeCompare(b.name));
-    return {custom, store, total: custom.length + store.length};
+    const enrichedCustom = custom.map(mergeSkillWiki);
+    const enrichedStore = store.map(mergeSkillWiki);
+    enrichedCustom.sort((a,b)=> (b.featured-a.featured) || a.name.localeCompare(b.name));
+    return {custom: enrichedCustom, store: enrichedStore, total: enrichedCustom.length + enrichedStore.length};
+  }
+  function skillCardHTML(s, i){
+    const tr = (((i%2)?1:-1) * (0.5 + (i*37)%8/10)).toFixed(2);
+    const acts = (s.actions||[]).slice(0,3);
+    return `<button type="button" class="skillcard ${s.kind==='custom'?'custom':''} reveal" data-si="${i}" style="--tr:${tr}deg" data-tilt>
+      <div class="skillart">${s.icon||'⚡'}</div>
+      <div class="skillbody">
+        <div class="cat">${esc(s.category||'')}</div>
+        <div class="name">${esc(s.name)}${s.featured?' <span class="feat">Featured</span>':''}</div>
+        <p class="desc">${esc(s.when||s.description||'No description yet.')}</p>
+        ${acts.length?`<div class="actions">${acts.map(a=>`<span class="actchip">${esc(a)}</span>`).join('')}</div>`:''}
+        <div class="src">${s.kind==='custom'?'In repo · .claude/skills':esc(s.sourceLabel||s.source||'Store skill')}</div>
+      </div>
+    </button>`;
   }
   function openSkillDetail(skill){
+    const invokeLine = skill.invokeHint ? `${skill.invoke} ${skill.invokeHint}` : skill.invoke;
     const {scrim, close} = panel(`
-      <h2>${esc(skill.name)}</h2>
-      <span class="d-path">${skill.kind==='custom'?'Custom skill in this repo':`Store · ${esc(skill.source||'external')}`}</span>
-      <p style="font-size:14px;line-height:1.55;color:var(--sec);margin:12px 0 0">${esc(skill.description||'No description.')}</p>
-      ${skill.path?`<p style="font-size:12px;color:var(--sec);margin:12px 0 0"><code style="font-size:11px">${esc(skill.path)}</code></p>`:''}
-      <div style="margin-top:16px"><button class="btn ghost" id="closeSkill">Close</button></div>`, skill.name);
+      <div class="skillwiki-hero">
+        <span class="icon">${skill.icon||'⚡'}</span>
+        <div>
+          <h2>${esc(skill.name)}</h2>
+          <div class="meta">${esc(skill.category||'')} · ${skill.kind==='custom'?'Custom skill in this repo':`Store · ${esc(skill.sourceLabel||skill.source||'external')}`}${skill.version?` · v${esc(skill.version)}`:''}${skill.license?` · ${esc(skill.license)}`:''}</div>
+        </div>
+      </div>
+      <p style="font-size:14px;line-height:1.55;color:var(--sec);margin:12px 0 0">${esc(skill.when||skill.description||'')}</p>
+      <div class="skillwiki-invoke">
+        <code id="skillInvokeLine">${esc(invokeLine)}</code>
+        <button type="button" class="btn ghost copybtn" id="copySkillInvoke">Copy</button>
+      </div>
+      ${skill.actions?.length ? `
+        <div style="margin-top:14px;font-size:12px;font-weight:600;color:var(--sec)">Trigger phrases & actions</div>
+        <div class="skillwiki-actions">${skill.actions.map(a=>`<span class="chipx">${esc(a)}</span>`).join('')}</div>` : ''}
+      ${skill.steps?.length ? `
+        <div style="margin-top:16px;font-size:12px;font-weight:600;color:var(--sec)">What it does</div>
+        <ol class="skillwiki-steps">${skill.steps.map(st=>`<li>${esc(st)}</li>`).join('')}</ol>` : ''}
+      ${skill.path?`<p style="font-size:12px;color:var(--muted);margin:14px 0 0">Skill file: <code style="font-size:11px">${esc(skill.path)}</code></p>`:''}
+      <div class="skillwiki-links">
+        ${skill.sourceUrl?`<a href="${esc(skill.sourceUrl)}" target="_blank" rel="noopener">View on GitHub ↗</a>`:''}
+        ${skill.site?`<a href="${esc(skill.site)}" target="_blank" rel="noopener">Documentation ↗</a>`:''}
+      </div>
+      ${skill.sourceBlurb?`<p style="font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.45">${esc(skill.sourceBlurb)}</p>`:''}
+      <div style="margin-top:18px;display:flex;gap:8px">
+        <button class="btn ghost" id="closeSkill">Close</button>
+      </div>`, skill.name);
     scrim.querySelector('#closeSkill').onclick = close;
+    scrim.querySelector('#copySkillInvoke').onclick = async ()=>{
+      try{
+        await navigator.clipboard.writeText(invokeLine);
+        toast('Invoke line copied');
+      }catch{ toast('Could not copy'); }
+    };
   }
   async function fetchMobileVersion(){
     try{
