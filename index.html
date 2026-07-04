@@ -794,7 +794,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.10';
+  const WB_VERSION = '2026-07-03.11';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -823,11 +823,15 @@
 
   /* ================= persistence ================= */
   const idb = {
-    open: () => new Promise((res,rej)=>{ const r=indexedDB.open('workbench-dash',1);
-      r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+    open: () => new Promise((res,rej)=>{ const r=indexedDB.open('workbench-dash',2);
+      r.onupgradeneeded=()=>{
+        const db = r.result;
+        if(!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+      };
       r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }),
     set: async (k,v)=>{ const db=await idb.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); },
-    get: async (k)=>{ const db=await idb.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv'); const q=t.objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+    get: async (k)=>{ const db=await idb.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv'); const q=t.objectStore('kv').get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); },
+    del: async k=>{ const db=await idb.open(); return new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').delete(k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }
   };
 
   /* ================= connect & scan ================= */
@@ -1097,12 +1101,18 @@
 
   /* ================= GitHub API backend (mobile / PAT) ================= */
   const GH_CONFIG_KEY = 'workbench-gh-config';
+  const GH_TOKEN_KEY = 'workbench-gh-token';
   const GH_TREE_KEY = 'workbench-gh-tree-cache';
   const GH_TREE_TTL = 10*60*1000;
   const ghShaCache = new Map();
   function ghConfig(){ try{ return JSON.parse(localStorage.getItem(GH_CONFIG_KEY)||'null'); }catch{ return null; } }
-  function ghSaveConfig(cfg){ localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(cfg)); }
-  function ghDisconnect(){ localStorage.removeItem(GH_CONFIG_KEY); localStorage.removeItem(GH_TREE_KEY); ghShaCache.clear(); }
+  function ghSaveConfig(cfg){
+    const {pat, ...safeCfg} = cfg;
+    localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(safeCfg));
+    if(pat) localStorage.setItem(GH_TOKEN_KEY, pat);
+  }
+  function ghToken(){ return localStorage.getItem(GH_TOKEN_KEY) || ghConfig()?.pat || ''; }
+  function ghDisconnect(){ localStorage.removeItem(GH_CONFIG_KEY); localStorage.removeItem(GH_TOKEN_KEY); localStorage.removeItem(GH_TREE_KEY); idb.del('gh-config').catch(()=>{}); ghShaCache.clear(); }
   function b64FromBytes(bytes){
     let bin = '';
     for(let i=0;i<bytes.length;i+=0x8000) bin += String.fromCharCode(...bytes.subarray(i, i+0x8000));
