@@ -788,6 +788,7 @@
   .creditlane .lanefill{height:100%;background:var(--link);border-radius:99px;transition:width .3s var(--ease)}
   .creditlane .lanefill.hot{background:var(--accent)}
   .creditlane .lanefoot{margin-top:var(--space-2);font-size:11px;color:var(--sec);line-height:1.35}
+  .creditlane .lanefoot.stale{color:var(--accent);font-weight:500}
   .creditlane.err .lanefig{color:var(--accent);font-size:12px}
   .creditsgrid.compact .creditlane{padding:var(--space-3) var(--space-4)}
   .statusblock .machinesstrip{margin:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px}
@@ -870,6 +871,7 @@
   .credbar-row .track i.cursor{background:#0066CC}
   .credbar-row .track i.hot{background:var(--accent)}
   .credbar-row .sub{font-size:11px;color:var(--sec);grid-column:2/4;margin-top:-6px}
+  .credbar-row .sub.stale{color:var(--accent);font-weight:500}
   .credbar-row .pct{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
   .tiptext{font-size:14px;line-height:1.5;color:var(--ink);font-weight:500;letter-spacing:-.01em}
   .tipsub{font-size:12px;color:var(--sec);margin-top:6px;line-height:1.45}
@@ -955,10 +957,16 @@
   .docrow:hover .arr{opacity:1}
   .aboutgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0 0}
   .aboutcard{border:1px solid var(--hair);border-radius:12px;padding:16px 18px;background:var(--surface);box-shadow:var(--shadow-sm);transition:transform .22s var(--ease), box-shadow .22s}
+  .aboutcard.wide{grid-column:1/-1}
   .aboutcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .aboutcard h3{font-size:14px;font-weight:600;margin:0 0 8px}
   .aboutcard ul{margin:0;padding:0 0 0 18px;font-size:13px;color:var(--sec);line-height:1.55}
   .aboutcard li{margin:4px 0}
+  .usage-insights p{font-size:13px;color:var(--sec);line-height:1.55;margin:0 0 12px}
+  .insightgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+  .insightbox{border:1px solid var(--hair2);border-radius:10px;background:var(--panel);padding:12px 14px}
+  .insightbox h4{font-size:12px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  .insightbox ul{font-size:12.5px;line-height:1.45}
   .verpill{display:inline-block;font-size:11px;padding:3px 8px;border-radius:6px;background:var(--panel);color:var(--sec);font-variant-numeric:tabular-nums;margin-left:8px;vertical-align:2px}
   .verpill.ok{color:var(--up);background:color-mix(in srgb, var(--up) 10%, var(--bg))}
   .verpill.warn{color:var(--accent);background:var(--accent-soft)}
@@ -1150,7 +1158,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.28';
+  const WB_VERSION = '2026-07-03.29';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -2175,7 +2183,7 @@
     return `<div class="creditlane">
       <div class="lanehead"><span class="tag">${label}</span><span class="lanefig">$${u.spend.toFixed(0)} / $${u.limit.toFixed(0)} · ${pct}%</span></div>
       <div class="lanetrack"><div class="lanefill ${hot?'hot':''}" style="width:${pct}%"></div></div>
-      ${age?`<div class="lanefoot">${esc(age.label)}</div>`:''}
+      ${age?`<div class="lanefoot ${age.stale?'stale':''}">${esc(age.label)}</div>`:''}
     </div>`;
   }
   function renderCredits(){ renderStatusRail(); }
@@ -2448,8 +2456,52 @@
       const pct = creditPct(u);
       const hot = pct>=90;
       const fig = u.spend!=null && u.limit ? `$${u.spend.toFixed(0)} / $${u.limit.toFixed(0)}` : '';
-      return `<div class="credbar-row"><span class="lbl">${lbl}</span><span class="track"><i class="${cls}${hot?' hot':''}" data-w="${pct}"></i></span><span class="pct">${pct}%</span>${fig?`<span class="sub">${fig}</span>`:''}</div>`;
+      const age = usageAge(u);
+      const meta = [fig, age?.label].filter(Boolean).join(' · ');
+      return `<div class="credbar-row"><span class="lbl">${lbl}</span><span class="track"><i class="${cls}${hot?' hot':''}" data-w="${pct}"></i></span><span class="pct">${pct}%</span>${meta?`<span class="sub ${age?.stale?'stale':''}">${esc(meta)}</span>`:''}</div>`;
     }).join('')}</div>`;
+  }
+  function usageInsightsHTML(){
+    const feeds = [
+      ['Claude credits', state.usage, 'tools/usage.json'],
+      ['Cursor credits', state.cursorUsage, 'tools/cursor-usage.json']
+    ];
+    const feedLines = feeds.map(([label, u, path])=>{
+      const age = usageAge(u||{});
+      return `${label}: ${u && !u.error ? `${creditPct(u)}%, ${age ? age.label : 'no timestamp'}` : 'not available'} (${path})`;
+    });
+    const sessions = state.sessions||[];
+    const cwdCount = sessions.filter(s=>String(s.cwd||'').trim()).length;
+    const hasModel = sessions.some(s=>s.model || s.modelName || s.model_id);
+    const hasIde = sessions.some(s=>s.ide || s.source || s.client || s.app);
+    return `<div class="aboutcard wide usage-insights">
+      <h3>Usage insights</h3>
+      <p>The dashboard has reliable aggregate credit snapshots and recent live-session beacons. It does not yet have the per-event model, IDE/source, or durable project history needed for a 7d / 30d / all-time pie chart or model-by-project report.</p>
+      <div class="insightgrid">
+        <div class="insightbox">
+          <h4>Captured now</h4>
+          <ul>
+            ${feedLines.map(line=>`<li>${esc(line)}</li>`).join('')}
+            <li>${sessions.length} recent session beacon${sessions.length===1?'':'s'}; ${cwdCount} include a cwd value.</li>
+          </ul>
+        </div>
+        <div class="insightbox">
+          <h4>Missing for analytics</h4>
+          <ul>
+            <li>Model names: ${hasModel?'partially present in beacons':'not captured in current files'}.</li>
+            <li>IDE/source labels: ${hasIde?'partially present in beacons':'not captured in current files'}.</li>
+            <li>Historical events: only current snapshots and short-lived beacons exist.</li>
+          </ul>
+        </div>
+        <div class="insightbox">
+          <h4>Capture plan</h4>
+          <ul>
+            <li>Append daily events with timestamp, source, model, cwd/project, and estimated credits.</li>
+            <li>Roll those events into 7d, 30d, and all-time summaries for charts.</li>
+          </ul>
+        </div>
+      </div>
+    </div>`;
   }
   function productivityTip(s){
     const cl = creditPct(state.usage), cu = creditPct(state.cursorUsage);
@@ -4124,6 +4176,7 @@
             <li>Linked from Index.md</li>
           </ul>
         </div>
+        ${usageInsightsHTML()}
       </div>
       <div class="secthead reveal tight"><h2>Mobile publish</h2></div>
       <div class="aboutcard reveal" style="margin-top:0">
