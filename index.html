@@ -12,16 +12,29 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* ============ tokens — v4 (Console × Editorial × Focus) ============ */
+  /* ============ tokens — v5 (blank slate) ============ */
   :root{
-    --bg:#FFFFFF; --panel:#F5F5F7; --surface:#FFFFFF;
-    --ink:#1D1D1F; --sec:#6E6E73; --hair:#E5E5EA; --hair2:#F1F1F4;
-    --link:#0066CC; --accent:#C0452F; --accent-soft:#FBF1EF; --up:#2E7D4F; --idle:#B8860B;
-    --radius:18px;
-    --shadow-sm:0 1px 2px rgba(29,29,31,.05);
-    --shadow:0 2px 6px rgba(29,29,31,.06), 0 16px 40px rgba(29,29,31,.09);
+    --bg:#FAFAFA; --surface:#FFFFFF; --panel:#F4F4F5;
+    --ink:#18181B; --sec:#71717A; --muted:#A1A1AA;
+    --hair:#E4E4E7; --hair2:#F4F4F5;
+    --link:#2563EB; --link-soft:#EFF6FF;
+    --accent:#DC2626; --accent-soft:#FEF2F2;
+    --up:#16A34A; --up-soft:#F0FDF4; --idle:#CA8A04;
+    --radius:10px; --radius-lg:14px;
+    --shadow-sm:none; --shadow:none;
     --font:'Instrument Sans','Segoe UI',system-ui,sans-serif;
-    --ease:cubic-bezier(.25,.1,.25,1);
+    --ease:cubic-bezier(.16,1,.3,1);
+    --side-w:228px;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#09090B; --surface:#18181B; --panel:#27272A;
+      --ink:#FAFAFA; --sec:#A1A1AA; --muted:#71717A;
+      --hair:#3F3F46; --hair2:#27272A;
+      --link:#3B82F6; --link-soft:#172554;
+      --accent:#F87171; --accent-soft:#450A0A;
+      --up:#4ADE80; --up-soft:#052E16; --idle:#FACC15;
+    }
   }
   *{box-sizing:border-box}
   /* text-size-adjust off: iOS otherwise auto-boosts some text blocks and not
@@ -39,10 +52,11 @@
   .num{font-weight:600;letter-spacing:-.02em}
   .flagc{color:var(--accent)}
   .upc{color:var(--up)}
-  .eyebrow{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--sec);font-weight:500}
+  .eyebrow{font-size:11px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:500}
+  .navlabel{font-size:11px;color:var(--muted);font-weight:500;padding:18px 12px 6px;margin:0}
 
-  /* purposeful reveal — small, fast, once */
-  .reveal{opacity:0;transform:translateY(12px);transition:opacity .55s var(--ease), transform .55s var(--ease)}
+  /* subtle entrance — dashboard, not marketing */
+  .reveal{opacity:0;transform:translateY(6px);transition:opacity .35s var(--ease), transform .35s var(--ease)}
   .reveal.in{opacity:1;transform:none}
   .bar{height:3px;border-radius:2px;background:var(--hair);overflow:hidden;position:relative;flex-shrink:0}
   .bar i{position:absolute;inset:0 auto 0 0;background:var(--ink);border-radius:2px;width:0;transition:width .9s var(--ease) .15s}
@@ -53,24 +67,42 @@
     *{animation:none !important;transition-duration:.01ms !important}
   }
 
-  /* ============ app shell ============ */
-  .app{display:grid;grid-template-columns:236px minmax(0,1fr);min-height:100vh}
-  .side{
-    border-right:1px solid var(--hair);padding:26px 20px 20px;display:flex;flex-direction:column;gap:2px;
-    position:sticky;top:0;height:100vh;background:var(--bg);
+  /* ============ app shell v5 ============ */
+  .app{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100dvh;background:var(--bg)}
+  .content-col{display:flex;flex-direction:column;min-width:0;min-height:100dvh}
+  .deskbar{
+    display:flex;align-items:center;gap:12px;padding:10px 28px;
+    border-bottom:1px solid var(--hair);background:var(--surface);
+    position:sticky;top:0;z-index:25;min-height:48px;
   }
-  .wordmark{font-size:14px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin:0 12px 22px}
+  .desk-status{
+    flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+    border:none;background:var(--panel);border-radius:var(--radius);
+    padding:8px 12px;font:inherit;font-size:12.5px;color:var(--sec);
+    cursor:pointer;text-align:left;transition:background .15s;
+  }
+  .desk-status:hover{background:var(--hair2)}
+  .desk-status .label{font-weight:600;color:var(--ink);flex:none}
+  .desk-status .glance{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .desk-status .warn{color:var(--accent);font-weight:500}
+  .desk-search{margin-left:auto;flex:none}
+  .side{
+    border-right:1px solid var(--hair);padding:20px 14px 16px;display:flex;flex-direction:column;gap:1px;
+    position:sticky;top:0;height:100dvh;background:var(--surface);
+  }
+  .wordmark{font-size:15px;font-weight:600;letter-spacing:-.02em;margin:0 10px 14px;color:var(--ink)}
+  .side-actions{display:flex;gap:6px;margin:0 10px 12px;padding-bottom:12px;border-bottom:1px solid var(--hair)}
+  .side-actions .btn{font-size:11.5px;padding:5px 10px;margin:0;flex:1;border-radius:var(--radius)}
   .ver{font-size:9px;font-weight:400;color:var(--sec);opacity:.65;letter-spacing:.02em;text-transform:none;vertical-align:1px}
   .navlink{
     display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
-    font-size:13.5px;color:var(--sec);border:none;background:none;text-align:left;
-    padding:8px 12px;border-radius:9px;transition:background .15s ease, color .15s ease;
+    font-size:13px;color:var(--sec);border:none;background:none;text-align:left;
+    padding:7px 10px;border-radius:var(--radius);transition:background .12s ease, color .12s;
   }
   .navlink:hover{color:var(--ink);background:var(--panel)}
-  .navlink.active{color:var(--ink);background:var(--panel);font-weight:500}
-  .navlink .n{font-size:11px;color:var(--sec)}
-  .side .eyebrow{margin:22px 12px 8px}
-  .side-foot{margin-top:auto;padding:14px 12px 0;border-top:1px solid var(--hair);font-size:11.5px;color:var(--sec);display:flex;flex-direction:column;gap:8px}
+  .navlink.active{color:var(--ink);background:var(--panel);font-weight:600}
+  .navlink .n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .side-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--hair);font-size:11px;color:var(--sec);display:flex;flex-direction:column;gap:6px}
   .side-foot .unsynced{color:var(--accent)}
   .syncrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .side-foot .btn{padding:8px 10px;white-space:nowrap;text-align:center}
@@ -84,57 +116,57 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   @media (prefers-reduced-motion:reduce){.btn.working::after{animation:none;border-top-color:currentColor;opacity:.4}}
   .btn{
-    font-size:12.5px;font-weight:500;background:var(--ink);color:#fff;border:none;
-    border-radius:999px;padding:8px 16px;transition:transform .15s var(--ease), box-shadow .15s ease;
+    font-size:12.5px;font-weight:500;background:var(--ink);color:var(--surface);border:none;
+    border-radius:var(--radius);padding:8px 14px;transition:opacity .15s, transform .12s;
   }
-  .btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(29,29,31,.18)}
-  .btn:active{transform:scale(.97)}
+  .btn:hover{opacity:.92}
+  .btn:active{transform:scale(.98)}
   .btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1px var(--hair)}
-  .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--ink)}
+  .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--muted)}
   .searchpill{
     display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--sec);
-    background:var(--surface);border:1px solid var(--hair);border-radius:999px;padding:7px 14px;
-    transition:border-color .15s ease, color .15s ease;
+    background:var(--panel);border:1px solid transparent;border-radius:var(--radius);padding:7px 12px;
+    transition:background .15s, color .15s, border-color .15s;
   }
-  .searchpill:hover{border-color:var(--sec);color:var(--ink)}
-  .searchpill kbd{font-family:inherit;font-size:10.5px;border:1px solid var(--hair);border-radius:4px;padding:0 5px;color:var(--sec)}
+  .searchpill:hover{background:var(--hair2);color:var(--ink);border-color:var(--hair)}
+  .searchpill kbd{font-family:inherit;font-size:10px;border:1px solid var(--hair);border-radius:4px;padding:1px 5px;color:var(--muted);background:var(--surface)}
 
-  /* min-width:0 — .main is a grid item in a minmax(0,1fr) track, but grid
-     items still get an "automatic minimum size" from their content's
-     min-content width unless overridden. Any nowrap descendant (table cell,
-     pill, tag) can silently inflate .main past the viewport on mobile, and
-     since overflow-x is hidden (not scrollable) that content becomes
-     unreachable rather than just requiring a scroll. This is the single
-     fix point instead of patching every nowrap element individually. */
-  .main{padding:38px 48px 110px;max-width:1120px;min-width:0}
-  @media (max-width:860px){.main{padding:26px 20px 90px}}
+  .main{padding:24px 28px 72px;max-width:1040px;width:100%;min-width:0;flex:1}
+  @media (max-width:860px){.main{padding:20px 18px calc(72px + env(safe-area-inset-bottom))}}
 
-  /* ============ overview header (Editorial) ============ */
-  .ovhead{margin:4px 0 8px;display:flex;align-items:flex-start;gap:20px}
-  .ovhead .searchpill{margin-left:auto;margin-top:8px}
-  .ovhead h1{font-size:38px;font-weight:600;letter-spacing:-.022em;line-height:1.12;margin:10px 0 0}
-  .lede{font-size:18px;line-height:1.6;color:var(--sec);max-width:640px;margin:14px 0 0}
-  .lede b{color:var(--ink);font-weight:500}
-  .lede .act{color:var(--link);cursor:pointer;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px;text-decoration-color:color-mix(in srgb, var(--link) 40%, transparent)}
-  .lede .act:hover{text-decoration-color:var(--link)}
-  .lede .act.warn{color:var(--accent);text-decoration-color:color-mix(in srgb, var(--accent) 40%, transparent)}
-  .lede .act.warn:hover{text-decoration-color:var(--accent)}
+  /* ============ overview — command center ============ */
+  .ovhead{margin:0 0 20px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+  .ovhead .dateline{font-size:12px;color:var(--muted);font-weight:400;display:block;margin-bottom:4px}
+  .ovhead h1{font-size:26px;font-weight:600;letter-spacing:-.025em;line-height:1.15;margin:0}
+  .ovhead .searchpill{display:none}
+  .lede-compact{font-size:14px;color:var(--sec);margin:6px 0 0;line-height:1.45}
+  .lede-compact b{color:var(--ink);font-weight:600}
+  .statrow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
+  .stat{
+    flex:1;min-width:100px;padding:12px 14px;border-radius:var(--radius-lg);
+    border:1px solid var(--hair);background:var(--surface);cursor:pointer;
+    transition:background .12s, border-color .12s;
+  }
+  .stat:hover{background:var(--panel);border-color:var(--muted)}
+  .stat .v{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .stat .l{font-size:11px;color:var(--sec);margin-top:4px}
+  .stat .s{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat.warn .v{color:var(--accent)}
+  .stat.up .s{color:var(--up)}
+  .bento{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin:20px 0 0}
+  .bento .panel{grid-column:span 4}
+  .bento .panel.wide{grid-column:span 8}
+  .bento .panel.full{grid-column:span 12}
+  @media(max-width:900px){.bento .panel,.bento .panel.wide{grid-column:span 12}}
 
-  /* ============ KPI strip (Console) ============ */
-  .kpis{display:flex;margin:34px 0 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);flex-wrap:wrap}
-  .kpi{flex:1;min-width:140px;padding:18px 20px 15px;display:flex;flex-direction:column;gap:1px}
-  .kpi[data-kpi]{cursor:pointer;transition:background .15s ease}
-  .kpi[data-kpi]:hover{background:var(--panel)}
-  .kpi + .kpi{border-left:1px solid var(--hair)}
-  .kpi .v{font-size:32px}
-  .kpi .l{font-size:12px;color:var(--sec)}
-  .kpi .s{font-size:11.5px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .kpi .v .flg{font-size:16px;color:var(--accent);margin-left:5px}
+  /* legacy kpi strip — hidden when statrow used */
+  .kpis{display:none}
 
-  /* ============ charts row (Focus) ============ */
-  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin:26px 0 0}
-  .panel{border:1px solid var(--hair);border-radius:var(--radius);background:var(--surface);padding:20px 22px 18px;box-shadow:var(--shadow-sm)}
-  .panel h3{font-size:13.5px;font-weight:600;margin:0 0 3px}
+  /* ============ charts / panels ============ */
+  .charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:0}
+  .charts.open{margin:0}
+  .panel{border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);padding:16px 18px}
+  .panel h3{font-size:13px;font-weight:600;margin:0 0 2px;letter-spacing:-.01em}
   .panel .cap{font-size:12px;color:var(--sec);margin:0 0 14px}
   .panel .cap b{color:var(--ink)}
   .panel svg text{font-family:var(--font)}
@@ -177,16 +209,15 @@
   .chipx.warn{color:var(--accent);border-color:color-mix(in srgb, var(--accent) 30%, transparent);background:var(--accent-soft)}
   .calm{font-size:13.5px;color:var(--sec);font-style:italic;padding:6px 2px}
 
-  /* ============ project gallery (Apple-store tiles) ============ */
-  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:20px}
+  /* ============ project gallery ============ */
+  .gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
   .tile{
-    border:1px solid var(--hair);border-radius:var(--radius);background:var(--surface);overflow:hidden;
+    border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden;
     text-align:left;padding:0;display:flex;flex-direction:column;font-family:var(--font);color:var(--ink);
-    transition:transform .25s var(--ease), box-shadow .25s ease;box-shadow:var(--shadow-sm);
+    transition:border-color .15s, background .15s;
   }
-  /* the fun part: each tile lifts with its own faint tilt (deterministic per slot) */
-  .tile:hover{transform:translateY(-4px) rotate(var(--tr,.8deg)) scale(1.012);box-shadow:var(--shadow)}
-  .tile:active{transform:translateY(-1px) rotate(0deg) scale(.99)}
+  .tile:hover{border-color:var(--muted);background:var(--panel)}
+  .tile:active{transform:scale(.995)}
   .tile:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
   .tile .art{aspect-ratio:16/10;background:var(--panel);position:relative;overflow:hidden}
   .tile .art img{width:100%;height:100%;object-fit:cover;display:block}
@@ -538,8 +569,8 @@
 
   /* ============ landing ============ */
   .landing{
-    margin:14vh auto 0;max-width:460px;text-align:center;
-    border:1px solid var(--hair);border-radius:22px;box-shadow:var(--shadow);padding:52px 44px 46px;
+    max-width:420px;margin:12vh auto 0;padding:36px 32px 40px;text-align:left;
+    border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);
   }
   .landing h2{font-size:22px;font-weight:600;letter-spacing:-.015em;margin:0 0 12px}
   .landing p{color:var(--sec);font-size:14px;margin:10px 0 28px;line-height:1.6}
@@ -564,32 +595,42 @@
   /* contain:inline-size — the nowrap prompt must never widen .main (a grid
      item with min-width:auto) via intrinsic sizing; the strip sizes from its
      container only, and the prompt then shrinks + ellipsizes normally */
-  .livestrip{
-    margin:0 0 26px;contain:inline-size;
-    border:1px solid var(--hair);border-radius:12px;padding:10px 14px;background:var(--surface);
+  /* ============ unified status rail ============ */
+  .statusrail{margin:0 0 16px;border:1px solid var(--hair);border-radius:var(--radius-lg);background:var(--surface);overflow:hidden;contain:inline-size}
+  @media (min-width:861px){
+    .statusrail:not(.expanded){display:none !important}
+    .statusrail .statushead{display:none}
+    .statusrail.expanded .statusbody{border-top:none;padding-top:0}
+    .statusrail{margin:0 28px 16px;max-width:984px}
   }
-  .livehead{display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;user-select:none}
-  .livehead .n{font-size:12px;color:var(--sec)}
-  .livehead .chev{margin-left:auto;color:var(--sec);transition:transform .2s var(--ease);flex:none}
-  .livestrip.collapsed .chev{transform:rotate(-90deg)}
-  .livestrip.collapsed .livehead{margin-bottom:0}
-  .livestrip.collapsed .livebody{display:none}
-  .livestrip.collapsed .livehead .eyebrow{display:none}
+  .statushead{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .statushead:hover{background:var(--panel)}
+  .status-label{font-size:13px;font-weight:600;color:var(--ink);flex:none}
+  .status-glance{flex:1;min-width:0;font-size:12.5px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+  .status-glance .warn{color:var(--accent);font-weight:500}
+  .status-glance .dot-sep{margin:0 6px;color:var(--hair)}
+  .statushead .chev{margin-left:2px;color:var(--sec);transition:transform .2s var(--ease);flex:none}
+  .statusrail.collapsed .chev{transform:rotate(-90deg)}
+  .statusrail.collapsed .statusbody{display:none}
+  .statusbody{border-top:1px solid var(--hair);padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
+  .statusblock h4{font-size:12px;font-weight:600;margin:0 0 8px;color:var(--sec);letter-spacing:0;text-transform:none}
+  .status-alerts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
+  .status-alerts .alert{padding:6px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:12.5px}
+  .status-alerts .alert.info{background:color-mix(in srgb, var(--link) 8%, var(--bg));color:var(--link)}
+  .creditsgrid.compact{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:560px){ .creditsgrid.compact{grid-template-columns:1fr} }
+
+  /* sessions rows (inside status rail) */
   .livegroup{display:flex;flex-direction:column;gap:6px}
-  .livegroup + .livegroup{margin-top:14px}
+  .livegroup + .livegroup{margin-top:10px}
   .livesubbar{display:flex;align-items:center;gap:10px;margin:0 0 2px 2px}
-  .livesub{font-size:11px;color:var(--sec);letter-spacing:.04em;text-transform:uppercase}
+  .livesub{font-size:12px;color:var(--sec);font-weight:500}
   .liveclear{margin-left:auto;border:0;background:none;color:var(--link);font-size:12px;padding:2px 4px;border-radius:6px}
   .liveclear:hover{background:var(--panel);text-decoration:underline;text-underline-offset:3px}
-  .livehead .glance{font-size:12.5px;color:var(--ink);font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .livehead .glance .dim{color:var(--sec);font-weight:400}
-  .livestrip.collapsed .livehead .glance{display:block;flex:1}
-  .livestrip.collapsed .livehead .n{display:none}
-  .livestrip:not(.collapsed) .livehead .glance{display:none}
   .liverow{
     display:flex;align-items:center;gap:10px;min-width:0;
     border:1px solid var(--hair);border-radius:12px;background:var(--surface);
-    padding:9px 14px;font-size:13px;box-shadow:var(--shadow-sm);
+    padding:9px 14px;font-size:13px;
   }
   .liverow.idle{background:var(--panel);box-shadow:none}
   .liverow.idle .liveprompt{color:var(--sec)}
@@ -642,9 +683,9 @@
   .machchip.down .dot{background:var(--accent)}
   .healthbanner{margin:0 0 14px;padding:10px 14px;border-radius:12px;border:1px solid color-mix(in srgb, var(--accent) 30%, transparent);background:var(--accent-soft);color:var(--accent);font-size:13px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .healthbanner a{color:inherit;font-weight:600}
-  .areaseg{display:inline-flex;gap:4px;margin:8px 0 0}
-  .areaseg button{font-size:12px;padding:5px 12px;border-radius:999px;border:1px solid var(--hair);background:var(--bg);color:var(--sec)}
-  .areaseg button.active{background:var(--panel);color:var(--ink);font-weight:600;border-color:var(--sec)}
+  .areaseg{display:inline-flex;gap:4px;margin:10px 0 0}
+  .areaseg button{font-size:12px;padding:5px 11px;border-radius:var(--radius);border:1px solid var(--hair);background:var(--surface);color:var(--sec)}
+  .areaseg button.active{background:var(--panel);color:var(--ink);font-weight:600;border-color:var(--muted)}
   .intakecard{margin:0 0 20px;padding:14px 16px;border-radius:14px;border:1px solid color-mix(in srgb, var(--link) 25%, transparent);background:color-mix(in srgb, var(--link) 6%, var(--bg))}
   .intakecard h3{margin:0 0 6px;font-size:14px}
   .intakecard p{margin:0 0 10px;font-size:13px;color:var(--sec)}
@@ -666,30 +707,25 @@
 
   /* ============ focus / do-next (overview) ============ */
   .focuscard{
-    border:1px solid var(--hair);border-radius:var(--radius);padding:18px 20px 16px;
-    margin:24px 0 0;background:var(--surface);box-shadow:var(--shadow-sm);
+    border:1px solid var(--hair);border-radius:var(--radius-lg);padding:16px 18px;
+    margin:0 0 20px;background:var(--surface);
   }
-  .focushead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  .focushead h2{font-size:18px;font-weight:600;margin:0;letter-spacing:-.02em}
-  .focushead .hint{font-size:12px;color:var(--sec);display:none}
-  .focuschips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;max-width:100%}
+  .focushead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .focushead h2{font-size:15px;font-weight:600;margin:0;letter-spacing:-.01em}
+  .focuschips{display:flex;gap:5px;flex-wrap:wrap;margin-left:auto;max-width:100%}
   .focuschip{
-    font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--hair);
-    background:var(--bg);cursor:pointer;color:var(--ink);font-weight:500;
-    transition:border-color .15s, background .15s;
+    font-size:11.5px;padding:3px 10px;border-radius:var(--radius);border:1px solid var(--hair);
+    background:var(--panel);cursor:pointer;color:var(--ink);font-weight:500;
   }
-  .focuschip.on{border-color:color-mix(in srgb, var(--ink) 22%, transparent);background:var(--panel)}
-  .actionstack{display:flex;flex-direction:column;gap:4px}
+  .focuschip.on{border-color:var(--muted);background:var(--surface)}
+  .actionstack{display:flex;flex-direction:column;gap:2px}
   .actionrow{
-    display:flex;align-items:flex-start;gap:14px;padding:12px 14px;border-radius:14px;
-    border:1px solid transparent;background:var(--panel);
-    cursor:pointer;transition:transform .15s var(--ease), box-shadow .15s ease, background .15s;
+    display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:var(--radius);
+    border:1px solid transparent;background:transparent;
+    cursor:pointer;transition:background .12s;
   }
-  .actionrow:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);background:var(--surface)}
-  .actionrow.hero{
-    border-color:color-mix(in srgb, var(--ink) 12%, transparent);
-    background:var(--surface);padding:14px 16px;box-shadow:var(--shadow-sm);
-  }
+  .actionrow:hover{background:var(--panel)}
+  .actionrow.hero{background:var(--panel);border-color:var(--hair)}
   .actionrow .rank{display:none}
   .actionrow .abody{flex:1;min-width:0}
   .actionrow .atext{
@@ -734,6 +770,42 @@
   .kpis.compact .kpi .v{font-size:26px}
   .secthead.tight{margin-top:28px}
 
+  /* ============ skills / docs views ============ */
+  .pagehead{margin:4px 0 24px}
+  .pagehead h1{font-size:28px;font-weight:600;letter-spacing:-.022em;margin:6px 0 0;line-height:1.15}
+  .pagehead p{font-size:15px;color:var(--sec);margin:8px 0 0;max-width:58ch;line-height:1.5}
+  .skillgroup{margin:0 0 28px}
+  .skillgroup h2{font-size:16px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  .skillgroup .cap{font-size:13px;color:var(--sec);margin:0 0 12px}
+  .skillgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .skillcard{
+    text-align:left;padding:12px 14px;border:1px solid var(--hair);border-radius:12px;
+    background:var(--surface);cursor:pointer;transition:transform .15s var(--ease), box-shadow .15s;
+  }
+  .skillcard:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm)}
+  .skillcard .name{font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+  .skillcard .desc{font-size:12px;color:var(--sec);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
+  .skillcard .src{font-size:11px;color:var(--sec);margin-top:8px}
+  .skillcard.custom{border-color:color-mix(in srgb, var(--ink) 14%, transparent)}
+  .doclist{display:flex;flex-direction:column;gap:0;border:1px solid var(--hair);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .docrow{
+    display:flex;align-items:center;gap:12px;padding:12px 16px;border:none;background:none;
+    text-align:left;font:inherit;cursor:pointer;border-bottom:1px solid var(--hair2);color:inherit;
+  }
+  .docrow:last-child{border-bottom:none}
+  .docrow:hover{background:var(--panel)}
+  .docrow .t{font-size:14px;font-weight:500;flex:1}
+  .docrow .arr{color:var(--sec);opacity:.4;font-size:13px}
+  .docrow:hover .arr{opacity:1}
+  .aboutgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0 0}
+  .aboutcard{border:1px solid var(--hair);border-radius:12px;padding:16px 18px;background:var(--surface)}
+  .aboutcard h3{font-size:14px;font-weight:600;margin:0 0 8px}
+  .aboutcard ul{margin:0;padding:0 0 0 18px;font-size:13px;color:var(--sec);line-height:1.55}
+  .aboutcard li{margin:4px 0}
+  .verpill{display:inline-block;font-size:11px;padding:3px 8px;border-radius:6px;background:var(--panel);color:var(--sec);font-variant-numeric:tabular-nums;margin-left:8px;vertical-align:2px}
+  .verpill.ok{color:var(--up);background:color-mix(in srgb, var(--up) 10%, var(--bg))}
+  .verpill.warn{color:var(--accent);background:var(--accent-soft)}
+
   /* ============ mobile shell ============
      Placed last on purpose: several rules here override earlier desktop
      rules of equal specificity (e.g. .side), and CSS resolves ties by
@@ -741,6 +813,8 @@
   .mobiletop, .mobiletabs, .side-backdrop{display:none}
   @media (max-width:860px){
     .app{grid-template-columns:1fr}
+    .deskbar{display:none}
+    .content-col{min-height:auto}
     .mobiletop{
       display:flex;align-items:center;justify-content:space-between;
       position:sticky;top:0;z-index:30;background:var(--bg);
@@ -862,13 +936,19 @@
   <div class="side-backdrop" id="sideBackdrop"></div>
   <aside class="side">
     <div class="wordmark">Workbench <span class="ver"></span></div>
-    <button class="btn ghost" id="captureBtn" style="margin:0 12px 16px;align-self:flex-start">＋ Capture</button>
-    <button class="btn ghost" id="triageBtn" style="margin:-8px 12px 12px;align-self:flex-start;display:none">Triage intake</button>
-    <button class="btn ghost" id="wrapBtn" style="margin:-8px 12px 16px;align-self:flex-start">Wrap session ↗</button>
+    <div class="side-actions">
+      <button class="btn ghost" id="captureBtn">Capture</button>
+      <button class="btn ghost" id="triageBtn" style="display:none">Triage</button>
+      <button class="btn ghost" id="wrapBtn">Wrap</button>
+    </div>
     <button class="navlink" data-nav="overview">Overview</button>
     <button class="navlink" data-nav="projects">Projects <span class="n" id="navPN"></span></button>
     <button class="navlink" data-nav="knowledge">Knowledge <span class="n" id="navKN"></span></button>
-    <div class="eyebrow">Areas</div>
+    <div class="navlabel">Workbench</div>
+    <button class="navlink" data-nav="skills">Skills <span class="n" id="navSN"></span></button>
+    <button class="navlink" data-nav="instructions">Instructions</button>
+    <button class="navlink" data-nav="about">About</button>
+    <div class="navlabel">Areas</div>
     <button class="navlink" data-nav="projects" data-area="Work">Work <span class="n" id="navWN"></span></button>
     <button class="navlink" data-nav="projects" data-area="Personal">Personal <span class="n" id="navPeN"></span></button>
     <div class="side-foot">
@@ -880,22 +960,34 @@
       <button class="btn ghost" id="connectBtn">Reconnect</button>
     </div>
   </aside>
+  <div class="content-col">
+    <header class="deskbar">
+      <button type="button" class="desk-status" id="deskStatusBtn">
+        <span class="label">Status</span>
+        <span class="glance" id="deskStatusGlance">Connecting…</span>
+      </button>
+      <button class="searchpill desk-search" data-palette id="deskSearchBtn">
+        <svg width="12" height="12" viewBox="0 0 13 13"><circle cx="5.5" cy="5.5" r="4.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="8.8" y1="8.8" x2="12" y2="12" stroke="currentColor" stroke-width="1.4"/></svg>
+        Search <kbd>⌘K</kbd>
+      </button>
+    </header>
+    <div id="statusRail" class="statusrail hidden"></div>
+    <main class="main">
+      <div id="view-overview" class="hidden"></div>
+      <div id="view-projects" class="hidden"></div>
+      <div id="view-knowledge" class="hidden"></div>
+      <div id="view-skills" class="hidden"></div>
+      <div id="view-instructions" class="hidden"></div>
+      <div id="view-about" class="hidden"></div>
+      <div id="view-project" class="hidden"></div>
+    </main>
+  </div>
   <nav class="mobiletabs">
     <span class="tabpill" id="tabPill"></span>
     <button class="navlink" data-nav="overview">Overview</button>
     <button class="navlink" data-nav="projects">Projects</button>
     <button class="navlink" data-nav="knowledge">Knowledge</button>
   </nav>
-  <main class="main">
-    <div id="healthBanner" class="healthbanner hidden"></div>
-    <div id="liveStrip" class="livestrip hidden"></div>
-    <div id="machinesStrip" class="machinesstrip hidden"></div>
-    <div id="usageStrip" class="usagestrip creditsstrip hidden"></div>
-    <div id="view-overview" class="hidden"></div>
-    <div id="view-projects" class="hidden"></div>
-    <div id="view-knowledge" class="hidden"></div>
-    <div id="view-project" class="hidden"></div>
-  </main>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -903,13 +995,14 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.15';
+  const WB_VERSION = '2026-07-03.17';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
   const state = {
     root:null, projects:[], kb:[], sessions:[], machines:[], machineAliases:{},
     usage:null, cursorUsage:null,
+    agentConfig:null, skillsLock:null, skillCatalog:null, mobileVersion:null,
     backend:'fsa',
     areaFilter: localStorage.getItem('wb-area-filter') || 'All',
     view:'overview',          // overview | projects | knowledge | project
@@ -981,10 +1074,12 @@
     state.cursorUsage = await Backends[state.backend].loadCursorUsage();
     state.machines = await Backends[state.backend].loadMachines();
     state.machineAliases = await loadMachineAliases();
+    state.agentConfig = await loadJsonPath('tools/agent-config.json');
+    state.skillsLock = await loadJsonPath('skills-lock.json');
+    state.skillCatalog = await buildSkillCatalog();
     for(const p of state.projects) await enrichProjectStatus(p);
     if(state.backend==='fsa') await pingHelper();
-    renderSessions();
-    renderUsage();
+    renderStatusRail();
     state.projects.sort((a,b)=> (a.section+a.data.project).localeCompare(b.section+b.data.project));
     state.kb.sort((a,b)=> (a.sub+a.title).localeCompare(b.sub+b.title));
     state.connected = true;
@@ -1632,6 +1727,7 @@
   const LIVE_STALE_AFTER = 4*3600e3;
   const LIVE_ORPHAN_AFTER = 12*3600e3;
   const LIVE_COLLAPSE_KEY = 'wb-live-collapsed';
+  const STATUS_RAIL_KEY = 'wb-status-collapsed';
   const LIVE_CLEARED_KEY = 'wb-live-cleared';
   const LIVE_STATUSES = ['running','waiting','error','idle'];
   function fmtRun(ms){
@@ -1732,49 +1828,105 @@
         ${s.stale?'title="Running longer than 4 hours — worth checking it isn’t stuck"':''}>${esc(time)}</span>
     </div>`;
   }
-  function renderSessions(){
-    const el = $('#liveStrip'); if(!el) return;
-    const rows = sessionRows();
-    if(!rows.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
-    const collapsed = localStorage.getItem(LIVE_COLLAPSE_KEY)!=='0';
-    el.classList.toggle('collapsed', collapsed);
+  function sessionsBlockHTML(rows){
+    if(!rows.length) return '';
     const active = rows.filter(r=>r.active), completed = rows.filter(r=>!r.active);
-    const staleN = active.filter(r=>r.stale).length;
-    const summaryN = active.length
-      ? `${active.length} active${staleN?`, ${staleN} long run`:''}`
-      : (completed.length ? `${completed.length} recent` : '');
-    let glance = active.length
-      ? `${active.length} active${staleN?`, ${staleN} long` : ''}`
-      : `${completed.length} recent`;
-    if(active.length){
-      const projs = [...new Set(active.map(s=>(s.cwd||'').split('/').filter(Boolean).pop()).filter(Boolean))];
-      const snippet = displayCleanText(humanizePrompt(active[0].prompt), 52);
-      if(projs.length) glance += ` · ${projs.slice(0,2).join(', ')}`;
-      if(snippet) glance += ` · ${snippet}`;
-    } else if(completed.length){
-      const proj = (completed[0].cwd||'').split('/').filter(Boolean).pop();
-      if(proj) glance += ` · ${proj}`;
+    return `<div class="statusblock">
+      <h4>Sessions</h4>
+      ${active.length ? `<div class="livegroup"><div class="livesubbar"><span class="livesub">Active</span><button type="button" class="liveclear" data-clear-sessions="active">Clear</button></div>${active.map(liveRowHTML).join('')}</div>` : ''}
+      ${completed.length ? `<div class="livegroup"><div class="livesub">Recently completed</div>${completed.map(liveRowHTML).join('')}</div>` : ''}
+    </div>`;
+  }
+  function machinesBlockHTML(list){
+    if(!list.length) return '';
+    const now = Date.now();
+    const chips = list.map(m=>{
+      const age = now - (m.updated||0);
+      const stale = age > 15*60*1000;
+      const cls = !m.helperUp ? 'down' : stale ? 'stale' : '';
+      const label = machineLabel(m.hostname||'?');
+      return `<span class="machchip ${cls}" title="${esc(m.platform||'')} · helper ${m.helperUp?'up':'down'} · hooks ${m.hooksOk?'ok':'missing'}"><span class="dot"></span>${esc(label)}</span>`;
+    }).join('');
+    return `<div class="statusblock"><h4>Machines</h4><div class="machinesstrip" style="margin:0">${chips}</div></div>`;
+  }
+  function creditsBlockHTML(){
+    const cu = state.usage, cur = state.cursorUsage;
+    if(!cu && !cur) return '';
+    return `<div class="statusblock"><h4>Credits</h4><div class="creditsgrid compact">${renderCreditLane('Claude', cu)}${renderCreditLane('Cursor', cur)}</div></div>`;
+  }
+  async function renderStatusRail(){
+    const el = $('#statusRail');
+    if(!el || !state.connected) return;
+    const intake = await pendingIntake();
+    const triageBtn = $('#triageBtn');
+    if(triageBtn) triageBtn.style.display = intake.length ? '' : 'none';
+    const rows = sessionRows();
+    const machines = state.machines||[];
+    const cu = state.usage, cur = state.cursorUsage;
+    const hasCredits = !!(cu || cur);
+    const helperDown = state.backend==='fsa' && !state.helperUp;
+    const segs = [];
+    if(intake.length) segs.push(`<span class="warn">${intake.length} intake</span>`);
+    if(helperDown) segs.push(`<span class="warn">sync helper off</span>`);
+    if(rows.length){
+      const active = rows.filter(r=>r.active);
+      if(active.length){
+        const projs = [...new Set(active.map(s=>(s.cwd||'').split('/').filter(Boolean).pop()).filter(Boolean))];
+        const snippet = displayCleanText(humanizePrompt(active[0].prompt), 40);
+        let s = `${active.length} session${active.length>1?'s':''}`;
+        if(projs.length) s += ` · ${projs.slice(0,2).map(p=>esc(p)).join(', ')}`;
+        else if(snippet) s += ` · ${snippet}`;
+        segs.push(s);
+      } else segs.push(`${rows.length} recent`);
     }
+    if(machines.length) segs.push(esc(machineLabel(machines[0].hostname||'?')));
+    if(hasCredits){
+      const bits = [];
+      const cp = creditPct(cu), cup = creditPct(cur);
+      if(cp!=null) bits.push(`Claude ${cp}%`);
+      if(cup!=null) bits.push(`Cursor ${cup}%`);
+      if(bits.length) segs.push(bits.join(' · '));
+    }
+    if(!segs.length){
+      el.classList.add('hidden'); el.innerHTML='';
+      const dg = $('#deskStatusGlance'); if(dg) dg.textContent = 'All clear';
+      return;
+    }
+    el.classList.remove('hidden');
+    const expanded = localStorage.getItem(STATUS_RAIL_KEY)==='1';
+    el.classList.toggle('expanded', expanded);
+    el.classList.toggle('collapsed', !expanded);
+    const glanceHtml = segs.join('<span class="dot-sep">·</span>');
+    const deskGlance = $('#deskStatusGlance');
+    if(deskGlance) deskGlance.innerHTML = glanceHtml;
+    const alerts = [];
+    if(intake.length) alerts.push(`<span class="alert">${intake.length} intake item${intake.length>1?'s':''} waiting</span><button type="button" class="btn ghost" style="padding:4px 10px;font-size:12px" data-status-triage>Triage</button>`);
+    if(helperDown) alerts.push(`<span class="alert info">Sync helper not running</span>`);
     el.innerHTML = `
-      <div class="livehead" id="liveHeadToggle">
-        <span class="eyebrow">Sessions</span>
-        <span class="n">${esc(summaryN)}</span>
-        <span class="glance">${esc(glance)}</span>
+      <button type="button" class="statushead" id="statusToggle">
+        <span class="status-label">Status</span>
+        <span class="status-glance">${glanceHtml}</span>
         <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.2 5 6.4 8 3.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
-      </div>
-      <div class="livebody">
-        ${active.length ? `<div class="livegroup"><div class="livesubbar"><span class="livesub">Active now</span><button class="liveclear" id="clearActiveSessions">Clear</button></div>${active.map(liveRowHTML).join('')}</div>` : ''}
-        ${completed.length ? `<div class="livegroup"><div class="livesub">Recently completed</div>${completed.map(liveRowHTML).join('')}</div>` : ''}
+      </button>
+      <div class="statusbody">
+        ${alerts.length ? `<div class="statusblock"><div class="status-alerts">${alerts.join('')}</div></div>` : ''}
+        ${sessionsBlockHTML(rows)}
+        ${machinesBlockHTML(machines)}
+        ${creditsBlockHTML()}
       </div>`;
-    $('#liveHeadToggle').onclick = ()=>{
-      const nowCollapsed = !el.classList.contains('collapsed');
-      el.classList.toggle('collapsed', nowCollapsed);
-      localStorage.setItem(LIVE_COLLAPSE_KEY, nowCollapsed?'1':'0');
+    const toggleExpanded = ()=>{
+      const open = !el.classList.contains('expanded');
+      el.classList.toggle('expanded', open);
+      el.classList.toggle('collapsed', !open);
+      localStorage.setItem(STATUS_RAIL_KEY, open?'1':'0');
     };
-    $('#clearActiveSessions')?.addEventListener('click', e=>{
+    $('#statusToggle').onclick = toggleExpanded;
+    const deskBtn = $('#deskStatusBtn');
+    if(deskBtn) deskBtn.onclick = toggleExpanded;
+    el.querySelector('[data-status-triage]')?.addEventListener('click', e=>{ e.stopPropagation(); openIntakeFlow(); });
+    el.querySelector('[data-clear-sessions="active"]')?.addEventListener('click', e=>{
       e.stopPropagation();
-      clearLiveSessions(active);
+      clearLiveSessions(rows.filter(r=>r.active));
     });
     el.querySelectorAll('.liverow[data-session-proj]').forEach(row=>{
       const goProj = ()=>{
@@ -1786,6 +1938,8 @@
       row.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); goProj(); } };
     });
   }
+  /* legacy entry points */
+  function renderSessions(){ renderStatusRail(); }
   /* ============ usage strip =============
      tools/usage.json, written by a scheduled tools/usage-scraper.py run
      (Playwright login-scrapes claude.ai's Settings -> Usage panel — there's
@@ -1835,67 +1989,13 @@
       ${age?`<div class="lanefig" style="margin-top:4px;font-size:11px;color:var(--sec)">${esc(age.label)}</div>`:''}
     </div>`;
   }
-  function renderCredits(){
-    const el = $('#usageStrip'); if(!el) return;
-    const cu = state.usage, cur = state.cursorUsage;
-    if(!cu && !cur){ el.classList.add('hidden'); return; }
-    el.classList.remove('hidden');
-    const expanded = localStorage.getItem(CREDITS_EXPAND_KEY)==='1';
-    el.classList.toggle('expanded', expanded);
-    el.innerHTML = `
-      <div class="creditshead" id="creditsToggle" role="button" tabindex="0" aria-expanded="${expanded}">
-        <span class="eyebrow">Credits</span>
-        <span class="creditscompact">${creditCompactLine('Claude', cu)}<span class="sep">·</span>${creditCompactLine('Cursor', cur)}</span>
-        <span class="usagechev" aria-hidden="true">▾</span>
-      </div>
-      <div class="creditsgrid">${renderCreditLane('Claude', cu)}${renderCreditLane('Cursor', cur)}</div>`;
-    const toggle = el.querySelector('#creditsToggle');
-    const flip = ()=>{
-      const open = !el.classList.contains('expanded');
-      el.classList.toggle('expanded', open);
-      localStorage.setItem(CREDITS_EXPAND_KEY, open?'1':'0');
-      toggle.setAttribute('aria-expanded', open);
-    };
-    toggle.onclick = flip;
-    toggle.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); flip(); } };
-  }
-  function renderMachines(){
-    const el = $('#machinesStrip'); if(!el) return;
-    const list = state.machines||[];
-    if(!list.length){ el.classList.add('hidden'); return; }
-    el.classList.remove('hidden');
-    const now = Date.now();
-    el.innerHTML = `<span class="eyebrow">Machines</span>` + list.map(m=>{
-      const age = now - (m.updated||0);
-      const stale = age > 15*60*1000;
-      const cls = !m.helperUp ? 'down' : stale ? 'stale' : '';
-      const label = machineLabel(m.hostname||'?');
-      return `<span class="machchip ${cls}" title="${esc(m.platform||'')} · helper ${m.helperUp?'up':'down'} · hooks ${m.hooksOk?'ok':'missing'}"><span class="dot"></span>${esc(label)}</span>`;
-    }).join('');
-  }
-  async function renderHealthBanner(){
-    const el = $('#healthBanner'); if(!el) return;
-    const issues = [];
-    if(state.backend==='fsa' && !state.helperUp)
-      issues.push('Sync helper not running — run tools/Install-Workbench');
-    const intake = await pendingIntake();
-    if(intake.length) issues.push(`${intake.length} intake item${intake.length===1?'':'s'} — run /triage-intake`);
-    if(!issues.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
-    el.classList.remove('hidden');
-    el.innerHTML = issues.map(t=>`<span>${esc(t)}</span>`).join('') +
-      (intake.length?` <button class="btn ghost" style="padding:4px 10px;font-size:12px" id="healthTriageBtn">Triage ↗</button>`:'');
-    const tb = el.querySelector('#healthTriageBtn');
-    if(tb) tb.onclick = ()=>openIntakeFlow();
-    const triageBtn = $('#triageBtn');
-    if(triageBtn){ triageBtn.style.display = intake.length ? '' : 'none'; }
-  }
-  /* legacy alias */
-  function renderUsage(){ renderCredits(); renderMachines(); renderHealthBanner(); }
+  function renderCredits(){ renderStatusRail(); }
   /* tick running timers every second (also re-flags long-running sessions the
      instant they cross the 4h mark); re-evaluate liveness once a minute and
      (on FSA, which has no commit poll) re-read the beacon files themselves */
+  function renderUsage(){ renderStatusRail(); }
   setInterval(()=>{
-    document.querySelectorAll('#liveStrip .livetime[data-run]').forEach(t=>{
+    document.querySelectorAll('#statusRail .livetime[data-run]').forEach(t=>{
       const elapsed = Date.now() - +t.dataset.run;
       const suffix = t.dataset.status==='waiting' ? ' · waiting' : t.dataset.status==='error' ? ' · error' : '';
       t.textContent = fmtRun(elapsed) + suffix;
@@ -1910,10 +2010,7 @@
       state.cursorUsage = await Backends.fsa.loadCursorUsage();
       state.machines = await Backends.fsa.loadMachines();
     }
-    renderSessions();
-    renderCredits();
-    renderMachines();
-    renderHealthBanner();
+    renderStatusRail();
   }, 60000);
 
   /* p.cover / p.logo are FSA file handles on the fsa backend, repo-relative
@@ -2276,11 +2373,110 @@
     });
   }
 
-  /* ================= routing & nav ================= */
+  async function loadJsonPath(path){
+    try{
+      const t = await readPath(path);
+      return t ? JSON.parse(t) : null;
+    }catch{ return null; }
+  }
+  function parseSkillFrontmatter(text){
+    const m = String(text||'').match(/^---\n([\s\S]*?)\n---/);
+    if(!m) return {name:'', description:''};
+    const yaml = m[1];
+    const name = (yaml.match(/^name:\s*(.+)$/m)||[])[1]?.trim().replace(/^["']|["']$/g,'') || '';
+    let desc = (yaml.match(/^description:\s*(.+)$/m)||[])[1]?.trim() || '';
+    if((desc.startsWith('"')&&desc.endsWith('"'))||(desc.startsWith("'")&&desc.endsWith("'"))) desc = desc.slice(1,-1);
+    return {name, description: desc};
+  }
+  async function readSkillMeta(slug, path){
+    try{
+      const text = await readPath(path || `.claude/skills/${slug}/SKILL.md`);
+      if(!text) return {slug, name:slug, description:'', path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom'};
+      const fm = parseSkillFrontmatter(text);
+      return {slug, name: fm.name||slug, description: fm.description, path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom', body: text};
+    }catch{ return {slug, name:slug, description:'', path: path||`.claude/skills/${slug}/SKILL.md`, kind:'custom'}; }
+  }
+  async function buildSkillCatalog(){
+    const custom = [];
+    const store = [];
+    const seen = new Set();
+    const repoSlugs = new Set();
+    if(state.backend==='fsa' && state.root){
+      try{
+        const dir = await state.root.getDirectoryHandle('.claude/skills');
+        for await (const [name, h] of dir.entries()){
+          if(h.kind!=='directory') continue;
+          try{ await h.getFileHandle('SKILL.md'); repoSlugs.add(name); }catch{}
+        }
+      }catch{}
+      try{
+        const dir = await state.root.getDirectoryHandle('.agents/skills');
+        for await (const [name, h] of dir.entries()){
+          if(h.kind!=='directory') continue;
+          try{ await h.getFileHandle('SKILL.md'); repoSlugs.add(name); }catch{}
+        }
+      }catch{}
+    }else{
+      try{
+        const tree = await ghGetTree();
+        for(const p of tree){
+          const m = p.match(/^\.claude\/skills\/([^/]+)\/SKILL\.md$/) || p.match(/^\.agents\/skills\/([^/]+)\/SKILL\.md$/);
+          if(m) repoSlugs.add(m[1]);
+        }
+      }catch{}
+    }
+    for(const slug of repoSlugs){
+      const path = (await readPath(`.claude/skills/${slug}/SKILL.md`)) ? `.claude/skills/${slug}/SKILL.md` : `.agents/skills/${slug}/SKILL.md`;
+      const meta = await readSkillMeta(slug, path);
+      meta.kind = 'custom';
+      custom.push(meta);
+      seen.add(slug);
+    }
+    const lock = state.skillsLock?.skills || {};
+    for(const [slug, info] of Object.entries(lock)){
+      if(seen.has(slug)) continue;
+      store.push({
+        slug, name: slug.replace(/-/g,' '), kind:'store',
+        description: `Synced from ${info.source||'external'}`,
+        source: info.source||'', path: info.skillPath||'',
+      });
+      seen.add(slug);
+    }
+    const managed = state.agentConfig?.managedSkills || [];
+    for(const slug of managed){
+      if(seen.has(slug)) continue;
+      store.push({slug, name: slug.replace(/-/g,' '), kind:'store', description:'Managed via tools/agent-config.json', source:'agent-config', path:''});
+    }
+    custom.sort((a,b)=> a.name.localeCompare(b.name));
+    store.sort((a,b)=> a.name.localeCompare(b.name));
+    return {custom, store, total: custom.length + store.length};
+  }
+  function openSkillDetail(skill){
+    const {scrim, close} = panel(`
+      <h2>${esc(skill.name)}</h2>
+      <span class="d-path">${skill.kind==='custom'?'Custom skill in this repo':`Store · ${esc(skill.source||'external')}`}</span>
+      <p style="font-size:14px;line-height:1.55;color:var(--sec);margin:12px 0 0">${esc(skill.description||'No description.')}</p>
+      ${skill.path?`<p style="font-size:12px;color:var(--sec);margin:12px 0 0"><code style="font-size:11px">${esc(skill.path)}</code></p>`:''}
+      <div style="margin-top:16px"><button class="btn ghost" id="closeSkill">Close</button></div>`, skill.name);
+    scrim.querySelector('#closeSkill').onclick = close;
+  }
+  async function fetchMobileVersion(){
+    try{
+      const r = await fetch('https://raw.githubusercontent.com/jaredfowkes/workbench-mobile/main/index.html?t='+Date.now(), {cache:'no-store'});
+      if(!r.ok) return null;
+      const t = await r.text();
+      const m = t.match(/WB_VERSION\s*=\s*'([^']+)'/);
+      return m?m[1]:null;
+    }catch{ return null; }
+  }
+
   function routeHash(){
     if(state.view==='project' && state.proj) return '#p/'+encodeURIComponent(state.proj.dirName);
     if(state.view==='projects') return state.area!=='All' ? '#projects/'+state.area : '#projects';
     if(state.view==='knowledge') return '#knowledge';
+    if(state.view==='skills') return '#skills';
+    if(state.view==='instructions') return '#instructions';
+    if(state.view==='about') return '#about';
     return '#overview';
   }
   function pushHash(){
@@ -2306,6 +2502,9 @@
     if(h.startsWith('#projects')){ state.view='projects'; state.proj=null;
       const a = h.split('/')[1]; state.area = (a==='Work'||a==='Personal')?a:'All'; }
     else if(h==='#knowledge'){ state.view='knowledge'; state.proj=null; }
+    else if(h==='#skills'){ state.view='skills'; state.proj=null; }
+    else if(h==='#instructions'){ state.view='instructions'; state.proj=null; }
+    else if(h==='#about'){ state.view='about'; state.proj=null; }
     else { state.view='overview'; state.proj=null; }
     render(entrance); window.scrollTo(0,0);
   }
@@ -2351,7 +2550,7 @@
 
   /* ================= render dispatch ================= */
   function render(entrance){
-    ['overview','projects','knowledge','project'].forEach(v=>{
+    ['overview','projects','knowledge','skills','instructions','about','project'].forEach(v=>{
       $('#view-'+v).classList.toggle('hidden', state.view!==v);
     });
     document.querySelectorAll('.navlink').forEach(nl=>{
@@ -2362,10 +2561,14 @@
     });
     const wc = state.projects.filter(p=>p.section==='Work').length;
     $('#navPN').textContent = state.projects.length; $('#navKN').textContent = state.kb.length;
+    $('#navSN').textContent = state.skillCatalog?.total ?? '';
     $('#navWN').textContent = wc; $('#navPeN').textContent = state.projects.length-wc;
     if(state.view==='overview') renderOverview(entrance);
     else if(state.view==='projects') renderProjects(entrance);
     else if(state.view==='knowledge') renderKnowledge(entrance);
+    else if(state.view==='skills') renderSkills(entrance);
+    else if(state.view==='instructions') renderInstructions(entrance);
+    else if(state.view==='about') renderAbout(entrance);
     else renderProjectPage(entrance);
     requestAnimationFrame(moveTabPill);
   }
@@ -2400,6 +2603,7 @@
   $('#triageBtn').onclick = ()=>{ toggleSideSheet(false); openIntakeFlow(); };
   $('#wrapBtn').onclick = ()=>{ toggleSideSheet(false); openWrapSession(); };
   $('#sideBackdrop').onclick = ()=>toggleSideSheet(false);
+  $('#deskSearchBtn')?.addEventListener('click', ()=>openPalette());
 
   /* ================= OVERVIEW ================= */
   function greeting(){
@@ -2484,15 +2688,12 @@
     el.innerHTML = `
       <div class="ovhead reveal">
         <div>
-          <span class="eyebrow">${new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'})}</span>
-          <h1>${greeting()}, Jared.</h1>
+          <span class="dateline">${new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'})}</span>
+          <h1>${greeting()}, Jared</h1>
           <p class="lede-compact">${compactLede(s)}</p>
           <div class="areaseg">${['All','Work','Personal'].map(a=>`
             <button type="button" class="${state.areaFilter===a?'active':''}" data-area="${a}">${a}</button>`).join('')}</div>
         </div>
-        <button class="searchpill" data-palette>
-          <svg width="12" height="12" viewBox="0 0 13 13"><circle cx="5.5" cy="5.5" r="4.2" fill="none" stroke="currentColor" stroke-width="1.4"/><line x1="8.8" y1="8.8" x2="12" y2="12" stroke="currentColor" stroke-width="1.4"/></svg>
-          Jump to… <kbd>⌘K</kbd></button>
       </div>
       <div class="focuscard reveal">
         <div class="focushead">
@@ -2515,28 +2716,27 @@
           : '<div class="calm">Nothing queued. Capture something new or pick a project.</div>'}
         </div>
       </div>
-      <div class="kpis compact reveal">${[
+      <div class="statrow reveal">${[
         ['Open', s.open, `${s.openProjects} projects`, '', 'open'],
-        ['In flight', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(', ') : '—', '', 'doing'],
-        ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'clear', 'warn', 'blocked'],
-        ['Done · 7d', s.week, s.week>s.prevWeek?`▲ ${s.prevWeek} prior`:`${s.prevWeek} prior`, s.week>s.prevWeek?'up':'', 'week'],
+        ['In flight', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(', ') : 'None', '', 'doing'],
+        ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(', ') : 'Clear', 'warn', 'blocked'],
+        ['Done · 7d', s.week, s.week>s.prevWeek?`Up from ${s.prevWeek}`:`${s.prevWeek} prior`, s.week>s.prevWeek?'up':'', 'week'],
       ].map(([l,v,sub,mood,kind])=>`
-        <div class="kpi" data-kpi="${kind}" role="button" tabindex="0" title="See the list">
-          <span class="v num"><span data-count="${v}">${v}</span>${mood==='warn'&&v?'<span class="flg">⚑</span>':''}</span>
-          <span class="l">${l}</span>
-          <span class="s ${mood==='up'?'upc':''}" title="${esc(sub)}">${esc(sub)}</span>
+        <div class="stat ${mood||''}" data-kpi="${kind}" role="button" tabindex="0">
+          <div class="v num"><span data-count="${v}">${v}</span>${mood==='warn'&&v?' <span class="flg">⚑</span>':''}</div>
+          <div class="l">${l}</div>
+          <div class="s" title="${esc(sub)}">${esc(sub)}</div>
         </div>`).join('')}
       </div>
-      <div class="charts open reveal" id="ovCharts">
-        <div class="panel"><h3>Momentum</h3>
-          <p class="cap"><b>${s.week}</b> tasks closed this week</p>
+      <div class="bento reveal">
+        <div class="panel wide"><h3>Momentum</h3>
+          <p class="cap"><b>${s.week}</b> closed this week</p>
           ${momentumSVG()}</div>
         <div class="panel"><h3>Credits</h3>
-          <p class="cap">Claude and Cursor usage this cycle</p>
+          <p class="cap">This cycle</p>
           ${creditsCompareHTML()}</div>
-        <div class="panel"><h3>Tip</h3>
-          <p class="tiptext">${esc(tip.title)}</p>
-          <p class="tipsub">${esc(tip.body)}</p></div>
+        <div class="panel full"><h3>${esc(tip.title)}</h3>
+          <p class="tipsub" style="margin:0">${esc(tip.body)}</p></div>
       </div>
       <details class="ovdetails breakdown reveal">
         <summary>Breakdown <span class="ovdetails-chev">▾</span></summary>
@@ -2591,13 +2791,12 @@
     });
     const more = el.querySelector('[data-nav-projects]');
     if(more) more.onclick = ()=>go('projects',{area:'All'});
-    el.querySelector('[data-palette]').onclick = openPalette;
     el.querySelectorAll('[data-area]').forEach(b=>b.onclick=()=>{
       state.areaFilter = b.dataset.area;
       localStorage.setItem('wb-area-filter', state.areaFilter);
       renderOverview(entrance);
     });
-    el.querySelectorAll('.kpi[data-kpi]').forEach(k=>{
+    el.querySelectorAll('.stat[data-kpi]').forEach(k=>{
       k.onclick = ()=>openKpiList(k.dataset.kpi);
       k.onkeydown = e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); openKpiList(k.dataset.kpi); } };
     });
@@ -3374,6 +3573,157 @@
     });
   }
 
+  /* ================= SKILLS / INSTRUCTIONS / ABOUT ================= */
+  function skillCardHTML(s, i){
+    return `<button type="button" class="skillcard ${s.kind==='custom'?'custom':''} reveal" data-si="${i}">
+      <div class="name">${esc(s.name)}</div>
+      <p class="desc">${esc(s.description||'No description yet.')}</p>
+      <div class="src">${s.kind==='custom'?'Custom · in repo':`Store · ${esc(s.source||'synced')}`}</div>
+    </button>`;
+  }
+  function renderSkills(entrance){
+    const el = $('#view-skills');
+    const cat = state.skillCatalog || {custom:[], store:[], total:0};
+    const all = [...cat.custom, ...cat.store];
+    el.innerHTML = `
+      <div class="pagehead reveal">
+        <h1>Skills</h1>
+        <p>Claude Code skills available in this workbench. Custom skills live in the repo; store skills sync from external sources via <code style="font-size:12px">tools/agent-config.json</code>.</p>
+      </div>
+      ${cat.custom.length ? `
+        <div class="skillgroup reveal">
+          <h2>Custom</h2>
+          <p class="cap">Authored in this repo — board of advisors, wrap-session, triage-intake, and others.</p>
+          <div class="skillgrid">${cat.custom.map((s,i)=>skillCardHTML(s,i)).join('')}</div>
+        </div>` : ''}
+      ${cat.store.length ? `
+        <div class="skillgroup reveal">
+          <h2>Store</h2>
+          <p class="cap">Synced from external skill packs (taste-skill, emilkowalski, and agent-config managed list).</p>
+          <div class="skillgrid">${cat.store.map((s,i)=>skillCardHTML(s, cat.custom.length+i)).join('')}</div>
+        </div>` : ''}
+      ${!all.length ? '<div class="calm reveal">No skills catalog loaded yet — connect the workbench folder.</div>' : ''}`;
+    el.querySelectorAll('.skillcard[data-si]').forEach(btn=>{
+      btn.onclick = ()=> openSkillDetail(all[+btn.dataset.si]);
+    });
+    arm(el);
+  }
+  const INSTRUCTION_LINKS = [
+    {title:'Set up a new Mac', path:'Personal/Processes/setup-workbench-new-mac.html'},
+    {title:'Set up a new Windows machine', path:'Personal/Processes/setup-workbench-new-machine.html'},
+    {title:'Publish mobile dashboard', path:'Personal/Processes/publish-workbench-mobile.html'},
+    {title:'Agent config & skills sync', path:'Personal/Processes/agent-config-skills-sync.html'},
+    {title:'Claude Code ↔ Cursor handoff', path:'Personal/Processes/ai-agent-handoff-cursor-claude.html'},
+    {title:'Azure GPT-5.5 fallback', path:'Personal/Processes/claude-code-azure-gpt55-fallback.html'},
+  ];
+  function openGuide(path){
+    if(state.backend==='github'){
+      const cfg = ghConfig();
+      window.open(`https://github.com/${cfg.owner}/${cfg.repo}/blob/${cfg.branch}/${path}`, '_blank');
+    }else{
+      window.open(path, '_blank');
+    }
+  }
+  function renderInstructions(entrance){
+    const el = $('#view-instructions');
+    el.innerHTML = `
+      <div class="pagehead reveal">
+        <h1>Instructions</h1>
+        <p>How to run the workbench day to day — capture, triage, wrap, and sync.</p>
+      </div>
+      <div class="aboutgrid reveal">
+        <div class="aboutcard">
+          <h3>Quick commands</h3>
+          <ul>
+            <li><b>Capture</b> — add tasks, ideas, notes from anywhere</li>
+            <li><b>Triage</b> — run <code>/triage-intake</code> when intake items appear</li>
+            <li><b>Wrap</b> — run <code>/wrap-session</code> at end of session</li>
+            <li><b>⌘K</b> — jump to any project or note</li>
+            <li><b>Do next</b> — ROI-ranked stack on Overview</li>
+          </ul>
+        </div>
+        <div class="aboutcard">
+          <h3>Agent lanes</h3>
+          <ul>
+            <li>Claude Code + Anthropic (default)</li>
+            <li>Claude Code + Azure GPT-5.5 fallback</li>
+            <li>Cursor Agent (separate credits)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="secthead reveal tight"><h2>Setup guides</h2></div>
+      <div class="doclist reveal">
+        ${INSTRUCTION_LINKS.map((g,i)=>`
+          <button type="button" class="docrow" data-gi="${i}">
+            <span class="t">${esc(g.title)}</span><span class="arr">↗</span>
+          </button>`).join('')}
+      </div>`;
+    el.querySelectorAll('.docrow[data-gi]').forEach(btn=>{
+      btn.onclick = ()=> openGuide(INSTRUCTION_LINKS[+btn.dataset.gi].path);
+    });
+    arm(el);
+  }
+  async function renderAbout(entrance){
+    const el = $('#view-about');
+    if(state.mobileVersion==null) state.mobileVersion = await fetchMobileVersion();
+    const mobile = state.mobileVersion;
+    const mobileCls = mobile===WB_VERSION ? 'ok' : mobile ? 'warn' : '';
+    const mobileLabel = mobile ? (mobile===WB_VERSION ? `mobile v${mobile} (in sync)` : `mobile v${mobile} (stale)`) : 'mobile version unknown';
+    el.innerHTML = `
+      <div class="pagehead reveal">
+        <h1>About Workbench</h1>
+        <p>Cross-machine knowledge base, project dashboard, and artifact store. One repo, multiple agents, phone + desktop.</p>
+      </div>
+      <div class="aboutgrid reveal">
+        <div class="aboutcard">
+          <h3>This build <span class="verpill">v${WB_VERSION}</span></h3>
+          <ul>
+            <li>Desktop: folder access (FSA) + sync helper</li>
+            <li>Phone: GitHub API + home-screen app</li>
+            <li><span class="verpill ${mobileCls}">${esc(mobileLabel)}</span></li>
+          </ul>
+        </div>
+        <div class="aboutcard">
+          <h3>Overview</h3>
+          <ul>
+            <li>Do next — ROI-ranked action stack</li>
+            <li>Status rail — sessions, machines, credits</li>
+            <li>Momentum + credits charts</li>
+            <li>Project focus pins</li>
+            <li>Live Claude Code sessions</li>
+          </ul>
+        </div>
+        <div class="aboutcard">
+          <h3>Projects</h3>
+          <ul>
+            <li>tasks.json task boards per project</li>
+            <li>status.md + log.md tracking</li>
+            <li>Capture sheet for mobile intake</li>
+            <li>Covers, logos, HTML docs</li>
+          </ul>
+        </div>
+        <div class="aboutcard">
+          <h3>Knowledge</h3>
+          <ul>
+            <li>Glossary, Processes, Decisions</li>
+            <li>Interactive HTML guides</li>
+            <li>Linked from Index.md</li>
+          </ul>
+        </div>
+      </div>
+      <div class="secthead reveal tight"><h2>Mobile publish</h2></div>
+      <div class="aboutcard reveal" style="margin-top:0">
+        <p style="font-size:13px;color:var(--sec);margin:0 0 10px;line-height:1.5">Pushes to <code>jaredfowkes/workbench-mobile</code> run automatically when <code>dashboard.html</code> lands on <code>main</code>. If phone is stale: hard-reload the home-screen app, or run <code>tools/sync-mobile-dashboard.sh</code> locally.</p>
+        <button type="button" class="btn ghost" id="aboutRefreshMobile">Check mobile version</button>
+      </div>`;
+    el.querySelector('#aboutRefreshMobile')?.addEventListener('click', async ()=>{
+      state.mobileVersion = await fetchMobileVersion();
+      renderAbout(false);
+      toast(state.mobileVersion ? `Mobile: v${state.mobileVersion}` : 'Could not reach workbench-mobile');
+    });
+    arm(el);
+  }
+
   /* ================= markdown-lite =================
      Block-aware: hard-wrapped source lines join back into their paragraph
      or bullet (lazy continuation), headings keep their levels, and h1/h2
@@ -3899,15 +4249,15 @@ Append-only. One line per finished task, newest at the bottom.
         state.helperUp = true;
         state.helperStatus = await r.json();
         $('#syncrow')?.classList.remove('hidden');
-        renderHealthBanner();
+        renderStatusRail();
         return true;
       }
     }catch{}
     try{
-      if(await tryPing()){ renderHealthBanner(); return true; }
+      if(await tryPing()){ renderStatusRail(); return true; }
     }catch{}
     state.helperUp = false;
-    renderHealthBanner();
+    renderStatusRail();
     return false;
   }
   function openWrapSession(){
