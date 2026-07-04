@@ -1142,6 +1142,45 @@
     .tabpill,.modal-card,.capbox,.morebox,.kscrim,.modal-scrim,.lightbox,.gbody,.dot.pop svg{animation:none!important;transition:none!important}
   }
 
+
+  /* ============ board-review implementation pass ============ */
+  @media (min-width:861px){
+    .side{background:#24201C;color:#F7F4EF;border-right-color:#342E27}
+    .side .wordmark,.side .navlink.active,.side .btn.ghost{color:#F7F4EF}
+    .side .navlink{color:#C8BDAF}.side .navlink:hover,.side .navlink.active{background:rgba(255,255,255,.08);color:#fff}
+    .side .navlabel,.side-foot{color:#A99B8C;border-color:#3A332B}.side-actions{border-color:#3A332B}.side .navlink::before{background:#E7B35A}
+  }
+  .num,.tnum,.pnum,.hv,.pct,.lanefig{font-variant-numeric:tabular-nums}
+  .workbench-health{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .healthchip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--hair);border-radius:999px;background:var(--surface);padding:3px 9px;font-size:11px;color:var(--sec)}
+  .healthchip.ok{color:var(--up);background:color-mix(in srgb,var(--up) 8%,var(--surface))}.healthchip.warn{color:var(--accent);background:var(--accent-soft)}
+  .recommended{border:1px solid color-mix(in srgb,var(--link) 24%,var(--hair));background:linear-gradient(135deg,color-mix(in srgb,var(--link) 6%,var(--surface)),var(--surface));border-radius:18px;padding:18px 20px;margin:0 0 16px;box-shadow:var(--shadow-sm)}
+  .recommended .eyebrow{margin-bottom:4px}.recommended h2{font-size:20px;line-height:1.2;letter-spacing:-.025em;margin:0 0 8px}.recommended p{font-size:13.5px;color:var(--sec);margin:0;line-height:1.45}
+  .recommended-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.recommended .microbtn.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+  .reasonchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.reasonchip{font-size:11px;border-radius:999px;background:var(--panel);border:1px solid var(--hair);padding:3px 8px;color:var(--sec)}
+  .lane-title.verify{color:var(--link)}.lane-title.quick{color:var(--up)}.lane-title.needs{color:var(--accent)}
+  .actionrow:active,.krow:active,.docrow:active,.more-item:active{background:var(--hair2);transition-duration:120ms;transform:none}
+  .actionrow .arr,.qrow .arr,.krow .arr,.docrow .arr{opacity:.72}
+  .intentbar{display:flex;gap:6px;flex-wrap:wrap;margin:-8px 0 16px}.intentbar .tagchip{min-height:34px}.tagchip .n{margin-left:4px;color:var(--muted)}
+  .krow{width:100%;border:0;border-bottom:1px solid var(--hair2);background:transparent;text-align:left;color:inherit;font:inherit}
+  .krow:last-child{border-bottom:0}
+  .gname{width:100%;border:0;background:transparent;text-align:left;color:inherit;font:inherit}
+  .gname .gcount{margin-left:8px;color:var(--sec);font-variant-numeric:tabular-nums}
+  .mobile-minihead{display:none}
+  @media (max-width:860px){
+    .mobiletabs .mobile-capture-tab{font-size:11px;line-height:1.05;padding-left:6px;padding-right:6px}
+    .microbtn,.btn,.chip,.tagchip,.focuschip,.more-item,.docrow,.krow{min-height:44px}
+    .recommended{padding:16px;margin-bottom:14px}.recommended h2{font-size:18px}.recommended-actions .microbtn{flex:1 1 calc(50% - 6px);justify-content:center;text-align:center}
+    .workbench-health{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}.healthchip{flex:none}
+    .mobile-minihead{display:flex;align-items:center;gap:8px;position:sticky;top:65px;z-index:20;margin:-6px -18px 12px;padding:8px 18px;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
+    .mobile-minihead .mini-title{font-weight:650;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mobile-minihead .mini-filter{font-size:11px;color:var(--sec);border:1px solid var(--hair);border-radius:999px;padding:3px 8px;flex:none}
+    .project-next{border-radius:16px;padding:14px}.phead{margin-bottom:8px}.viewbar{position:relative;z-index:1}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .reveal,.modal-card,.capbox,.morebox,.actionrow,.stat,.tile,.skillcard,.aboutcard,.bento .panel,.focuschip,.searchpill{transform:none!important;transition:none!important;animation:none!important}
+    .bar i,.htrack i,.credbar-row .track i,.usagefill,.creditlane .lanefill{transition:none!important}
+  }
+
 </style>
 </head>
 <body>
@@ -1233,7 +1272,7 @@
     <span class="tabpill" id="tabPill"></span>
     <button class="navlink" data-nav="overview">Overview</button>
     <button class="navlink" data-nav="projects">Projects</button>
-    <button class="navlink mobile-capture-tab" id="mobileTabCapture" type="button">Capture</button>
+    <button class="navlink mobile-capture-tab" id="mobileTabCapture" type="button">Quick capture</button>
     <button class="navlink" data-nav="knowledge">Knowledge</button>
     <button class="navlink mobile-more-tab" id="mobileTabMore" type="button">More</button>
   </nav>
@@ -1244,7 +1283,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-04.01';
+  const WB_VERSION = '2026-07-04.02';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1258,7 +1297,7 @@
     proj:null, area:'All', pview:'gallery', pq:'',
     tsort:{key:'attention', dir:-1},
     pfilter:'open', psort:'importance', pgroup:'category', ptag:null,
-    ktag:null, kq:'', sq:'', iq:'',
+    ktag:null, kq:'', kintent:'all', sq:'', sintent:'all', iq:'',
   };
   const CYCLE = { todo:'doing', doing:'done', done:'todo', blocked:'todo', idea:'doing' };
   const WEIGHT = { blocked:0, doing:1, todo:2, idea:3, done:4 };
@@ -2185,7 +2224,7 @@
     if(deskGlance) deskGlance.innerHTML = glanceHtml;
     const alerts = [];
     if(intake.length) alerts.push(`<span class="alert">${intake.length} capture${intake.length>1?'s':''} need triage</span><button type="button" class="btn ghost" data-status-triage>Triage captures</button>`);
-    if(helperDown) alerts.push(`<span class="alert info">Local sync helper is not running. Pull, sync, and Open folder need the helper.</span>`);
+    if(helperDown) alerts.push(`<span class="alert info">Sync helper is off. Pull latest, Commit + push, and Open folder need the helper.</span>`);
     el.innerHTML = `
       <button type="button" class="statushead" id="statusToggle">
         <span class="status-label">Status</span>
@@ -2526,6 +2565,11 @@
   }
   const ACTION_LABELS = {blocked:'Needs Jared', doing:'Agent can do', stale:'Stale', next:'Next step'};
   const ACTION_REASONS = {blocked:'Decision needed', doing:'Already in progress', stale:'Been a while', next:'From status'};
+  const ACTION_SNOOZE_KEY = 'wb-action-snoozes';
+  const actionSnoozes = () => { try{return JSON.parse(localStorage.getItem(ACTION_SNOOZE_KEY)||'{}')}catch{return {}}; };
+  const actionKey = a => `${a.p.dirName}|${a.it?.id||''}|${String(a.text||'').slice(0,120)}`;
+  const isActionSnoozed = a => (actionSnoozes()[actionKey(a)]||0) > Date.now();
+  function snoozeAction(a){ const m=actionSnoozes(); m[actionKey(a)] = Date.now()+24*60*60*1000; localStorage.setItem(ACTION_SNOOZE_KEY, JSON.stringify(m)); toast('Snoozed until tomorrow.'); render(true); }
   function actionProjectChips(items){
     const map = new Map();
     for(const a of items){
@@ -2636,25 +2680,52 @@
       for(const step of (p.nextSteps||[]))
         items.push({p,kind:'next',text:step});
     }
-    items.forEach(x=>{
+    const fresh = items.filter(x=>!isActionSnoozed(x));
+    fresh.forEach(x=>{
       x.label = ACTION_LABELS[x.kind]||'Task';
       x.reason = ACTION_REASONS[x.kind]||'';
       x.display = displayCleanText(x.text);
       x.score = scoreAction(x, focusSet);
       x.inFocus = focusSet.has(x.p.dirName);
     });
-    items.sort((a,b)=> b.score-a.score || a.p.data.project.localeCompare(b.p.data.project));
-    return {items: items.slice(0, limit), ranked: items, focusSet};
+    fresh.sort((a,b)=> b.score-a.score || a.p.data.project.localeCompare(b.p.data.project));
+    return {items: fresh.slice(0, limit), ranked: fresh, focusSet};
   }
-  function actionLane(a){ return a.kind==='blocked' ? 'needs' : 'agent'; }
+  function actionLane(a){
+    const t = String(a.text||'').toLowerCase();
+    if(a.kind==='blocked') return 'needs';
+    if(/verify|smoke|test|publish|ship|release/.test(t)) return 'verify';
+    if(/triage|rename|copy|review|check|small|quick|install|login/.test(t) || String(a.text||'').length < 90) return 'quick';
+    return 'agent';
+  }
   function actionReason(a){
     const t = String(a.text||'').toLowerCase();
     if(a.kind==='blocked') return 'Decision needed';
-    if(/publish|ship|launch/.test(t)) return 'Launch move';
-    if(/verify|smoke|test/.test(t)) return 'Verify next';
+    if(/publish|ship|launch|release/.test(t)) return 'Launch blocker';
+    if(/verify|smoke|test/.test(t)) return 'Verify/publish';
     if(a.kind==='doing') return 'Already in progress';
     if(a.kind==='stale') return 'Stale';
+    if(/triage|copy|rename|check|login/.test(t) || String(a.text||'').length < 90) return 'Low effort';
     return 'Recommended';
+  }
+  function actionReasonChips(a){
+    const chips = [actionReason(a)];
+    if(a.inFocus && !chips.includes('Pinned')) chips.push('Pinned');
+    if(a.kind==='doing' && !chips.includes('Already in progress')) chips.push('Already in progress');
+    const c = projCounts(a.p); if(c.blocked && a.kind!=='blocked') chips.push(`Unblocks ${Math.min(c.blocked+1,3)}`);
+    return chips.slice(0,3);
+  }
+  function healthChipsHTML(){
+    const dirty = ($('#gitline')?.textContent||'').match(/(\d+) unsynced/);
+    const mobile = state.mobileVersion ? (state.mobileVersion===WB_VERSION ? ['ok','mobile published'] : ['warn','mobile stale']) : ['warn','mobile unknown'];
+    const rows = [
+      ['ok', state.backend==='github'?'GitHub data connected':'folder connected'],
+      [state.backend==='fsa' ? (state.helperUp?'ok':'warn') : 'ok', state.backend==='fsa' ? (state.helperUp?'helper connected':'helper not needed') : 'GitHub backend'],
+      [dirty?'warn':'ok', dirty?`${dirty[1]} local changes`:'repo clean'],
+      mobile,
+      [(state.sessions||[]).length?'ok':'warn', (state.sessions||[]).length?'session beacons':'no session beacons']
+    ];
+    return `<div class="workbench-health">${rows.map(([cls,txt])=>`<span class="healthchip ${cls}">${esc(txt)}</span>`).join('')}</div>`;
   }
   function actionPrompt(a){
     const project = a.p;
@@ -2662,10 +2733,12 @@
     const recent = (project.log||[]).slice(-3).map(l=>`- ${l.ts} — ${l.text}`).join('\n') || '- No recent log entries.';
     const next = (project.nextSteps||[]).slice(0,3).map(x=>`- ${x}`).join('\n') || '- No status next steps found.';
     const taskLine = a.it ? `Task (${a.it.status}${a.g?`, ${a.g.name}`:''}): ${a.it.text}` : `Status next step: ${a.text}`;
+    const docs = (project._about?.docs||project._docPaths||[]).slice(0,5).map(d=>`- ${typeof d==='string'?d:d.path||d.name}`).join('\n') || '- No HTML docs found yet.';
+    const files = a.it?.files?.length ? a.it.files.map(f=>`- files/${f}`).join('\n') : '- No task-specific files listed.';
     if(a.kind==='blocked'){
-      return `Help Jared unblock ${project.data.project}.\n\nDecision needed: ${task}\n\n${taskLine}\n\nProject path: ${project.section}/Projects/${project.dirName}\n\nCurrent next steps:\n${next}\n\nRecent activity:\n${recent}\n\nAsk only the smallest set of questions needed to make the decision, then summarize the recommended path.`;
+      return `Help Jared unblock ${project.data.project}.\n\nDecision needed: ${task}\n\n${taskLine}\n\nProject path: ${project.section}/Projects/${project.dirName}\n\nCurrent next steps:\n${next}\n\nRecent activity:\n${recent}\n\nRelevant docs/files:\n${docs}\n${files}\n\nAsk only the smallest set of questions needed to make the decision, then summarize the recommended path.`;
     }
-    return `Start work on ${project.data.project}.\n\nGoal: ${task}\n\n${taskLine}\n\nProject path: ${project.section}/Projects/${project.dirName}\n\nCurrent next steps:\n${next}\n\nRecent activity:\n${recent}\n\nWork in the workbench repo. Update tasks/status/log as required, verify in the real app/browser where applicable, and report only what changed, what to test, and anything blocked.`;
+    return `Start work on ${project.data.project}.\n\nGoal: ${task}\n\n${taskLine}\n\nProject path: ${project.section}/Projects/${project.dirName}\n\nCurrent next steps:\n${next}\n\nRecent activity:\n${recent}\n\nRelevant docs/files:\n${docs}\n${files}\n\nWork in the workbench repo. Update tasks/status/log as required, verify in the real app/browser where applicable, and report only what changed, what to test, and anything blocked.`;
   }
   async function copyText(text, ok='Copied.'){
     try{ await navigator.clipboard.writeText(text); toast(ok); }
@@ -2693,7 +2766,7 @@
     const acts = projectNextActions(p);
     if(!acts.length) return `<div class="project-next reveal"><h3>Start here</h3><p>No recommended next step yet. Add a task or update status.md with a Next steps section.</p></div>`;
     const first = acts[0];
-    return `<div class="project-next reveal"><h3>Start here</h3><p>${esc(first.display || displayCleanText(first.text))}</p><div class="next-actions"><button type="button" class="microbtn" data-project-copy="0">Copy agent prompt</button>${first.it?`<button type="button" class="microbtn" data-project-doing="0">Mark in progress</button>`:''}<button type="button" class="microbtn" data-project-filter="${first.kind==='blocked'?'blocked':first.kind==='doing'?'doing':'open'}">Show related tasks</button></div></div>`;
+    return `<div class="project-next reveal"><h3>Start here / Next step</h3><p>${esc(first.display || displayCleanText(first.text))}</p><div class="next-actions"><button type="button" class="microbtn" data-project-copy="0">Copy agent prompt</button>${first.it?`<button type="button" class="microbtn" data-project-doing="0">Mark in progress</button>`:''}<button type="button" class="microbtn" data-project-filter="${first.kind==='blocked'?'blocked':first.kind==='doing'?'doing':'open'}">Show related tasks</button></div></div>`;
   }
   function compactLede(s){
     const bits = [`<b>${s.open}</b> open`, `<b>${s.doing}</b> in flight`];
@@ -3029,7 +3102,7 @@
       io.observe(el);
     });
     scope.querySelectorAll('.bar i[data-w], .htrack i[data-w], .credbar-row .track i[data-w]').forEach(b=>{
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width = b.dataset.w+'%'; }));
+      if(!b.style.width || b.style.width==='0px' || b.style.width==='0%') requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width = b.dataset.w+'%'; }));
     });
     scope.querySelectorAll('[data-count]').forEach(el=>countUp(el, +el.dataset.count));
     bindTilt(scope);
@@ -3042,7 +3115,7 @@
       if(k<1) requestAnimationFrame(step); };
     requestAnimationFrame(step);
   }
-  const barHTML = (p, extra='') => `<span class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p??0}" ${extra}><i data-w="${p??0}"></i></span>`;
+  const barHTML = (p, extra='') => `<span class="bar" role="progressbar" aria-label="Progress ${p??0}%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p??0}" ${extra}><i data-w="${p??0}" style="width:${p??0}%"></i></span>`;
 
   /* ================= dials ================= */
   function dotSVG(s){
@@ -3230,8 +3303,11 @@
     const el = $('#view-overview');
     const {ranked} = buildActionQueue(16);
     ranked.forEach(a=>{ a.lane = actionLane(a); a.reason = actionReason(a); });
-    const agentReady = ranked.filter(a=>a.lane==='agent').slice(0,5);
+    const hero = ranked[0];
+    const agentReady = ranked.filter(a=>a.lane==='agent').slice(0,4);
     const needsJared = ranked.filter(a=>a.lane==='needs').slice(0,4);
+    const verifyReady = ranked.filter(a=>a.lane==='verify').slice(0,4);
+    const quickWins = ranked.filter(a=>a.lane==='quick').slice(0,4);
     const chips = actionProjectChips(ranked);
     const weekLog = weeklyRollup().slice(0, 4);
     const tip = productivityTip(s);
@@ -3247,23 +3323,24 @@
             <span class="chipx ${a.kind==='blocked'?'warn':''}">${esc(a.label)}</span>
             <span class="areason">${esc(a.reason)}</span>
           </div>
-          ${hero?`<div class="actiontools"><span class="microbtn" data-copy-action="${i}">Copy prompt</span>${a.it?`<span class="microbtn" data-doing-action="${i}">Mark doing</span>`:''}</div>`:''}
+          <div class="actiontools"><span class="microbtn" data-copy-action="${i}">Copy agent prompt</span>${a.it&&a.kind!=='blocked'?`<span class="microbtn" data-doing-action="${i}">Mark doing</span>`:''}<span class="microbtn" data-snooze-action="${i}">Snooze</span></div>
         </div>
         <span class="arr" aria-hidden="true">→</span>
       </button>`;
-    const actionPool = [...agentReady, ...needsJared];
+    const actionPool = [...agentReady, ...needsJared, ...verifyReady, ...quickWins];
     el.innerHTML = `
       <div class="ovhead reveal">
         <div>
           <span class="dateline">${new Date().toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'})}</span>
           <h1>${greeting()}, Jared</h1>
           <p class="lede-compact">${compactLede(s)}</p>
-          <div class="healthline">${state.backend==='github'?'GitHub data connected':'Local folder connected'}${state.backend==='fsa' ? (state.helperUp?' · sync helper ready':' · sync helper is off') : ''}${state.mobileVersion?` · mobile ${state.mobileVersion===WB_VERSION?'in sync':'stale'}`:''}</div>
+          ${healthChipsHTML()}
           <div class="areaseg">${['All','Work','Personal'].map(a=>`
             <button type="button" class="${state.areaFilter===a?'active':''}" data-area="${a}" aria-pressed="${state.areaFilter===a?'true':'false'}">${a}</button>`).join('')}</div>
         </div>
       </div>
       ${resumeCardHTML()}
+      ${hero ? `<div class="recommended reveal"><div class="eyebrow">Recommended action</div><h2>${esc(hero.display)}</h2><p>${esc(hero.p.data.project)} · ${esc(hero.reason)}. Start here because it is the highest-ranked item across pinned, in-progress, blocked, and stale work.</p><div class="reasonchips">${actionReasonChips(hero).map(c=>`<span class="reasonchip">${esc(c)}</span>`).join('')}</div><div class="recommended-actions"><button type="button" class="microbtn primary" data-hero-open>Open</button><button type="button" class="microbtn" data-hero-copy>Copy agent prompt</button>${hero.it?`<button type="button" class="microbtn" data-hero-doing>Mark doing</button>`:''}<button type="button" class="microbtn" data-hero-snooze>Snooze</button></div></div>` : ''}
       <div class="focuscard reveal">
         <div class="focushead">
           <h2>Do next</h2>
@@ -3271,8 +3348,10 @@
             <button type="button" class="focuschip on" data-proj-chip="${esc(p.dirName)}">${esc(p.data.project)}</button>`).join('')}</div>` : ''}
         </div>
         <div class="actionstack">
-          ${agentReady.length ? `<div class="lane-title">Agent can do</div>${agentReady.map((a,i)=>renderAction(a, actionPool.indexOf(a), i===0)).join('')}` : ''}
-          ${needsJared.length ? `<div class="lane-title">Needs Jared</div>${needsJared.map((a)=>renderAction(a, actionPool.indexOf(a), !agentReady.length && actionPool.indexOf(a)===0)).join('')}` : ''}
+          ${needsJared.length ? `<div class="lane-title needs">Needs Jared</div>${needsJared.map((a)=>renderAction(a, actionPool.indexOf(a), false)).join('')}` : ''}
+          ${agentReady.length ? `<div class="lane-title">Agent can do</div>${agentReady.map((a)=>renderAction(a, actionPool.indexOf(a), false)).join('')}` : ''}
+          ${verifyReady.length ? `<div class="lane-title verify">Verify/publish</div>${verifyReady.map((a)=>renderAction(a, actionPool.indexOf(a), false)).join('')}` : ''}
+          ${quickWins.length ? `<div class="lane-title quick">Quick win</div>${quickWins.map((a)=>renderAction(a, actionPool.indexOf(a), false)).join('')}` : ''}
           ${!actionPool.length ? '<div class="calm">Nothing queued. Capture a new task or open a project to choose what’s next.</div>' : ''}
         </div>
       </div>
@@ -3313,14 +3392,20 @@
       </details>
       <div class="secthead reveal tight"><h2>Projects</h2><button class="more" data-nav-projects>All ${state.projects.length} →</button></div>
       <div class="gallery reveal">${top.map(({p,c},i)=>tileHTML(p,c,i)).join('')}</div>`;
+    el.querySelector('[data-hero-open]')?.addEventListener('click', ()=>{ if(hero) openProject(hero.p, hero.kind==='blocked'?'blocked':hero.kind==='doing'?'doing':hero.kind==='stale'?'todo':'open'); });
+    el.querySelector('[data-hero-copy]')?.addEventListener('click', ()=>{ if(hero) copyActionPrompt(hero); });
+    el.querySelector('[data-hero-doing]')?.addEventListener('click', ()=>{ if(hero) markActionDoing(hero); });
+    el.querySelector('[data-hero-snooze]')?.addEventListener('click', ()=>{ if(hero) snoozeAction(hero); });
     el.querySelectorAll('.actionrow[data-action-id]').forEach(r=>{
       r.onclick=e=>{
         const copy = e.target.closest('[data-copy-action]');
         const doing = e.target.closest('[data-doing-action]');
-        const a = actionPool[+(copy?.dataset.copyAction ?? doing?.dataset.doingAction ?? r.dataset.actionId)];
+        const snooze = e.target.closest('[data-snooze-action]');
+        const a = actionPool[+(copy?.dataset.copyAction ?? doing?.dataset.doingAction ?? snooze?.dataset.snoozeAction ?? r.dataset.actionId)];
         if(!a) return;
         if(copy){ e.preventDefault(); e.stopPropagation(); copyActionPrompt(a); return; }
         if(doing){ e.preventDefault(); e.stopPropagation(); markActionDoing(a); return; }
+        if(snooze){ e.preventDefault(); e.stopPropagation(); snoozeAction(a); return; }
         openProject(a.p, a.kind==='blocked'?'blocked':a.kind==='doing'?'doing':a.kind==='stale'?'todo':'open');
       };
     });
@@ -3422,9 +3507,7 @@
       });
     }
     bindOpeners(el); fillCovers(el);
-    el.querySelectorAll('.bar i[data-w]').forEach(b=>{
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width=b.dataset.w+'%'; }));
-    });
+    el.querySelectorAll('.bar i[data-w]').forEach(b=>{ if(!b.style.width) b.style.width=b.dataset.w+'%'; });
   }
 
   /* ================= PROJECT DETAIL ================= */
@@ -3468,7 +3551,7 @@
           <h1>${p.logo?`<img class="phlogo hidden" data-logo="${esc(p.dirName)}" alt="">`:''}${esc(p.data.project)}</h1>
           <span class="ptagline">${esc(p.data.tagline||'')}</span>
           <span class="ppath">${esc(p.section)}/Projects/${esc(p.dirName)}
-            ${state.helperUp?` · <button class="readmore" id="openFolderBtn">Open folder →</button>`:''}</span>
+            ${state.helperUp?` · <button class="readmore" id="openFolderBtn">Open folder →</button>`:''} · <button class="readmore" id="projectHeaderPrompt">Copy agent prompt</button></span>
         </div>
         <div class="phero">
           <span class="pnum" id="pnum"></span>
@@ -3476,6 +3559,7 @@
           <span class="psub" id="psub"></span>
         </div>
       </div>
+      <div class="mobile-minihead"><button type="button" class="microbtn" id="miniBackBtn">Back</button><span class="mini-title">${esc(p.data.project)}</span><span class="mini-filter">${esc(state.pfilter)}</span><button type="button" class="microbtn" id="miniAddBtn">Add task</button></div>
       ${projectNextStripHTML(p)}
       <div class="viewbar reveal">
         <button class="btn ghost" id="focusToggle" style="padding:6px 12px;font-size:12px">${loadPinnedProjects().includes(p.dirName)?'Pinned to Overview':'Pin to Overview'}</button>
@@ -3503,6 +3587,8 @@
       </div>`;
     state.pq2 = '';
     $('#backBtn').onclick = ()=>go('projects');
+    $('#miniBackBtn')?.addEventListener('click', ()=>go('projects'));
+    $('#miniAddBtn')?.addEventListener('click', ()=>$('#addText')?.focus());
     const ft = $('#focusToggle');
     if(ft) ft.onclick = ()=>{ togglePinnedProject(p.dirName); toast(loadPinnedProjects().includes(p.dirName)?`${p.data.project} pinned to Overview.`:`${p.data.project} removed from Overview pins.`); renderProjectPage(entrance); renderCredits(); };
     const pNext = projectNextActions(p);
@@ -3511,6 +3597,7 @@
     el.querySelector('[data-project-filter]')?.addEventListener('click', e=>{ state.pfilter=e.currentTarget.dataset.projectFilter; renderPFilters(projCounts(p)); renderTaskList(); });
     const ofb = $('#openFolderBtn');
     if(ofb) ofb.onclick = ()=>openFolder(`${p.section}/Projects/${p.dirName}`);
+    $('#projectHeaderPrompt')?.addEventListener('click', ()=>{ const a=projectNextActions(p)[0] || {p,kind:'next',text:`Continue ${p.data.project}`,display:`Continue ${p.data.project}`}; copyActionPrompt(a); });
     $('#psort').onchange = e=>{ state.psort = e.target.value; renderTaskList(); };
     const tf = $('#ptaskFilter');
     tf.addEventListener('input', ()=>{ state.pq2 = tf.value; renderTaskList(); });
@@ -3580,6 +3667,7 @@
       const closed = p.collapsed.has(key);
       const head = document.createElement('button');
       head.className = 'gname'+(closed?' closed':'');
+      head.setAttribute('aria-expanded', closed?'false':'true');
       head.innerHTML = `<span class="chev">▼</span>${esc(title)}<span class="gcount">${count}</span>`;
       head.onclick = ()=>{
         if(closed){ p.collapsed.delete(key); p._justOpened = key; }
@@ -3632,6 +3720,7 @@
       <button class="dot" title="Status: ${it.status}. Click to mark next state." aria-label="Status: ${it.status}. Click to mark next state.">${dotSVG(it.status)}</button>
       <span class="txt" title="${esc(it.text)}">${esc(clean)}</span>
       ${hasDetail?`<button type="button" class="task-more" aria-expanded="false">Details</button>`:''}
+      <button type="button" class="task-more" data-task-copy>Copy prompt</button>
       ${(it.tags||[]).map(t=>`<span class="itag">${esc(t)}</span>`).join('')}
       ${showCat?`<span class="catchip" title="${esc(r.g.name)}">${esc(r.g.name)}</span>`:''}
       <span class="meta">${it.status==='done'&&it.completed? esc(it.completed):''}</span>
@@ -3661,6 +3750,7 @@
         setTimeout(()=>{ if(state.view==='project' && state.proj===p) renderTaskList(); }, 700);
       }
     };
+    row.querySelector('[data-task-copy]')?.addEventListener('click', e=>{ e.stopPropagation(); copyActionPrompt({p,g:r.g,it,kind:it.status==='blocked'?'blocked':it.status==='doing'?'doing':'next',text:it.text,display:displayCleanText(it.text)}); });
     row.querySelector('.flagbtn').onclick = ()=>{
       it.status = it.status==='blocked' ? 'todo' : 'blocked';
       delete it.completed; saveProject(p);
@@ -4076,8 +4166,17 @@
   }
 
   /* ================= KNOWLEDGE ================= */
+  const K_INTENTS = [['all','All'],['how','How do I…'],['what','What is…'],['why','Why did we…'],['gotcha','Gotchas']];
   const qWordsK = () => state.kq.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const kbMatches = (e, words) => !words.length || words.every(w=>(e.title+' '+e.tags.join(' ')+' '+e.summary+' '+e.body).toLowerCase().includes(w));
+  const kbIntentMatches = e => {
+    const hay = (e.title+' '+e.tags.join(' ')+' '+e.summary+' '+e.body).toLowerCase();
+    if(state.kintent==='how') return e.sub==='Processes' || /how|setup|install|process|workflow|run|publish/.test(hay);
+    if(state.kintent==='what') return e.sub==='Glossary' || /what is|term|acronym|means/.test(hay);
+    if(state.kintent==='why') return e.sub==='Decisions' || /why|decision|because|chose|tradeoff/.test(hay);
+    if(state.kintent==='gotcha') return /gotcha|avoid|warning|fails|error|pitfall|must|can't|cannot/.test(hay);
+    return true;
+  };
+  const kbMatches = (e, words) => kbIntentMatches(e) && (!words.length || words.every(w=>(e.title+' '+e.tags.join(' ')+' '+e.summary+' '+e.body).toLowerCase().includes(w)));
   function renderKnowledge(entrance){
     const el = $('#view-knowledge');
     const words = qWordsK();
@@ -4096,6 +4195,7 @@
           <button class="btn ghost" id="newEntryBtn">+ New entry</button>
         </div>
       </div>
+      <div class="intentbar reveal" id="kIntentBar">${K_INTENTS.map(([k,l])=>`<button type="button" class="tagchip ${state.kintent===k?'active':''}" data-ki="${k}" aria-pressed="${state.kintent===k?'true':'false'}">${l}</button>`).join('')}</div>
       <div class="ptagrail reveal" id="ktagrail">
         <button class="tagchip ${!state.ktag?'active':''}" data-t="">All</button>
         ${topTags.map(([t,n])=>`<button class="tagchip ${state.ktag===t?'active':''}" data-t="${esc(t)}">${esc(t)}<span class="n">${n}</span></button>`).join('')}
@@ -4104,7 +4204,8 @@
     el.querySelector('#newEntryBtn').onclick = ()=>openEditor(null);
     const fi = el.querySelector('#kFilter');
     fi.addEventListener('input', ()=>{ state.kq = fi.value; renderKBody(); });
-    el.querySelectorAll('.tagchip').forEach(b=>b.onclick=()=>{ state.ktag=b.dataset.t||null; renderKnowledge(); });
+    el.querySelectorAll('[data-ki]').forEach(b=>b.onclick=()=>{ state.kintent=b.dataset.ki; renderKnowledge(); });
+    el.querySelectorAll('#ktagrail .tagchip').forEach(b=>b.onclick=()=>{ state.ktag=b.dataset.t||null; renderKnowledge(); });
     renderKBody();
     arm(el);
   }
@@ -4118,29 +4219,31 @@
       const list = entries.filter(e=>e.sub===sub);
       if(!list.length) continue;
       html += `<div class="eyebrow ksechead">${sub}</div>` + list.map(e=>`
-        <div class="krow" data-k="${esc(e.section)}/${esc(e.sub)}/${esc(e.fileName)}" title="${e.format==='html'?'Opens in a new tab':''}">
+        <button type="button" class="krow" data-k="${esc(e.section)}/${esc(e.sub)}/${esc(e.fileName)}" title="${e.format==='html'?'Opens in a new tab':''}">
           <span class="kmain"><span class="kn">${esc(e.title)}${e.format==='html'?' <span class="chipx" style="font-size:9px;vertical-align:1px">HTML</span>':''}</span><span class="ks">${esc(e.summary)}</span></span>
           <span class="kmeta">
             ${e.tags.length ? `<span class="ktags">${e.tags.slice(0,3).map(t=>`<span class="chipx">${esc(t)}</span>`).join('')}</span>` : ''}
             <span class="kd">${esc(e.section)} · ${esc(e.date)}</span>
             <span class="arr">${e.format==='html'?'↗':'→'}</span>
           </span>
-        </div>`).join('');
+        </button>`).join('');
     }
     el.innerHTML = html || `<div class="kempty">${state.kb.length? 'Nothing matches — clear the search or tag.' : 'No knowledge entries yet — create the first one.'}</div>`;
-    el.querySelectorAll('.krow').forEach(r=>r.onclick=()=>{
-      const e = state.kb.find(x=>`${x.section}/${x.sub}/${x.fileName}`===r.dataset.k);
-      if(e) openEntry(e);
+    el.querySelectorAll('.krow').forEach(r=>{
+      r.onclick=()=>{ const e = state.kb.find(x=>`${x.section}/${x.sub}/${x.fileName}`===r.dataset.k); if(e) openEntry(e); };
+      r.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); r.click(); } };
     });
   }
 
   /* ================= SKILLS / INSTRUCTIONS / ABOUT ================= */
+  const S_INTENTS = [['all','All'],['review','Review this'],['design','Design this'],['debug','Debug this'],['prompt','Generate prompt'],['setup','Setup']];
   const qWordsS = () => state.sq.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const skillIntentMatches = s => { const hay = skillSearchText(s).toLowerCase(); if(state.sintent==='review') return /review|advisor|audit|critique/.test(hay); if(state.sintent==='design') return /design|ui|prototype|visual|system/.test(hay); if(state.sintent==='debug') return /debug|fix|triage|verify|test/.test(hay); if(state.sintent==='prompt') return /prompt|wrap|handoff|resume/.test(hay); if(state.sintent==='setup') return /setup|install|sync|config|login/.test(hay); return true; };
   const skillSearchText = s => [
     s.name, s.when, s.description, s.category, s.invoke, s.invokeHint,
     ...(s.actions||[]), s.source, s.sourceLabel, s.kind,
   ].filter(Boolean).join(' ');
-  const skillMatches = (s, words) => !words.length || words.every(w=> skillSearchText(s).toLowerCase().includes(w));
+  const skillMatches = (s, words) => skillIntentMatches(s) && (!words.length || words.every(w=> skillSearchText(s).toLowerCase().includes(w))); 
   function renderSkills(entrance){
     const el = $('#view-skills');
     const cat = state.skillCatalog || {custom:[], store:[], total:0};
@@ -4154,9 +4257,11 @@
           <input class="filterinput" id="sFilter" type="search" placeholder="Search skills…" value="${esc(state.sq)}">
         </div>
       </div>
+      <div class="intentbar reveal" id="sIntentBar">${S_INTENTS.map(([k,l])=>`<button type="button" class="tagchip ${state.sintent===k?'active':''}" data-si-filter="${k}" aria-pressed="${state.sintent===k?'true':'false'}">${l}</button>`).join('')}</div>
       <div id="sBody" class="reveal"></div>`;
     const fi = el.querySelector('#sFilter');
     fi.addEventListener('input', ()=>{ state.sq = fi.value; renderSBody(); });
+    el.querySelectorAll('[data-si-filter]').forEach(b=>b.onclick=()=>{ state.sintent=b.dataset.siFilter; renderSkills(); });
     renderSBody();
     arm(el);
   }
@@ -4424,24 +4529,29 @@
 
   /* ================= modal shell ================= */
   function modalPanel(inner, label, cls=''){
+    const prior = document.activeElement;
     const scrim = document.createElement('div'); scrim.className='modal-scrim';
     scrim.innerHTML = `<div class="modal-card ${cls}" role="dialog" aria-modal="true" aria-label="${esc(label)}">
       <button class="modal-close">esc</button>${inner}</div>`;
-    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey); };
-    const onKey = e=>{ if(e.key==='Escape') close(); };
+    const focusables = () => [...scrim.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled && x.offsetParent!==null);
+    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey); prior?.focus?.(); };
+    const onKey = e=>{ if(e.key==='Escape') close(); else if(e.key==='Tab'){ const f=focusables(); if(!f.length) return; const first=f[0], last=f[f.length-1]; if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); } else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); } } };
     scrim.onclick = e=>{ if(e.target===scrim) close(); };
     scrim.querySelector('.modal-close').onclick = close;
     document.addEventListener('keydown', onKey);
     document.body.appendChild(scrim);
+    requestAnimationFrame(()=>focusables()[0]?.focus?.());
     return {scrim, close};
   }
   function capturePanel(inner){
     if(document.querySelector('.capscrim,.morescrim,.kscrim,.modal-scrim')) return {scrim:null, close:()=>{}};
     const scrim = document.createElement('div'); scrim.className = 'capscrim';
-    scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Quick capture">
+    const prior = document.activeElement;
+    scrim.innerHTML = `<div class="capbox" role="dialog" aria-modal="true" aria-label="Quick capture">
       <button type="button" class="cap-close" aria-label="Close">esc</button>${inner}</div>`;
-    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey, true); };
-    const onKey = e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+    const focusables = () => [...scrim.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x=>!x.disabled && x.offsetParent!==null);
+    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey, true); prior?.focus?.(); };
+    const onKey = e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } else if(e.key==='Tab'){ const f=focusables(); if(!f.length) return; const first=f[0], last=f[f.length-1]; if(e.shiftKey && document.activeElement===first){ e.preventDefault(); last.focus(); } else if(!e.shiftKey && document.activeElement===last){ e.preventDefault(); first.focus(); } } };
     scrim.onclick = e=>{ if(e.target===scrim) close(); };
     scrim.querySelector('.cap-close').onclick = close;
     document.addEventListener('keydown', onKey, true);
@@ -4564,7 +4674,8 @@
     const destEl = scrim.querySelector('#capDest');
     const textLbl = scrim.querySelector('#capTextLbl');
     const filesRow = scrim.querySelector('#capFilesRow');
-    const projOptions = () => state.projects.map((p,i)=>`<option value="${i}">${esc(p.section)} / ${esc(p.data.project)}</option>`).join('');
+    const preferredProjectIndex = () => Math.max(0, state.projects.findIndex(p=> state.proj ? p===state.proj : focusedProjectSet().has(p.dirName)));
+    const projOptions = () => state.projects.map((p,i)=>`<option value="${i}" ${i===preferredProjectIndex()?'selected':''}>${esc(p.section)} / ${esc(p.data.project)}</option>`).join('');
     function renderDest(){
       scrim.querySelectorAll('#capType .chip').forEach(ch=>ch.classList.toggle('active', ch.dataset.t===type));
       filesRow.style.display = type==='note' ? 'none' : '';
@@ -4798,8 +4909,8 @@ Append-only. One line per finished task, newest at the bottom.
     if($('.kscrim,.capscrim,.morescrim,.modal-scrim') || !state.connected) return;
     const scrim = document.createElement('div'); scrim.className='kscrim';
     scrim.innerHTML = `<div class="kbox">
-      <input type="text" placeholder="Jump to a project, note, skill, or action…" aria-label="Search or jump">
-      <div class="klist"></div>
+      <input type="text" role="combobox" aria-expanded="true" aria-controls="paletteList" aria-activedescendant="" placeholder="Jump to a project, note, skill, or action…" aria-label="Search or jump">
+      <div class="klist" id="paletteList" role="listbox" aria-live="polite"></div>
       <div class="khint"><span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div>
     </div>`;
     document.body.appendChild(scrim);
@@ -4812,7 +4923,7 @@ Append-only. One line per finished task, newest at the bottom.
       let html = '', lastGroup = null;
       current.forEach((it,i)=>{
         if(it.group!==lastGroup){ html += `<div class="kgrouplbl">${it.group}</div>`; lastGroup = it.group; }
-        html += `<div class="kitem ${i===sel?'sel':''}" data-i="${i}" role="option" aria-selected="${i===sel?'true':'false'}" tabindex="-1">
+        html += `<div id="palette-opt-${i}" class="kitem ${i===sel?'sel':''}" data-i="${i}" role="option" aria-selected="${i===sel?'true':'false'}" tabindex="-1"> 
           <span>${esc(it.label)}</span>${it.sub?`<span class="ksub">${esc(it.sub)}</span>`:''}
           <span class="kmeta">${esc(it.meta)}</span></div>`;
       });
@@ -4821,6 +4932,7 @@ Append-only. One line per finished task, newest at the bottom.
         el.onmousemove = ()=>{ sel=+el.dataset.i; list.querySelectorAll('.kitem').forEach((k)=>k.classList.toggle('sel',+k.dataset.i===sel)); };
         el.onclick = ()=>{ const it=current[+el.dataset.i]; close(); it.run(); };
       });
+      input.setAttribute('aria-activedescendant', current.length ? `palette-opt-${sel}` : '');
       list.querySelector('.kitem.sel')?.scrollIntoView({block:'nearest'});
     };
     const onKey = e=>{
@@ -4915,6 +5027,8 @@ Append-only. One line per finished task, newest at the bottom.
   }
   async function runHelper(btn, endpoint, failMsg){
     if(btn.classList.contains('working')) return;
+    const msg = endpoint==='/pull' ? 'Pull latest will fetch repo changes and rebase local edits. Continue?' : 'Commit + push will save local dashboard/workbench changes, pull latest, then push. Continue?';
+    if(!confirm(msg)) return;
     const row = $('#syncrow');
     btn.classList.add('working');
     row.querySelectorAll('.btn').forEach(b=>{ if(b!==btn) b.disabled = true; });
