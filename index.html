@@ -88,8 +88,16 @@
   }
   .desk-status:hover{background:var(--hair2)}
   .desk-status .label{font-weight:600;color:var(--ink);flex:none}
-  .desk-status .glance{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .desk-status .warn{color:var(--accent);font-weight:500}
+  .desk-status .glance,.status-glance{
+    flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden;
+    font-size:12.5px;color:var(--sec);font-weight:400;
+  }
+  .glance-seg{
+    display:inline-flex;align-items:center;white-space:nowrap;flex:0 0 auto;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  }
+  .glance-seg.grow{flex:1 1 0;min-width:0}
+  .desk-status .warn,.status-glance .warn{color:var(--accent);font-weight:500}
   .desk-search{margin-left:auto;flex:none}
   .side{
     border-right:1px solid var(--hair);padding:20px 14px 16px;display:flex;flex-direction:column;gap:1px;
@@ -149,7 +157,7 @@
   .lede-compact b{color:var(--ink);font-weight:600}
   .statrow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 20px}
   .stat{
-    flex:1;min-width:100px;padding:12px 14px;border-radius:var(--radius-lg);
+    flex:1;min-width:0;padding:12px 14px;border-radius:var(--radius-lg);overflow:hidden;
     border:1px solid var(--hair);background:var(--surface);cursor:pointer;
     transition:transform .22s var(--ease), box-shadow .22s var(--ease), background .12s, border-color .12s;
     box-shadow:var(--shadow-sm);transform-style:preserve-3d;
@@ -208,7 +216,8 @@
   .qrow.doing{border-left-color:var(--ink)}
   .qrow.log{border-left-color:var(--sec)}
   .qrow:hover{background:var(--panel)}
-  .qrow .qt{flex:1;font-size:14px;min-width:0}
+  .qrow .qt{flex:1;font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .qrow .chipx{flex:none}
   .qrow .arr{color:var(--sec);opacity:0;transform:translateX(-4px);transition:all .2s var(--ease)}
   .qrow:hover .arr{opacity:1;transform:none}
   .chipx{
@@ -312,7 +321,7 @@
   .ptable td{padding:12px;border-bottom:1px solid var(--hair2);vertical-align:middle}
   .ptable tbody tr{transition:background .14s ease;cursor:pointer}
   .ptable tbody tr:hover{background:var(--panel)}
-  .ptable .pname{font-weight:500}
+  .ptable .pname{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;display:block}
   .ptable .ptag{display:block;font-size:12px;color:var(--sec);margin-top:1px;max-width:320px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ptable .tnum{font-variant-numeric:tabular-nums;text-align:right}
   .ptable td.tnum.zero{color:var(--hair)}
@@ -450,16 +459,19 @@
 
   /* ============ knowledge ============ */
   .krow{
-    display:flex;align-items:center;gap:18px;padding:15px 4px;border-top:1px solid var(--hair);cursor:pointer;
-    transition:padding .2s var(--ease);
+    display:flex;align-items:center;gap:14px 18px;padding:15px 4px;border-top:1px solid var(--hair);cursor:pointer;
+    transition:padding .2s var(--ease);min-width:0;
   }
   .krow:hover{padding-left:10px}
   .krow:last-child{border-bottom:1px solid var(--hair)}
-  .krow .kmain{flex:1;min-width:0}
-  .krow .kn{font-size:15.5px;font-weight:500}
-  .krow .ks{font-size:13px;color:var(--sec);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .krow .kd{font-size:12px;color:var(--sec);white-space:nowrap;font-variant-numeric:tabular-nums}
-  .krow .arr{color:var(--sec);opacity:0;transform:translateX(-4px);transition:all .2s var(--ease)}
+  .krow .kmain{flex:1;min-width:0;overflow:hidden}
+  .krow .kn{display:block;font-size:15.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .krow .ks{display:block;font-size:13px;color:var(--sec);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .krow .kmeta{display:flex;align-items:center;gap:8px;flex:none;max-width:min(46%,340px);min-width:0}
+  .krow .ktags{display:flex;gap:6px;align-items:center;overflow:hidden;min-width:0}
+  .krow .ktags .chipx{flex:none}
+  .krow .kd{font-size:12px;color:var(--sec);white-space:nowrap;font-variant-numeric:tabular-nums;flex:none}
+  .krow .arr{color:var(--sec);opacity:0;transform:translateX(-4px);transition:all .2s var(--ease);flex:none}
   .krow:hover .arr{opacity:1;transform:none}
   .ksechead{margin:34px 0 4px}
   .kempty{color:var(--sec);font-size:14px;font-style:italic;margin:30px 0}
@@ -482,7 +494,7 @@
   }
   .docrow:hover{background:var(--panel)}
   .docrow.sel{background:var(--panel);box-shadow:inset 2px 0 0 var(--ink)}
-  .docrow .dn{font-size:13.5px;font-weight:500}
+  .docrow .dn{font-size:13.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .docrow .dd{font-size:11px;color:var(--sec)}
   .docrow .dt{display:flex;gap:4px;flex-wrap:wrap;margin-top:2px}
   .docrow .dt span{font-size:10px;color:var(--sec);border:1px solid var(--hair);border-radius:999px;padding:0 7px}
@@ -617,9 +629,6 @@
   .statushead{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
   .statushead:hover{background:var(--panel)}
   .status-label{font-size:13px;font-weight:600;color:var(--ink);flex:none}
-  .status-glance{flex:1;min-width:0;font-size:12.5px;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
-  .status-glance .warn{color:var(--accent);font-weight:500}
-  .status-glance .dot-sep{margin:0 6px;color:var(--hair)}
   .statushead .chev{margin-left:2px;color:var(--sec);transition:transform .2s var(--ease);flex:none}
   .statusrail.collapsed .chev{transform:rotate(-90deg)}
   .statusrail.collapsed .statusbody{display:none}
@@ -806,7 +815,9 @@
   .skillcard .skillart img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s var(--ease)}
   .skillcard:hover .skillart img{transform:scale(1.05)}
   .skillcard .skillbody{padding:12px 14px 14px}
-  .skillcard .name{font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+  .skillcard .name{font-size:14px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:6px;min-width:0}
+  .skillcard .name .skilltitle{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .skillcard .name .feat{flex:none}
   .skillcard .name .feat{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--link);background:var(--link-soft);padding:2px 6px;border-radius:4px}
   .skillcard .desc{font-size:12px;color:var(--sec);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:0}
   .skillcard .actions{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
@@ -915,12 +926,11 @@
     .kscrim{padding-top:8vh;align-items:flex-start}
     .detail{padding:30px 20px 60px}
     /* knowledge rows: full-width main line, wrapping summary, bigger type */
-    .krow{flex-wrap:wrap;gap:6px 10px;padding:14px 2px}
-    .krow .kmain{flex-basis:100%}
-    .krow .kn{font-size:16px}
-    .krow .ks{font-size:13.5px;white-space:normal}
-    .krow .kd{font-size:12px}
-    .krow .arr{display:none}
+    .krow{flex-wrap:wrap;gap:8px 10px;padding:14px 2px}
+    .krow .kmain{flex-basis:100%;max-width:100%}
+    .krow .kmeta{flex-basis:100%;max-width:100%;flex-wrap:wrap}
+    .krow .kn{font-size:16px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+    .krow .ks{font-size:13.5px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
     /* iOS auto-zooms (and stays zoomed) when focusing any field under 16px —
        every input must be at least 16px on mobile so focus never zooms */
     input, select, textarea{font-size:16px !important}
@@ -1044,7 +1054,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.18';
+  const WB_VERSION = '2026-07-03.20';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1790,6 +1800,13 @@
   /* turn a raw prompt (or hook-supplied notification/error text) into a short
      plain-English line: strip code fences/inline code/links/urls, collapse
      whitespace, then cut at the first sentence end or ~100 chars */
+  function humanizeCapsToken(w){
+    if(!/^[A-Z][A-Z0-9_]*$/.test(w) || w.length < 4) return w;
+    if(w.includes('_'))
+      return w.split('_').filter(Boolean).map(s=>s.charAt(0)+s.slice(1).toLowerCase()).join(' ');
+    return w.charAt(0)+w.slice(1).toLowerCase();
+  }
+  /* dashboard-facing lines: strip agent handoff noise (paths, ticket ids, arrows) */
   function displayCleanText(raw, maxLen=160){
     let t = String(raw||'').trim();
     if(!t) return '';
@@ -1797,10 +1814,28 @@
     t = t.replace(/^#+\s*/gm,'');
     t = t.replace(/\[(.*?)\]\([^)]+\)/g,'$1');
     t = t.replace(/^[a-z]{2,5}-\d+\s*[-:]\s*/i,'');
-    t = t.replace(/[—–]/g,'-');
+    t = t.replace(/^(?:OWNER|PUBLISH|TODO|FIXED|CLOSED|SHIPPED)\s*[-—:]\s*/i,'');
+    t = t.replace(/\(\s*[a-z]{2,5}-\d+\s*\)/gi,'');
+    t = t.replace(/\b[a-z]{2,5}-\d+\b/gi,'');
+    t = t.replace(/\(\s*files\/[^)]+\)/gi,'');
+    t = t.replace(/`?files\/[^\s`,)]+`?/gi,'');
+    t = t.replace(/\(\s*files\/\s*\)/gi,'');
+    t = t.replace(/\b[A-Za-z0-9_-]+\.(?:html|md|yaml|json|zip|msapp|pa\.yaml)\b/gi,'');
+    t = t.replace(/\b([A-Z][A-Z0-9_]{3,})\b/g, humanizeCapsToken);
     t = t.replace(/\b([A-Z]{6,})\b/g, w=> w.charAt(0)+w.slice(1).toLowerCase());
+    t = t.replace(/\s*(?:->|→)\s*/g,' — ');
+    t = t.replace(/\(([^)]{45,})\)/g,(m,inner)=>{
+      const parts = inner.split(/[,;]\s*/);
+      return parts.length > 2 ? `(${parts.slice(0,2).join(', ')}, …)` : m;
+    });
+    t = t.replace(/[—–]/g,'—');
     t = t.replace(/\s+/g,' ').trim();
+    t = t.replace(/\(\s*[,;…]\s*\)/g,'');
+    t = t.replace(/\(\s*\)/g,'');
+    t = t.replace(/\s+:\s+/g, ': ');
+    t = t.replace(/\s*[,;—]\s*$/,'');
     if(t.length>maxLen) t = t.slice(0, maxLen).replace(/\s+\S*$/,'')+'…';
+    if(!t) return '';
     return t.charAt(0).toUpperCase()+t.slice(1);
   }
   function humanizePrompt(text){
@@ -1904,6 +1939,14 @@
     if(!cu && !cur) return '';
     return `<div class="statusblock"><h4>Credits</h4><div class="creditsgrid compact">${renderCreditLane('Claude', cu)}${renderCreditLane('Cursor', cur)}</div></div>`;
   }
+  function buildGlanceHtml(segs){
+    if(!segs.length) return '';
+    return segs.map(s=>{
+      const html = typeof s==='string' ? s : s.html;
+      const grow = typeof s==='string' ? false : !!s.grow;
+      return `<span class="glance-seg${grow?' grow':''}">${html}</span>`;
+    }).join('');
+  }
   async function renderStatusRail(){
     const el = $('#statusRail');
     if(!el || !state.connected) return;
@@ -1916,26 +1959,26 @@
     const hasCredits = !!(cu || cur);
     const helperDown = state.backend==='fsa' && !state.helperUp;
     const segs = [];
-    if(intake.length) segs.push(`<span class="warn">${intake.length} intake</span>`);
-    if(helperDown) segs.push(`<span class="warn">sync helper off</span>`);
+    const pushSeg = (html, grow=false)=>segs.push({html, grow});
+    if(intake.length) pushSeg(`<span class="warn">${intake.length} intake</span>`);
+    if(helperDown) pushSeg(`<span class="warn">sync helper off</span>`);
     if(rows.length){
       const active = rows.filter(r=>r.active);
       if(active.length){
         const projs = [...new Set(active.map(s=>(s.cwd||'').split('/').filter(Boolean).pop()).filter(Boolean))];
         const snippet = displayCleanText(humanizePrompt(active[0].prompt), 40);
-        let s = `${active.length} session${active.length>1?'s':''}`;
-        if(projs.length) s += ` · ${projs.slice(0,2).map(p=>esc(p)).join(', ')}`;
-        else if(snippet) s += ` · ${snippet}`;
-        segs.push(s);
-      } else segs.push(`${rows.length} recent`);
+        pushSeg(`${active.length} session${active.length>1?'s':''}`);
+        if(projs.length) pushSeg(projs.slice(0,2).map(p=>esc(p)).join(', '), true);
+        else if(snippet) pushSeg(esc(snippet), true);
+      } else pushSeg(`${rows.length} recent`);
     }
-    if(machines.length) segs.push(esc(machineLabel(machines[0].hostname||'?')));
+    if(machines.length) pushSeg(esc(machineLabel(machines[0].hostname||'?')));
     if(hasCredits){
       const bits = [];
       const cp = creditPct(cu), cup = creditPct(cur);
       if(cp!=null) bits.push(`Claude ${cp}%`);
       if(cup!=null) bits.push(`Cursor ${cup}%`);
-      if(bits.length) segs.push(bits.join(' · '));
+      if(bits.length) pushSeg(bits.join(' · '));
     }
     if(!segs.length){
       el.classList.add('hidden'); el.innerHTML='';
@@ -1946,7 +1989,7 @@
     const expanded = localStorage.getItem(STATUS_RAIL_KEY)==='1';
     el.classList.toggle('expanded', expanded);
     el.classList.toggle('collapsed', !expanded);
-    const glanceHtml = segs.join('<span class="dot-sep">·</span>');
+    const glanceHtml = buildGlanceHtml(segs);
     const deskGlance = $('#deskStatusGlance');
     if(deskGlance) deskGlance.innerHTML = glanceHtml;
     const alerts = [];
@@ -2411,7 +2454,7 @@
       <span class="d-path">${rows.length} item${rows.length===1?'':'s'}${nProj?` across ${nProj} project${nProj===1?'':'s'}`:''}</span>
       <div class="queue">${rows.length ? rows.map((r,i)=>`
         <div class="qrow ${r.it.status==='doing'?'doing':r.it.status==='blocked'?'':'log'}" data-i="${i}">
-          <span class="qt">${esc(r.it.text)}</span>
+          <span class="qt">${esc(displayCleanText(r.it.text))}</span>
           <span class="chipx">${esc(r.p.data.project)}</span>
           <span class="chipx">${esc(kind==='week' ? (r.it.completed||'') : r.g.name)}</span>
           <span class="arr">→</span>
@@ -2563,7 +2606,7 @@
       <div class="skillart">${s.icon||'⚡'}</div>
       <div class="skillbody">
         <div class="cat">${esc(s.category||'')}</div>
-        <div class="name">${esc(s.name)}${s.featured?' <span class="feat">Featured</span>':''}</div>
+        <div class="name"><span class="skilltitle">${esc(s.name)}</span>${s.featured?' <span class="feat">Featured</span>':''}</div>
         <p class="desc">${esc(s.when||s.description||'No description yet.')}</p>
         ${acts.length?`<div class="actions">${acts.map(a=>`<span class="actchip">${esc(a)}</span>`).join('')}</div>`:''}
         <div class="src">${s.kind==='custom'?'In repo · .claude/skills':esc(s.sourceLabel||s.source||'Store skill')}</div>
@@ -3731,9 +3774,11 @@
       html += `<div class="eyebrow ksechead">${sub}</div>` + list.map(e=>`
         <div class="krow" data-k="${esc(e.section)}/${esc(e.sub)}/${esc(e.fileName)}" title="${e.format==='html'?'Opens in a new tab':''}">
           <span class="kmain"><span class="kn">${esc(e.title)}${e.format==='html'?' <span class="chipx" style="font-size:9px;vertical-align:1px">HTML</span>':''}</span><span class="ks">${esc(e.summary)}</span></span>
-          ${e.tags.slice(0,3).map(t=>`<span class="chipx">${esc(t)}</span>`).join('')}
-          <span class="kd">${esc(e.section)} · ${esc(e.date)}</span>
-          <span class="arr">${e.format==='html'?'↗':'→'}</span>
+          <span class="kmeta">
+            ${e.tags.length ? `<span class="ktags">${e.tags.slice(0,3).map(t=>`<span class="chipx">${esc(t)}</span>`).join('')}</span>` : ''}
+            <span class="kd">${esc(e.section)} · ${esc(e.date)}</span>
+            <span class="arr">${e.format==='html'?'↗':'→'}</span>
+          </span>
         </div>`).join('');
     }
     el.innerHTML = html || `<div class="kempty">${state.kb.length? 'Nothing matches — clear the search or tag.' : 'No knowledge entries yet — create the first one.'}</div>`;
