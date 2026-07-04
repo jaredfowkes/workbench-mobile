@@ -900,6 +900,7 @@
     state.machines = await Backends[state.backend].loadMachines();
     state.machineAliases = await loadMachineAliases();
     for(const p of state.projects) await enrichProjectStatus(p);
+    if(state.backend==='fsa') await pingHelper();
     renderSessions();
     renderUsage();
     state.projects.sort((a,b)=> (a.section+a.data.project).localeCompare(b.section+b.data.project));
@@ -3599,22 +3600,34 @@ Append-only. One line per finished task, newest at the bottom.
       + (dirty? ` — ${dirty} tracked file${dirty===1?'':'s'} modified since` : ' — everything committed');
   }
   async function pingHelper(){
-    if(state.backend!=='fsa') return;
+    if(state.backend!=='fsa') return false;
+    const tryPing = async ()=>{
+      const ctl = new AbortController(); setTimeout(()=>ctl.abort(), 900);
+      const r = await fetch(HELPER+'/ping', {signal:ctl.signal, headers:{'X-Workbench':'1'}});
+      if(r.ok && state.backend==='fsa'){
+        state.helperUp = true;
+        $('#syncrow')?.classList.remove('hidden');
+        return true;
+      }
+      return false;
+    };
     try{
       const ctl = new AbortController(); setTimeout(()=>ctl.abort(), 900);
       const r = await fetch(HELPER+'/status', {signal:ctl.signal, headers:{'X-Workbench':'1'}});
       if(r.ok && state.backend==='fsa'){
         state.helperUp = true;
         state.helperStatus = await r.json();
-        $('#syncrow').classList.remove('hidden');
+        $('#syncrow')?.classList.remove('hidden');
+        renderHealthBanner();
+        return true;
       }
-    }catch{
-      try{
-        const ctl = new AbortController(); setTimeout(()=>ctl.abort(), 900);
-        const r = await fetch(HELPER+'/ping', {signal:ctl.signal});
-        if(r.ok){ state.helperUp = true; $('#syncrow').classList.remove('hidden'); }
-      }catch{}
-    }
+    }catch{}
+    try{
+      if(await tryPing()){ renderHealthBanner(); return true; }
+    }catch{}
+    state.helperUp = false;
+    renderHealthBanner();
+    return false;
   }
   function openWrapSession(){
     const prompt = `Run /wrap-session in this workbench repo. Identify projects touched this session, update tasks.json, status.md, and log.md for each, validate Index.md and docs.json, confirm dashboard WB_VERSION if dashboard.html changed. Report a short digest only.`;
