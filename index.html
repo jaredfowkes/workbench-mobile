@@ -571,7 +571,10 @@
   .livestrip.collapsed .chev{transform:rotate(-90deg)}
   .livegroup{display:flex;flex-direction:column;gap:6px}
   .livegroup + .livegroup{margin-top:14px}
-  .livesub{font-size:11px;color:var(--sec);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px 2px}
+  .livesubbar{display:flex;align-items:center;gap:10px;margin:0 0 2px 2px}
+  .livesub{font-size:11px;color:var(--sec);letter-spacing:.04em;text-transform:uppercase}
+  .liveclear{margin-left:auto;border:0;background:none;color:var(--link);font-size:12px;padding:2px 4px;border-radius:6px}
+  .liveclear:hover{background:var(--panel);text-decoration:underline;text-underline-offset:3px}
   .livestrip.collapsed .livebody{display:none}
   .liverow{
     display:flex;align-items:center;gap:10px;min-width:0;
@@ -794,7 +797,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.11';
+  const WB_VERSION = '2026-07-03.12';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -991,10 +994,16 @@
           const dir = await tools.getDirectoryHandle('sessions');
           for await (const [name, h] of dir.entries()){
             if(h.kind!=='file' || !name.endsWith('.json')) continue;
-            try{ out.push(JSON.parse(await (await h.getFile()).text())); }catch{}
+            try{ out.push({...JSON.parse(await (await h.getFile()).text()), _path:`tools/sessions/${name}`}); }catch{}
           }
         }catch{}
         return out;
+      },
+      async deleteSession(path){
+        const name = path.split('/').pop();
+        const tools = await state.root.getDirectoryHandle('tools');
+        const dir = await tools.getDirectoryHandle('sessions');
+        await dir.removeEntry(name);
       },
       async loadUsage(){
         try{
@@ -1085,10 +1094,25 @@
           const tree = await ghGetTree();
           const paths = tree.filter(p=>/^tools\/sessions\/[^/]+\.json$/.test(p));
           await ghBatch(paths, async path=>{
-            try{ const f = await ghGetFile(path); if(f) out.push(JSON.parse(f.text)); }catch{}
+            try{ const f = await ghGetFile(path); if(f) out.push({...JSON.parse(f.text), _path:path}); }catch{}
           });
         }catch{}
         return out;
+      },
+      async deleteSession(path){
+        const cfg = ghConfig();
+        const sha = ghShaCache.get(path);
+        if(!sha) throw new Error('Session file changed. Reload and try again.');
+        const res = await ghFetch(`/contents/${path.split('/').map(encodeURIComponent).join('/')}`, {
+          method:'DELETE',
+          body: JSON.stringify({message:'Dashboard: clear '+path, sha, branch:cfg.branch}),
+        });
+        if(!res.ok){
+          let detail=''; try{ detail = (await res.json()).message||''; }catch{}
+          throw new Error(`Clear failed (${res.status})${detail?': '+detail:''}`);
+        }
+        ghShaCache.delete(path);
+        localStorage.removeItem(GH_TREE_KEY);
       },
       async loadUsage(){
         try{
@@ -1357,6 +1381,7 @@
   const LIVE_IDLE_MAX = 2*3600e3;
   const LIVE_STALE_AFTER = 4*3600e3;
   const LIVE_COLLAPSE_KEY = 'wb-live-collapsed';
+  const LIVE_CLEARED_KEY = 'wb-live-cleared';
   const LIVE_STATUSES = ['running','waiting','error','idle'];
   function fmtRun(ms){
     const s = Math.max(0, Math.floor(ms/1000));
@@ -1392,8 +1417,17 @@
   function machineLabel(machine){
     return (state.machineAliases && state.machineAliases[machine]) || machine || '?';
   }
+  function clearedSessions(){
+    try{ return JSON.parse(localStorage.getItem(LIVE_CLEARED_KEY)||'[]'); }catch{ return []; }
+  }
+  function rememberClearedSessions(keys){
+    const keep = new Set([...clearedSessions(), ...keys].filter(Boolean));
+    localStorage.setItem(LIVE_CLEARED_KEY, JSON.stringify([...keep].slice(-80)));
+  }
+  function sessionKey(s){ return s._path || `${s.machine||'?'}-${s.session||'?'}-${s.promptStart||s.updated||''}`; }
   function sessionRows(){
     const now = Date.now();
+    const hidden = new Set(clearedSessions());
     return (state.sessions||[])
       .map(s=>{
         const status = LIVE_STATUSES.includes(s.status) ? s.status : 'running';
