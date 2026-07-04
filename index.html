@@ -564,18 +564,28 @@
   /* contain:inline-size — the nowrap prompt must never widen .main (a grid
      item with min-width:auto) via intrinsic sizing; the strip sizes from its
      container only, and the prompt then shrinks + ellipsizes normally */
-  .livestrip{margin:0 0 26px;contain:inline-size}
+  .livestrip{
+    margin:0 0 26px;contain:inline-size;
+    border:1px solid var(--hair);border-radius:12px;padding:10px 14px;background:var(--surface);
+  }
   .livehead{display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer;user-select:none}
   .livehead .n{font-size:12px;color:var(--sec)}
   .livehead .chev{margin-left:auto;color:var(--sec);transition:transform .2s var(--ease);flex:none}
   .livestrip.collapsed .chev{transform:rotate(-90deg)}
+  .livestrip.collapsed .livehead{margin-bottom:0}
+  .livestrip.collapsed .livebody{display:none}
+  .livestrip.collapsed .livehead .eyebrow{display:none}
   .livegroup{display:flex;flex-direction:column;gap:6px}
   .livegroup + .livegroup{margin-top:14px}
   .livesubbar{display:flex;align-items:center;gap:10px;margin:0 0 2px 2px}
   .livesub{font-size:11px;color:var(--sec);letter-spacing:.04em;text-transform:uppercase}
   .liveclear{margin-left:auto;border:0;background:none;color:var(--link);font-size:12px;padding:2px 4px;border-radius:6px}
   .liveclear:hover{background:var(--panel);text-decoration:underline;text-underline-offset:3px}
-  .livestrip.collapsed .livebody{display:none}
+  .livehead .glance{font-size:12.5px;color:var(--ink);font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .livehead .glance .dim{color:var(--sec);font-weight:400}
+  .livestrip.collapsed .livehead .glance{display:block;flex:1}
+  .livestrip.collapsed .livehead .n{display:none}
+  .livestrip:not(.collapsed) .livehead .glance{display:none}
   .liverow{
     display:flex;align-items:center;gap:10px;min-width:0;
     border:1px solid var(--hair);border-radius:12px;background:var(--surface);
@@ -660,30 +670,57 @@
     margin:24px 0 0;background:var(--surface);box-shadow:var(--shadow-sm);
   }
   .focushead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  .focushead h2{font-size:17px;font-weight:600;margin:0;letter-spacing:-.01em}
-  .focushead .hint{font-size:12px;color:var(--sec);flex:1;min-width:140px}
-  .focuschips{display:flex;gap:6px;flex-wrap:wrap}
+  .focushead h2{font-size:18px;font-weight:600;margin:0;letter-spacing:-.02em}
+  .focushead .hint{font-size:12px;color:var(--sec);display:none}
+  .focuschips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;max-width:100%}
   .focuschip{
-    font-size:11px;padding:3px 10px;border-radius:999px;border:1px solid var(--hair);
-    background:var(--panel);cursor:pointer;color:var(--sec);transition:border-color .15s, color .15s;
+    font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--hair);
+    background:var(--bg);cursor:pointer;color:var(--ink);font-weight:500;
+    transition:border-color .15s, background .15s;
   }
-  .focuschip.on{border-color:var(--ink);color:var(--ink);font-weight:600;background:var(--bg)}
-  .actionstack{display:flex;flex-direction:column;gap:5px}
+  .focuschip.on{border-color:color-mix(in srgb, var(--ink) 22%, transparent);background:var(--panel)}
+  .actionstack{display:flex;flex-direction:column;gap:4px}
   .actionrow{
-    display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-radius:12px;
-    border:1px solid var(--hair2);cursor:pointer;transition:background .15s ease;
+    display:flex;align-items:flex-start;gap:14px;padding:12px 14px;border-radius:14px;
+    border:1px solid transparent;background:var(--panel);
+    cursor:pointer;transition:transform .15s var(--ease), box-shadow .15s ease, background .15s;
   }
-  .actionrow:hover{background:var(--panel)}
-  .actionrow.hero{border-color:color-mix(in srgb, var(--ink) 16%, transparent);background:var(--panel);padding:13px 16px}
-  .actionrow .rank{font-size:11px;font-weight:600;color:var(--sec);width:16px;padding-top:2px;flex:none;font-variant-numeric:tabular-nums}
+  .actionrow:hover{transform:translateY(-1px);box-shadow:var(--shadow-sm);background:var(--surface)}
+  .actionrow.hero{
+    border-color:color-mix(in srgb, var(--ink) 12%, transparent);
+    background:var(--surface);padding:14px 16px;box-shadow:var(--shadow-sm);
+  }
+  .actionrow .rank{display:none}
   .actionrow .abody{flex:1;min-width:0}
-  .actionrow .atext{font-size:14px;font-weight:500;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .actionrow.hero .atext{font-size:15px;-webkit-line-clamp:3}
-  .actionrow .ameta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
-  .actionrow .areason{font-size:11px;color:var(--sec)}
-  .actionrow .arr{color:var(--sec);opacity:0;flex:none;padding-top:2px;transition:opacity .15s}
-  .actionrow:hover .arr{opacity:1}
-  .ovdetails{margin:32px 0 0;border-top:1px solid var(--hair);padding-top:8px}
+  .actionrow .atext{
+    font-size:15px;font-weight:500;line-height:1.4;letter-spacing:-.015em;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .actionrow.hero .atext{font-size:16px;font-weight:600;-webkit-line-clamp:3}
+  .actionrow .ameta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;align-items:center}
+  .actionrow .chipx{font-size:11px;padding:2px 8px;border-radius:6px;text-transform:none;letter-spacing:0}
+  .actionrow .areason{font-size:11px;color:var(--sec);font-weight:400}
+  .actionrow .arr{color:var(--sec);opacity:.35;flex:none;padding-top:3px;font-size:13px;transition:opacity .15s, transform .15s}
+  .actionrow:hover .arr{opacity:1;transform:translateX(2px)}
+  .charts.open{margin:24px 0 0}
+  .charts.open .panel h3{font-size:14px;letter-spacing:-.01em}
+  .credbars{display:flex;flex-direction:column;gap:12px;margin-top:4px}
+  .credbar-row{display:grid;grid-template-columns:52px 1fr 36px;gap:10px;align-items:center;font-size:12px}
+  .credbar-row .lbl{font-weight:600;color:var(--sec)}
+  .credbar-row .track{height:8px;border-radius:99px;background:var(--hair);overflow:hidden}
+  .credbar-row .track i{display:block;height:100%;border-radius:99px;background:var(--link);width:0;transition:width .8s var(--ease)}
+  .credbar-row .track i.claude{background:#C0452F}
+  .credbar-row .track i.cursor{background:#0066CC}
+  .credbar-row .track i.hot{background:var(--accent)}
+  .credbar-row .sub{font-size:11px;color:var(--sec);grid-column:2/4;margin-top:-6px}
+  .credbar-row .pct{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  .tiptext{font-size:14px;line-height:1.5;color:var(--ink);font-weight:500;letter-spacing:-.01em}
+  .tipsub{font-size:12px;color:var(--sec);margin-top:6px;line-height:1.45}
+  .ovdetails.breakdown{margin-top:16px}
+  .icon-btn.working{opacity:.55;pointer-events:none}
+  .icon-btn.working svg{animation:spin .7s linear infinite}
+  .ovdetails{margin:0;border-top:none;padding-top:0}
+  .ovdetails.breakdown{border-top:1px solid var(--hair);padding-top:4px;margin-top:8px}
   .ovdetails > summary{
     cursor:pointer;font-size:13px;font-weight:500;color:var(--link);list-style:none;
     padding:10px 0;display:flex;align-items:center;gap:8px;
@@ -808,6 +845,9 @@
   <div class="mobiletop">
     <span class="wordmark">Workbench</span>
     <span class="icons">
+      <button class="icon-btn" id="mobileReloadBtn" aria-label="Reload">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M13.2 2.8v3.4H9.8M2.8 13.2V9.8h3.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 6.2a5 5 0 0 1 8.3-1.8M12.5 9.8a5 5 0 0 1-8.3 1.8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      </button>
       <button class="icon-btn" id="mobileCaptureBtn" aria-label="Capture">
         <svg width="15" height="15" viewBox="0 0 14 14"><line x1="7" y1="1.5" x2="7" y2="12.5" stroke="currentColor" stroke-width="1.6"/><line x1="1.5" y1="7" x2="12.5" y2="7" stroke="currentColor" stroke-width="1.6"/></svg>
       </button>
@@ -863,7 +903,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.14';
+  const WB_VERSION = '2026-07-03.15';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1322,12 +1362,15 @@
   }
   function ghToken(){ return localStorage.getItem(GH_TOKEN_KEY) || ghConfig()?.pat || ''; }
   async function ghLoadConfig(){
-    const cfg = ghConfig(), token = ghToken();
-    if(cfg && token) return {...cfg, pat:token};
     try{
       const saved = await idb.get('gh-config');
-      if(saved?.owner && saved?.repo && saved?.pat){ ghSaveConfig(saved); return saved; }
+      if(saved?.owner && saved?.repo && saved?.pat){
+        ghSaveConfig(saved);
+        return saved;
+      }
     }catch{}
+    const cfg = ghConfig(), token = ghToken();
+    if(cfg && token) return {...cfg, pat:token};
     return cfg ? {...cfg, pat:token} : null;
   }
   function ghDisconnect(){ localStorage.removeItem(GH_CONFIG_KEY); localStorage.removeItem(GH_TOKEN_KEY); localStorage.removeItem(GH_TREE_KEY); idb.del('gh-config').catch(()=>{}); ghShaCache.clear(); }
@@ -1460,13 +1503,14 @@
       }catch{}
     }, 60000);
   }
-  async function connectGithub(cfg){
+  async function connectGithub(cfg, opts={}){
     if(cfg.pat) ghSaveConfig(cfg);
+    if(!opts.quiet) toast(opts.reload ? 'Reloading workbench…' : 'Connecting…');
     ghShaCache.clear();
     state.backend = 'github';
     state.helperUp = false;
     $('#syncrow')?.classList.add('hidden');
-    await ghGetTree(true);
+    await ghGetTree(!!opts.forceTree);
     await scan();
     ghStartPoll();
     /* Home-screen bookmarks have no browser chrome, so "refresh" must be a
@@ -1483,8 +1527,20 @@
          clicks again (looks like a dead button, not just a dead handler). */
       btn.disabled = false;
       btn.textContent = 'Reload';
-      btn.onclick = ()=>location.replace(location.pathname + '?_r=' + Date.now());
+      btn.onclick = ()=>doReload();
     }
+  }
+  function doReload(){
+    sessionStorage.setItem('wb-force-tree', '1');
+    const mobile = $('#mobileReloadBtn');
+    const desktop = $('#connectBtn');
+    [mobile, desktop].forEach(b=>{
+      if(!b) return;
+      b.classList.add('working');
+      b.disabled = true;
+    });
+    toast('Reloading…');
+    setTimeout(()=>location.replace(location.pathname + location.search.replace(/\?_r=\d+/,'') + '?_r=' + Date.now()), 80);
   }
   /* Cold-launching the iOS home-screen app sometimes fires this first fetch
      before the WKWebView's network stack is actually ready, so the very
@@ -1495,14 +1551,24 @@
      (401/403), which no amount of retrying will fix. */
   async function connectGithubAuto(cfg, attempt=1){
     const MAX_ATTEMPTS = 4;
+    const forceTree = sessionStorage.getItem('wb-force-tree')==='1' || attempt>1;
+    if(attempt===1) sessionStorage.removeItem('wb-force-tree');
+    $('#landing').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    if(attempt===1) toast('Connecting…');
     try{
-      await connectGithub(cfg);
+      await connectGithub(cfg, {quiet:true, forceTree, reload:attempt>1});
     }catch(e){
       if(e.status===401 || e.status===403){
+        $('#landing').classList.remove('hidden');
+        $('#app').classList.add('hidden');
+        ghDisconnect();
         $('#landingNote').textContent = 'Your saved GitHub token was rejected — it may have expired or been revoked. Reconnect below.';
         return;
       }
       if(attempt>=MAX_ATTEMPTS){
+        $('#landing').classList.remove('hidden');
+        $('#app').classList.add('hidden');
         $('#landingNote').textContent = `Could not reach GitHub (${e.message}). Check your connection, or reconnect below.`;
         return;
       }
@@ -1544,7 +1610,7 @@
       const btn = scrim.querySelector('#ghConnectBtn');
       btn.disabled = true; btn.textContent = 'Connecting…';
       try{
-        await connectGithub({owner, repo, branch, pat});
+        await connectGithub({owner, repo, branch, pat}, {forceTree:true});
         close();
       }catch(e){
         toast('Could not connect: '+e.message);
@@ -1578,6 +1644,19 @@
   /* turn a raw prompt (or hook-supplied notification/error text) into a short
      plain-English line: strip code fences/inline code/links/urls, collapse
      whitespace, then cut at the first sentence end or ~100 chars */
+  function displayCleanText(raw, maxLen=160){
+    let t = String(raw||'').trim();
+    if(!t) return '';
+    t = t.replace(/\*\*|__|`/g,'').replace(/\*/g,'');
+    t = t.replace(/^#+\s*/gm,'');
+    t = t.replace(/\[(.*?)\]\([^)]+\)/g,'$1');
+    t = t.replace(/^[a-z]{2,5}-\d+\s*[-:]\s*/i,'');
+    t = t.replace(/[—–]/g,'-');
+    t = t.replace(/\b([A-Z]{6,})\b/g, w=> w.charAt(0)+w.slice(1).toLowerCase());
+    t = t.replace(/\s+/g,' ').trim();
+    if(t.length>maxLen) t = t.slice(0, maxLen).replace(/\s+\S*$/,'')+'…';
+    return t.charAt(0).toUpperCase()+t.slice(1);
+  }
   function humanizePrompt(text){
     let t = String(text||'').trim();
     if(!t) return 'Working on something';
@@ -1658,15 +1737,30 @@
     const rows = sessionRows();
     if(!rows.length){ el.classList.add('hidden'); el.innerHTML=''; return; }
     el.classList.remove('hidden');
-    el.classList.toggle('collapsed', localStorage.getItem(LIVE_COLLAPSE_KEY)==='1');
+    const collapsed = localStorage.getItem(LIVE_COLLAPSE_KEY)!=='0';
+    el.classList.toggle('collapsed', collapsed);
     const active = rows.filter(r=>r.active), completed = rows.filter(r=>!r.active);
     const staleN = active.filter(r=>r.stale).length;
-    const summary = active.length
-      ? `${active.length} active${staleN?` · ${staleN} running a long time`:''}`
+    const summaryN = active.length
+      ? `${active.length} active${staleN?`, ${staleN} long run`:''}`
       : (completed.length ? `${completed.length} recent` : '');
+    let glance = active.length
+      ? `${active.length} active${staleN?`, ${staleN} long` : ''}`
+      : `${completed.length} recent`;
+    if(active.length){
+      const projs = [...new Set(active.map(s=>(s.cwd||'').split('/').filter(Boolean).pop()).filter(Boolean))];
+      const snippet = displayCleanText(humanizePrompt(active[0].prompt), 52);
+      if(projs.length) glance += ` · ${projs.slice(0,2).join(', ')}`;
+      if(snippet) glance += ` · ${snippet}`;
+    } else if(completed.length){
+      const proj = (completed[0].cwd||'').split('/').filter(Boolean).pop();
+      if(proj) glance += ` · ${proj}`;
+    }
     el.innerHTML = `
       <div class="livehead" id="liveHeadToggle">
-        <span class="eyebrow">Sessions</span><span class="n">${summary}</span>
+        <span class="eyebrow">Sessions</span>
+        <span class="n">${esc(summaryN)}</span>
+        <span class="glance">${esc(glance)}</span>
         <svg class="chev" width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.2 5 6.4 8 3.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
       </div>
       <div class="livebody">
@@ -1674,9 +1768,9 @@
         ${completed.length ? `<div class="livegroup"><div class="livesub">Recently completed</div>${completed.map(liveRowHTML).join('')}</div>` : ''}
       </div>`;
     $('#liveHeadToggle').onclick = ()=>{
-      const collapsed = !el.classList.contains('collapsed');
-      el.classList.toggle('collapsed', collapsed);
-      localStorage.setItem(LIVE_COLLAPSE_KEY, collapsed?'1':'0');
+      const nowCollapsed = !el.classList.contains('collapsed');
+      el.classList.toggle('collapsed', nowCollapsed);
+      localStorage.setItem(LIVE_COLLAPSE_KEY, nowCollapsed?'1':'0');
     };
     $('#clearActiveSessions')?.addEventListener('click', e=>{
       e.stopPropagation();
@@ -2036,6 +2130,49 @@
     return filterByArea(state.projects).filter(p=>set.has(p.dirName))
       .sort((a,b)=> a.data.project.localeCompare(b.data.project));
   }
+  function projectRecencyMs(p){
+    let max = 0;
+    for(const l of (p.log||[])){
+      const t = Date.parse(String(l.ts).replace(' ','T'));
+      if(!isNaN(t) && t>max) max = t;
+    }
+    for(const g of p.data.groups||[]) for(const it of g.items||[]){
+      for(const d of [it.completed, it.created]) if(d){
+        const t = Date.parse(d); if(!isNaN(t) && t>max) max = t;
+      }
+    }
+    return max;
+  }
+  const ACTION_LABELS = {blocked:'Blocked', doing:'In progress', stale:'Waiting', next:'Next up'};
+  const ACTION_REASONS = {blocked:'Needs your call', doing:'Keep going', stale:'Been a while', next:'From status'};
+  function actionProjectChips(items){
+    const map = new Map();
+    for(const a of items){
+      const id = a.p.dirName;
+      const rec = projectRecencyMs(a.p);
+      const cur = map.get(id);
+      if(!cur || a.score>cur.score) map.set(id, {p:a.p, score:a.score, rec});
+    }
+    return [...map.values()].sort((a,b)=> b.rec-a.rec || b.score-a.score);
+  }
+  function creditsCompareHTML(){
+    const rows = [['Claude', state.usage, 'claude'], ['Cursor', state.cursorUsage, 'cursor']].filter(([,u])=>u && !u.error);
+    if(!rows.length) return '<div class="calm">No credit data yet.</div>';
+    return `<div class="credbars">${rows.map(([lbl,u,cls])=>{
+      const pct = creditPct(u);
+      const hot = pct>=90;
+      const fig = u.spend!=null && u.limit ? `$${u.spend.toFixed(0)} / $${u.limit.toFixed(0)}` : '';
+      return `<div class="credbar-row"><span class="lbl">${lbl}</span><span class="track"><i class="${cls}${hot?' hot':''}" data-w="${pct}"></i></span><span class="pct">${pct}%</span>${fig?`<span class="sub">${fig}</span>`:''}</div>`;
+    }).join('')}</div>`;
+  }
+  function productivityTip(s){
+    const cl = creditPct(state.usage), cu = creditPct(state.cursorUsage);
+    if(s.blocked) return {title:'Unblock first', body:'Clear blocked tasks before opening new threads. One decision often unlocks several todos.'};
+    if((cl!=null && cl>=85) || (cu!=null && cu>=85)) return {title:'Credits are tight', body:'Batch triage on lighter models. Save high-capacity agents for implementation and review.'};
+    if(s.doing>=3) return {title:'Finish before starting', body:'You have several tasks in flight. Closing one raises throughput more than starting another.'};
+    if(s.week>0 && s.week>=s.prevWeek) return {title:'Momentum is up', body:'Keep the streak: close one small task before opening a new thread.'};
+    return {title:'One thing at a time', body:'Work the top item here, then run /wrap-session so the dashboard stays current.'};
+  }
   function actionBoost(text){
     const t = String(text||'').toUpperCase();
     let b = 0;
@@ -2065,18 +2202,24 @@
     for(const p of filterByArea(state.projects)){
       for(const g of p.data.groups||[]) for(const it of g.items||[]){
         if(it.status==='blocked')
-          items.push({p,g,it,kind:'blocked',label:'Blocked',reason:'Needs a decision',text:it.text});
+          items.push({p,g,it,kind:'blocked',text:it.text});
         else if(it.status==='doing')
-          items.push({p,g,it,kind:'doing',label:'In progress',reason:'Already in flight',text:it.text});
+          items.push({p,g,it,kind:'doing',text:it.text});
         else if(isStaleTask(it))
-          items.push({p,g,it,kind:'stale',label:'Stale',reason:'30+ days untouched',text:it.text});
+          items.push({p,g,it,kind:'stale',text:it.text});
       }
       for(const step of (p.nextSteps||[]))
-        items.push({p,kind:'next',label:'Next step',reason:'From status.md',text:step});
+        items.push({p,kind:'next',text:step});
     }
-    items.forEach(x=>{ x.score = scoreAction(x, focusSet); x.inFocus = focusSet.has(x.p.dirName); });
+    items.forEach(x=>{
+      x.label = ACTION_LABELS[x.kind]||'Task';
+      x.reason = ACTION_REASONS[x.kind]||'';
+      x.display = displayCleanText(x.text);
+      x.score = scoreAction(x, focusSet);
+      x.inFocus = focusSet.has(x.p.dirName);
+    });
     items.sort((a,b)=> b.score-a.score || a.p.data.project.localeCompare(b.p.data.project));
-    return {items: items.slice(0, limit), focusSet};
+    return {items: items.slice(0, limit), ranked: items, focusSet};
   }
   function compactLede(s){
     const bits = [`<b>${s.open}</b> open`, `<b>${s.doing}</b> in flight`];
@@ -2181,7 +2324,7 @@
       el.style.transitionDelay = Math.min(i*70, 280)+'ms';
       io.observe(el);
     });
-    scope.querySelectorAll('.bar i[data-w], .htrack i[data-w]').forEach(b=>{
+    scope.querySelectorAll('.bar i[data-w], .htrack i[data-w], .credbar-row .track i[data-w]').forEach(b=>{
       requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width = b.dataset.w+'%'; }));
     });
     scope.querySelectorAll('[data-count]').forEach(el=>countUp(el, +el.dataset.count));
@@ -2251,6 +2394,7 @@
   }
   $('#mobileMoreBtn').onclick = ()=>toggleSideSheet();
   $('#mobileSearchBtn').onclick = ()=>openPalette();
+  $('#mobileReloadBtn').onclick = ()=>doReload();
   $('#mobileCaptureBtn').onclick = ()=>openCapture();
   $('#captureBtn').onclick = ()=>{ toggleSideSheet(false); openCapture(); };
   $('#triageBtn').onclick = ()=>{ toggleSideSheet(false); openIntakeFlow(); };
@@ -2329,10 +2473,11 @@
   function renderOverview(entrance){
     const s = globalStats();
     const el = $('#view-overview');
-    const {items: actions} = buildActionQueue(5);
-    const focused = focusedProjects();
+    const {items: actions, ranked} = buildActionQueue(5);
+    const chips = actionProjectChips(ranked);
     const att = attentionItems();
     const weekLog = weeklyRollup().slice(0, 4);
+    const tip = productivityTip(s);
     const top = filterByArea(state.projects).map(p=>({p, c:projCounts(p)}))
       .sort((a,b)=> (b.c.blocked-a.c.blocked) || (b.c.doing-a.c.doing) || (b.c.open-a.c.open))
       .slice(0,4);
@@ -2352,30 +2497,27 @@
       <div class="focuscard reveal">
         <div class="focushead">
           <h2>Do next</h2>
-          <span class="hint">Ranked for ROI in focused projects</span>
-          ${focused.length ? `<div class="focuschips">${focused.map(p=>`
-            <button type="button" class="focuschip on" data-pin="${esc(p.dirName)}" title="Click to unpin">${esc(p.data.project)}</button>`).join('')}</div>` : ''}
+          ${chips.length ? `<div class="focuschips">${chips.map(({p})=>`
+            <button type="button" class="focuschip on" data-proj-chip="${esc(p.dirName)}">${esc(p.data.project)}</button>`).join('')}</div>` : ''}
         </div>
         <div class="actionstack">${
           actions.length ? actions.map((a,i)=>`
             <div class="actionrow ${i===0?'hero':''}" data-ai="${i}">
-              <span class="rank">${i+1}</span>
               <div class="abody">
-                <div class="atext">${esc(a.text)}</div>
+                <div class="atext">${esc(a.display)}</div>
                 <div class="ameta">
                   <span class="chipx">${esc(a.p.data.project)}</span>
                   <span class="chipx ${a.kind==='blocked'?'warn':''}">${esc(a.label)}</span>
-                  <span class="areason">${esc(a.reason)}${a.inFocus?' · focus':''}</span>
                 </div>
               </div>
               <span class="arr">→</span>
             </div>`).join('')
-          : '<div class="calm">Nothing queued — pick a project or capture something new.</div>'}
+          : '<div class="calm">Nothing queued. Capture something new or pick a project.</div>'}
         </div>
       </div>
       <div class="kpis compact reveal">${[
         ['Open', s.open, `${s.openProjects} projects`, '', 'open'],
-        ['In flight', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(' · ') : '—', '', 'doing'],
+        ['In flight', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(', ') : '—', '', 'doing'],
         ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(' · ') : 'clear', 'warn', 'blocked'],
         ['Done · 7d', s.week, s.week>s.prevWeek?`▲ ${s.prevWeek} prior`:`${s.prevWeek} prior`, s.week>s.prevWeek?'up':'', 'week'],
       ].map(([l,v,sub,mood,kind])=>`
@@ -2385,12 +2527,20 @@
           <span class="s ${mood==='up'?'upc':''}" title="${esc(sub)}">${esc(sub)}</span>
         </div>`).join('')}
       </div>
-      <details class="ovdetails reveal">
-        <summary>Momentum & breakdown <span class="ovdetails-chev">▾</span></summary>
-        <div class="charts" id="ovCharts" style="margin-top:14px">
-          <div class="panel"><h3>Momentum</h3>
-            <p class="cap"><b>${s.week} done this week</b></p>
-            ${momentumSVG()}</div>
+      <div class="charts open reveal" id="ovCharts">
+        <div class="panel"><h3>Momentum</h3>
+          <p class="cap"><b>${s.week}</b> tasks closed this week</p>
+          ${momentumSVG()}</div>
+        <div class="panel"><h3>Credits</h3>
+          <p class="cap">Claude and Cursor usage this cycle</p>
+          ${creditsCompareHTML()}</div>
+        <div class="panel"><h3>Tip</h3>
+          <p class="tiptext">${esc(tip.title)}</p>
+          <p class="tipsub">${esc(tip.body)}</p></div>
+      </div>
+      <details class="ovdetails breakdown reveal">
+        <summary>Breakdown <span class="ovdetails-chev">▾</span></summary>
+        <div class="charts" style="margin-top:14px">
           <div class="panel"><h3>Open by project</h3>
             <p class="cap">Where work is piling up</p>
             ${openByProjectHTML()}</div>
@@ -2406,7 +2556,7 @@
           <div class="secthead tight"><h2>Also flagged</h2><span class="n">${att.length}</span></div>
           <div class="queue">${att.slice(0,5).map((a,i)=>`
             <div class="qrow ${a.kind}" data-qi="${i}">
-              <span class="qt">${esc(a.it.text)}</span>
+              <span class="qt">${esc(displayCleanText(a.it.text))}</span>
               <span class="chipx">${esc(a.p.data.project)}</span>
               <span class="chipx ${a.kind==='blocked'?'warn':''}">${a.label}</span>
             </div>`).join('')}</div>` : ''}
@@ -2414,7 +2564,7 @@
           <div class="secthead tight"><h2>This week</h2><span class="n">${weekLog.length}+</span></div>
           <div class="queue">${weekLog.map((a,i)=>`
             <div class="qrow log" data-wi="${i}">
-              <span class="qt">${esc(a.text)}</span>
+              <span class="qt">${esc(displayCleanText(a.text, 120))}</span>
               <span class="chipx">${esc(a.p.data.project)}</span>
             </div>`).join('')}</div>` : ''}
       </details>
@@ -2434,10 +2584,10 @@
       const a = weekLog[+r.dataset.wi];
       if(a) openProject(a.p, 'open');
     });
-    el.querySelectorAll('[data-pin]').forEach(b=>b.onclick=(e)=>{
+    el.querySelectorAll('[data-proj-chip]').forEach(b=>b.onclick=(e)=>{
       e.stopPropagation();
-      togglePinnedProject(b.dataset.pin);
-      renderOverview(entrance);
+      const p = state.projects.find(x=>x.dirName===b.dataset.projChip);
+      if(p) openProject(p, 'open');
     });
     const more = el.querySelector('[data-nav-projects]');
     if(more) more.onclick = ()=>go('projects',{area:'All'});
@@ -3619,9 +3769,9 @@ Append-only. One line per finished task, newest at the bottom.
           run:()=>openProject(p)});
       }
     for(const p of state.projects){
-      for(const a of buildActionQueue(8).items)
-        if(a.p===p && has(a.text+' '+p.data.project))
-          items.push({group:'Do next', label:a.text.slice(0,80), sub:p.data.project, meta:a.label, run:()=>openProject(p, a.kind==='blocked'?'blocked':a.kind==='doing'?'doing':'open')});
+      for(const a of buildActionQueue(12).ranked)
+        if(a.p===p && has(a.display+' '+p.data.project))
+          items.push({group:'Do next', label:a.display.slice(0,80), sub:p.data.project, meta:a.label, run:()=>openProject(p, a.kind==='blocked'?'blocked':a.kind==='doing'?'doing':'open')});
       for(const l of (p.log||[]))
         if(has(l.text+' '+p.data.project))
           items.push({group:'Activity', label:l.text.slice(0,80), sub:p.data.project, meta:l.ts, run:()=>openProject(p)});
