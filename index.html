@@ -21,6 +21,7 @@
     --accent:#DC2626; --accent-soft:#FEF2F2;
     --up:#16A34A; --up-soft:#F0FDF4; --idle:#CA8A04;
     --radius:10px; --radius-lg:14px;
+    --space-2:8px; --space-3:12px; --space-4:16px; --space-5:18px;
     --shadow-sm:0 1px 2px rgba(24,24,27,.06);
     --shadow:0 2px 8px rgba(24,24,27,.08), 0 12px 32px rgba(24,24,27,.10);
     --shadow-lift:0 8px 24px rgba(24,24,27,.12), 0 20px 48px rgba(24,24,27,.08);
@@ -58,7 +59,10 @@
   .flagc{color:var(--accent)}
   .upc{color:var(--up)}
   .eyebrow{font-size:11px;letter-spacing:.04em;text-transform:none;color:var(--muted);font-weight:500}
-  .navlabel{font-size:11px;color:var(--muted);font-weight:500;padding:18px 12px 6px;margin:0}
+  .navlabel{
+    font-size:10.5px;color:var(--muted);font-weight:500;letter-spacing:.07em;
+    text-transform:uppercase;padding:20px 12px 5px;margin:0;
+  }
 
   /* subtle entrance — dashboard, not marketing */
   .reveal{opacity:0;transform:translateY(6px);transition:opacity .35s var(--ease), transform .35s var(--ease)}
@@ -76,25 +80,25 @@
   .app{display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100dvh;background:var(--bg)}
   .content-col{display:flex;flex-direction:column;min-width:0;min-height:100dvh}
   .deskbar{
-    display:flex;align-items:center;gap:12px;padding:10px 28px;
+    display:flex;align-items:center;gap:var(--space-3);padding:10px 28px;
     border-bottom:1px solid var(--hair);background:var(--surface);
-    position:sticky;top:0;z-index:25;min-height:48px;
+    position:sticky;top:0;z-index:25;min-height:52px;
   }
   .desk-status{
-    flex:1;min-width:0;display:flex;align-items:center;gap:8px;
+    flex:1;min-width:0;display:flex;align-items:center;gap:10px;
     border:none;background:var(--panel);border-radius:var(--radius);
-    padding:8px 12px;font:inherit;font-size:12.5px;color:var(--sec);
+    padding:10px 14px;min-height:40px;font:inherit;font-size:12.5px;color:var(--sec);
     cursor:pointer;text-align:left;transition:background .15s;
   }
   .desk-status:hover{background:var(--hair2)}
-  .desk-status .label{font-weight:600;color:var(--ink);flex:none}
+  .desk-status .label{font-weight:600;color:var(--ink);flex:none;line-height:1.35}
   .desk-status .glance,.status-glance{
-    flex:1;min-width:0;display:flex;align-items:center;gap:6px;overflow:hidden;
-    font-size:12.5px;color:var(--sec);font-weight:400;
+    flex:1;min-width:0;display:flex;align-items:center;gap:var(--space-2);overflow:hidden;
+    font-size:12.5px;color:var(--sec);font-weight:400;line-height:1.35;
   }
   .glance-seg{
     display:inline-flex;align-items:center;white-space:nowrap;flex:0 0 auto;
-    max-width:100%;overflow:hidden;text-overflow:ellipsis;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;line-height:1.35;
   }
   .glance-seg.grow{flex:1 1 0;min-width:0}
   .desk-status .warn,.status-glance .warn{color:var(--accent);font-weight:500}
@@ -104,17 +108,29 @@
     position:sticky;top:0;height:100dvh;background:var(--surface);
   }
   .wordmark{font-size:15px;font-weight:600;letter-spacing:-.02em;margin:0 10px 14px;color:var(--ink)}
-  .side-actions{display:flex;gap:6px;margin:0 10px 12px;padding-bottom:12px;border-bottom:1px solid var(--hair)}
-  .side-actions .btn{font-size:11.5px;padding:5px 10px;margin:0;flex:1;border-radius:var(--radius)}
+  .side-actions{display:flex;gap:5px;margin:0 8px 14px;padding-bottom:14px;border-bottom:1px solid var(--hair)}
+  .side-actions .btn{font-size:11px;padding:6px 10px;margin:0;flex:1;border-radius:var(--radius);font-weight:500}
+  .side-actions .btn.ghost{background:color-mix(in srgb,var(--panel) 55%,transparent)}
+  .side-actions .btn:hover{transform:none;box-shadow:none}
+  .side-actions .btn.ghost:hover{background:var(--panel);box-shadow:inset 0 0 0 1px var(--hair)}
   .ver{font-size:9px;font-weight:400;color:var(--sec);opacity:.65;letter-spacing:.02em;text-transform:none;vertical-align:1px}
   .navlink{
     display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
     font-size:13px;color:var(--sec);border:none;background:none;text-align:left;
-    padding:7px 10px;border-radius:var(--radius);transition:background .12s ease, color .12s, transform .15s var(--ease);
+    padding:7px 10px;border-radius:var(--radius);
+    transition:background .14s ease,color .14s,transform .15s var(--ease);
   }
-  .navlink:hover{color:var(--ink);background:var(--panel);transform:translateX(2px)}
-  .navlink.active{color:var(--ink);background:var(--panel);font-weight:600;box-shadow:inset 2px 0 0 var(--ink)}
-  .navlink .n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .side .navlink{position:relative;padding-left:22px}
+  .side .navlink::before{
+    content:"";position:absolute;left:10px;top:50%;width:4px;height:4px;border-radius:50%;
+    background:var(--ink);transform:translateY(-50%) scale(0);opacity:0;
+    transition:opacity .14s ease,transform .15s var(--ease);
+  }
+  .navlink:hover{color:var(--ink);background:color-mix(in srgb,var(--panel) 65%,transparent);transform:translateX(2px)}
+  .navlink.active{color:var(--ink);font-weight:600;background:color-mix(in srgb,var(--panel) 90%,var(--surface))}
+  .side .navlink.active::before{opacity:1;transform:translateY(-50%) scale(1)}
+  .navlink.active .n{color:var(--sec);font-weight:500}
+  .navlink .n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;transition:color .14s}
   .side-foot{margin-top:auto;padding:12px 10px 0;border-top:1px solid var(--hair);font-size:11px;color:var(--sec);display:flex;flex-direction:column;gap:6px}
   .side-foot .unsynced{color:var(--accent)}
   .syncrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -689,34 +705,44 @@
   @media (min-width:861px){
     .statusrail:not(.expanded){display:none !important}
     .statusrail .statushead{display:none}
-    .statusrail.expanded .statusbody{border-top:none;padding-top:0}
-    .statusrail{margin:0 28px 16px;max-width:984px}
+    .statusrail.expanded .statusbody{border-top:none}
+    .statusrail{margin:0 28px var(--space-4);max-width:984px}
   }
-  .statushead{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:none;background:none;text-align:left;cursor:pointer;font:inherit;color:inherit}
+  .statushead{
+    display:flex;align-items:center;gap:var(--space-3);width:100%;min-height:48px;
+    padding:var(--space-3) var(--space-4);border:none;background:none;text-align:left;
+    cursor:pointer;font:inherit;color:inherit;
+  }
   .statushead:hover{background:var(--panel)}
-  .status-label{font-size:13px;font-weight:600;color:var(--ink);flex:none}
-  .statushead .chev{margin-left:2px;color:var(--sec);transition:transform .2s var(--ease);flex:none}
+  .statushead .status-glance{flex:1;min-width:0}
+  .status-label{font-size:13px;font-weight:600;color:var(--ink);flex:none;line-height:1.35}
+  .statushead .chev{margin-left:var(--space-2);color:var(--sec);transition:transform .2s var(--ease);flex:none}
   .statusrail.collapsed .chev{transform:rotate(-90deg)}
   .statusrail.collapsed .statusbody{display:none}
-  .statusbody{border-top:1px solid var(--hair);padding:12px 14px 14px;display:flex;flex-direction:column;gap:14px}
-  .statusblock h4{font-size:12px;font-weight:600;margin:0 0 8px;color:var(--sec);letter-spacing:0;text-transform:none}
-  .status-alerts{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px}
-  .status-alerts .alert{padding:6px 10px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:12.5px}
+  .statusbody{
+    border-top:1px solid var(--hair);padding:var(--space-4) var(--space-5);
+    display:flex;flex-direction:column;gap:var(--space-4);
+  }
+  .statusblock{display:flex;flex-direction:column;gap:var(--space-3)}
+  .statusblock h4{font-size:12px;font-weight:600;margin:0;color:var(--sec);letter-spacing:0;text-transform:none;line-height:1.35}
+  .status-alerts{display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13px}
+  .status-alerts .alert{padding:7px 12px;border-radius:8px;background:var(--accent-soft);color:var(--accent);font-size:12.5px;line-height:1.35}
   .status-alerts .alert.info{background:color-mix(in srgb, var(--link) 8%, var(--bg));color:var(--link)}
-  .creditsgrid.compact{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .status-alerts .btn{padding:6px 12px;font-size:12px;flex:none;margin:0}
+  .creditsgrid.compact{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);margin:0}
   @media (max-width:560px){ .creditsgrid.compact{grid-template-columns:1fr} }
 
   /* sessions rows (inside status rail) */
-  .livegroup{display:flex;flex-direction:column;gap:6px}
-  .livegroup + .livegroup{margin-top:10px}
-  .livesubbar{display:flex;align-items:center;gap:10px;margin:0 0 2px 2px}
-  .livesub{font-size:12px;color:var(--sec);font-weight:500}
-  .liveclear{margin-left:auto;border:0;background:none;color:var(--link);font-size:12px;padding:2px 4px;border-radius:6px}
+  .livegroup{display:flex;flex-direction:column;gap:var(--space-2)}
+  .livegroup + .livegroup{margin-top:var(--space-3);padding-top:var(--space-3);border-top:1px solid var(--hair2)}
+  .livesubbar{display:flex;align-items:center;gap:10px;margin:0 0 var(--space-2)}
+  .livesub{font-size:12px;color:var(--sec);font-weight:500;line-height:1.35}
+  .liveclear{margin-left:auto;border:0;background:none;color:var(--link);font-size:12px;padding:4px 6px;border-radius:6px}
   .liveclear:hover{background:var(--panel);text-decoration:underline;text-underline-offset:3px}
   .liverow{
-    display:flex;align-items:center;gap:10px;min-width:0;
+    display:flex;align-items:center;gap:var(--space-3);min-width:0;min-height:44px;
     border:1px solid var(--hair);border-radius:12px;background:var(--surface);
-    padding:9px 14px;font-size:13px;
+    padding:var(--space-3) var(--space-4);font-size:13px;line-height:1.35;
   }
   .liverow.idle{background:var(--panel);box-shadow:none}
   .liverow.idle .liveprompt{color:var(--sec)}
@@ -753,17 +779,21 @@
   .creditsstrip.expanded .creditscompact{display:none}
   .creditsgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:10px}
   @media (max-width:560px){ .creditsgrid{grid-template-columns:1fr} }
-  .creditlane{border:1px solid var(--hair);border-radius:12px;padding:10px 12px;background:var(--panel)}
-  .creditlane .lanehead{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px;font-weight:600}
-  .creditlane .lanehead .tag{font-size:10px;font-weight:500;color:var(--sec);text-transform:uppercase;letter-spacing:.06em}
-  .creditlane .lanefig{font-size:12.5px;color:var(--ink)}
-  .creditlane .lanetrack{height:5px;border-radius:99px;background:var(--hair);overflow:hidden;margin-top:6px}
+  .creditlane{border:1px solid var(--hair);border-radius:12px;padding:var(--space-3) var(--space-4);background:var(--panel)}
+  .creditlane .lanehead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 var(--space-2);font-size:12px;font-weight:600;line-height:1.35}
+  .creditlane .lanehead .tag{font-size:10px;font-weight:500;color:var(--sec);text-transform:uppercase;letter-spacing:.06em;flex:none}
+  .creditlane .lanehead .lanefig{text-align:right}
+  .creditlane .lanefig{font-size:12.5px;color:var(--ink);line-height:1.35}
+  .creditlane .lanetrack{height:5px;border-radius:99px;background:var(--hair);overflow:hidden;margin-top:var(--space-2)}
   .creditlane .lanefill{height:100%;background:var(--link);border-radius:99px;transition:width .3s var(--ease)}
   .creditlane .lanefill.hot{background:var(--accent)}
+  .creditlane .lanefoot{margin-top:var(--space-2);font-size:11px;color:var(--sec);line-height:1.35}
   .creditlane.err .lanefig{color:var(--accent);font-size:12px}
-  .machinesstrip{margin:0 0 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px}
+  .creditsgrid.compact .creditlane{padding:var(--space-3) var(--space-4)}
+  .statusblock .machinesstrip{margin:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px}
+  .machinesstrip{margin:0 0 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:12px}
   .machinesstrip .eyebrow{margin-right:4px}
-  .machchip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--hair);background:var(--panel)}
+  .machchip{display:inline-flex;align-items:center;gap:var(--space-2);padding:6px 12px;border-radius:999px;border:1px solid var(--hair);background:var(--panel);line-height:1.35}
   .machchip .dot{width:6px;height:6px;border-radius:50%;background:var(--up)}
   .machchip.stale .dot{background:var(--idle)}
   .machchip.down .dot{background:var(--accent)}
@@ -969,10 +999,11 @@
     }
     .mobiletabs .navlink{
       flex:1;justify-content:center;text-align:center;font-size:12.5px;
-      padding:10px 4px 9px;position:relative;z-index:1;
+      padding:10px 4px 9px;position:relative;z-index:1;transform:none;
     }
+    .mobiletabs .navlink::before{display:none}
     .mobiletabs .navlink.active{color:var(--link);font-weight:600;background:none}
-    .mobiletabs .navlink:hover{background:none}
+    .mobiletabs .navlink:hover{background:none;transform:none}
     /* sliding underline indicator (0.3s, same spline as the reference toggle) */
     .tabpill{
       position:absolute;left:0;top:0;height:2px;width:0;border-radius:99px;
@@ -1009,9 +1040,12 @@
     img,svg,iframe,video{max-width:100%}
     .qrow{flex-wrap:wrap;row-gap:4px}
     /* live strip: who + runtime on line one, prompt snippet below */
-    .liverow{flex-wrap:wrap;row-gap:2px}
-    .liverow .liveprompt{flex-basis:100%;order:3;font-size:12.5px}
+    .statushead{padding:var(--space-3) var(--space-4);min-height:48px}
+    .statusbody{padding:var(--space-4) var(--space-4)}
+    .liverow{flex-wrap:wrap;row-gap:var(--space-2);padding:var(--space-3) var(--space-4)}
+    .liverow .liveprompt{flex-basis:100%;order:3;font-size:12.5px;min-width:0}
     .liverow .livetime{margin-left:auto}
+    .creditsgrid.compact{gap:var(--space-3)}
     .viewbar .filterinput{width:130px}
     .viewbar .filterinput:focus{width:150px}
   }
@@ -1115,7 +1149,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.23';
+  const WB_VERSION = '2026-07-03.25';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1993,7 +2027,7 @@
       const label = machineLabel(m.hostname||'?');
       return `<span class="machchip ${cls}" title="${esc(m.platform||'')} · helper ${m.helperUp?'up':'down'} · hooks ${m.hooksOk?'ok':'missing'}"><span class="dot"></span>${esc(label)}</span>`;
     }).join('');
-    return `<div class="statusblock"><h4>Machines</h4><div class="machinesstrip" style="margin:0">${chips}</div></div>`;
+    return `<div class="statusblock"><h4>Machines</h4><div class="machinesstrip">${chips}</div></div>`;
   }
   function creditsBlockHTML(){
     const cu = state.usage, cur = state.cursorUsage;
@@ -2054,7 +2088,7 @@
     const deskGlance = $('#deskStatusGlance');
     if(deskGlance) deskGlance.innerHTML = glanceHtml;
     const alerts = [];
-    if(intake.length) alerts.push(`<span class="alert">${intake.length} intake item${intake.length>1?'s':''} waiting</span><button type="button" class="btn ghost" style="padding:4px 10px;font-size:12px" data-status-triage>Triage</button>`);
+    if(intake.length) alerts.push(`<span class="alert">${intake.length} intake item${intake.length>1?'s':''} waiting</span><button type="button" class="btn ghost" data-status-triage>Triage</button>`);
     if(helperDown) alerts.push(`<span class="alert info">Sync helper not running</span>`);
     el.innerHTML = `
       <button type="button" class="statushead" id="statusToggle">
@@ -2140,7 +2174,7 @@
     return `<div class="creditlane">
       <div class="lanehead"><span class="tag">${label}</span><span class="lanefig">$${u.spend.toFixed(0)} / $${u.limit.toFixed(0)} · ${pct}%</span></div>
       <div class="lanetrack"><div class="lanefill ${hot?'hot':''}" style="width:${pct}%"></div></div>
-      ${age?`<div class="lanefig" style="margin-top:4px;font-size:11px;color:var(--sec)">${esc(age.label)}</div>`:''}
+      ${age?`<div class="lanefoot">${esc(age.label)}</div>`:''}
     </div>`;
   }
   function renderCredits(){ renderStatusRail(); }
@@ -4187,19 +4221,6 @@
     if(document.querySelector('.capscrim,.morescrim,.kscrim')) return {scrim:null, close:()=>{}};
     const scrim = document.createElement('div'); scrim.className = 'capscrim';
     scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Capture">
-      <button type="button" class="cap-close">esc</button>${inner}</div>`;
-    const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey); };
-    const onKey = e=>{ if(e.key==='Escape') close(); };
-    scrim.onclick = e=>{ if(e.target===scrim) close(); };
-    scrim.querySelector('.cap-close').onclick = close;
-    document.addEventListener('keydown', onKey);
-    document.body.appendChild(scrim);
-    scrim.querySelector('#capText')?.focus();
-    return {scrim, close};
-  }
-  function capturePanel(inner){
-    const scrim = document.createElement('div'); scrim.className='capscrim';
-    scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Capture">
       <button type="button" class="cap-close" aria-label="Close">esc</button>${inner}</div>`;
     const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey, true); };
     const onKey = e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
@@ -4207,6 +4228,7 @@
     scrim.querySelector('.cap-close').onclick = close;
     document.addEventListener('keydown', onKey, true);
     document.body.appendChild(scrim);
+    scrim.querySelector('#capText')?.focus();
     return {scrim, close};
   }
   async function openHtmlEntry(e){
@@ -4320,6 +4342,7 @@
         <button type="button" class="btn" id="capSave">Save</button>
         <button type="button" class="btn ghost" id="capCancel">Cancel</button>
       </div>`);
+    if(!scrim) return;
     const destEl = scrim.querySelector('#capDest');
     const textLbl = scrim.querySelector('#capTextLbl');
     const filesRow = scrim.querySelector('#capFilesRow');
