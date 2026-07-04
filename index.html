@@ -2666,6 +2666,24 @@
   const io = new IntersectionObserver(es=>es.forEach(e=>{
     if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
   }),{threshold:.06});
+  function bindTilt(scope){
+    if(RM.matches) return;
+    scope.querySelectorAll('[data-tilt]').forEach(card=>{
+      if(card._tiltBound) return;
+      card._tiltBound = true;
+      card.addEventListener('mousemove', e=>{
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.setProperty('--rx', `${(-y * 5).toFixed(2)}deg`);
+        card.style.setProperty('--ry', `${(x * 5).toFixed(2)}deg`);
+      });
+      card.addEventListener('mouseleave', ()=>{
+        card.style.removeProperty('--rx');
+        card.style.removeProperty('--ry');
+      });
+    });
+  }
   function arm(scope){
     scope.querySelectorAll('.reveal:not(.in)').forEach((el,i)=>{
       el.style.transitionDelay = Math.min(i*70, 280)+'ms';
@@ -2675,6 +2693,7 @@
       requestAnimationFrame(()=>requestAnimationFrame(()=>{ b.style.width = b.dataset.w+'%'; }));
     });
     scope.querySelectorAll('[data-count]').forEach(el=>countUp(el, +el.dataset.count));
+    bindTilt(scope);
   }
   function countUp(el, n, dur=700){
     if(RM.matches || !n){ el.textContent=n; return; }
@@ -2804,7 +2823,7 @@
       : `<b>${c.open}</b> open`
         + (c.blocked?` · <span class="flagc">⚑ ${c.blocked}</span>`:'')
         + (c.idea?` · ${c.idea} idea${c.idea===1?'':'s'}`:'');
-    return `<button class="tile" data-open="${esc(p.dirName)}" style="--tr:${tr}deg">
+    return `<button class="tile" data-open="${esc(p.dirName)}" data-tilt style="--tr:${tr}deg">
       <span class="art">${placeholderArt(p)}<img class="hidden" data-cover="${esc(p.dirName)}" alt="">
         <span class="areatag">${esc(p.section)}</span>
         ${p.logo?`<img class="tilelogo hidden" data-logo="${esc(p.dirName)}" alt="">`:''}</span>
@@ -2869,12 +2888,15 @@
         ['In flight', s.doing, s.doing? s.doingProjects.map(p=>p.data.project).slice(0,2).join(', ') : 'None', '', 'doing'],
         ['Blocked', s.blocked, s.blocked? s.blockedProjects.map(p=>p.data.project).slice(0,2).join(', ') : 'Clear', 'warn', 'blocked'],
         ['Done · 7d', s.week, s.week>s.prevWeek?`Up from ${s.prevWeek}`:`${s.prevWeek} prior`, s.week>s.prevWeek?'up':'', 'week'],
-      ].map(([l,v,sub,mood,kind])=>`
-        <div class="stat ${mood||''}" data-kpi="${kind}" role="button" tabindex="0">
+      ].map(([l,v,sub,mood,kind],i)=>{
+        const tr = (((i%2)?1:-1) * (0.4 + (i*41)%6/10)).toFixed(2);
+        return `
+        <div class="stat ${mood||''}" data-kpi="${kind}" data-tilt role="button" tabindex="0" style="--tr:${tr}deg">
           <div class="v num"><span data-count="${v}">${v}</span>${mood==='warn'&&v?' <span class="flg">⚑</span>':''}</div>
           <div class="l">${l}</div>
           <div class="s" title="${esc(sub)}">${esc(sub)}</div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
       </div>
       <div class="bento reveal">
         <div class="panel wide"><h3>Momentum</h3>
@@ -3722,37 +3744,49 @@
   }
 
   /* ================= SKILLS / INSTRUCTIONS / ABOUT ================= */
-  function skillCardHTML(s, i){
-    return `<button type="button" class="skillcard ${s.kind==='custom'?'custom':''} reveal" data-si="${i}">
-      <div class="name">${esc(s.name)}</div>
-      <p class="desc">${esc(s.description||'No description yet.')}</p>
-      <div class="src">${s.kind==='custom'?'Custom · in repo':`Store · ${esc(s.source||'synced')}`}</div>
-    </button>`;
-  }
   function renderSkills(entrance){
     const el = $('#view-skills');
     const cat = state.skillCatalog || {custom:[], store:[], total:0};
+    const featured = cat.custom.filter(s=>s.featured);
+    const customRest = cat.custom.filter(s=>!s.featured);
     const all = [...cat.custom, ...cat.store];
+    let cardIdx = 0;
+    const cards = list => list.map(s=>{
+      const html = skillCardHTML(s, cardIdx);
+      const idx = cardIdx;
+      cardIdx++;
+      return {html, idx, skill: s};
+    });
+    const featCards = cards(featured);
+    const customCards = cards(customRest);
+    const storeCards = cards(cat.store);
     el.innerHTML = `
       <div class="pagehead reveal">
         <h1>Skills</h1>
-        <p>Claude Code skills available in this workbench. Custom skills live in the repo; store skills sync from external sources via <code style="font-size:12px">tools/agent-config.json</code>.</p>
+        <p>Your workbench skill wiki — invoke lines, trigger phrases, and what each skill does. Custom skills live in <code style="font-size:12px">.claude/skills/</code>; store skills sync from GitHub packs.</p>
       </div>
-      ${cat.custom.length ? `
+      ${featCards.length ? `
+        <div class="skillfeatured reveal">
+          <h2>Featured — workbench essentials</h2>
+          <div class="skillgrid">${featCards.map(c=>c.html).join('')}</div>
+        </div>` : ''}
+      ${customCards.length ? `
         <div class="skillgroup reveal">
           <h2>Custom</h2>
-          <p class="cap">Authored in this repo — board of advisors, wrap-session, triage-intake, and others.</p>
-          <div class="skillgrid">${cat.custom.map((s,i)=>skillCardHTML(s,i)).join('')}</div>
+          <p class="cap">Authored in this repo — design, review, intake, and session tools.</p>
+          <div class="skillgrid">${customCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
-      ${cat.store.length ? `
+      ${storeCards.length ? `
         <div class="skillgroup reveal">
           <h2>Store</h2>
-          <p class="cap">Synced from external skill packs (taste-skill, emilkowalski, and agent-config managed list).</p>
-          <div class="skillgrid">${cat.store.map((s,i)=>skillCardHTML(s, cat.custom.length+i)).join('')}</div>
+          <p class="cap">Synced from Leonxlnx/taste-skill, emilkowalski/skill, and agent-config.</p>
+          <div class="skillgrid">${storeCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
       ${!all.length ? '<div class="calm reveal">No skills catalog loaded yet — connect the workbench folder.</div>' : ''}`;
+    const lookup = [...featCards, ...customCards, ...storeCards];
     el.querySelectorAll('.skillcard[data-si]').forEach(btn=>{
-      btn.onclick = ()=> openSkillDetail(all[+btn.dataset.si]);
+      const hit = lookup.find(c=>c.idx === +btn.dataset.si);
+      if(hit) btn.onclick = ()=> openSkillDetail(hit.skill);
     });
     arm(el);
   }
