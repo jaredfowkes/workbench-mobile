@@ -1115,7 +1115,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.21';
+  const WB_VERSION = '2026-07-03.23';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1129,7 +1129,7 @@
     proj:null, area:'All', pview:'gallery', pq:'',
     tsort:{key:'attention', dir:-1},
     pfilter:'open', psort:'importance', pgroup:'category', ptag:null,
-    ktag:null, kq:'',
+    ktag:null, kq:'', sq:'', iq:'',
   };
   const CYCLE = { todo:'doing', doing:'done', done:'todo', blocked:'todo', idea:'doing' };
   const WEIGHT = { blocked:0, doing:1, todo:2, idea:3, done:4 };
@@ -3884,12 +3884,39 @@
   }
 
   /* ================= SKILLS / INSTRUCTIONS / ABOUT ================= */
+  const qWordsS = () => state.sq.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const skillSearchText = s => [
+    s.name, s.when, s.description, s.category, s.invoke, s.invokeHint,
+    ...(s.actions||[]), s.source, s.sourceLabel, s.kind,
+  ].filter(Boolean).join(' ');
+  const skillMatches = (s, words) => !words.length || words.every(w=> skillSearchText(s).toLowerCase().includes(w));
   function renderSkills(entrance){
     const el = $('#view-skills');
     const cat = state.skillCatalog || {custom:[], store:[], total:0};
-    const featured = cat.custom.filter(s=>s.featured);
-    const customRest = cat.custom.filter(s=>!s.featured);
+    el.innerHTML = `
+      <div class="pagehead reveal">
+        <div>
+          <h1>Skills</h1>
+          <div class="sub">${cat.total} skills — invoke lines, trigger phrases, and what each skill does</div>
+        </div>
+        <div class="right">
+          <input class="filterinput" id="sFilter" type="search" placeholder="Search skills…" value="${esc(state.sq)}">
+        </div>
+      </div>
+      <div id="sBody" class="reveal"></div>`;
+    const fi = el.querySelector('#sFilter');
+    fi.addEventListener('input', ()=>{ state.sq = fi.value; renderSBody(); });
+    renderSBody();
+    arm(el);
+  }
+  function renderSBody(){
+    const el = $('#sBody');
+    const cat = state.skillCatalog || {custom:[], store:[], total:0};
+    const words = qWordsS();
     const all = [...cat.custom, ...cat.store];
+    const featured = cat.custom.filter(s=>s.featured && skillMatches(s, words));
+    const customRest = cat.custom.filter(s=>!s.featured && skillMatches(s, words));
+    const storeFiltered = cat.store.filter(s=> skillMatches(s, words));
     let cardIdx = 0;
     const cards = list => list.map(s=>{
       const html = skillCardHTML(s, cardIdx);
@@ -3899,36 +3926,40 @@
     });
     const featCards = cards(featured);
     const customCards = cards(customRest);
-    const storeCards = cards(cat.store);
+    const storeCards = cards(storeFiltered);
+    const anyMatch = featCards.length || customCards.length || storeCards.length;
+    if(!all.length){
+      el.innerHTML = '<div class="calm">No skills catalog loaded yet — connect the workbench folder.</div>';
+      return;
+    }
+    if(!anyMatch){
+      el.innerHTML = '<div class="gempty">Nothing matches — clear the search.</div>';
+      return;
+    }
     el.innerHTML = `
-      <div class="pagehead reveal">
-        <h1>Skills</h1>
-        <p>Your workbench skill wiki — invoke lines, trigger phrases, and what each skill does. Custom skills live in <code style="font-size:12px">.claude/skills/</code>; store skills sync from GitHub packs.</p>
-      </div>
       ${featCards.length ? `
-        <div class="skillfeatured reveal">
+        <div class="skillfeatured">
           <h2>Featured — workbench essentials</h2>
           <div class="skillgrid">${featCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
       ${customCards.length ? `
-        <div class="skillgroup reveal">
+        <div class="skillgroup">
           <h2>Custom</h2>
           <p class="cap">Authored in this repo — design, review, intake, and session tools.</p>
           <div class="skillgrid">${customCards.map(c=>c.html).join('')}</div>
         </div>` : ''}
       ${storeCards.length ? `
-        <div class="skillgroup reveal">
+        <div class="skillgroup">
           <h2>Store</h2>
           <p class="cap">Synced from Leonxlnx/taste-skill, emilkowalski/skill, and agent-config.</p>
           <div class="skillgrid">${storeCards.map(c=>c.html).join('')}</div>
-        </div>` : ''}
-      ${!all.length ? '<div class="calm reveal">No skills catalog loaded yet — connect the workbench folder.</div>' : ''}`;
+        </div>` : ''}`;
     const lookup = [...featCards, ...customCards, ...storeCards];
     el.querySelectorAll('.skillcard[data-si]').forEach(btn=>{
       const hit = lookup.find(c=>c.idx === +btn.dataset.si);
       if(hit) btn.onclick = ()=> openSkillDetail(hit.skill);
     });
-    arm(el);
+    bindTilt(el);
   }
   const INSTRUCTION_LINKS = [
     {title:'Set up a new Mac', path:'Personal/Processes/setup-workbench-new-mac.html'},
@@ -3950,8 +3981,13 @@
     const el = $('#view-instructions');
     el.innerHTML = `
       <div class="pagehead reveal">
-        <h1>Instructions</h1>
-        <p>How to run the workbench day to day — capture, triage, wrap, and sync.</p>
+        <div>
+          <h1>Instructions</h1>
+          <div class="sub">How to run the workbench day to day — capture, triage, wrap, and sync</div>
+        </div>
+        <div class="right">
+          <input class="filterinput" id="iFilter" type="search" placeholder="Search guides…" value="${esc(state.iq)}">
+        </div>
       </div>
       <div class="aboutgrid reveal">
         <div class="aboutcard">
@@ -3960,7 +3996,7 @@
             <li><b>Capture</b> — add tasks, ideas, notes from anywhere</li>
             <li><b>Triage</b> — run <code>/triage-intake</code> when intake items appear</li>
             <li><b>Wrap</b> — run <code>/wrap-session</code> at end of session</li>
-            <li><b>⌘K</b> — jump to any project or note</li>
+            <li><b>⌘K</b> — jump to any project, note, or skill</li>
             <li><b>Do next</b> — ROI-ranked stack on Overview</li>
           </ul>
         </div>
@@ -3974,16 +4010,26 @@
         </div>
       </div>
       <div class="secthead reveal tight"><h2>Setup guides</h2></div>
-      <div class="doclist reveal">
-        ${INSTRUCTION_LINKS.map((g,i)=>`
-          <button type="button" class="docrow" data-gi="${i}">
-            <span class="t">${esc(g.title)}</span><span class="arr">↗</span>
-          </button>`).join('')}
-      </div>`;
+      <div id="iDocBody" class="reveal"></div>`;
+    const fi = el.querySelector('#iFilter');
+    fi.addEventListener('input', ()=>{ state.iq = fi.value; renderIDocBody(); });
+    renderIDocBody();
+    arm(el);
+  }
+  function renderIDocBody(){
+    const el = $('#iDocBody');
+    const q = state.iq.trim().toLowerCase();
+    const links = INSTRUCTION_LINKS.map((g,i)=>({g,i})).filter(({g})=>
+      !q || g.title.toLowerCase().includes(q));
+    el.innerHTML = links.length
+      ? `<div class="doclist">${links.map(({g,i})=>
+        `<button type="button" class="docrow" data-gi="${i}">
+          <span class="t">${esc(g.title)}</span><span class="arr">↗</span>
+        </button>`).join('')}</div>`
+      : `<div class="gempty">${INSTRUCTION_LINKS.length ? 'Nothing matches — clear the search.' : 'No setup guides yet.'}</div>`;
     el.querySelectorAll('.docrow[data-gi]').forEach(btn=>{
       btn.onclick = ()=> openGuide(INSTRUCTION_LINKS[+btn.dataset.gi].path);
     });
-    arm(el);
   }
   async function renderAbout(entrance){
     const el = $('#view-about');
@@ -4479,6 +4525,16 @@ Append-only. One line per finished task, newest at the bottom.
     for(const e of state.kb)
       if(has(e.title+' '+e.tags.join(' ')+' '+e.summary))
         items.push({group:'Knowledge', label:e.title, sub:e.sub, meta:e.date, run:()=>openEntry(e)});
+    const cat = state.skillCatalog;
+    if(cat){
+      for(const s of [...cat.custom, ...cat.store])
+        if(has(skillSearchText(s)))
+          items.push({group:'Skills', label:s.name, sub:s.category||'', meta:s.kind==='custom'?'Custom':'Store',
+            run:()=>{ go('skills'); openSkillDetail(s); }});
+    }
+    for(const g of INSTRUCTION_LINKS)
+      if(has(g.title))
+        items.push({group:'Instructions', label:g.title, sub:'Setup guide', meta:'↗', run:()=>openGuide(g.path)});
     const acts = [
       ['Capture — task, idea, project, note…', ()=>openCapture()],
       ['Triage intake (/triage-intake)', ()=>openIntakeFlow()],
@@ -4486,6 +4542,8 @@ Append-only. One line per finished task, newest at the bottom.
       ['Go to Overview', ()=>go('overview')],
       ['Go to Projects', ()=>go('projects',{area:'All'})],
       ['Go to Knowledge', ()=>go('knowledge')],
+      ['Go to Skills', ()=>go('skills')],
+      ['Go to Instructions', ()=>go('instructions')],
       ['New knowledge entry', ()=>openEditor(null)],
     ];
     if(state.helperUp){
@@ -4499,7 +4557,7 @@ Append-only. One line per finished task, newest at the bottom.
     if($('.kscrim,.capscrim,.morescrim') || !state.connected) return;
     const scrim = document.createElement('div'); scrim.className='kscrim';
     scrim.innerHTML = `<div class="kbox">
-      <input type="text" placeholder="Jump to a project, note, or action…" aria-label="Search">
+      <input type="text" placeholder="Jump to a project, note, skill, or action…" aria-label="Search">
       <div class="klist"></div>
       <div class="khint"><span><kbd>↑↓</kbd> navigate</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div>
     </div>`;
