@@ -2155,9 +2155,9 @@
   const USAGE_EXPAND_KEY = 'wb-usage-expanded';
   const CREDITS_EXPAND_KEY = 'wb-credits-expanded';
   const FOCUS_PROJECTS_KEY = 'wb-focus-projects';
-  /* scraper ticks every 10 min and self-throttles to ~30 when idle, so a
-     timestamp older than this means the scraper (or the repo sync feeding
-     this backend) has stopped delivering fresh numbers */
+  /* Usage scrapers tick every 10 min; Cursor snapshots also publish their
+     own JSON so the mobile/GitHub backend sees fresh numbers without a Stop
+     hook. A timestamp older than this means the scraper or sync path is down. */
   const USAGE_STALE_AFTER = 45*60*1000;
   function usageAge(u){
     if(!u.updated) return null;
