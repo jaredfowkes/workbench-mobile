@@ -203,6 +203,14 @@
   .panel .cap{font-size:12px;color:var(--sec);margin:0 0 14px}
   .panel .cap b{color:var(--ink)}
   .panel svg text{font-family:var(--font)}
+  .momentum-chart{display:flex;flex-direction:column;gap:7px}
+  .momentum-plot{position:relative;height:96px}
+  .momentum-plot svg{display:block;width:100%;height:100%;overflow:visible}
+  .momentum-max,.momentum-value,.momentum-axis{font-size:10.5px;line-height:1;color:var(--sec);font-variant-numeric:tabular-nums}
+  .momentum-max,.momentum-value{position:absolute;pointer-events:none}
+  .momentum-max{left:0;top:0}
+  .momentum-value{color:var(--ink);font-size:11px;font-weight:600;transform:translate(-50%,-100%) translateY(-4px)}
+  .momentum-axis{display:flex;justify-content:space-between}
   .mbar{transition:opacity .15s ease}
   .mbar:hover{opacity:.7}
   .hrow{display:flex;align-items:center;gap:10px;margin:8px 0}
@@ -1158,7 +1166,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.29';
+  const WB_VERSION = '2026-07-03.30';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -3019,25 +3027,32 @@
   }
   function momentumSVG(){
     const data = completionsByDay(14);
-    const W=272, H=112, base=H-18, max=Math.max(1,...data);
+    const W=272, H=96, base=H-8, max=Math.max(1,...data);
     const n=data.length, gap=6, bw=(W-gap*(n-1))/n;
-    let bars='';
+    let bars='', lastLabel='';
     data.forEach((v,i)=>{
       const h = v/max*(base-16);
       const x = i*(bw+gap), y = base-h;
       const isLast = i===n-1;
       if(v>0) bars += `<path d="${roundTopRect(x,y,bw,h,3)}" fill="${isLast?'var(--ink)':'color-mix(in srgb, var(--ink) 76%, transparent)'}" class="mbar"><title>${v} done · ${n-1-i===0?'today':(n-1-i)+'d ago'}</title></path>`;
       else bars += `<rect x="${x}" y="${base-2}" width="${bw}" height="2" fill="var(--hair)" class="mbar"><title>0 done · ${n-1-i===0?'today':(n-1-i)+'d ago'}</title></rect>`;
-      if(isLast && v>0) bars += `<text x="${x+bw/2}" y="${y-6}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${v}</text>`;
+      if(isLast && v>0){
+        const lx = ((x+bw/2)/W*100).toFixed(2);
+        const ly = (Math.max(14, y)/H*100).toFixed(2);
+        lastLabel = `<span class="momentum-value" style="left:${lx}%;top:${ly}%">${v}</span>`;
+      }
     });
-    return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tasks completed per day, last 14 days">
-      <line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="var(--hair)" stroke-width="1"/>
-      <line x1="0" y1="${base-(base-16)}" x2="${W}" y2="${base-(base-16)}" stroke="var(--hair2)" stroke-width="1"/>
-      <text x="0" y="${base-(base-16)-4}" font-size="10" fill="var(--sec)">${max}</text>
-      ${bars}
-      <text x="0" y="${H-2}" font-size="10" fill="var(--sec)">14 days ago</text>
-      <text x="${W}" y="${H-2}" font-size="10" fill="var(--sec)" text-anchor="end">today</text>
-    </svg>`;
+    return `<div class="momentum-chart" role="img" aria-label="Tasks completed per day, last 14 days">
+      <div class="momentum-plot">
+        <span class="momentum-max">${max}</span>${lastLabel}
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1="${base}" x2="${W}" y2="${base}" stroke="var(--hair)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+          <line x1="0" y1="${base-(base-16)}" x2="${W}" y2="${base-(base-16)}" stroke="var(--hair2)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+          ${bars}
+        </svg>
+      </div>
+      <div class="momentum-axis"><span>14 days ago</span><span>today</span></div>
+    </div>`;
   }
   function openByProjectHTML(){
     const rows = state.projects.map(p=>({p, c:projCounts(p)}))
