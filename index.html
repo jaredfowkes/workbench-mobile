@@ -332,7 +332,7 @@
     border-radius:50%;width:46px;height:46px;flex-shrink:0;transition:background .15s ease;
   }
   .lightbox .lbnav:hover{background:rgba(255,255,255,.28)}
-  .lightbox .d-close{background:rgba(255,255,255,.14);color:#EDEDF0}
+  .lightbox .modal-close{background:rgba(255,255,255,.14);color:#EDEDF0}
 
   /* ============ project table (Console) ============ */
   table.ptable{width:100%;border-collapse:collapse;font-size:14px}
@@ -500,14 +500,15 @@
   .ksechead{margin:34px 0 4px}
   .kempty{color:var(--sec);font-size:14px;font-style:italic;margin:30px 0}
 
-  /* ============ slide-over ============ */
-  .scrim{
-    position:fixed;inset:0;background:rgba(29,29,31,.32);z-index:50;
-    backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    display:flex;justify-content:flex-end;animation:fadein .18s ease;
+  /* ============ editorial modal ============ */
+  .modal-scrim{
+    position:fixed;inset:0;background:rgba(24,24,27,.38);z-index:50;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+    animation:fadein .18s ease;
   }
   @keyframes fadein{from{opacity:0}}
-  .detail.wide{width:min(1060px,96vw)}
+  .modal-card.wide{width:min(1120px,calc(100vw - 48px))}
   .docsbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:16px 0 14px}
   .docscols{display:grid;grid-template-columns:320px minmax(0,1fr);gap:20px;height:calc(100vh - 230px);min-height:320px}
   @media (max-width:820px){.docscols{grid-template-columns:1fr;height:auto}}
@@ -529,16 +530,17 @@
   .docprev .prevbar a:hover{text-decoration:underline}
   .docprev iframe{flex:1;width:100%;border:0;background:#fff}
   .docprev .prevempty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--sec);font-size:13px;font-style:italic}
-  .detail{
-    width:min(660px,94vw);height:100%;background:var(--surface);
-    box-shadow:-12px 0 40px rgba(29,29,31,.16);
-    overflow-y:auto;padding:42px 46px 72px;position:relative;
-    animation:slidein .35s var(--ease);
+  .modal-card{
+    width:min(680px,calc(100vw - 48px));max-height:min(88vh,820px);
+    background:var(--surface);border:1px solid var(--hair);
+    border-radius:22px;box-shadow:var(--shadow-lift);
+    overflow-y:auto;padding:38px 42px 42px;position:relative;
+    animation:modalpop .24s var(--ease);
   }
-  @keyframes slidein{from{transform:translateX(50px);opacity:.4}}
-  .detail h2{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px;padding-right:70px}
-  .detail .dsum{display:block;font-size:13px;color:var(--sec);margin-bottom:8px}
-  .d-path{font-size:11px;color:var(--sec);letter-spacing:.02em;display:block;margin-bottom:26px}
+  @keyframes modalpop{from{transform:scale(.975) translateY(12px);opacity:.45}}
+  .modal-card h2{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1.18;margin:0 0 6px;padding-right:70px;text-wrap:balance}
+  .modal-card .modal-summary{display:block;font-size:13.5px;color:var(--sec);margin-bottom:8px;line-height:1.45}
+  .modal-path{font-size:11px;color:var(--sec);letter-spacing:.02em;display:block;margin-bottom:26px}
   .d-sec{
     font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--sec);font-weight:500;
     margin:26px 0 10px;display:flex;align-items:center;gap:10px;
@@ -566,14 +568,14 @@
   }
   .toc button:hover{color:var(--ink);border-color:var(--ink)}
   .pabout .md{font-size:13px}
-  .d-close{
-    position:absolute;top:20px;right:22px;border:none;background:var(--panel);
+  .modal-close{
+    position:absolute;top:18px;right:20px;border:none;background:var(--panel);
     border-radius:999px;font-size:11px;padding:7px 13px;color:var(--sec);
     transition:background .15s ease,color .15s ease;
   }
-  .d-close:hover{color:var(--ink);background:var(--hair)}
+  .modal-close:hover{color:var(--ink);background:var(--hair)}
   .d-empty{color:var(--sec);font-size:13px;font-style:italic}
-  .d-actions{display:flex;gap:8px;position:absolute;top:18px;right:70px}
+  .modal-actions{display:flex;gap:8px;position:absolute;top:16px;right:68px}
   .f-row{margin:0 0 14px}
   .f-row label{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--sec);margin-bottom:5px;font-weight:500}
   .f-row input[type=text],.f-row input[type=date],.f-row textarea,.f-row select{
@@ -1033,7 +1035,14 @@
     table.ptable{min-width:640px}
     .landing{margin-top:8vh;padding:36px 24px 32px;max-width:calc(100vw - 32px)}
     .kscrim{padding-top:8vh;align-items:flex-start}
-    .detail{padding:30px 20px 60px}
+    .modal-scrim{align-items:flex-end;padding:0}
+    .modal-card{
+      width:100%;max-height:92vh;border-radius:20px 20px 0 0;
+      border-width:1px 0 0;padding:28px 20px calc(28px + env(safe-area-inset-bottom));
+      animation:modalsheet .32s var(--ease);
+    }
+    .modal-card.wide{width:100%;max-height:92vh}
+    @keyframes modalsheet{from{transform:translateY(100%)}}
     /* knowledge rows: full-width main line, wrapping summary, bigger type */
     .krow{flex-wrap:wrap;gap:8px 10px;padding:14px 2px}
     .krow .kmain{flex-basis:100%;max-width:100%}
@@ -1166,7 +1175,7 @@
 (() => {
   /* BUMP ON EVERY EDIT to this file — shown as a tiny tag in the UI so any
      device can tell at a glance whether it's running the latest build */
-  const WB_VERSION = '2026-07-03.30';
+  const WB_VERSION = '2026-07-03.32';
   const $ = s => document.querySelector(s);
   document.querySelectorAll('.ver').forEach(el=>el.textContent = 'v'+WB_VERSION);
   const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -1354,9 +1363,9 @@
   async function openIntakeFlow(){
     const items = await pendingIntake();
     if(!items.length){ toast('No pending intake'); return; }
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       <h2>Intake triage</h2>
-      <span class="d-path">${items.length} item${items.length===1?'':'s'} waiting — handled by /triage-intake, not manual filing.</span>
+      <span class="modal-path">${items.length} item${items.length===1?'':'s'} waiting — handled by /triage-intake, not manual filing.</span>
       <div class="queue">${items.slice(0,12).map(it=>`
         <div class="qrow"><span class="qt">${esc(it.text.slice(0,120))}</span>
         <span class="chipx">${esc(it.kind)}</span></div>`).join('')}</div>
@@ -1849,9 +1858,9 @@
     const tokenHint = savedToken
       ? `<p style="font-size:12px;color:var(--sec);margin:0">Saved token found on this device — leave the field blank to keep using it.</p>`
       : '';
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       <h2>Connect via GitHub</h2>
-      <span class="d-path">Reads and writes the private repo directly over the GitHub API — no local folder needed.</span>
+      <span class="modal-path">Reads and writes the private repo directly over the GitHub API — no local folder needed.</span>
       <div class="f-row"><label>Owner</label><input type="text" id="ghOwner" value="${esc(cfg.owner)}" placeholder="jaredfowkes"></div>
       <div class="f-two">
         <div class="f-row"><label>Repo</label><input type="text" id="ghRepo" value="${esc(cfg.repo)}" placeholder="workbench"></div>
@@ -2589,7 +2598,7 @@
     out.sort((a,b)=> b.ts.localeCompare(a.ts));
     return out.slice(0, limit);
   }
-  /* KPI drill-down: every matching item across projects, in a slide-over;
+  /* KPI drill-down: every matching item across projects, in a modal;
      rows jump into the project pre-filtered to the same status */
   const KPI_DEFS = {
     open:   {label:'Open tasks',     pf:'open',    match: it=>it.status==='todo'||it.status==='doing'||it.status==='blocked'},
@@ -2606,9 +2615,9 @@
     if(kind==='week') rows.sort((a,b)=>(b.it.completed||'').localeCompare(a.it.completed||''));
     else rows.sort((a,b)=> a.p.data.project.localeCompare(b.p.data.project) || (a.g.name).localeCompare(b.g.name));
     const nProj = new Set(rows.map(r=>r.p)).size;
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       <h2>${esc(def.label)}</h2>
-      <span class="d-path">${rows.length} item${rows.length===1?'':'s'}${nProj?` across ${nProj} project${nProj===1?'':'s'}`:''}</span>
+      <span class="modal-path">${rows.length} item${rows.length===1?'':'s'}${nProj?` across ${nProj} project${nProj===1?'':'s'}`:''}</span>
       <div class="queue">${rows.length ? rows.map((r,i)=>`
         <div class="qrow ${r.it.status==='doing'?'doing':r.it.status==='blocked'?'':'log'}" data-i="${i}">
           <span class="qt">${esc(displayCleanText(r.it.text))}</span>
@@ -2779,7 +2788,7 @@
     const heroArt = skill.image
       ? `<img class="skillhero-img" src="${esc(skill.image)}" alt="">`
       : `<span class="icon">${skill.icon||'⚡'}</span>`;
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       <div class="skillwiki-hero">
         ${heroArt}
         <div>
@@ -2971,7 +2980,7 @@
   /* ================= mobile shell ================= */
   function closeMoreMenu(){ document.querySelector('.morescrim')?.remove(); }
   async function openMoreMenu(){
-    if(document.querySelector('.morescrim,.capscrim,.kscrim')) return;
+    if(document.querySelector('.morescrim,.capscrim,.kscrim,.modal-scrim')) return;
     const intake = await pendingIntake();
     const wc = state.projects.filter(p=>p.section==='Work').length;
     const pc = state.projects.length - wc;
@@ -3746,7 +3755,7 @@
           <button data-lb="del">Delete</button>
         </span>`:''}</figure>
       <button class="lbnav" data-d="1" aria-label="Next">›</button>
-      <button class="d-close">esc</button>`;
+      <button class="modal-close">esc</button>`;
     const show = n=>{
       i = (n+shots.length)%shots.length;
       lb.querySelector('img').src = shots[i].url;
@@ -3761,7 +3770,7 @@
     };
     document.addEventListener('keydown', onKey);
     lb.onclick = e=>{ if(e.target===lb) close(); };
-    lb.querySelector('.d-close').onclick = close;
+    lb.querySelector('.modal-close').onclick = close;
     lb.querySelectorAll('.lbnav').forEach(b=>b.onclick=()=>show(i + +b.dataset.d));
     if(manageable){
       lb.querySelector('[data-lb="cover"]').onclick = ()=>{ const s=shots[i]; close(); setCoverFromShot(p, s); };
@@ -3858,9 +3867,9 @@
     for(const d of items) for(const t of d.tags) tagCount[t]=(tagCount[t]||0)+1;
     const tags = Object.entries(tagCount).sort((a,b)=>b[1]-a[1]).slice(0,12);
     let q = '', tag = null, sel = -1;
-    const {scrim} = panel(`
+    const {scrim} = modalPanel(`
       <h2>Docs — ${esc(p.data.project)}</h2>
-      <span class="d-path">${items.length} HTML readouts in ${esc(p.section)}/Projects/${esc(p.dirName)}
+      <span class="modal-path">${items.length} HTML readouts in ${esc(p.section)}/Projects/${esc(p.dirName)}
         ${state.helperUp?` · <button class="readmore" data-openfolder>Open folder in Explorer →</button>`:''}</span>
       <div class="docsbar">
         <input class="filterinput" data-q type="search" placeholder="Search docs…" style="width:210px">
@@ -4269,14 +4278,14 @@
   }
   const mdLite = src => mdParse(src).html;
 
-  /* full-document slide-over with a clickable table of contents */
+  /* full-document modal with a clickable table of contents */
   function docPanel({title, summary, path, body, actionsHTML=''}){
     const {html, toc} = mdParse(body);
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       ${actionsHTML}
       <h2>${esc(title)}</h2>
-      ${summary?`<span class="dsum">${esc(summary)}</span>`:''}
-      ${path?`<span class="d-path">${esc(path)}</span>`:''}
+      ${summary?`<span class="modal-summary">${esc(summary)}</span>`:''}
+      ${path?`<span class="modal-path">${esc(path)}</span>`:''}
       ${toc.length>=3?`<div class="toc">${toc.map(t=>`<button data-toc="${t.id}">${esc(t.text)}</button>`).join('')}</div>`:''}
       <div class="md">${html||'<span class="d-empty">Empty.</span>'}</div>`, title);
     scrim.querySelectorAll('[data-toc]').forEach(b=>b.onclick=()=>{
@@ -4285,21 +4294,21 @@
     return {scrim, close};
   }
 
-  /* ================= slide-over ================= */
-  function panel(inner, label, cls=''){
-    const scrim = document.createElement('div'); scrim.className='scrim';
-    scrim.innerHTML = `<div class="detail ${cls}" role="dialog" aria-label="${esc(label)}">
-      <button class="d-close">esc</button>${inner}</div>`;
+  /* ================= modal shell ================= */
+  function modalPanel(inner, label, cls=''){
+    const scrim = document.createElement('div'); scrim.className='modal-scrim';
+    scrim.innerHTML = `<div class="modal-card ${cls}" role="dialog" aria-label="${esc(label)}">
+      <button class="modal-close">esc</button>${inner}</div>`;
     const close = ()=>{ scrim.remove(); document.removeEventListener('keydown', onKey); };
     const onKey = e=>{ if(e.key==='Escape') close(); };
     scrim.onclick = e=>{ if(e.target===scrim) close(); };
-    scrim.querySelector('.d-close').onclick = close;
+    scrim.querySelector('.modal-close').onclick = close;
     document.addEventListener('keydown', onKey);
     document.body.appendChild(scrim);
     return {scrim, close};
   }
   function capturePanel(inner){
-    if(document.querySelector('.capscrim,.morescrim,.kscrim')) return {scrim:null, close:()=>{}};
+    if(document.querySelector('.capscrim,.morescrim,.kscrim,.modal-scrim')) return {scrim:null, close:()=>{}};
     const scrim = document.createElement('div'); scrim.className = 'capscrim';
     scrim.innerHTML = `<div class="capbox" role="dialog" aria-label="Capture">
       <button type="button" class="cap-close" aria-label="Close">esc</button>${inner}</div>`;
@@ -4326,16 +4335,16 @@
       title: e.title, summary: e.summary,
       path: `${e.section}/${e.sub}/${e.fileName} · ${e.date}${e.tags.length? ' · '+e.tags.join(', '):''}`,
       body: e.body,
-      actionsHTML: `<div class="d-actions"><button class="btn ghost" id="editBtn" style="padding:6px 14px;font-size:12px">Edit</button></div>`,
+      actionsHTML: `<div class="modal-actions"><button class="btn ghost" id="editBtn" style="padding:6px 14px;font-size:12px">Edit</button></div>`,
     });
     scrim.querySelector('#editBtn').onclick = ()=>{ close(); openEditor(e); };
   }
   function openEditor(e){
     const isNew = !e;
     const d = e || { section:'Work', sub:'Glossary', title:'', tags:[], date:today(), summary:'', body:'' };
-    const {scrim, close} = panel(`
+    const {scrim, close} = modalPanel(`
       <h2>${isNew?'New entry':'Edit entry'}</h2>
-      <span class="d-path">${isNew?'A new note in the knowledge base':esc(d.section+'/'+d.sub+'/'+d.fileName)}</span>
+      <span class="modal-path">${isNew?'A new note in the knowledge base':esc(d.section+'/'+d.sub+'/'+d.fileName)}</span>
       ${isNew?`<div class="f-two">
         <div class="f-row"><label>Section</label>
           <select id="fSection"><option>Work</option><option>Personal</option></select></div>
@@ -4658,7 +4667,7 @@ Append-only. One line per finished task, newest at the bottom.
     return items.slice(0, 40);
   }
   function openPalette(){
-    if($('.kscrim,.capscrim,.morescrim') || !state.connected) return;
+    if($('.kscrim,.capscrim,.morescrim,.modal-scrim') || !state.connected) return;
     const scrim = document.createElement('div'); scrim.className='kscrim';
     scrim.innerHTML = `<div class="kbox">
       <input type="text" placeholder="Jump to a project, note, skill, or action…" aria-label="Search">
@@ -4703,7 +4712,7 @@ Append-only. One line per finished task, newest at the bottom.
       e.preventDefault(); openPalette(); return;
     }
     if(e.key==='Escape' && document.querySelector('.morescrim')){ closeMoreMenu(); return; }
-    if(e.key==='Escape' && !typing && state.view==='project' && !document.querySelector('.scrim,.kscrim,.capscrim,.morescrim,.lightbox'))
+    if(e.key==='Escape' && !typing && state.view==='project' && !document.querySelector('.modal-scrim,.kscrim,.capscrim,.morescrim,.lightbox'))
       go('projects');
   });
 
