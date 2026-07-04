@@ -1887,10 +1887,10 @@
   }
 
   /* ================= live sessions strip =================
-     tools/sessions/*.json beacons, one per Claude Code session (written by
-     hooks — see tools/session-beacon.ps1). status is one of running / waiting
-     (blocked on a permission prompt or question) / error (a tool call just
-     failed) / idle (finished its last turn). Active sessions are never hidden
+     tools/sessions/*.json beacons, one per agent session (Claude Code or Cursor;
+     written by hooks — see tools/session-beacon.py and tools/cursor-session-hook.py).
+     status is one of running / waiting (blocked on a permission prompt or question)
+     / error (a tool call just failed) / idle (finished its last turn). Active
      for age — a run stuck for hours should be visible, not disappear — but
      get flagged (accent-colored runtime) past LIVE_STALE_AFTER. Idle entries
      ("recently completed") drop off after LIVE_IDLE_MAX; a GC in the beacon
@@ -2014,11 +2014,12 @@
   }
   function liveRowHTML(s){
     const proj = (s.cwd||'').split('/').filter(Boolean).pop() || '';
+    const ide = (s.ide||'claude').toLowerCase()==='cursor' ? 'Cursor' : 'Claude';
     const suffix = s.status==='waiting' ? ' · waiting' : s.status==='error' ? ' · error' : '';
     const time = s.active ? fmtRun(Date.now()-(+s.promptStart||Date.now()))+suffix : relTime(+s.updated||Date.now());
     return `<div class="liverow ${s.status}" data-session-proj="${esc(proj)}" role="button" tabindex="0">
       <span class="livedot ${s.status}"></span>
-      <span class="livewho">${esc(machineLabel(s.machine))}${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
+      <span class="livewho">${esc(machineLabel(s.machine))}<span class="sep"> · ${esc(ide)}</span>${proj?`<span class="sep"> · ${esc(proj)}</span>`:''}</span>
       <span class="liveprompt" title="${esc(s.prompt||'')}">${esc(humanizePrompt(s.prompt))}</span>
       <span class="livetime ${s.stale?'longrun':''}"
         ${s.active?`data-run="${+s.promptStart}" data-status="${s.status}"`:''}
@@ -2042,7 +2043,7 @@
       const stale = age > 15*60*1000;
       const cls = !m.helperUp ? 'down' : stale ? 'stale' : '';
       const label = machineLabel(m.hostname||'?');
-      return `<span class="machchip ${cls}" title="${esc(m.platform||'')} · helper ${m.helperUp?'up':'down'} · hooks ${m.hooksOk?'ok':'missing'}"><span class="dot"></span>${esc(label)}</span>`;
+      return `<span class="machchip ${cls}" title="${esc(m.platform||'')} · helper ${m.helperUp?'up':'down'} · Claude hooks ${m.claudeHooksOk!==false && m.hooksOk!==false ?'ok':(m.claudeHooksOk===false?'missing':'?')} · Cursor hooks ${m.cursorHooksOk!==false && m.hooksOk!==false ?'ok':(m.cursorHooksOk===false?'missing':'?')}"><span class="dot"></span>${esc(label)}</span>`;
     }).join('');
     return `<div class="statusblock"><h4>Machines</h4><div class="machinesstrip">${chips}</div></div>`;
   }
