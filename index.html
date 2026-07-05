@@ -2401,7 +2401,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.65";
+  const WB_VERSION = "2026-07-04.66";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2951,7 +2951,14 @@ textarea:hover {
     htm: "text/html",
   };
   async function ghBinaryURL(path) {
-    if (binaryURLs.has(path)) return binaryURLs.get(path);
+    const key = `${path}:${ghTreeShas[path] || "unknown"}`;
+    if (binaryURLs.has(key)) return binaryURLs.get(key);
+    for (const [cachedKey, cachedUrl] of binaryURLs.entries()) {
+      if (cachedKey.startsWith(path + ":")) {
+        URL.revokeObjectURL(cachedUrl);
+        binaryURLs.delete(cachedKey);
+      }
+    }
     const cfg = ghConfig();
     const res = await ghFetch(
       `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
@@ -2964,7 +2971,7 @@ textarea:hover {
         type: MIME[ext] || "application/octet-stream",
       }),
     );
-    binaryURLs.set(path, url);
+    binaryURLs.set(key, url);
     return url;
   }
   async function batch(items, fn, n = 6) {
@@ -3142,6 +3149,9 @@ textarea:hover {
               null,
             logo:
               LOGO_NAMES.map((n) => `${base}/${n}`).find((x) => set.has(x)) ||
+              LOGO_NAMES.map((n) => `${base}/files/${n}`).find((x) =>
+                set.has(x),
+              ) ||
               null,
             _shotPaths: tree
               .filter(
