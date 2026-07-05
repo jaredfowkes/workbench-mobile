@@ -2401,7 +2401,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.63";
+  const WB_VERSION = "2026-07-04.64";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4689,6 +4689,22 @@ textarea:hover {
     if (key.includes("gpt-5.5")) return models["gpt-5.5"];
     return null;
   }
+  function pricingDay(asOfMs) {
+    const d = asOfMs ? new Date(asOfMs) : new Date();
+    return d.toISOString().slice(0, 10);
+  }
+  function pricingRates(entry, asOfMs) {
+    if (!entry) return null;
+    const tiers = entry.tiers;
+    if (!tiers || !tiers.length) return entry;
+    const day = pricingDay(asOfMs);
+    for (const tier of tiers) {
+      if (tier.from && day < tier.from) continue;
+      if (tier.through && day > tier.through) continue;
+      return tier;
+    }
+    return tiers[tiers.length - 1];
+  }
   function estimateSessionCost(r) {
     const backend = normalizeBackend(r.backend),
       model = normalizeModel(r.model);
@@ -4696,17 +4712,19 @@ textarea:hover {
     if (!entry && (backend === "Azure" || model === "GPT-5.5")) {
       entry = pricingEntry("gpt-5.5");
     }
-    if (!entry) return null;
-    const inRate = entry.inputPerM,
-      outRate = entry.outputPerM;
+    const asOfMs = Number(r.started || r.ended || 0) || Date.now();
+    const rates = pricingRates(entry, asOfMs);
+    if (!rates) return null;
+    const inRate = rates.inputPerM,
+      outRate = rates.outputPerM;
     if (inRate == null || outRate == null) return null;
     const input = Number(r.inputTokens || 0),
       output = Number(r.outputTokens || 0),
       cacheWrite = Number(r.cacheCreationTokens || 0),
       cacheRead = Number(r.cacheReadTokens || 0);
     const cacheWriteRate =
-      entry.cacheWritePerM != null ? entry.cacheWritePerM : inRate;
-    const cacheReadRate = entry.cacheReadPerM;
+      rates.cacheWritePerM != null ? rates.cacheWritePerM : inRate;
+    const cacheReadRate = rates.cacheReadPerM;
     let cost =
       (input * inRate) / 1000000 + (output * outRate) / 1000000;
     if (cacheWrite) cost += (cacheWrite * cacheWriteRate) / 1000000;
