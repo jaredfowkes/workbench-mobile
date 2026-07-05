@@ -2290,16 +2290,49 @@ textarea:hover {
   }
 }
 .ver-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: flex-start;
+  align-items: center;
   padding: 10px 12px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   background: var(--base);
 }
-.ver-row .status-dot-ui {
-  margin-top: 5px;
+.ver-main {
+  min-width: 0;
+}
+.ver-title {
+  display: block;
+  font-weight: 650;
+}
+.ver-main .refined-sub {
+  margin-top: 1px;
+}
+.ver-row .chip {
+  white-space: nowrap;
+}
+.donut {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  display: inline-block;
+  background: conic-gradient(
+    var(--donut-c, var(--brand)) calc(var(--p, 0) * 1%),
+    var(--subtle) 0
+  );
+  -webkit-mask: radial-gradient(circle, transparent 4.5px, #000 5px);
+  mask: radial-gradient(circle, transparent 4.5px, #000 5px);
+}
+.donut.anthropic {
+  --donut-c: var(--anthropic-focus);
+}
+.donut.cursor {
+  --donut-c: var(--cursor-black);
+}
+[data-theme="dark"] .donut.cursor {
+  --donut-c: #f4f6fb;
 }
 
   </style>
@@ -2368,7 +2401,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.59";
+  const WB_VERSION = "2026-07-04.61";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4227,7 +4260,7 @@ textarea:hover {
   }
   function versionRow(label, ver, isLatest, whenMs, whenLabel) {
     const latest = state.latestBuild?.version;
-    return `<div class="ver-row"><span class="status-dot-ui ${isLatest ? "ok" : "warn"}"></span><span><b>${esc(label)}</b> · v${esc(ver || "unknown")} ${isLatest ? '<span class="chip ok">latest</span>' : `<span class="chip warn">latest is v${esc(latest || "?")}</span>`}<span class="refined-sub">${whenMs ? `${whenLabel} ${esc(shortAge(whenMs))}` : ""}</span></span></div>`;
+    return `<div class="ver-row"><span class="status-dot-ui ${isLatest ? "ok" : "warn"}"></span><span class="ver-main"><span class="ver-title">${esc(label)}</span><span class="refined-sub">v${esc(ver || "unknown")}${whenMs ? ` · ${whenLabel} ${esc(shortAge(whenMs))}` : ""}</span></span>${isLatest ? '<span class="chip ok">latest</span>' : latest ? `<span class="chip warn">latest is v${esc(latest)}</span>` : ""}</div>`;
   }
   function aboutHTML() {
     const latest = state.latestBuild?.version;
@@ -4303,13 +4336,18 @@ textarea:hover {
     ind.style.height = ar.height + "px";
   }
 
+  function donut(p, cls) {
+    return `<span class="donut ${cls}" style="--p:${Math.max(0, Math.min(100, p || 0))}" aria-hidden="true"></span>`;
+  }
   function railSummaryHTML() {
     const active = activeSessions();
     const st = globalStats();
     const attention =
       syncItems().some((i) => i.state !== "ok") ||
       machineStatusRows().some((r) => r.state === "down");
-    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${active.length ? "live" : "idle"}"></span>${active.length} active</span><span class="rail-sum-item">${brandIcon("Claude")}${money(state.usage?.spend)} / ${money(state.usage?.limit)}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "check sync" : "synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
+    const pa = Math.max(0, Math.min(100, pct(state.usage)));
+    const pc = Math.max(0, Math.min(100, pct(state.cursorUsage)));
+    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${active.length ? "live" : "idle"}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa}%</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc}%</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "Check sync" : "Synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
   function renderStatusRail() {
     if (!state.connected) return;
