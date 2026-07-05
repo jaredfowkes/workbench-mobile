@@ -1498,6 +1498,17 @@ textarea:hover {
 .creditbar.hot i {
   background: var(--danger);
 }
+.creditbar.no-data {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--subtle) 0 6px,
+    transparent 6px 12px
+  );
+  opacity: 0.6;
+}
+.creditbar.no-data i {
+  display: none;
+}
 .usage-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2334,6 +2345,12 @@ textarea:hover {
 [data-theme="dark"] .donut.cursor {
   --donut-c: #f4f6fb;
 }
+.donut.no-data {
+  background: var(--subtle);
+  opacity: 0.55;
+  outline: 1px dashed var(--text-3);
+  outline-offset: -1px;
+}
 
   </style>
 </head>
@@ -2401,7 +2418,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.66";
+  const WB_VERSION = "2026-07-05.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2518,7 +2535,10 @@ textarea:hover {
     projects: [],
     kb: [],
     sessions: [],
+    sessionsLoadFailed: false,
     machines: [],
+    machinesLoadFailed: false,
+    syncStatus: [],
     usage: null,
     cursorUsage: null,
     sessionMetrics: null,
@@ -2557,6 +2577,12 @@ textarea:hover {
   // path -> blob sha from the last tree read; lets ghGetFile serve unchanged
   // files from IndexedDB instead of refetching the whole repo every load.
   let ghTreeShas = {};
+  // When the tree was cached (ms epoch) - lets the UI stamp GitHub-backend
+  // reads as "as of Xm ago" instead of presenting a cached tree as live.
+  let ghTreeCacheAt = null;
+  function cacheAgeLabel() {
+    return ghTreeCacheAt ? `as of ${shortAge(ghTreeCacheAt)}` : "";
+  }
   const binaryURLs = new Map();
   // IndexedDB can hang indefinitely in some contexts (private modes, storage
   // pressure, headless file://). Nothing here is critical enough to block
@@ -2802,6 +2828,7 @@ textarea:hover {
           Date.now() - c.at < GH_TREE_TTL
         ) {
           ghTreeShas = c.shas || ghTreeShas;
+          ghTreeCacheAt = c.at;
           return c.tree;
         }
       } catch {}
@@ -2819,13 +2846,14 @@ textarea:hover {
     const tree = blobs.map((t) => t.path);
     ghTreeShas = {};
     for (const b of blobs) ghTreeShas[b.path] = b.sha;
+    ghTreeCacheAt = Date.now();
     localStorage.setItem(
       GH_TREE_KEY,
       JSON.stringify({
         owner: cfg.owner,
         repo: cfg.repo,
         branch: cfg.branch,
-        at: Date.now(),
+        at: ghTreeCacheAt,
         tree,
         shas: ghTreeShas,
       }),
@@ -2951,14 +2979,7 @@ textarea:hover {
     htm: "text/html",
   };
   async function ghBinaryURL(path) {
-    const key = `${path}:${ghTreeShas[path] || "unknown"}`;
-    if (binaryURLs.has(key)) return binaryURLs.get(key);
-    for (const [cachedKey, cachedUrl] of binaryURLs.entries()) {
-      if (cachedKey.startsWith(path + ":")) {
-        URL.revokeObjectURL(cachedUrl);
-        binaryURLs.delete(cachedKey);
-      }
-    }
+    if (binaryURLs.has(path)) return binaryURLs.get(path);
     const cfg = ghConfig();
     const res = await ghFetch(
       `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
@@ -2971,7 +2992,7 @@ textarea:hover {
         type: MIME[ext] || "application/octet-stream",
       }),
     );
-    binaryURLs.set(key, url);
+    binaryURLs.set(path, url);
     return url;
   }
   async function batch(items, fn, n = 6) {
@@ -3149,9 +3170,6 @@ textarea:hover {
               null,
             logo:
               LOGO_NAMES.map((n) => `${base}/${n}`).find((x) => set.has(x)) ||
-              LOGO_NAMES.map((n) => `${base}/files/${n}`).find((x) =>
-                set.has(x),
-              ) ||
               null,
             _shotPaths: tree
               .filter(
@@ -3363,6 +3381,7 @@ textarea:hover {
       loadJson("tools/skills-wiki.json").then((v) => (state.skillsWiki = v)),
       loadSessions().then((v) => (state.sessions = v)),
       loadMachines().then((v) => (state.machines = v)),
+      loadSyncStatus().then((v) => (state.syncStatus = v)),
       fetchMobileVersion().then((v) => (state.mobileVersion = v)),
       fetchSourceVersion().then((v) => (state.mobileSourceVersion = v)),
       pendingIntake().then((v) => (state.intake = v)),
@@ -3381,8 +3400,20 @@ textarea:hover {
       return null;
     }
   }
+  // Keeps the freshest record per key - used to collapse Finder conflict
+  // copies ("name 2.json") that duplicate the same session/machine id.
+  function dedupeByLatest(list, keyFn, tsFn) {
+    const map = new Map();
+    for (const item of list) {
+      const key = keyFn(item);
+      const prev = map.get(key);
+      if (!prev || tsFn(item) >= tsFn(prev)) map.set(key, item);
+    }
+    return [...map.values()];
+  }
   async function loadSessions() {
     const out = [];
+    let failed = false;
     if (state.backend === "fsa") {
       try {
         const t = await state.root.getDirectoryHandle("tools");
@@ -3396,9 +3427,17 @@ textarea:hover {
               });
             } catch {}
         }
-      } catch {}
+      } catch (e) {
+        if (e?.name !== "NotFoundError") failed = true;
+      }
     } else {
-      const tree = await ghGetTree().catch(() => []);
+      let tree;
+      try {
+        tree = await ghGetTree();
+      } catch {
+        failed = true;
+        tree = [];
+      }
       await batch(
         tree.filter((p) => /^tools\/sessions\/[^/]+\.json$/.test(p)),
         async (p) => {
@@ -3409,10 +3448,16 @@ textarea:hover {
         },
       );
     }
-    return out;
+    state.sessionsLoadFailed = failed;
+    return dedupeByLatest(
+      out,
+      (s) => `${s.machine || s.hostname || ""}::${s.session || s.id || s._path}`,
+      (s) => s.updated || s.promptStart || s.started || 0,
+    );
   }
   async function loadMachines() {
     const out = [];
+    let failed = false;
     if (state.backend === "fsa") {
       try {
         const t = await state.root.getDirectoryHandle("tools");
@@ -3420,18 +3465,60 @@ textarea:hover {
         for await (const [n, h] of d.entries()) {
           if (h.kind === "file" && n.endsWith(".json"))
             try {
-              out.push(JSON.parse(await (await h.getFile()).text()));
+              out.push({
+                ...JSON.parse(await (await h.getFile()).text()),
+                _path: `tools/machines/${n}`,
+              });
+            } catch {}
+        }
+      } catch (e) {
+        if (e?.name !== "NotFoundError") failed = true;
+      }
+    } else {
+      let tree;
+      try {
+        tree = await ghGetTree();
+      } catch {
+        failed = true;
+        tree = [];
+      }
+      await batch(
+        tree.filter((p) => /^tools\/machines\/[^/]+\.json$/.test(p)),
+        async (p) => {
+          try {
+            const f = await ghGetFile(p);
+            if (f) out.push({ ...JSON.parse(f.text), _path: p });
+          } catch {}
+        },
+      );
+    }
+    state.machinesLoadFailed = failed;
+    return out;
+  }
+  async function loadSyncStatus() {
+    const out = [];
+    if (state.backend === "fsa") {
+      try {
+        const t = await state.root.getDirectoryHandle("tools");
+        const d = await t.getDirectoryHandle("sync-status");
+        for await (const [n, h] of d.entries()) {
+          if (h.kind === "file" && n.endsWith(".json"))
+            try {
+              out.push({
+                ...JSON.parse(await (await h.getFile()).text()),
+                _path: `tools/sync-status/${n}`,
+              });
             } catch {}
         }
       } catch {}
     } else {
       const tree = await ghGetTree().catch(() => []);
       await batch(
-        tree.filter((p) => /^tools\/machines\/[^/]+\.json$/.test(p)),
+        tree.filter((p) => /^tools\/sync-status\/[^/]+\.json$/.test(p)),
         async (p) => {
           try {
             const f = await ghGetFile(p);
-            if (f) out.push(JSON.parse(f.text));
+            if (f) out.push({ ...JSON.parse(f.text), _path: p });
           } catch {}
         },
       );
@@ -3881,8 +3968,17 @@ textarea:hover {
   }
   function mobileState() {
     const src = state.mobileSourceVersion || WB_VERSION,
-      mob = state.mobileVersion;
-    if (mob && mob === src) return { cls: "ok", text: "mobile current" };
+      mob = state.mobileVersion,
+      pubAt = state.mobileSync?.updated,
+      pubStale = !pubAt || Date.now() - pubAt > 48 * 3600 * 1000;
+    if (mob && mob === src) {
+      if (pubStale)
+        return {
+          cls: "warn",
+          text: pubAt ? "mobile current, publish stale" : "mobile current, publish unknown",
+        };
+      return { cls: "ok", text: "mobile current" };
+    }
     if (mob && mob !== src) return { cls: "warn", text: `mobile stale ${mob}` };
     return { cls: "warn", text: "mobile unknown" };
   }
@@ -4347,6 +4443,8 @@ textarea:hover {
   }
 
   function donut(p, cls) {
+    if (p == null)
+      return `<span class="donut no-data ${cls}" role="img" aria-label="no data"></span>`;
     return `<span class="donut ${cls}" style="--p:${Math.max(0, Math.min(100, p || 0))}" aria-hidden="true"></span>`;
   }
   function railSummaryHTML() {
@@ -4355,9 +4453,14 @@ textarea:hover {
     const attention =
       syncItems().some((i) => i.state !== "ok") ||
       machineStatusRows().some((r) => r.state === "down");
-    const pa = Math.max(0, Math.min(100, pct(state.usage)));
-    const pc = Math.max(0, Math.min(100, pct(state.cursorUsage)));
-    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${active.length ? "live" : "idle"}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa}%</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc}%</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "Check sync" : "Synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
+    const pa = pct(state.usage);
+    const pc = pct(state.cursorUsage);
+    const dot = active.length
+      ? active.some((s) => !s._stale)
+        ? "live"
+        : "warn"
+      : "idle";
+    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "Check sync" : "Synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
   function renderStatusRail() {
     if (!state.connected) return;
@@ -4392,13 +4495,21 @@ textarea:hover {
       (state.machineAliases && state.machineAliases[raw]) || raw || "Unknown"
     );
   }
+  // A session that hasn't posted an update/promptStart in 45min is probably
+  // a crashed or orphaned beacon, not a genuinely running session. It still
+  // shows in the list (server-side GC handles removal after ~12h) but the
+  // UI should mark it "possibly stale" instead of live/green.
+  function isStaleSession(s) {
+    const ts = s.updated || s.promptStart || 0;
+    return !ts || Date.now() - ts > 45 * 60 * 1000;
+  }
   function activeSessions() {
-    return (state.sessions || []).filter(
-      (s) => (s.status || "running") !== "idle",
-    );
+    return (state.sessions || [])
+      .filter((s) => (s.status || "running") !== "idle")
+      .map((s) => (s._stale === undefined ? { ...s, _stale: isStaleSession(s) } : s));
   }
   function sessionMachine(s) {
-    return s.machine || s.hostname || "unknown";
+    return s.machine || s.hostname || s._path || "unknown";
   }
   function sessionRuntime(s) {
     return Math.max(0, Date.now() - (s.promptStart || s.started || Date.now()));
@@ -4413,15 +4524,24 @@ textarea:hover {
     return Math.round(h / 24) + "d ago";
   }
   function sessionsRailHTML() {
+    if (state.sessionsLoadFailed) {
+      return `<button type="button" class="rail-card ops-card interactive-lift" id="sessionsRailBtn" data-rail-action><div class="rail-title">Sessions <span class="tiny">details</span></div><div class="rail-value"><span class="chip warn">Couldn't read sessions</span></div></button>`;
+    }
     const active = activeSessions();
     const longest = active.reduce((m, s) => Math.max(m, sessionRuntime(s)), 0);
-    return `<button type="button" class="rail-card ops-card interactive-lift" id="sessionsRailBtn" data-rail-action><div class="rail-title">Sessions <span class="tiny">details</span></div><div class="rail-value">${active.length ? '<span class="status-dot-ui live"></span> ' : ""}${active.length} active${longest ? ` · ${fmtDuration(longest)}` : ""}</div>${active[0] ? `<div class="tiny prompt-snippet">${esc(displayText(active[0].prompt || active[0].cwd || "Running session", 80))}</div>` : ""}</button>`;
+    const dot = active.length
+      ? active.some((s) => !s._stale)
+        ? "live"
+        : "warn"
+      : "idle";
+    const cacheNote = state.backend === "github" ? cacheAgeLabel() : "";
+    return `<button type="button" class="rail-card ops-card interactive-lift" id="sessionsRailBtn" data-rail-action><div class="rail-title">Sessions <span class="tiny">details</span></div><div class="rail-value">${active.length ? `<span class="status-dot-ui ${dot}"></span> ` : ""}${active.length} active${longest ? ` · ${fmtDuration(longest)}` : ""}</div>${active[0] ? `<div class="tiny prompt-snippet">${esc(displayText(active[0].prompt || active[0].cwd || "Running session", 80))}</div>` : ""}${cacheNote ? `<div class="tiny muted">${esc(cacheNote)}</div>` : ""}</button>`;
   }
   function machineStatusRows() {
     const active = activeSessions();
     const byMachine = new Map();
     for (const m of state.machines || []) {
-      const key = m.hostname || m.machine || "unknown";
+      const key = m.hostname || m.machine || m._path || "unknown";
       byMachine.set(key, {
         key,
         name: machineName(key),
@@ -4468,7 +4588,11 @@ textarea:hover {
       );
   }
   function machinesRailHTML() {
+    if (state.machinesLoadFailed) {
+      return `<button type="button" class="rail-card ops-card interactive-lift" id="machinesRailBtn" data-rail-action><div class="rail-title">Machines <span class="tiny">0</span></div><div class="machine-strip"><span class="chip warn">Couldn't read machines</span></div></button>`;
+    }
     const rows = machineStatusRows();
+    const cacheNote = state.backend === "github" ? cacheAgeLabel() : "";
     return `<button type="button" class="rail-card ops-card interactive-lift" id="machinesRailBtn" data-rail-action><div class="rail-title">Machines <span class="tiny">${rows.length}</span></div><div class="machine-strip">${
       rows
         .slice(0, 4)
@@ -4477,16 +4601,53 @@ textarea:hover {
             `<span class="machine-chip"><span class="status-dot-ui ${r.state}"></span>${esc(r.name)} <span class="tiny">${r.state === "active" ? `${r.active.length} · ${fmtDuration(r.longest)}` : shortAge(r.last)}</span></span>`,
         )
         .join("") || '<span class="tiny">No beacons</span>'
-    }</div></button>`;
+    }</div>${cacheNote ? `<div class="tiny muted">${esc(cacheNote)}</div>` : ""}</button>`;
+  }
+  // Per-machine tools/sync-status/<machine>.json rows: good (ok, with age),
+  // bad (!ok, error + nextAction verbatim), or unknown (missing/unparseable).
+  // A machine's bad state must show up here directly, without opening the
+  // sync detail modal, since syncItems() feeds the always-rendered rail card.
+  function syncStatusRows() {
+    return (state.syncStatus || []).map((s) => {
+      const key =
+        s.machine ||
+        (s._path || "").split("/").pop()?.replace(/\.json$/, "") ||
+        "unknown";
+      const name = machineName(key);
+      if (typeof s.ok !== "boolean") {
+        return {
+          label: `Sync · ${name}`,
+          value: "status unreadable",
+          state: "unknown",
+        };
+      }
+      if (s.ok) {
+        return {
+          label: `Sync · ${name}`,
+          value: `${s.step ? s.step + " · " : ""}${s.updatedMs ? shortAge(s.updatedMs) : "unknown age"}`,
+          state: "ok",
+        };
+      }
+      const err = displayText(s.error || "sync failed", 140);
+      return {
+        label: `Sync · ${name}`,
+        value: `${err}${s.nextAction ? ` — ${s.nextAction}` : ""}`,
+        state: "bad",
+      };
+    });
   }
   function syncItems() {
     const m = mobileState();
     const dirty = state.helperStatus?.dirtyCount;
     const pubAt = state.mobileSync?.updated;
+    const cacheNote = state.backend === "github" ? cacheAgeLabel() : "";
     return [
       {
         label: "Workbench",
-        value: state.backend === "github" ? "connected via GitHub" : "connected",
+        value:
+          state.backend === "github"
+            ? `connected via GitHub${cacheNote ? ` · ${cacheNote}` : ""}`
+            : "connected",
         state: "ok",
       },
       {
@@ -4514,6 +4675,7 @@ textarea:hover {
         value: pubAt ? shortAge(pubAt) : "unknown",
         state: m.cls === "ok" ? "ok" : "warn",
       },
+      ...syncStatusRows(),
     ];
   }
   function syncRailHTML() {
@@ -4524,17 +4686,23 @@ textarea:hover {
     const rows = activeSessions().sort(
       (a, b) => sessionRuntime(b) - sessionRuntime(a),
     );
+    const empty = state.sessionsLoadFailed
+      ? '<div class="empty-state"><span class="chip warn">Couldn\'t read sessions</span></div>'
+      : '<div class="empty-state">No active sessions.</div>';
     modal(
       "Live sessions",
-      `<div class="refined-list">${rows.map((s) => `<div class="refined-row"><span><span class="refined-title">${statusDot("live")}${esc(machineName(sessionMachine(s)))}</span><span class="refined-sub">${esc(displayText(s.prompt || s.cwd || "Running session", 180))}</span></span><span class="refined-meta"><span class="chip">${esc(fmtDuration(sessionRuntime(s)))}</span></span></div>`).join("") || '<div class="empty-state">No active sessions.</div>'}</div>`,
+      `<div class="refined-list">${rows.map((s) => `<div class="refined-row"><span><span class="refined-title">${statusDot(s._stale ? "warn" : "live")}${esc(machineName(sessionMachine(s)))}</span><span class="refined-sub">${esc(displayText(s.prompt || s.cwd || "Running session", 180))}</span></span><span class="refined-meta">${s._stale ? '<span class="chip warn">possibly stale</span>' : ""}<span class="chip">${esc(fmtDuration(sessionRuntime(s)))}</span></span></div>`).join("") || empty}</div>`,
       "wide",
     );
   }
   function openMachinesDetail() {
     const rows = machineStatusRows();
+    const empty = state.machinesLoadFailed
+      ? '<div class="empty-state"><span class="chip warn">Couldn\'t read machines</span></div>'
+      : '<div class="empty-state">No machines reported yet.</div>';
     modal(
       "Machines",
-      `<div class="refined-list">${rows.map((r) => `<div class="refined-row"><span><span class="refined-title">${statusDot(r.state === "active" ? "live" : r.state === "idle" ? "warn" : "bad")}${esc(r.name)}</span><span class="refined-sub">${r.state === "active" ? `${r.active.length} active session${r.active.length === 1 ? "" : "s"} · longest ${fmtDuration(r.longest)}` : `Last seen ${shortAge(r.last)} · helper ${r.machine?.helperUp ? "up" : "unknown/down"}`}</span></span><span class="refined-meta"><span class="chip">${esc(r.state)}</span></span></div>`).join("") || '<div class="empty-state">No machines reported yet.</div>'}</div>`,
+      `<div class="refined-list">${rows.map((r) => `<div class="refined-row"><span><span class="refined-title">${statusDot(r.state === "active" ? "live" : r.state === "idle" ? "warn" : "bad")}${esc(r.name)}</span><span class="refined-sub">${r.state === "active" ? `${r.active.length} active session${r.active.length === 1 ? "" : "s"} · longest ${fmtDuration(r.longest)}` : `Last seen ${shortAge(r.last)} · helper ${r.machine?.helperUp ? "up" : "unknown/down"}`}</span></span><span class="refined-meta"><span class="chip">${esc(r.state)}</span></span></div>`).join("") || empty}</div>`,
       "wide",
     );
   }
@@ -4555,10 +4723,9 @@ textarea:hover {
       : "$" + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
   }
   function pct(u) {
-    return (
-      u?.percent ??
-      (u?.spend != null && u?.limit ? Math.round((u.spend / u.limit) * 100) : 0)
-    );
+    if (u?.percent != null) return u.percent;
+    if (u?.spend != null && u?.limit) return Math.round((u.spend / u.limit) * 100);
+    return null;
   }
   function ageLabel(ms) {
     if (!ms) return "never checked";
@@ -4570,7 +4737,11 @@ textarea:hover {
     return `checked ${Math.round(h / 24)}d ago`;
   }
   function creditLaneHTML(name, u, cls = "") {
-    const p = Math.max(0, Math.min(100, pct(u)));
+    const raw = pct(u);
+    if (raw == null) {
+      return `<div class="credit-mini-row"><span class="credit-name">${brandLabel(name)}</span><span class="creditbar no-data ${cls} ${brandKind(name)}" role="progressbar" aria-label="${esc(name)} credits no data"><i style="width:0%"></i></span><span class="credit-amt">no data</span></div>`;
+    }
+    const p = Math.max(0, Math.min(100, raw));
     const hot = p >= 85;
     return `<div class="credit-mini-row"><span class="credit-name">${brandLabel(name)}</span><span class="creditbar ${cls} ${brandKind(name)} ${hot ? "hot" : ""}" role="progressbar" aria-label="${esc(name)} credits ${p}%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></span><span class="credit-amt">${money(u?.spend)} / ${money(u?.limit)}</span></div>`;
   }
@@ -4581,7 +4752,14 @@ textarea:hover {
     const fresh = ages.length ? Math.max(...ages) : null;
     return `<button type="button" class="credit-card interactive-lift" id="creditsRailBtn"><div class="rail-title">Credits</div><div class="credit-mini">${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}</div><div class="credit-age">${esc(ageLabel(fresh))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</div></button>`;
   }
+  // Rows with no ended time that started over 24h ago are abandoned beacons,
+  // not marathon sessions - counting Date.now() as their end would blow up
+  // duration totals (model/backend mix, project totals) with fake runtime.
+  function isIncompleteSession(s) {
+    return !s.ended && !!s.started && Date.now() - s.started > 24 * 3600 * 1000;
+  }
   function durationMs(s) {
+    if (isIncompleteSession(s)) return 0;
     const end = s.ended || Date.now();
     return Math.max(0, (end || 0) - (s.started || 0));
   }
@@ -4715,7 +4893,18 @@ textarea:hover {
     }
     return tiers[tiers.length - 1];
   }
+  // No input/output/totalTokens at all means no telemetry was recorded for
+  // this row - estimating from zero tokens would produce a false "$0", not
+  // a real answer, so callers should treat it as untracked instead.
+  function hasTelemetry(r) {
+    return !!(
+      Number(r.inputTokens || 0) ||
+      Number(r.outputTokens || 0) ||
+      Number(r.totalTokens || 0)
+    );
+  }
   function estimateSessionCost(r) {
+    if (!hasTelemetry(r)) return null;
     const backend = normalizeBackend(r.backend),
       model = normalizeModel(r.model);
     let entry = pricingEntry(r.model);
@@ -4743,6 +4932,7 @@ textarea:hover {
     return Math.round(cost * 10000) / 10000;
   }
   function sessionCost(r) {
+    if (!hasTelemetry(r)) return null;
     const saved = Number(r.cost);
     if (r.cost != null && saved > 0) return saved;
     const est = estimateSessionCost(r);
@@ -4785,6 +4975,7 @@ textarea:hover {
     const allRows = (state.sessionMetrics?.sessions || []).filter(Boolean),
       rows = usageRows(allRows);
     const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
+    const incompleteCount = rows.filter(isIncompleteSession).length;
     const backends = groupMetrics(rows, (r) => normalizeBackend(r.backend));
     const models = groupMetrics(rows, (r) => normalizeModel(r.model));
     const ides = groupMetrics(rows, (r) => normalizeIde(r.ide));
@@ -4792,7 +4983,7 @@ textarea:hover {
       .slice()
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r) => `<div class="usage-table-row"><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${esc(fmtDuration(durationMs(r)))}</span></div>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r) => `<div class="usage-table-row"><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></div>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -4832,6 +5023,9 @@ textarea:hover {
       cost: costSum(rs),
       approx: rs.some((r) => r.tokenSource === "ccr-log-approx"),
       sessions: rs.length,
+      // Sessions with no telemetry at all - the lane's token sums are
+      // starved by these, so flag coverage instead of implying real $0s.
+      untracked: rs.filter((r) => !hasTelemetry(r)).length,
       ...extra,
     });
     return [
@@ -4855,7 +5049,7 @@ textarea:hover {
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
   function comparisonTable(rows) {
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}</span></div>`).join("")}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}${r.untracked ? ` <span class="tiny muted">(${r.untracked}/${r.sessions} sessions untracked)</span>` : ""}</span></div>`).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
