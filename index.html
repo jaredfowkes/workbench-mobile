@@ -231,6 +231,18 @@ h3 {
   font-weight: 600;
   font-size: 18px;
 }
+.mark-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+#mobileSummary {
+  flex: 1;
+  min-width: 0;
+}
 .ver {
   font-size: 12px;
   color: var(--text-3);
@@ -2375,21 +2387,32 @@ textarea:hover {
   display: none;
 }
 @media (max-width: 900px) {
-  .rail-summary {
+  /* The summary chips live in the merged mobile top bar (#mobileSummary),
+     not as a separate card row in the content. */
+  #mobileSummary .rail-summary {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     width: 100%;
-    min-height: 48px;
-    padding: 10px 12px;
-    background: var(--base);
-    border: 1px solid var(--border-subtle);
-    border-radius: 14px;
-    box-shadow: var(--shadow-xs);
-    font-size: 13px;
+    min-width: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    font-size: 12.5px;
     font-weight: 600;
     color: var(--text);
-    overflow: hidden;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .status-rail {
+    display: none;
+  }
+  .status-rail.expanded {
+    display: block;
+  }
+  .status-rail .rail-summary {
+    display: none;
   }
   .rail-sum-item {
     display: inline-flex;
@@ -2404,9 +2427,44 @@ textarea:hover {
     transform: rotate(90deg);
     transition: transform var(--fast) var(--ease);
   }
+  #mobileSummary .rail-summary[aria-expanded="true"] .rail-caret {
+    transform: rotate(-90deg);
+  }
   .wiz-big {
     min-height: 56px;
   }
+}
+/* Compact grouped rows for bottom sheets (mobile More menu etc.) */
+.sheet-list {
+  background: var(--base);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.sheet-list .sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+  text-align: left;
+}
+.sheet-list .sheet-row + .sheet-row {
+  border-top: 1px solid var(--border-subtle);
+}
+.sheet-list .sheet-row:hover,
+.sheet-list .sheet-row:active {
+  background: var(--subtle);
+}
+.sheet-chev {
+  color: var(--text-3);
+  font-size: 18px;
 }
 .ver-row {
   display: grid;
@@ -2485,13 +2543,14 @@ textarea:hover {
 
   <div id="app" class="hidden">
     <header class="mobile-top">
-      <strong>Workbench</strong>
+      <span class="mark mark-sm" aria-label="Workbench"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <div id="mobileSummary"></div>
       <button class="iconbtn" id="mobilePalette" aria-label="Command palette">⌘</button>
       <button class="iconbtn" id="mobileReload" aria-label="Reload">↻</button>
     </header>
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand"><span class="wordmark">Workbench</span></div>
+        <div class="brand"><span class="mark mark-sm" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="wordmark">Workbench</span></div>
         <nav class="nav" aria-label="Primary">
           <button data-view="overview">Overview</button>
           <button data-view="projects">Projects</button>
@@ -2527,7 +2586,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.24";
+  const WB_VERSION = "2026-07-05.26";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4701,9 +4760,29 @@ textarea:hover {
   function railSummaryHTML() {
     const active = activeSessions();
     const st = globalStats();
-    const attention =
-      syncItems().some((i) => i.state !== "ok") ||
-      machineStatusRows().some((r) => r.state === "down");
+    const items = syncItems();
+    const downMachine = machineStatusRows().find((r) => r.state === "down");
+    const worst =
+      items.find((i) => i.state === "bad") ||
+      items.find((i) => i.state !== "ok");
+    const attention = !!(worst || downMachine);
+    // Name the actual problem instead of a generic "Check sync".
+    const reason = downMachine
+      ? `${downMachine.name || "Machine"} down`
+      : worst
+        ? worst.label === "Last publish"
+          ? `Publish ${worst.value}`
+          : worst.label === "Helper"
+            ? "Helper down"
+            : worst.label === "Sync status"
+              ? String(worst.value)
+              : `${worst.label}: ${worst.value}`
+        : "Synced";
+    const reasonDot = attention
+      ? (worst && worst.state === "bad") || downMachine
+        ? "bad"
+        : "warn"
+      : "ok";
     const pa = pct(state.usage);
     const pc = pct(state.cursorUsage);
     const dot = active.length
@@ -4711,7 +4790,10 @@ textarea:hover {
         ? "live"
         : "warn"
       : "idle";
-    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "Check sync" : "Synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
+    const reasonChip = `<span class="rail-sum-item"><span class="status-dot-ui ${reasonDot}"></span>${esc(displayText(String(reason), 28))}</span>`;
+    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
+    // A problem chip leads so it can never scroll out of sight; all-good sits last.
+    return `<button type="button" class="rail-summary" aria-expanded="${!!state.railOpen}" aria-label="Workbench status">${attention ? reasonChip + chips : chips + reasonChip}<span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
   function renderStatusRail() {
     if (!state.connected) return;
@@ -4721,12 +4803,17 @@ textarea:hover {
     if (rail._html === html) return;
     rail._html = html;
     rail.innerHTML = html;
-    $("#railSummaryBtn")?.addEventListener("click", () => {
+    // Mirror the summary chips into the mobile top bar (merged header row).
+    const ms = $("#mobileSummary");
+    if (ms) ms.innerHTML = railSummaryHTML();
+    const toggleRail = () => {
       state.railOpen = !state.railOpen;
-      const r = $("#statusRail");
-      r.classList.toggle("expanded", state.railOpen);
-      $("#railSummaryBtn")?.setAttribute("aria-expanded", String(state.railOpen));
-    });
+      $("#statusRail").classList.toggle("expanded", state.railOpen);
+      $$(".rail-summary").forEach((b) =>
+        b.setAttribute("aria-expanded", String(state.railOpen)),
+      );
+    };
+    $$(".rail-summary").forEach((b) => (b.onclick = toggleRail));
     $("#sessionsRailBtn")?.addEventListener("click", openSessionsDetail);
     $("#machinesRailBtn")?.addEventListener("click", openMachinesDetail);
     $("#creditsRailBtn")?.addEventListener("click", openUsageDetail);
@@ -4919,7 +5006,9 @@ textarea:hover {
             : dirty
               ? `${dirty} unsynced`
               : "everything pushed",
-        state: dirty ? "warn" : "ok",
+        // "unsynced" is a desktop working-copy concept; on the GitHub backend
+        // every write commits immediately, so it must never flag attention.
+        state: state.backend === "github" ? "ok" : dirty ? "warn" : "ok",
       },
       {
         label: "Last publish",
@@ -6690,7 +6779,7 @@ textarea:hover {
   function openMore() {
     modal(
       "More",
-      `<div class="refined-list"><button class="refined-row pressable" data-view="skills"><span class="refined-title">Skills</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="board"><span class="refined-title">Board</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="instructions"><span class="refined-title">Instructions</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="about"><span class="refined-title">About</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span class="refined-title">Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
+      `<div class="sheet-list">${[["skills", "Skills"], ["board", "Board"], ["instructions", "Instructions"], ["about", "About"]].map(([v, t]) => `<button class="sheet-row" data-view="${v}"><span>${t}</span><span class="sheet-chev" aria-hidden="true">›</span></button>`).join("")}</div><div class="sheet-list" style="margin-top:12px"><button class="sheet-row" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span>Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
     );
     bindView($(".modal-scrim.dyn"));
   }
