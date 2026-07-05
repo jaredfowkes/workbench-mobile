@@ -257,12 +257,13 @@ h3 {
   min-width: 0;
   padding: 28px 32px 48px;
 }
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
-  margin-bottom: 20px;
+.main > * {
+  max-width: 1560px;
+  margin-inline: auto;
+}
+.status-rail,
+#view {
+  width: 100%;
 }
 .mobile-top,
 .mobile-tabs {
@@ -835,10 +836,22 @@ textarea:hover {
   }
   .status-rail {
     display: flex;
-    overflow: auto;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin: 0 -14px 16px;
+    padding: 0 14px;
+  }
+  .status-rail::-webkit-scrollbar {
+    display: none;
   }
   .rail-card {
-    min-width: 190px;
+    min-width: 210px;
+    flex: 0 0 auto;
+  }
+  .credit-card {
+    min-width: 230px;
+    flex: 0 0 auto;
   }
   .project-cover {
     width: 100%;
@@ -864,8 +877,16 @@ textarea:hover {
     width: 100%;
     max-height: 88vh;
     border-radius: 24px 24px 0 0;
-    padding: 18px;
+    padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px);
     margin-top: auto;
+    animation: wb-sheet-up var(--standard) var(--ease-settle);
+  }
+  .modal-scrim.closing .modal-card {
+    animation: wb-sheet-up var(--fast) var(--ease-press) reverse forwards;
+  }
+  .iconbtn {
+    width: 44px;
+    min-height: 44px;
   }
   .form-two {
     grid-template-columns: 1fr;
@@ -884,8 +905,15 @@ textarea:hover {
   .action-tools .btn {
     flex: 1;
   }
-  .topbar {
-    display: none;
+}
+@media (min-width: 901px) and (max-width: 1180px) {
+  .task-layout,
+  .cols-2 {
+    grid-template-columns: 1fr;
+  }
+  .metric-grid,
+  .status-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -907,6 +935,16 @@ textarea:hover {
   from {
     opacity: 0;
     transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes wb-sheet-up {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
   }
   to {
     opacity: 1;
@@ -978,7 +1016,7 @@ textarea:hover {
 }
 .pressable {
   transition:
-    transform var(--fast) var(--ease),
+    transform var(--standard) var(--ease-spring),
     background-color var(--fast) var(--ease),
     border-color var(--fast) var(--ease),
     box-shadow var(--fast) var(--ease);
@@ -986,6 +1024,8 @@ textarea:hover {
 .pressable:active,
 .pressable.vibe-press {
   transform: scale(0.985);
+  transition-duration: var(--fast);
+  transition-timing-function: var(--ease-press);
 }
 .qrow,
 .table-row,
@@ -1071,6 +1111,13 @@ textarea:hover {
 }
 .modal-card {
   animation: wb-soft-pop var(--standard) var(--ease);
+}
+.modal-scrim.closing {
+  animation: backdrop-in var(--fast) var(--ease) reverse forwards;
+  pointer-events: none;
+}
+.modal-scrim.closing .modal-card {
+  animation: wb-soft-pop var(--fast) var(--ease-press) reverse forwards;
 }
 .mobile-tabs button,
 .nav button,
@@ -1259,9 +1306,6 @@ textarea:hover {
   }
   .main {
     padding: 22px 26px 38px;
-  }
-  .topbar {
-    margin-bottom: 14px;
   }
   .status-rail {
     gap: 10px;
@@ -1952,6 +1996,22 @@ textarea:hover {
     height: 17px;
     flex-basis: 17px;
   }
+  .recent-sessions-table .usage-table-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .usage-table-row.head {
+    display: none;
+  }
+  .usage-table-row span[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    margin-bottom: 2px;
+  }
 }
 
 /* Popup refinement system reused app-wide */
@@ -2130,6 +2190,56 @@ textarea:hover {
   align-content: start;
 }
 
+.toast-action {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-weight: 700;
+  margin-left: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.cover > span {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--brand-deep);
+  opacity: 0.75;
+}
+.lane-empty {
+  border-style: dashed;
+  box-shadow: none;
+}
+.lane-empty .cardhead {
+  margin-bottom: 0;
+}
+.intake-banner {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+  background: color-mix(in srgb, var(--warning-soft) 30%, var(--base));
+}
+.doc-frame-wrap {
+  height: min(74vh, 900px);
+}
+.doc-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: #fff;
+}
+.reco-title {
+  font-size: 18px;
+  line-height: 24px;
+}
+@media (max-width: 900px) {
+  [data-project-view] {
+    display: none;
+  }
+  .doc-frame-wrap {
+    height: 70vh;
+  }
+}
+
   </style>
 </head>
 <body>
@@ -2180,7 +2290,7 @@ textarea:hover {
         </div>
       </aside>
       <main class="main">
-        <div class="topbar"><div id="statusRail" class="status-rail" style="flex:1"></div></div>
+        <div id="statusRail" class="status-rail"></div>
         <div id="view"></div>
       </main>
     </div>
@@ -2196,7 +2306,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.54";
+  const WB_VERSION = "2026-07-04.55";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2234,13 +2344,6 @@ textarea:hover {
   const GH_TOKEN_KEY = "workbench-gh-token";
   const GH_TREE_KEY = "workbench-gh-tree-cache";
   const GH_TREE_TTL = 10 * 60 * 1000;
-  const CYCLE = {
-    todo: "doing",
-    doing: "done",
-    done: "todo",
-    blocked: "todo",
-    idea: "doing",
-  };
   const BRAND_ASSETS = {
     anthropic: "design-systems/Anthropic/anthropic.svg",
     cursor: "design-systems/Cursor/cursor.svg",
@@ -2356,6 +2459,9 @@ textarea:hover {
     intake: [],
   };
   const ghShaCache = new Map();
+  // path -> blob sha from the last tree read; lets ghGetFile serve unchanged
+  // files from IndexedDB instead of refetching the whole repo every load.
+  let ghTreeShas = {};
   const binaryURLs = new Map();
   const idb = {
     open: () =>
@@ -2396,21 +2502,33 @@ textarea:hover {
       });
     },
   };
-  function toast(msg) {
+  function toast(msg, type = "", action = null) {
     const t = $("#toast");
     t.textContent = msg;
-    t.classList.add("show");
+    t.className = "toast show" + (type ? " " + type : "");
+    if (action) {
+      const b = document.createElement("button");
+      b.className = "toast-action";
+      b.textContent = action.label;
+      b.onclick = () => {
+        t.classList.remove("show");
+        action.run();
+      };
+      t.appendChild(b);
+    }
     clearTimeout(t._to);
-    t._to = setTimeout(() => t.classList.remove("show"), 3200);
+    t._to = setTimeout(() => t.classList.remove("show"), action ? 6000 : 3200);
   }
   function setLoading(btn, on, label) {
     if (!btn) return;
     if (on) {
+      btn.style.width = btn.offsetWidth + "px";
       btn.dataset.old = btn.textContent;
       btn.textContent = label || "Working…";
       btn.disabled = true;
       btn.setAttribute("aria-busy", "true");
     } else {
+      btn.style.width = "";
       btn.textContent = btn.dataset.old || btn.textContent;
       btn.disabled = false;
       btn.removeAttribute("aria-busy");
@@ -2500,6 +2618,8 @@ textarea:hover {
     localStorage.removeItem(GH_TREE_KEY);
     idb.del("gh-config").catch(() => {});
     ghShaCache.clear();
+    for (const url of binaryURLs.values()) URL.revokeObjectURL(url);
+    binaryURLs.clear();
   }
   async function ghLoadConfig() {
     try {
@@ -2543,7 +2663,21 @@ textarea:hover {
         },
       },
     );
-    if (res.status === 401 || res.status === 403) res.authFailed = true;
+    if (res.status === 401 || res.status === 403) {
+      res.authFailed = true;
+      const rateLimited =
+        res.status === 403 && res.headers.get("x-ratelimit-remaining") === "0";
+      if (state.connected && !state._authPrompted) {
+        state._authPrompted = true;
+        if (rateLimited) {
+          toast("GitHub rate limit hit — data may be stale for a bit.", "warning");
+          setTimeout(() => (state._authPrompted = false), 5 * 60 * 1000);
+        } else {
+          toast("GitHub token expired or revoked — reconnect.", "danger");
+          setTimeout(openGithubConnect, 700);
+        }
+      }
+    }
     return res;
   }
   async function ghGetTree(force = false) {
@@ -2557,8 +2691,10 @@ textarea:hover {
           c.repo === cfg.repo &&
           c.branch === cfg.branch &&
           Date.now() - c.at < GH_TREE_TTL
-        )
+        ) {
+          ghTreeShas = c.shas || ghTreeShas;
           return c.tree;
+        }
       } catch {}
     }
     const res = await ghFetch(
@@ -2570,9 +2706,10 @@ textarea:hover {
         { status: res.status },
       );
     const j = await res.json();
-    const tree = (j.tree || [])
-      .filter((t) => t.type === "blob")
-      .map((t) => t.path);
+    const blobs = (j.tree || []).filter((t) => t.type === "blob");
+    const tree = blobs.map((t) => t.path);
+    ghTreeShas = {};
+    for (const b of blobs) ghTreeShas[b.path] = b.sha;
     localStorage.setItem(
       GH_TREE_KEY,
       JSON.stringify({
@@ -2581,12 +2718,21 @@ textarea:hover {
         branch: cfg.branch,
         at: Date.now(),
         tree,
+        shas: ghTreeShas,
       }),
     );
     return tree;
   }
   async function ghGetFile(path) {
     const cfg = ghConfig();
+    const treeSha = ghTreeShas[path];
+    if (treeSha) {
+      const hit = await idb.get("ghc:" + treeSha).catch(() => null);
+      if (hit != null) {
+        ghShaCache.set(path, treeSha);
+        return { text: hit, sha: treeSha };
+      }
+    }
     const res = await ghFetch(
       `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
     );
@@ -2598,9 +2744,11 @@ textarea:hover {
       );
     const j = await res.json();
     ghShaCache.set(path, j.sha);
-    return { text: decUtf8(j.content), sha: j.sha };
+    const text = decUtf8(j.content);
+    idb.set("ghc:" + j.sha, text).catch(() => {});
+    return { text, sha: j.sha };
   }
-  async function ghPutFile(path, text, message) {
+  async function ghPutFile(path, text, message, isRetry = false) {
     const cfg = ghConfig();
     let sha = ghShaCache.get(path);
     if (!sha) {
@@ -2619,13 +2767,21 @@ textarea:hover {
         }),
       },
     );
-    if (res.status === 409)
+    if (res.status === 409) {
+      // Stale sha — refresh it and retry once instead of wedging every
+      // subsequent save behind the same dead sha.
+      ghShaCache.delete(path);
+      if (!isRetry) {
+        const fresh = await ghGetFile(path).catch(() => null);
+        if (fresh) return ghPutFile(path, text, message, true);
+      }
       throw Object.assign(
         new Error(
-          "Save conflict - file changed elsewhere. Reload before editing.",
+          "Save conflict - the file changed elsewhere. Reload, then retry.",
         ),
         { conflict: true },
       );
+    }
     if (!res.ok) {
       let detail = "";
       try {
@@ -2637,14 +2793,18 @@ textarea:hover {
     }
     const j = await res.json();
     ghShaCache.set(path, j.content.sha);
+    // Keep the sha->content cache coherent with our own write, or the next
+    // read would serve the pre-write version from IndexedDB.
+    ghTreeShas[path] = j.content.sha;
+    idb.set("ghc:" + j.content.sha, text).catch(() => {});
     localStorage.removeItem(GH_TREE_KEY);
     return j;
   }
   async function ghPutBinary(path, blob, message) {
     const bytes = new Uint8Array(await blob.arrayBuffer());
-    await ghPutFile(path, "", message).catch(() => {});
     const cfg = ghConfig();
     let sha = ghShaCache.get(path);
+    if (!sha) sha = (await ghGetFile(path).catch(() => null))?.sha;
     const res = await ghFetch(
       `/contents/${path.split("/").map(encodeURIComponent).join("/")}`,
       {
@@ -2668,6 +2828,7 @@ textarea:hover {
     }
     const j = await res.json();
     ghShaCache.set(path, j.content.sha);
+    delete ghTreeShas[path];
     localStorage.removeItem(GH_TREE_KEY);
   }
   const MIME = {
@@ -2845,7 +3006,7 @@ textarea:hover {
       },
     },
     github: {
-      async scan() {
+      async scanProjects() {
         const tree = await ghGetTree();
         const set = new Set(tree);
         const tasks = tree.filter((p) =>
@@ -2889,6 +3050,9 @@ textarea:hover {
           p.log = parseLog(lf?.text);
           state.projects.push(p);
         });
+      },
+      async scanKB() {
+        const tree = await ghGetTree();
         const kb = tree.filter((p) =>
           /^(Work|Personal)\/(Glossary|Processes|Decisions)\/[^/]+\.(md|html)$/.test(
             p,
@@ -2978,24 +3142,49 @@ textarea:hover {
     state.projects = [];
     state.kb = [];
     state.intake = [];
-    await Backends[state.backend].scan();
+    if (state.backend === "github") {
+      // Paint as soon as projects exist; KB entries stream in behind the
+      // first render so a phone on cellular sees the Overview in a few round
+      // trips instead of ~90.
+      await Backends.github.scanProjects();
+      if (state.projects.length) {
+        Backends.github
+          .scanKB()
+          .then(() => {
+            state.kb.sort(
+              (a, b) =>
+                a.section.localeCompare(b.section) ||
+                a.sub.localeCompare(b.sub) ||
+                a.title.localeCompare(b.title),
+            );
+            if (["knowledge"].includes(state.view)) render();
+          })
+          .catch(() => {});
+      }
+    } else {
+      await Backends[state.backend].scan();
+    }
     if (!state.projects.length)
       throw new Error(
         "No projects found. Pick the workbench folder itself, not a subfolder.",
       );
-    state.projects.sort(
-      (a, b) =>
-        projectRecency(b) - projectRecency(a) ||
-        a.data.project.localeCompare(b.data.project),
-    );
     state.kb.sort(
       (a, b) =>
         a.section.localeCompare(b.section) ||
         a.sub.localeCompare(b.sub) ||
         a.title.localeCompare(b.title),
     );
+    await finishScan();
+  }
+  async function finishScan() {
+    state.projects.sort(
+      (a, b) =>
+        projectRecency(b) - projectRecency(a) ||
+        a.data.project.localeCompare(b.data.project),
+    );
     await Promise.allSettled(state.projects.map(enrichProject));
     state.connected = true;
+    updateShellForBackend();
     $("#landing").classList.add("hidden");
     $("#app").classList.remove("hidden");
     render();
@@ -3044,6 +3233,9 @@ textarea:hover {
       loadJson("tools/machine-aliases.json").then(
         (v) => (state.machineAliases = v || {}),
       ),
+      loadJson("tools/dashboard-state.json").then(
+        (v) => (state.dashboardState = v || state.dashboardState),
+      ),
       loadJson("tools/agent-config.json").then((v) => (state.agentConfig = v)),
       loadJson("skills-lock.json").then((v) => (state.skillsLock = v)),
       loadJson("tools/skills-wiki.json").then((v) => (state.skillsWiki = v)),
@@ -3055,11 +3247,7 @@ textarea:hover {
       state.backend === "fsa" ? pingHelper() : Promise.resolve(),
     ];
     await Promise.allSettled(jobs);
-    state.skillCatalog = await buildSkillCatalog().catch(() => ({
-      custom: [],
-      store: [],
-      total: 0,
-    }));
+    if (state.backend !== "github") await ensureSkillCatalog();
     render();
     renderStatusRail();
   }
@@ -3092,8 +3280,10 @@ textarea:hover {
       await batch(
         tree.filter((p) => /^tools\/sessions\/[^/]+\.json$/.test(p)),
         async (p) => {
-          const f = await ghGetFile(p);
-          if (f) out.push({ ...JSON.parse(f.text), _path: p });
+          try {
+            const f = await ghGetFile(p);
+            if (f) out.push({ ...JSON.parse(f.text), _path: p });
+          } catch {}
         },
       );
     }
@@ -3117,8 +3307,10 @@ textarea:hover {
       await batch(
         tree.filter((p) => /^tools\/machines\/[^/]+\.json$/.test(p)),
         async (p) => {
-          const f = await ghGetFile(p);
-          if (f) out.push(JSON.parse(f.text));
+          try {
+            const f = await ghGetFile(p);
+            if (f) out.push(JSON.parse(f.text));
+          } catch {}
         },
       );
     }
@@ -3266,6 +3458,8 @@ textarea:hover {
     );
     $("[data-project-search]", root)?.addEventListener("input", (e) => {
       state.pq = e.target.value;
+      state._focusSel = "[data-project-search]";
+      state._focusPos = e.target.selectionStart;
       render();
     });
     $$("[data-project-view]", root).forEach(
@@ -3279,8 +3473,11 @@ textarea:hover {
       b.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        const a = actionItems()[+b.dataset.copyAction];
+        const a = (state._acts || []).find(
+          (x) => actionKey(x) === b.dataset.copyAction,
+        );
         if (a) copyText(actionPrompt(a), "Agent prompt copied.");
+        else toast("That item changed — refreshing.", "warning");
       };
     });
     $$("[data-open-direct]", root).forEach(
@@ -3305,7 +3502,10 @@ textarea:hover {
         (b.onclick = (e) => {
           e.preventDefault();
           e.stopPropagation();
-          snoozeAction(actionItems()[+b.dataset.snoozeAction]);
+          const a = (state._acts || []).find(
+            (x) => actionKey(x) === b.dataset.snoozeAction,
+          );
+          if (a) openSnoozeOptions(a);
         }),
     );
     $$("[data-kpi]", root).forEach(
@@ -3325,6 +3525,8 @@ textarea:hover {
     });
     $("[data-task-search]", root)?.addEventListener("input", (e) => {
       state.ptaskq = e.target.value;
+      state._focusSel = "[data-task-search]";
+      state._focusPos = e.target.selectionStart;
       render();
     });
     $("[data-add-task]", root)?.addEventListener("keydown", addTask);
@@ -3350,6 +3552,8 @@ textarea:hover {
     loadProjectSidecars(root);
     $("[data-k-search]", root)?.addEventListener("input", (e) => {
       state.kq = e.target.value;
+      state._focusSel = "[data-k-search]";
+      state._focusPos = e.target.selectionStart;
       render();
     });
     $$("[data-karea]", root).forEach(
@@ -3366,6 +3570,10 @@ textarea:hover {
           render();
         }),
     );
+    $("[data-toggle-tags]", root)?.addEventListener("click", () => {
+      state.kShowAllTags = !state.kShowAllTags;
+      render();
+    });
     $$("[data-ktag]", root).forEach(
       (b) =>
         (b.onclick = () => {
@@ -3379,6 +3587,8 @@ textarea:hover {
     $("[data-new-entry]", root)?.addEventListener("click", () => openEditor());
     $("[data-s-search]", root)?.addEventListener("input", (e) => {
       state.sq = e.target.value;
+      state._focusSel = "[data-s-search]";
+      state._focusPos = e.target.selectionStart;
       render();
     });
     $$("[data-sintent]", root).forEach(
@@ -3426,53 +3636,106 @@ textarea:hover {
     }
   }
 
-  function snoozeAction(a) {
-    if (!a) return;
-    const key = "wb-snoozed-actions";
-    let m = {};
+  // Snoozes follow the decision across devices: stored in
+  // tools/dashboard-state.json through the active backend, with localStorage
+  // as the offline fallback. Keys must be stable — they are also how lane
+  // rows resolve clicks (data-act-key), never positional indexes.
+  function actionKey(a) {
+    return (a.p.dirName + "|" + (a.it?.id || a.text || "")).slice(0, 180);
+  }
+  function localSnoozes() {
     try {
-      m = JSON.parse(localStorage.getItem(key) || "{}");
-    } catch {}
-    m[(a.p.dirName + "|" + (a.it?.id || a.text || "")).slice(0, 180)] =
-      Date.now() + 24 * 60 * 60 * 1000;
-    localStorage.setItem(key, JSON.stringify(m));
-    toast("Snoozed until tomorrow.");
+      return JSON.parse(localStorage.getItem("wb-snoozed-actions") || "{}");
+    } catch {
+      return {};
+    }
+  }
+  function snoozeMap() {
+    return { ...localSnoozes(), ...((state.dashboardState || {}).snoozed || {}) };
+  }
+  async function snoozeAction(a, days = 1) {
+    if (!a) return;
+    const m = snoozeMap();
+    for (const [k, v] of Object.entries(m)) if (v < Date.now()) delete m[k];
+    m[actionKey(a)] = Date.now() + days * 24 * 60 * 60 * 1000;
+    localStorage.setItem("wb-snoozed-actions", JSON.stringify(m));
+    state.dashboardState = { ...(state.dashboardState || {}), snoozed: m };
+    toast(days === 1 ? "Snoozed until tomorrow." : `Snoozed for ${days} days.`, "success");
     render();
+    try {
+      await writePath(
+        "tools/dashboard-state.json",
+        JSON.stringify(state.dashboardState, null, 2) + "\n",
+      );
+    } catch {}
   }
   function isSnoozedAction(a) {
-    try {
-      const m = JSON.parse(localStorage.getItem("wb-snoozed-actions") || "{}");
-      return (
-        (m[(a.p.dirName + "|" + (a.it?.id || a.text || "")).slice(0, 180)] ||
-          0) > Date.now()
-      );
-    } catch {
-      return false;
-    }
+    return (snoozeMap()[actionKey(a)] || 0) > Date.now();
+  }
+  function openSnoozeOptions(a) {
+    modal(
+      "Snooze",
+      `<p class="muted">${esc(displayText(a.text, 120))}</p><div class="refined-list" style="margin-top:12px">${[
+        ["Until tomorrow", 1],
+        ["For 3 days", 3],
+        ["Until next week", 7],
+      ]
+        .map(
+          ([l, d]) =>
+            `<button class="refined-row pressable" data-snooze-days="${d}"><span class="refined-title">${l}</span></button>`,
+        )
+        .join("")}</div>`,
+    );
+    $$("[data-snooze-days]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          closeModal();
+          snoozeAction(a, +b.dataset.snoozeDays);
+        }),
+    );
   }
 
   function actionItems() {
     const out = [];
+    const now = Date.now();
     for (const p of state.projects) {
+      let firstTodo = null;
       for (const g of p.data.groups || [])
         for (const it of g.items || []) {
           if (["blocked", "doing"].includes(it.status))
             out.push({ p, g, it, kind: it.status, text: it.text });
+          else if (it.status === "todo" && !firstTodo)
+            firstTodo = { p, g, it, kind: "todo", text: it.text };
         }
+      // One representative todo per project so a backlog with nothing "doing"
+      // still surfaces in the queue instead of vanishing.
+      if (firstTodo) out.push(firstTodo);
       for (const step of p.nextSteps || [])
         out.push({ p, kind: "next", text: step });
     }
+    const rank = { blocked: 0, doing: 1, next: 2, todo: 3 };
+    const staleDays = (a) =>
+      Math.min(14, (now - (projectRecency(a.p) || now)) / 86400000);
     return out
       .filter((a) => !isSnoozedAction(a))
-      .sort(
-        (a, b) =>
-          ({ blocked: 0, doing: 1, next: 2 })[a.kind] -
-            { blocked: 0, doing: 1, next: 2 }[b.kind] ||
-          projectRecency(b.p) - projectRecency(a.p),
-      );
+      .sort((a, b) => {
+        const k = rank[a.kind] - rank[b.kind];
+        if (k) return k;
+        // Blockers and backlog todos rotate attention to the stalest project;
+        // in-flight work and next steps keep momentum on the freshest.
+        if (a.kind === "blocked" || a.kind === "todo")
+          return staleDays(b) - staleDays(a);
+        return projectRecency(b.p) - projectRecency(a.p);
+      });
   }
   function actionPrompt(a) {
-    return `Start work on ${a.p.data.project}.\n\nGoal: ${displayText(a.text, 400)}\n\nProject path: ${projectBase(a.p)}\n\nUpdate tasks/status/log as required, verify in the real app/browser where applicable, and report only what changed, what to test, and anything blocked.`;
+    const lead =
+      a.kind === "blocked"
+        ? `Investigate the blocker on ${a.p.data.project} and either clear it or present me decision options.\n\nBlocked item: ${displayText(a.text, 400)}`
+        : a.kind === "doing"
+          ? `Continue the in-progress work on ${a.p.data.project}.\n\nGoal: ${displayText(a.text, 400)}`
+          : `Start work on ${a.p.data.project}.\n\nGoal: ${displayText(a.text, 400)}`;
+    return `${lead}\n\nProject path: ${projectBase(a.p)}\n\nUpdate tasks/status/log as required, verify in the real app/browser where applicable, and report only what changed, what to test, and anything blocked.`;
   }
   async function copyText(t, msg = "Copied.") {
     try {
@@ -3493,31 +3756,6 @@ textarea:hover {
         toast("Could not copy.");
       }
     }
-  }
-  function healthChips() {
-    const m = mobileState();
-    const rows = [
-      [
-        state.backend === "github" ? "GitHub connected" : "folder connected",
-        "ok",
-      ],
-      [
-        state.backend === "fsa"
-          ? state.helperUp
-            ? "helper up"
-            : "helper unavailable"
-          : "mobile backend",
-        state.backend === "fsa" ? (state.helperUp ? "ok" : "warn") : "ok",
-      ],
-      [m.text, m.cls],
-      [
-        (state.sessions || []).length ? "sessions live" : "no sessions",
-        (state.sessions || []).length ? "ok" : "warn",
-      ],
-    ];
-    if (state.intake?.length)
-      rows.unshift([`${state.intake.length} intake`, "warn"]);
-    return `<div class="health">${rows.map(([t, c]) => `<span class="healthchip ${c}">${esc(t)}</span>`).join("")}</div>`;
   }
   function mobileState() {
     const src = state.mobileSourceVersion || WB_VERSION,
@@ -3562,31 +3800,55 @@ textarea:hover {
       ["Blocked", st.blocked, "blocked", st.blocked ? "bad" : "ok"],
       ["Done this week", st.week, "week", "ok"],
     ];
-    return `<div class="momentum-head"><div><h3>Momentum</h3><div class="tiny">Work completed over the last 14 days with current queue pressure.</div></div></div><div class="stat-chips">${defs.map(([l, v, k, c]) => `<button class="stat-chip" data-kpi="${k}"><div class="v">${statusDot(c)}${v}</div><div class="l">${l}</div></button>`).join("")}</div>${momentumHTML()}<div class="momentum-summary"><span>${statusDot(st.blocked ? "bad" : "ok")}${st.blocked ? `${st.blocked} blocked` : "No blockers"}</span><span>${statusDot(st.doing ? "live" : "idle")}${st.doing} in progress</span><span>${statusDot("ok")}${st.week} completed this week</span></div>`;
+    return `<div class="momentum-head"><div><h3>Momentum</h3><div class="tiny">Work completed over the last 14 days.</div></div></div>${momentumHTML()}<div class="momentum-summary"><span>${statusDot(st.blocked ? "bad" : "ok")}${st.blocked ? `${st.blocked} blocked` : "No blockers"}</span><span>${statusDot(st.doing ? "live" : "idle")}${st.doing} in progress</span><span>${statusDot("ok")}${st.week} completed this week</span></div>`;
   }
-  function actionRow(a, idx) {
-    return `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(a.p.dirName)}"><span><span class="refined-title">${esc(displayText(a.text))}</span><span class="refined-sub">${esc(a.p.data.project)} · ${esc(a.g?.name || "Next step")}</span></span><span class="refined-meta">${label(a.kind, a.kind === "next" ? "Next" : a.kind)}<button type="button" class="btn tertiary" data-copy-action="${idx}">Copy</button></span></div>`;
+  function actionRow(a) {
+    const kindLabel = { next: "Next", todo: "Up next" }[a.kind] || a.kind;
+    return `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(a.p.dirName)}"><span><span class="refined-title">${esc(displayText(a.text))}</span><span class="refined-sub">${esc(a.p.data.project)} · ${esc(a.g?.name || "Next step")}</span></span><span class="refined-meta">${label(a.kind, kindLabel)}<button type="button" class="btn tertiary" data-copy-action="${esc(actionKey(a))}">Copy</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(a))}" aria-label="Snooze">Zzz</button></span></div>`;
   }
   function laneHTML(title, list) {
-    return `<div class="card compact"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${title === "Needs Jared" ? "Decisions or blockers to clear" : title === "Agent can do" ? "Active work ready for an agent" : title === "Verify or publish" ? "Checks that reduce risk" : "Small next steps with momentum"}</p></div><span class="chip">${list.length}</span></div><div class="refined-list">${list.length ? list.map((a, i) => actionRow(a, actionItems().indexOf(a))).join("") : '<div class="empty-state">Nothing here.</div>'}</div></div>`;
+    const note = {
+      "Needs Jared": "Decisions or blockers to clear",
+      "Agent can do": "Active work ready for an agent",
+      "Verify or publish": "Checks that reduce risk",
+      "Quick win": "Small next steps with momentum",
+    }[title];
+    if (!list.length)
+      return `<div class="card compact lane-empty"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${note} — clear right now.</p></div><span class="chip ok">0</span></div></div>`;
+    return `<div class="card compact"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${note}</p></div><span class="chip">${list.length}</span></div><div class="refined-list">${list.map((a) => actionRow(a)).join("")}</div></div>`;
+  }
+  function intakeBannerHTML() {
+    const n = state.intake?.length || 0;
+    if (!n) return "";
+    return `<div class="card intake-banner"><div class="cardhead" style="margin-bottom:0"><div><div class="kicker">Intake waiting</div><h3>${n} captured item${n === 1 ? "" : "s"} to triage</h3><p class="muted">Paste the triage prompt into a workbench session and the agent files everything.</p></div><div class="action-tools"><button type="button" class="btn primary" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.">Copy triage prompt</button></div></div></div>`;
   }
   function overviewHTML() {
     const st = globalStats(),
       acts = actionItems(),
       top = acts[0];
-    const lanes = {
-      needs: acts.filter((a) => a.kind === "blocked").slice(0, 4),
-      agent: acts.filter((a) => a.kind === "doing").slice(0, 4),
-      verify: acts
-        .filter((a) => /verify|publish|ship|test/i.test(a.text))
-        .slice(0, 4),
-      quick: acts.filter((a) => a.kind === "next").slice(0, 4),
+    // Persist this render's snapshot so click handlers resolve rows by key
+    // against exactly what was painted, never a recomputed list.
+    state._acts = acts;
+    // Lanes partition the queue: an item appears in exactly one lane, and the
+    // recommended item is excluded so the page never shows a row twice.
+    const rest = acts.slice(1);
+    const placed = new Set();
+    const take = (pred) => {
+      const got = rest.filter((a) => !placed.has(actionKey(a)) && pred(a)).slice(0, 4);
+      got.forEach((a) => placed.add(actionKey(a)));
+      return got;
     };
-    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div><div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card"><div class="cardhead"><div><div class="kicker">Recommended action</div><h2>${esc(top.p.data.project)}</h2><p class="muted">${esc(displayText(top.text))}</p></div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="0">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="0">Snooze 24h</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
+    const lanes = {
+      needs: take((a) => a.kind === "blocked"),
+      verify: take((a) => /\b(verify|publish|ship|smoke|screenshot|test)\b/i.test(a.text)),
+      agent: take((a) => a.kind === "doing"),
+      quick: take((a) => a.kind === "next" || a.kind === "todo"),
+    };
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card"><div class="cardhead"><div><div class="kicker">Recommended action</div><h3 class="reco-title">${esc(top.p.data.project)}</h3><p class="muted">${esc(displayText(top.text))}</p></div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
       recentActivity()
         .map(
           (r) =>
-            `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(r.p.data.project)}</span><span class="refined-sub">${esc(r.ts)} · ${esc(r.text)}</span></span><span>→</span></div>`,
+            `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(r.p.data.project)}</span><span class="refined-sub">${esc(r.ts)} · ${esc(r.text)}</span></span><span aria-hidden="true">›</span></div>`,
         )
         .join("") || '<div class="empty-state">No recent activity yet.</div>'
     }</div></div></div></div></section>`;
@@ -3605,7 +3867,7 @@ textarea:hover {
     return `<button class="table-row pressable" data-open-project="${esc(p.dirName)}"><span>${c.blocked ? "⚑" : ""}</span><span><b>${esc(p.data.project)}</b><br><span class="tiny">${esc(p.data.tagline || "")}</span></span><span>${esc(p.section)}</span><span>${c.pct ?? "-"}%</span><span>${c.open}</span><span>${c.blocked}</span><span>${c.idea}</span><span>${relDate(projectRecency(p))}</span></button>`;
   }
   function relDate(ms) {
-    if (!ms) return "";
+    if (!ms) return "—";
     const d = Math.round((Date.now() - ms) / 86400000);
     return d <= 0 ? "today" : d + "d ago";
   }
@@ -3613,7 +3875,7 @@ textarea:hover {
     const p = state.proj;
     if (!p) return "";
     const c = counts(p);
-    return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span></div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.nextSteps?.length ? `<div class="card"><h3>Start here</h3><p class="muted">${esc(p.nextSteps[0])}</p><button class="btn" data-copy-text="${esc(actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup><option value="category">Group by category</option><option value="status">Group by status</option><option value="flat">Flat</option></select><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList">Loading…</div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList">Loading…</div></div></aside></div></section>`;
+    return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span></div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.nextSteps?.length ? `<div class="card"><h3>Start here</h3><p class="muted">${esc(p.nextSteps[0])}</p><button class="btn" data-copy-text="${esc(actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup><option value="category">Group by category</option><option value="status">Group by status</option><option value="flat">Flat</option></select><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList"><span class="skeleton" style="width:110px;height:26px"></span><span class="skeleton" style="width:90px;height:26px"></span></div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div></div></aside></div></section>`;
   }
   function digestHTML(fm = {}, text = "", kind) {
     if (!text) return '<p class="muted">Not written yet.</p>';
@@ -3680,14 +3942,18 @@ textarea:hover {
     const tagCounts = {};
     for (const e of state.kb)
       for (const t of e.tags || []) tagCounts[t] = (tagCounts[t] || 0) + 1;
-    const tags = Object.keys(tagCounts).sort().slice(0, 20);
-    return `<section class="page reveal"><div class="hero"><div><h1>Knowledge</h1><p class="lede">Search glossary, processes, decisions, and project notes.</p></div><button class="btn primary" data-new-entry>New entry</button></div><div class="toolbar"><input class="input" placeholder="Search knowledge…" data-k-search value="${esc(state.kq)}"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.karea === a ? "active" : ""}" data-karea="${a}">${a}</button>`).join("")}</div></div><div class="toolbar"><div class="seg">${["all", "how", "what", "why", "gotcha"].map((i) => `<button class="${state.kintent === i ? "active" : ""}" data-kintent="${i}">${i}</button>`).join("")}</div>${tags.map((t) => `<button class="tag ${state.ktag === t ? "active" : ""}" data-ktag="${esc(t)}">${esc(t)}</button>`).join("")}</div>${
+    const tags = Object.entries(tagCounts)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, state.kShowAllTags ? 40 : 8)
+      .map(([k]) => k);
+    const hiddenTags = Math.max(0, Object.keys(tagCounts).length - tags.length);
+    return `<section class="page reveal"><div class="hero"><div><h1>Knowledge</h1><p class="lede">Search glossary, processes, decisions, and project notes.</p></div><button class="btn primary" data-new-entry>New entry</button></div><div class="toolbar"><input class="input" placeholder="Search knowledge…" data-k-search value="${esc(state.kq)}"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.karea === a ? "active" : ""}" data-karea="${a}">${a}</button>`).join("")}</div></div><div class="toolbar"><div class="seg">${["all", "how", "what", "why", "gotcha"].map((i) => `<button class="${state.kintent === i ? "active" : ""}" data-kintent="${i}">${i}</button>`).join("")}</div>${tags.map((t) => `<button class="tag ${state.ktag === t ? "active" : ""}" data-ktag="${esc(t)}">${esc(t)}</button>`).join("")}${hiddenTags ? `<button class="tag" data-toggle-tags>${state.kShowAllTags ? "Show fewer" : `+${hiddenTags} more`}</button>` : ""}</div>${
       SUBS.map((sub) => {
         const list = entries.filter((e) => e.sub === sub);
         return list.length
-          ? `<div class="card"><div class="cardhead"><h3>${sub}</h3><span class="tiny">${list.length}</span></div><div class="queue">${list.map((e) => `<button class="kb-row pressable" data-open-entry="${esc(e.section + "/" + e.sub + "/" + e.fileName)}"><span><span class="row-title">${esc(e.title)}</span><span class="tiny">${esc(e.summary || "")}</span></span><span class="row-meta"><span class="chip">${esc(e.section)}</span>${e.format === "html" ? '<span class="chip">HTML</span>' : ""}</span></button>`).join("")}</div></div>`
+          ? `<div class="card compact"><div class="cardhead"><h3>${sub}</h3><span class="chip">${list.length}</span></div><div class="refined-list">${list.map((e) => `<button class="refined-row pressable" data-open-entry="${esc(e.section + "/" + e.sub + "/" + e.fileName)}"><span><span class="refined-title">${esc(e.title)}</span><span class="refined-sub">${esc(e.summary || "")}</span></span><span class="refined-meta"><span class="chip">${esc(e.section)}</span>${e.format === "html" ? '<span class="chip">HTML</span>' : ""}</span></button>`).join("")}</div></div>`
           : "";
-      }).join("") || '<div class="card muted">Nothing matches.</div>'
+      }).join("") || '<div class="empty-state">Nothing matches.</div>'
     }</section>`;
   }
   function kbFiltered() {
@@ -3876,6 +4142,11 @@ textarea:hover {
 
   function render() {
     if (!state.connected) return;
+    // Entrance choreography is for navigation only — filter clicks and
+    // keystrokes update in place instead of re-fading the whole page.
+    const navigated = render._lastView !== state.view;
+    render._lastView = state.view;
+    state._navigated = navigated;
     document.body.classList.add("vibe-ready");
     $$(".nav button,.mobile-tabs button").forEach((b) => {
       const on =
@@ -3896,8 +4167,20 @@ textarea:hover {
     if (state.view === "skills") view.innerHTML = skillsHTML();
     if (state.view === "instructions") view.innerHTML = instructionsHTML();
     if (state.view === "about") view.innerHTML = aboutHTML();
+    if (!navigated)
+      $$(".reveal", view).forEach((el) => el.classList.remove("reveal"));
     bindView(view);
     fillImages(view);
+    if (state._focusSel) {
+      const el = $(state._focusSel, view);
+      if (el) {
+        el.focus();
+        try {
+          el.setSelectionRange(state._focusPos, state._focusPos);
+        } catch {}
+      }
+      state._focusSel = null;
+    }
   }
 
   function setupNavIndicator() {
@@ -3927,7 +4210,10 @@ textarea:hover {
   function renderStatusRail() {
     if (!state.connected) return;
     const rail = $("#statusRail");
-    rail.innerHTML = `${sessionsRailHTML()}${machinesRailHTML()}${creditsRailHTML()}${syncRailHTML()}`;
+    const html = `${sessionsRailHTML()}${machinesRailHTML()}${creditsRailHTML()}${syncRailHTML()}`;
+    if (rail._html === html) return;
+    rail._html = html;
+    rail.innerHTML = html;
     $("#sessionsRailBtn")?.addEventListener("click", openSessionsDetail);
     $("#machinesRailBtn")?.addEventListener("click", openMachinesDetail);
     $("#creditsRailBtn")?.addEventListener("click", openUsageDetail);
@@ -4299,7 +4585,7 @@ textarea:hover {
       .slice()
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r) => `<div class="usage-table-row"><span>${esc(fmtStamp(r.started || r.ended))}</span><span>${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span>${brandLabel(normalizeBackend(r.backend))}</span><span>${brandLabel(normalizeEditor(r))}</span><span>${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span>${brandLabel(normalizeModel(r.model))}</span><span>${esc(fmtTokens(r.totalTokens || 0))}</span><span>${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span>${esc(fmtDuration(durationMs(r)))}</span></div>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r) => `<div class="usage-table-row"><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${esc(fmtDuration(durationMs(r)))}</span></div>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -4362,7 +4648,7 @@ textarea:hover {
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
   function comparisonTable(rows) {
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span>${brandLabel(r.label)}</span><span>${r.input == null ? "—" : fmtTokens(r.input)}</span><span>${r.output == null ? "—" : fmtTokens(r.output)}</span><span>${r.requests == null ? "—" : r.requests}</span><span>${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}</span></div>`).join("")}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}</span></div>`).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
@@ -4411,7 +4697,7 @@ textarea:hover {
   }
   function projectBreakdownHTML(rows) {
     const list = projectBreakdown(rows);
-    return `<div class="usage-card"><h3>Spend and tokens by project</h3><div class="usage-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Requests</span><span>Lane</span><span>Cost</span></div>${list.map((r) => `<div class="usage-table-row"><span>${esc(r.cwd.split("/").filter(Boolean).pop() || r.cwd)}</span><span>${fmtTokens(r.input + r.output)}</span><span>${r.requests}</span><span>${brandLabel(r.lane || "Unknown")}</span><span>${esc(fmtCostMaybe(r.cost))}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and tokens by project</h3><div class="usage-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Requests</span><span>Lane</span><span>Cost</span></div>${list.map((r) => `<div class="usage-table-row"><span data-label="Project">${esc(r.cwd.split("/").filter(Boolean).pop() || r.cwd)}</span><span data-label="Tokens">${fmtTokens(r.input + r.output)}</span><span data-label="Requests">${r.requests}</span><span data-label="Lane">${brandLabel(r.lane || "Unknown")}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
   }
   function efficiencyTips(rows) {
     const tips = [];
@@ -4482,33 +4768,60 @@ textarea:hover {
   async function saveCapture() {
     const type = $("#capType").value,
       text = $("#capText").value.trim();
-    if (!text) return toast("Capture text required");
-    if (type === "note") {
-      await appendInbox(text);
-    } else if (type === "project") {
-      await seedProject(text);
-    } else if (type === "kb") {
-      await writeKbNote(text);
-    } else {
-      const p = state.projects.find((x) => x.dirName === $("#capDest").value);
-      const gname = type === "idea" ? "Ideas" : "Tasks";
-      let g = (p.data.groups || []).find((x) => x.name === gname);
-      if (!g) {
-        g = { name: gname, items: [] };
-        (p.data.groups = p.data.groups || []).push(g);
+    if (!text) return toast("Capture text required", "warning");
+    const btn = $("#capSave");
+    setLoading(btn, true, "Saving…");
+    try {
+      if (type === "note") {
+        await appendInbox(text);
+      } else if (type === "project") {
+        await seedProject(text);
+      } else if (type === "kb") {
+        await writeKbNote(text);
+      } else {
+        const p = state.projects.find((x) => x.dirName === $("#capDest").value);
+        const gname = type === "idea" ? "Ideas" : "Tasks";
+        let g = (p.data.groups || []).find((x) => x.name === gname);
+        if (!g) {
+          g = { name: gname, items: [] };
+          (p.data.groups = p.data.groups || []).push(g);
+        }
+        const saved = await saveCaptureFiles(p);
+        g.items.push({
+          id:
+            p.dirName.slice(0, 3).toLowerCase() + "-" + Date.now().toString(36),
+          text: saved.length
+            ? `${text} (attachments: ${saved.join(", ")})`
+            : text,
+          status: type === "idea" ? "idea" : "todo",
+          created: today(),
+          ...(state.backend === "github" ? { source: "mobile" } : {}),
+        });
+        await saveProject(p, { silent: true, rethrow: true });
       }
-      g.items.push({
-        id: p.dirName.slice(0, 3).toLowerCase() + "-" + Date.now().toString(36),
-        text,
-        status: type === "idea" ? "idea" : "todo",
-        created: today(),
-        ...(state.backend === "github" ? { source: "mobile" } : {}),
-      });
-      await saveProject(p);
+      // Only claim success after the write actually landed, and only then
+      // discard the user's text with the modal.
+      closeModal();
+      toast("Capture saved.", "success");
+      render();
+    } catch (e) {
+      setLoading(btn, false);
+      toast(e.message || "Capture failed — your text is still here.", "danger");
     }
-    closeModal();
-    toast("Capture saved.");
-    render();
+  }
+  async function saveCaptureFiles(p) {
+    const input = $("#capFiles");
+    const files = [...(input?.files || [])];
+    const saved = [];
+    for (const f of files) {
+      const name = f.name.replace(/[\\/:*?"<>|]/g, "-");
+      await writeBinaryPath(
+        `${projectBase(p)}/files/capture/${today()}-${name}`,
+        f,
+      );
+      saved.push(name);
+    }
+    return saved;
   }
   async function appendInbox(note) {
     let t =
@@ -4596,15 +4909,21 @@ textarea:hover {
     return out;
   }
   function applyMotion(root = document) {
+    let revealCount = 0;
     $$(
-      ".card,.rail-card,.project-tile,.qrow,.table-row,.task-row,.kb-row,.btn,.iconbtn,.chip,.tag",
+      ".card,.rail-card,.project-tile,.qrow,.table-row,.task-row,.kb-row,.refined-row,.btn,.iconbtn,.chip,.tag",
       root,
-    ).forEach((el, i) => {
+    ).forEach((el) => {
       if (
+        state._navigated !== false &&
         !el.classList.contains("reveal") &&
         (el.classList.contains("card") || el.classList.contains("project-tile"))
-      )
+      ) {
         el.classList.add("reveal");
+        // Stagger counts only elements that actually animate — mixing in
+        // buttons and chips made card delays arbitrary.
+        el.style.setProperty("--stagger", Math.min(revealCount++ * 24, 168) + "ms");
+      }
       if (
         el.classList.contains("btn") ||
         el.classList.contains("iconbtn") ||
@@ -4612,7 +4931,6 @@ textarea:hover {
         el.classList.contains("tag")
       )
         el.classList.add("pressable");
-      el.style.setProperty("--stagger", Math.min(i * 18, 180) + "ms");
       if (el._vibeBound) return;
       el._vibeBound = true;
       el.addEventListener("pointerdown", () => el.classList.add("vibe-press"));
@@ -4627,10 +4945,20 @@ textarea:hover {
     });
   }
 
+  async function ensureSkillCatalog() {
+    if (state.skillCatalog) return;
+    state.skillCatalog = await buildSkillCatalog().catch(() => ({
+      custom: [],
+      store: [],
+      total: 0,
+    }));
+  }
   function go(v) {
     if (!v) return;
     state.view = v;
     if (v !== "project") state.proj = null;
+    if (v === "skills" && !state.skillCatalog)
+      ensureSkillCatalog().then(() => state.view === "skills" && render());
     render();
     scrollTo(0, 0);
   }
@@ -4640,7 +4968,9 @@ textarea:hover {
       sel = $("[data-add-group]");
     let gname = sel.value;
     if (gname === "__new") {
-      gname = prompt("New group name:") || "Tasks";
+      gname = prompt("New group name:");
+      if (gname === null) return;
+      gname = gname.trim() || "Tasks";
     }
     let g = (p.data.groups || []).find((x) => x.name === gname);
     if (!g) {
@@ -4665,23 +4995,69 @@ textarea:hover {
     if (e.target.closest("[data-task-copy]")) {
       e.stopPropagation();
       return copyText(
-        actionPrompt({ p: state.proj, g: r.g, it: r.it, text: r.it.text }),
+        actionPrompt({ p: state.proj, g: r.g, it: r.it, kind: r.it.status, text: r.it.text }),
         "Task prompt copied.",
       );
     }
-    r.it.status = CYCLE[r.it.status] || "todo";
-    if (r.it.status === "done") r.it.completed = today();
-    else delete r.it.completed;
-    await saveProject(state.proj);
-    render();
+    // A row tap opens an explicit status menu instead of blind cycling — a
+    // stray tap must not silently mark work done or clear a blocker, and
+    // "blocked" has to be reachable at all.
+    openStatusMenu(r);
   }
-  async function saveProject(p) {
+  async function setTaskStatus(r, status) {
+    const prev = { status: r.it.status, completed: r.it.completed };
+    r.it.status = status;
+    if (status === "done") r.it.completed = today();
+    else delete r.it.completed;
+    render();
+    try {
+      await saveProject(state.proj, { silent: true, rethrow: true });
+      toast(`Now ${status} · ${displayText(r.it.text, 40)}`, "success", {
+        label: "Undo",
+        run: async () => {
+          r.it.status = prev.status;
+          if (prev.completed) r.it.completed = prev.completed;
+          else delete r.it.completed;
+          await saveProject(state.proj, { silent: true }).catch(() => {});
+          render();
+        },
+      });
+    } catch (err) {
+      // The write failed — the painted status would be a lie; roll it back.
+      r.it.status = prev.status;
+      if (prev.completed) r.it.completed = prev.completed;
+      else delete r.it.completed;
+      render();
+      toast(err.message || "Could not save the change.", "danger");
+    }
+  }
+  function openStatusMenu(r) {
+    modal(
+      "Set status",
+      `<p class="muted">${esc(displayText(r.it.text, 120))}</p><div class="refined-list" style="margin-top:12px">${["todo", "doing", "blocked", "done", "idea"]
+        .map(
+          (s) =>
+            `<button class="refined-row pressable" data-set-status="${s}"><span class="refined-title">${statusDot(s === "blocked" ? "bad" : s === "done" ? "ok" : s === "doing" ? "live" : "idle")}${s}</span>${r.it.status === s ? '<span class="chip">current</span>' : ""}</button>`,
+        )
+        .join("")}</div>`,
+    );
+    $$("[data-set-status]").forEach(
+      (b) =>
+        (b.onclick = () => {
+          closeModal();
+          if (b.dataset.setStatus !== r.it.status)
+            setTaskStatus(r, b.dataset.setStatus);
+        }),
+    );
+  }
+  async function saveProject(p, opts = {}) {
     try {
       await Backends[state.backend].saveProject(p);
-      toast("Saved · " + p.data.project);
+      if (!opts.silent) toast("Saved · " + p.data.project, "success");
       if (state.backend === "fsa") pingHelper();
     } catch (e) {
-      toast(e.message);
+      if (opts.rethrow) throw e;
+      toast(e.message, "danger");
     }
   }
   async function loadProjectSidecars(root) {
@@ -4766,12 +5142,12 @@ textarea:hover {
       const f = await p.dir.getDirectoryHandle("files");
       const d = await f.getDirectoryHandle("screenshots");
       for await (const [name, h] of d.entries())
-        if (h.kind === "file" && /\.(png|jpe?g|webp|gif)$/i.test(name))
-          out.push({
-            name,
-            url: URL.createObjectURL(await h.getFile()),
-            handle: h,
-          });
+        if (h.kind === "file" && /\.(png|jpe?g|webp|gif)$/i.test(name)) {
+          // Cache the object URL on the handle — a fresh URL per render leaks
+          // blob memory for every screenshot on every task click.
+          h._url = h._url || URL.createObjectURL(await h.getFile());
+          out.push({ name, url: h._url, handle: h });
+        }
     } catch {}
     return out;
   }
@@ -4808,18 +5184,29 @@ textarea:hover {
     input.click();
   }
   async function openDocPath(path) {
-    if (state.backend === "github")
-      window.open(await ghBinaryURL(path), "_blank");
-    else window.open(path, "_blank");
+    // iOS blocks window.open after an await, and blob: URLs don't survive the
+    // hand-off out of home-screen standalone mode — render docs in-app on the
+    // GitHub backend instead. Readouts are self-contained by house rule.
+    if (state.backend !== "github") return window.open(path, "_blank");
+    const name = path.split("/").pop();
+    modal(name.replace(/\.html?$/i, ""), '<div class="doc-frame-wrap"><div class="skeleton" style="height:200px"></div></div>', "wide");
+    try {
+      const f = await ghGetFile(path);
+      const wrap = $(".doc-frame-wrap");
+      if (!wrap) return;
+      wrap.innerHTML = "";
+      const frame = document.createElement("iframe");
+      frame.className = "doc-frame";
+      frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+      frame.srcdoc = f.text;
+      wrap.appendChild(frame);
+    } catch (e) {
+      toast(e.message || "Could not load the doc.", "danger");
+    }
   }
   function openGuide(path) {
-    if (state.backend === "github") {
-      const c = ghConfig();
-      window.open(
-        `https://github.com/${c.owner}/${c.repo}/blob/${c.branch}/${path}`,
-        "_blank",
-      );
-    } else window.open(path, "_blank");
+    // Same in-app rendering — the GitHub blob page shows source, not the guide.
+    openDocPath(path);
   }
   function openDocPanel(kind) {
     const p = state.proj;
@@ -4893,9 +5280,10 @@ textarea:hover {
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
       .replace(/_([^_]+)_/g, "<em>$1</em>")
-      .replace(
-        /\[([^\]]+)\]\(([^)]+)\)/g,
-        '<a href="$2" target="_blank" rel="noopener">$1</a>',
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, href) =>
+        /^(https?:|mailto:|#|\/|\.)/i.test(href.trim())
+          ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
+          : label,
       );
   }
   function openEditor(e = null) {
@@ -4978,101 +5366,39 @@ textarea:hover {
     d.querySelector("button,input,textarea,select,a")?.focus();
   }
   function closeModal() {
-    $(".modal-scrim")?.remove();
+    const d = $(".modal-scrim");
+    if (!d) return;
+    if (d._closing) return;
+    d._closing = true;
+    d.classList.add("closing");
+    const kill = () => d.remove();
+    d.addEventListener("animationend", kill, { once: true });
+    setTimeout(kill, 220);
   }
   function openCapture() {
     modal(
       "Quick capture",
-      `<div class="capture-grid"><label class="form-row">Type<select id="capType"><option value="task">Task</option><option value="idea">Idea</option><option value="project">New project</option><option value="kb">Knowledge note</option><option value="note">Loose note</option></select></label><label class="form-row">Destination<select id="capDest">${state.projects.map((p) => `<option value="${esc(p.dirName)}">${esc(p.section + " / " + p.data.project)}</option>`).join("")}</select></label><label class="form-row">Text<textarea id="capText" rows="6" placeholder="Capture…"></textarea></label><label class="form-row">Attachments<input id="capFiles" type="file" multiple></label><button class="btn primary" id="capSave">Save capture</button></div>`,
+      `<div class="capture-grid"><label class="form-row">Type<select id="capType"><option value="task">Task</option><option value="idea">Idea</option><option value="project">New project</option><option value="kb">Knowledge note</option><option value="note">Loose note</option></select></label><label class="form-row" id="capDestRow">Destination<select id="capDest">${state.projects.map((p) => `<option value="${esc(p.dirName)}">${esc(p.section + " / " + p.data.project)}</option>`).join("")}</select></label><label class="form-row">Text<textarea id="capText" rows="6" placeholder="Capture…"></textarea></label><label class="form-row" id="capFilesRow">Attachments<input id="capFiles" type="file" multiple></label><button class="btn primary" id="capSave">Save capture</button></div>`,
     );
+    // Destination and attachments only apply to task/idea captures — showing
+    // them for notes/KB implied a choice that was silently ignored.
+    const syncFields = () => {
+      const isTask = ["task", "idea"].includes($("#capType").value);
+      $("#capDestRow").classList.toggle("hidden", !isTask);
+      $("#capFilesRow").classList.toggle("hidden", !isTask);
+    };
+    $("#capType").onchange = syncFields;
+    syncFields();
     $("#capSave").onclick = saveCapture;
-  }
-  async function appendInbox(note) {
-    let t =
-      (await readPath("notes-inbox.md")) ||
-      "# Notes Inbox\nAppend-only capture from the dashboard and voice shortcuts. Triaged into projects/KB during an agent session.\n\n---\n";
-    if (!t.endsWith("\n")) t += "\n";
-    t += `- ${nowStamp()} — ${note}\n`;
-    await writePath("notes-inbox.md", t);
-  }
-  async function seedProject(text) {
-    const name = displayText(text, 50).replace(/[\\/:*?"<>|]/g, "-");
-    const dir = `Personal/Projects/${slugify(name)}`;
-    await writePath(
-      `${dir}/tasks.json`,
-      JSON.stringify(
-        {
-          project: name,
-          tagline: "Captured from dashboard",
-          groups: [
-            {
-              name: "Tasks",
-              items: [
-                {
-                  id: "cap-" + Date.now().toString(36),
-                  text,
-                  status: "todo",
-                  created: today(),
-                  ...(state.backend === "github" ? { source: "mobile" } : {}),
-                },
-              ],
-            },
-          ],
-        },
-        null,
-        2,
-      ) + "\n",
-    );
-    await writePath(
-      `${dir}/overview.md`,
-      `---\ntitle: ${name}\ntags: [project]\ndate: ${today()}\nsummary: Captured from the dashboard.\n---\n\n# ${name}\n\n${text}\n`,
-    );
-    await writePath(
-      `${dir}/status.md`,
-      `---\ntitle: ${name} — Status\ntags: [project]\ndate: ${today()}\nsummary: Newly captured project.\n---\n\n# Status — ${today()}\n\n## Next steps\n- Clarify the first useful outcome.\n`,
-    );
-    await writePath(
-      `${dir}/log.md`,
-      `# Activity Log\nAppend-only. One line per finished task, newest at the bottom.\n---\n- ${nowStamp()} — Project captured from the dashboard.\n`,
-    );
-    await indexAppend("Personal", "Projects", name, `${dir}/overview.md`);
-  }
-  async function writeKbNote(text) {
-    const title = displayText(text, 60);
-    const file = slugify(title) + ".md";
-    await writePath(
-      `Personal/Processes/${file}`,
-      serializeEntry({
-        title,
-        tags: ["capture"],
-        date: today(),
-        summary: title,
-        body: text,
-      }),
-    );
-    await indexAppend(
-      "Personal",
-      "Processes",
-      title,
-      `Personal/Processes/${file}`,
-    );
-  }
-  async function pendingIntake() {
-    const out = [];
-    for (const p of state.projects)
-      for (const g of p.data.groups || [])
-        for (const it of g.items || [])
-          if (it.source === "mobile")
-            out.push({ kind: "mobile", text: it.text });
-    const inbox = await readPath("notes-inbox.md").catch(() => null);
-    if (inbox) {
-      const body = inbox.replace(/^# Notes Inbox[\s\S]*?---\s*/i, "");
-      for (const l of body.split(/\r?\n/).filter((x) => /^\s*-\s+/.test(x)))
-        out.push({ kind: "note", text: l.replace(/^\s*-\s+/, "") });
-    }
-    return out;
+    $("#capText").focus();
   }
   function openKpi(kind) {
+    const titles = {
+      open: "Open items",
+      doing: "In progress",
+      blocked: "Blocked",
+      week: "Done this week",
+    };
     const rows = [];
     for (const p of state.projects)
       for (const g of p.data.groups || [])
@@ -5089,8 +5415,9 @@ textarea:hover {
             rows.push({ p, g, it });
         }
     modal(
-      kind,
-      `<div class="queue">${rows.map((r) => `<button class="qrow pressable" data-open-project="${esc(r.p.dirName)}"><span><b>${esc(displayText(r.it.text))}</b><br><span class="tiny">${esc(r.p.data.project)} · ${esc(r.g.name)}</span></span><span>→</span></button>`).join("") || '<p class="muted">Nothing here.</p>'}</div>`,
+      titles[kind] || kind,
+      `<div class="refined-list">${rows.map((r) => `<button class="refined-row pressable" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(displayText(r.it.text))}</span><span class="refined-sub">${esc(r.p.data.project)} · ${esc(r.g.name)}</span></span><span aria-hidden="true">›</span></button>`).join("") || '<div class="empty-state">Nothing here.</div>'}</div>`,
+      "wide",
     );
     bindView($(".modal-scrim"));
   }
@@ -5110,6 +5437,10 @@ textarea:hover {
   }
   async function fetchSourceVersion() {
     if (state.backend !== "github") return WB_VERSION;
+    // tools/dashboard-version.json is tiny; the old path downloaded the whole
+    // 170KB dashboard.html just to regex out one string.
+    const v = await loadJson("tools/dashboard-version.json");
+    if (v?.version) return v.version;
     const t = await readPath("dashboard.html").catch(() => null);
     return t?.match(/WB_VERSION\s*=\s*['"]([^'"]+)/)?.[1] || WB_VERSION;
   }
@@ -5169,6 +5500,18 @@ textarea:hover {
     ghShaCache.clear();
     await ghGetTree(!!opts.forceTree);
     await scan();
+  }
+  function updateShellForBackend() {
+    // The helper-backed git actions are meaningless on the GitHub backend:
+    // writes commit directly, so "push" has nothing to do and "pull" is just
+    // a data refresh.
+    const gh = state.backend === "github";
+    const pull = $("#pullBtn"),
+      sync = $("#syncBtn"),
+      rec = $("#reconnectBtn");
+    if (pull) pull.textContent = gh ? "Refresh data" : "Pull latest";
+    if (sync) sync.classList.toggle("hidden", gh);
+    if (rec) rec.textContent = gh ? "Reconnect GitHub" : "Reconnect";
   }
   async function autoGithub(cfg, attempt = 1) {
     $("#landing").classList.add("hidden");
@@ -5252,21 +5595,24 @@ textarea:hover {
     $("#mobileReload").onclick = doReload;
     $("#mobileCapture").onclick = openCapture;
     $("#syncBtn").onclick = async () => {
+      if (state.backend === "github")
+        return toast("Edits save straight to GitHub — nothing to push.");
       try {
         await helperPost("/sync");
-        toast("Synced.");
+        toast("Synced.", "success");
         pingHelper();
       } catch (e) {
-        toast(e.message);
+        toast(e.message, "danger");
       }
     };
     $("#pullBtn").onclick = async () => {
+      if (state.backend === "github") return doReload();
       try {
         await helperPost("/pull");
-        toast("Pulled latest.");
+        toast("Pulled latest.", "success");
         doReload();
       } catch (e) {
-        toast(e.message);
+        toast(e.message, "danger");
       }
     };
     $("#captureBtn").onclick = openCapture;
@@ -5281,6 +5627,12 @@ textarea:hover {
           else go(view);
         }),
     );
+    let _navRaf = 0;
+    addEventListener("resize", () => {
+      cancelAnimationFrame(_navRaf);
+      _navRaf = requestAnimationFrame(updateNavIndicator);
+    });
+    document.fonts?.ready?.then(() => updateNavIndicator());
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeModal();
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -5309,8 +5661,16 @@ textarea:hover {
         ...(state.skillCatalog?.custom || []),
         ...(state.skillCatalog?.store || []),
       ].map((s) => ({ t: s.name, s: "Skill", run: () => openSkill(s.slug) })),
-      { t: "Pull latest", s: "Action", run: () => $("#pullBtn").click() },
-      { t: "Commit and push", s: "Action", run: () => $("#syncBtn").click() },
+      ...(state.backend === "github"
+        ? [{ t: "Refresh data", s: "Action", run: doReload }]
+        : [
+            { t: "Pull latest", s: "Action", run: () => $("#pullBtn").click() },
+            {
+              t: "Commit and push",
+              s: "Action",
+              run: () => $("#syncBtn").click(),
+            },
+          ]),
       { t: "Quick capture", s: "Action", run: openCapture },
       {
         t: "Copy triage prompt",
@@ -5324,16 +5684,13 @@ textarea:hover {
   }
   function openPalette() {
     let q = "";
-    const render = () => {
-      const items = paletteItems()
-        .filter((i) =>
-          (i.t + " " + i.s).toLowerCase().includes(q.toLowerCase()),
-        )
-        .slice(0, 30);
+    let active = 0;
+    let items = [];
+    const paint = () => {
       $("#palList").innerHTML = items
         .map(
           (i, n) =>
-            `<button class="cmd-row ${n === 0 ? "active" : ""}" data-pal="${n}"><span>${esc(i.t)}</span><span class="tiny">${esc(i.s)}</span></button>`,
+            `<button class="cmd-row ${n === active ? "active" : ""}" data-pal="${n}"><span>${esc(i.t)}</span><span class="tiny">${esc(i.s)}</span></button>`,
         )
         .join("");
       $$("[data-pal]").forEach(
@@ -5344,6 +5701,16 @@ textarea:hover {
             item.run();
           }),
       );
+      $(".cmd-row.active")?.scrollIntoView({ block: "nearest" });
+    };
+    const refresh = () => {
+      items = paletteItems()
+        .filter((i) =>
+          (i.t + " " + i.s).toLowerCase().includes(q.toLowerCase()),
+        )
+        .slice(0, 30);
+      active = 0;
+      paint();
     };
     modal(
       "Command palette",
@@ -5351,21 +5718,32 @@ textarea:hover {
     );
     $("#palInput").addEventListener("input", (e) => {
       q = e.target.value;
-      render();
+      refresh();
     });
     $("#palInput").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        const b = $(".cmd-row.active");
-        if (b) b.click();
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        if (!items.length) return;
+        active =
+          (active + (e.key === "ArrowDown" ? 1 : items.length - 1)) %
+          items.length;
+        paint();
+      } else if (e.key === "Enter") {
+        const item = items[active];
+        if (item) {
+          closeModal();
+          item.run();
+        }
       }
     });
-    render();
+    refresh();
     $("#palInput").focus();
+    if (!state.skillCatalog) ensureSkillCatalog().then(refresh);
   }
   function openMore() {
     modal(
       "More",
-      `<div class="queue"><button class="qrow pressable" data-view="skills"><span>Skills</span><span>→</span></button><button class="qrow pressable" data-view="instructions"><span>Instructions</span><span>→</span></button><button class="qrow pressable" data-view="about"><span>About</span><span>→</span></button><button class="qrow pressable" data-copy-text="Run /triage-intake in this workbench session."><span>Copy triage prompt</span><span>Copy</span></button></div>`,
+      `<div class="refined-list"><button class="refined-row pressable" data-view="skills"><span class="refined-title">Skills</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="instructions"><span class="refined-title">Instructions</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="about"><span class="refined-title">About</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span class="refined-title">Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
     );
     bindView($(".modal-scrim"));
   }
