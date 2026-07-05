@@ -2401,7 +2401,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.62";
+  const WB_VERSION = "2026-07-04.63";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4680,20 +4680,22 @@ textarea:hover {
   function pricingEntry(model) {
     const models = state.modelPricing?.models || {};
     const key = String(model || "").toLowerCase();
-    return models[key] || models[model] || null;
+    if (models[key]) return models[key];
+    if (models[model]) return models[model];
+    if (key.includes("fable")) return models["claude-fable-5"];
+    if (key.includes("opus")) return models["claude-opus-4-8-thinking-high"];
+    if (key.includes("sonnet")) return models["claude-sonnet-5"];
+    if (key.includes("haiku")) return models["claude-haiku-4-5"];
+    if (key.includes("gpt-5.5")) return models["gpt-5.5"];
+    return null;
   }
   function estimateSessionCost(r) {
     const backend = normalizeBackend(r.backend),
       model = normalizeModel(r.model);
-    if (backend === "Azure" || model === "GPT-5.5") {
-      const input = Number(r.inputTokens || 0),
-        output = Number(r.outputTokens || 0),
-        total = Number(r.totalTokens || r.tokens || 0);
-      const assumedInput = input || (total ? Math.round(total * 0.65) : 0);
-      const assumedOutput = output || Math.max(0, total - assumedInput);
-      return (assumedInput * 5) / 1000000 + (assumedOutput * 30) / 1000000;
+    let entry = pricingEntry(r.model);
+    if (!entry && (backend === "Azure" || model === "GPT-5.5")) {
+      entry = pricingEntry("gpt-5.5");
     }
-    const entry = pricingEntry(r.model);
     if (!entry) return null;
     const inRate = entry.inputPerM,
       outRate = entry.outputPerM;
