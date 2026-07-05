@@ -251,7 +251,25 @@ h3 {
 .side-actions {
   margin-top: auto;
   display: grid;
-  gap: 8px;
+  gap: 4px;
+}
+/* Quiet the sidebar utility stack: one primary (capture), the rest ghost rows */
+.side-actions .btn:not(.primary) {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+  padding: 7px 10px;
+  justify-content: flex-start;
+  text-align: left;
+  box-shadow: none;
+}
+.side-actions .btn:not(.primary):hover {
+  background: var(--subtle);
+  color: var(--text);
+}
+.side-actions .btn.primary {
+  margin-bottom: 6px;
 }
 .main {
   min-width: 0;
@@ -287,15 +305,17 @@ h3 {
   box-shadow: var(--shadow-xs);
 }
 .rail-card {
-  padding: 14px;
+  padding: 10px 12px;
   align-self: stretch;
   align-content: start;
   height: 100%;
 }
 .rail-title {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-3);
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .rail-value {
   font-weight: 600;
@@ -2061,10 +2081,11 @@ textarea:hover {
   min-height: 92px;
 }
 .metric-card .num {
-  font-size: 24px;
+  font-size: 26px;
   line-height: 30px;
   font-weight: 800;
   letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 .metric-card .label {
   font-size: 11px;
@@ -2235,6 +2256,24 @@ textarea:hover {
 .lane-empty .cardhead {
   margin-bottom: 0;
 }
+/* Empty lanes collapse to one quiet line instead of a full card */
+.lane-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--r-md);
+  color: var(--text-3);
+  font-size: 12.5px;
+}
+.lane-clear-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--positive);
+  flex: none;
+}
 .intake-banner {
   border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
   background: color-mix(in srgb, var(--warning-soft) 30%, var(--base));
@@ -2250,8 +2289,14 @@ textarea:hover {
   background: #fff;
 }
 .reco-title {
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 19px;
+  line-height: 26px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 @media (max-width: 900px) {
   [data-project-view] {
@@ -2418,7 +2463,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.20";
+  const WB_VERSION = "2026-07-05.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4032,7 +4077,7 @@ textarea:hover {
       "Quick win": "Small next steps with momentum",
     }[title];
     if (!list.length)
-      return `<div class="card compact lane-empty"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${note} — clear right now.</p></div><span class="chip ok">0</span></div></div>`;
+      return `<div class="lane-clear" title="${note}"><span class="lane-clear-dot" aria-hidden="true"></span>${esc(title)} — clear</div>`;
     return `<div class="card compact"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${note}</p></div><span class="chip">${list.length}</span></div><div class="refined-list">${list.map((a) => actionRow(a)).join("")}</div></div>`;
   }
   function intakeBannerHTML() {
@@ -4062,7 +4107,7 @@ textarea:hover {
       agent: take((a) => a.kind === "doing"),
       quick: take((a) => a.kind === "next" || a.kind === "todo"),
     };
-    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card"><div class="cardhead"><div><div class="kicker">Recommended action</div><h3 class="reco-title">${esc(top.p.data.project)}</h3><p class="muted">${esc(displayText(top.text))}</p></div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card"><div class="cardhead"><div><div class="kicker">Recommended action · ${esc(top.p.data.project)}</div><h3 class="reco-title">${esc(displayText(top.text))}</h3></div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
       recentActivity()
         .map(
           (r) =>
