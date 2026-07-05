@@ -120,6 +120,21 @@
 * {
   box-sizing: border-box;
 }
+/* Scrolling stays fully functional everywhere - only the scrollbar chrome is
+   hidden, globally, so the dashboard never shows a track/thumb on desktop or
+   touchpads. Iframes (docs viewer) render their own document and are exempt -
+   that content is out of our styling reach and native scrollbars there are
+   fine. */
+html,
+body,
+* {
+  scrollbar-width: none;
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none;
+}
 html,
 body {
   margin: 0;
@@ -636,6 +651,14 @@ textarea:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
   gap: 18px;
+}
+/* taskListHTML renders one .card.compact per group, concatenated with no
+   separator markup - without this the groups had zero vertical gap between
+   them (e.g. no space between "PCF modernization" and "Vendors"). Matches
+   the page's existing 16px card rhythm (.grid gap). */
+#taskList {
+  display: grid;
+  gap: 16px;
 }
 .task-row {
   grid-template-columns: 44px minmax(0, 1fr) auto;
@@ -2002,7 +2025,35 @@ textarea:hover {
   justify-content: flex-end;
 }
 .recent-sessions-table .usage-table-row {
-  grid-template-columns: 0.75fr 1fr 1fr 1fr 1fr 1fr 0.7fr 0.6fr 0.7fr;
+  grid-template-columns: 1.2fr 0.75fr 1fr 1fr 1fr 1fr 1fr 0.7fr 0.6fr 0.7fr;
+}
+.recent-sessions-table .usage-table-row:not(.head) {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.recent-sessions-table .usage-table-row:not(.head):hover {
+  border-color: var(--border);
+  background: var(--muted-surface);
+}
+.session-detail-row {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.session-detail-row:last-child {
+  border-bottom: none;
+}
+@media (max-width: 900px) {
+  .session-detail-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
 }
 .route-arrow {
   color: var(--text-3);
@@ -2298,6 +2349,18 @@ textarea:hover {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.clamp-2,
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-2 {
+  -webkit-line-clamp: 2;
+}
+.clamp-3 {
+  -webkit-line-clamp: 3;
+}
 @media (max-width: 900px) {
   [data-project-view] {
     display: none;
@@ -2434,6 +2497,7 @@ textarea:hover {
           <button data-view="projects">Projects</button>
           <button data-view="knowledge">Knowledge</button>
           <button data-view="skills">Skills</button>
+          <button data-view="board">Board</button>
           <button data-view="instructions">Instructions</button>
           <button data-view="about">About</button>
         </nav>
@@ -2463,7 +2527,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.22";
+  const WB_VERSION = "2026-07-05.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2592,10 +2656,12 @@ textarea:hover {
     skillsLock: null,
     skillsWiki: null,
     skillCatalog: null,
+    boardPool: null,
     mobileVersion: null,
     mobileSourceVersion: null,
     mobileSync: null,
     azureUsage: null,
+    efficiencyTipsFile: null,
     modelPricing: null,
     helperUp: false,
     usageWindow: "month",
@@ -3409,6 +3475,9 @@ textarea:hover {
         (v) => (state.mobileSync = v),
       ),
       loadJson("tools/azure-usage.json").then((v) => (state.azureUsage = v)),
+      loadJson("tools/efficiency-tips.json").then(
+        (v) => (state.efficiencyTipsFile = v),
+      ),
       loadJson("tools/model-pricing.json").then(
         (v) => (state.modelPricing = v),
       ),
@@ -3857,6 +3926,13 @@ textarea:hover {
     $$("[data-skill]", root).forEach(
       (b) => (b.onclick = () => openSkill(b.dataset.skill)),
     );
+    $$("[data-board-persona]", root).forEach(
+      (b) => (b.onclick = () => openBoardPersona(b.dataset.boardPersona)),
+    );
+    $("[data-suggest-profile]", root)?.addEventListener(
+      "click",
+      openSuggestProfile,
+    );
     $$("[data-open-guide]", root).forEach(
       (b) => (b.onclick = () => openGuide(b.dataset.openGuide)),
     );
@@ -4174,10 +4250,16 @@ textarea:hover {
       for (const it of g.items || []) {
         const row = { g, it, idx: idx++ };
         const open = ["todo", "doing", "blocked"].includes(it.status);
-        const ok =
-          state.pfilter === "all" ||
-          (state.pfilter === "open" && open) ||
-          it.status === state.pfilter;
+        // A search query means "find this task", full stop - it should not
+        // also require it to match the current status filter (idea/done
+        // items were invisible under the default "open" filter even when
+        // the text matched exactly). With no query, the status filter
+        // behaves as before.
+        const ok = q.length
+          ? true
+          : state.pfilter === "all" ||
+            (state.pfilter === "open" && open) ||
+            it.status === state.pfilter;
         if (
           ok &&
           (!q ||
@@ -4289,13 +4371,16 @@ textarea:hover {
       store = [];
     const seen = new Set();
     if (state.backend === "fsa") {
-      for (const base of [".claude/skills", ".agents/skills"])
+      // .claude/skills no longer exists in this repo - custom skills now
+      // live under tools/skills-src (plus whatever synced third-party packs
+      // land in .agents/skills).
+      for (const base of ["tools/skills-src", ".agents/skills"])
         try {
           let d = state.root;
           for (const part of base.split("/"))
             d = await d.getDirectoryHandle(part);
           for await (const [name, h] of d.entries()) {
-            if (h.kind === "directory")
+            if (h.kind === "directory" && !seen.has(name))
               custom.push(
                 await readSkill(name, base + "/" + name + "/SKILL.md"),
               );
@@ -4305,10 +4390,12 @@ textarea:hover {
     } else {
       const tree = await ghGetTree().catch(() => []);
       for (const p of tree) {
-        const m = p.match(/^(\.claude|\.agents)\/skills\/([^/]+)\/SKILL\.md$/);
-        if (m && !seen.has(m[2])) {
-          custom.push(await readSkill(m[2], p));
-          seen.add(m[2]);
+        const m = p.match(
+          /^(?:tools\/skills-src|\.agents\/skills)\/([^/]+)\/SKILL\.md$/,
+        );
+        if (m && !seen.has(m[1])) {
+          custom.push(await readSkill(m[1], p));
+          seen.add(m[1]);
         }
       }
     }
@@ -4333,11 +4420,13 @@ textarea:hover {
     const t = await readPath(path).catch(() => null);
     const desc = (t?.match(/^description:\s*(.+)$/m) || [])[1] || "";
     const name = (t?.match(/^name:\s*(.+)$/m) || [])[1] || slug;
+    const hint = (t?.match(/^argument-hint:\s*(.+)$/m) || [])[1] || "";
     return {
       slug,
       path,
       name: name.replace(/^['"]|['"]$/g, ""),
       description: desc.replace(/^['"]|['"]$/g, ""),
+      argumentHint: hint.replace(/^['"]|['"]$/g, ""),
       kind: "custom",
       body: t || "",
     };
@@ -4386,7 +4475,7 @@ textarea:hover {
     return `<div class="card"><div class="cardhead"><h3>${esc(title)}</h3><span class="tiny">${list.length}</span></div><div class="gallery">${list
       .map(
         (s) =>
-          `<button class="project-tile interactive-lift" data-skill="${esc(s.slug)}"><div class="tilebody"><div class="tiny">${esc(s.category || "Skill")}</div><div class="row-title">${esc(s.name)}</div><p class="muted">${esc(displayText(s.description, 180))}</p><div class="row-meta">${(
+          `<button class="project-tile interactive-lift" data-skill="${esc(s.slug)}"><div class="tilebody"><div class="tiny">${esc(s.category || "Skill")}</div><div class="row-title">${esc(s.name)}</div><p class="muted clamp-2">${esc(displayText(s.description, 180))}</p><div class="row-meta">${(
             s.actions || []
           )
             .slice(0, 3)
@@ -4394,6 +4483,114 @@ textarea:hover {
             .join("")}</div></div></button>`,
       )
       .join("")}</div></div>`;
+  }
+  // Board of Advisors: parses the persona pool referenced by the
+  // board-of-advisors skill. Category sections are "## <Category>"
+  // headings; each persona is "### `id` — Title" followed by mandate
+  // paragraph(s) and a "**Fits when:** ..." line. Tolerant of malformed
+  // entries - anything missing an id/title/mandate is skipped rather than
+  // producing a broken card.
+  function parsePersonaPool(text) {
+    const categories = [];
+    let current = null;
+    const lines = String(text || "").split(/\r?\n/);
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      if (/^###\s/.test(line)) {
+        const personaM = line.match(/^###\s+`([^`]+)`\s*(?:—|-)\s*(.+?)\s*$/);
+        i++;
+        if (!personaM || !current) continue;
+        const id = personaM[1].trim(),
+          title = personaM[2].trim();
+        const bodyLines = [];
+        let fits = "";
+        while (i < lines.length && !/^##\s/.test(lines[i]) && !/^###\s/.test(lines[i])) {
+          const fitsM = lines[i].match(/^\*\*Fits when:\*\*\s*(.+)$/);
+          if (fitsM) {
+            fits = fitsM[1].trim();
+            i++;
+            continue;
+          }
+          if (!/^-{3,}\s*$/.test(lines[i])) bodyLines.push(lines[i]);
+          i++;
+        }
+        const mandateRaw = bodyLines.join("\n").trim();
+        const mandate = mandateRaw.replace(/\s+/g, " ").trim();
+        if (id && title && mandate)
+          current.personas.push({ id, title, mandate, mandateRaw, fits });
+        continue;
+      }
+      if (/^##\s/.test(line)) {
+        const catM = line.match(/^##\s+(.+?)\s*$/);
+        current = { name: (catM?.[1] || "").trim() || "Other", personas: [] };
+        categories.push(current);
+        i++;
+        continue;
+      }
+      i++;
+    }
+    return categories.filter((c) => c.personas.length);
+  }
+  async function ensureBoardPool() {
+    if (state.boardPool) return;
+    const text = await readPath(
+      "tools/skills-src/board-of-advisors/references/persona-pool.md",
+    ).catch(() => null);
+    state.boardPool = parsePersonaPool(text || "");
+  }
+  function boardPersonas() {
+    return (state.boardPool || []).flatMap((c) =>
+      c.personas.map((p) => ({ ...p, category: c.name })),
+    );
+  }
+  function boardCardHTML(p) {
+    return `<button class="project-tile interactive-lift" data-board-persona="${esc(p.id)}"><div class="tilebody"><div class="row-title">${esc(p.title)} <span class="chip">${esc(p.id)}</span></div><p class="muted clamp-3">${esc(p.mandate)}</p>${p.fits ? `<p class="tiny muted" style="margin-top:8px">Fits when: ${esc(p.fits)}</p>` : ""}</div></button>`;
+  }
+  function boardCategoryHTML(c) {
+    return `<div class="card"><div class="cardhead"><h3>${esc(c.name)}</h3><span class="tiny">${c.personas.length}</span></div><div class="gallery">${c.personas.map(boardCardHTML).join("")}</div></div>`;
+  }
+  function boardHTML() {
+    const categories = state.boardPool || [];
+    const total = categories.reduce((a, c) => a + c.personas.length, 0);
+    return `<section class="page reveal"><div class="hero"><div><h1>Board of Advisors</h1><p class="lede">${categories.length ? `${total} personas on the bench.` : "Loading the persona pool…"} A review draws about 5 seats from here, tailored to what's actually being reviewed.</p></div><button class="btn" data-suggest-profile>Suggest a profile</button></div>${categories.map(boardCategoryHTML).join("") || (state.boardPool ? '<div class="empty-state">No personas found.</div>' : "")}</section>`;
+  }
+  function openBoardPersona(id) {
+    const p = boardPersonas().find((x) => x.id === id);
+    if (!p) return;
+    const paragraphs = (p.mandateRaw || p.mandate)
+      .split(/\n\s*\n/)
+      .map((t) => t.replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+    modal(
+      p.title,
+      `<p class="tiny muted">${esc(p.category || "")} · <span class="chip">${esc(p.id)}</span></p><div class="markdown" style="margin-top:10px">${paragraphs.map((t) => `<p>${inline(t)}</p>`).join("")}</div>${p.fits ? `<p class="muted" style="margin-top:12px"><b>Fits when:</b> ${esc(p.fits)}</p>` : ""}`,
+      "wide",
+    );
+  }
+  function openSuggestProfile() {
+    modal(
+      "Suggest a board profile",
+      `<div class="capture-grid"><label class="form-row">Name / expertise<input class="input" id="sugName" placeholder="e.g. Data privacy counsel"></label><label class="form-row">When they'd be useful<textarea id="sugWhen" rows="4" placeholder="What kind of review or target would want this seat?"></textarea></label><button class="btn primary" id="sugSave">Suggest</button></div>`,
+    );
+    $("#sugSave").onclick = async () => {
+      const name = $("#sugName").value.trim(),
+        when = $("#sugWhen").value.trim();
+      if (!name || !when) return toast("Both fields are required", "warning");
+      const btn = $("#sugSave");
+      setLoading(btn, true, "Saving…");
+      try {
+        await appendInbox(`[board-profile] ${name}: ${when}`);
+        closeModal();
+        toast(
+          "Suggested — the next intake triage builds the full profile.",
+          "success",
+        );
+      } catch (e) {
+        setLoading(btn, false);
+        toast(e.message || "Could not save suggestion.", "danger");
+      }
+    };
   }
   const GUIDES = [
     ["Set up a new Mac", "Personal/Processes/setup-workbench-new-mac.html"],
@@ -4425,7 +4622,7 @@ textarea:hover {
     const latest = state.latestBuild?.version;
     const builtAt = state.latestBuild?.builtAt;
     const pubAt = state.mobileSync?.updated;
-    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>No per-project credit attribution yet</li></ul></div></div></section>`;
+    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>Azure fallback usage, estimated from logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
   }
 
   function render() {
@@ -4453,6 +4650,7 @@ textarea:hover {
     if (state.view === "project") view.innerHTML = projectHTML();
     if (state.view === "knowledge") view.innerHTML = knowledgeHTML();
     if (state.view === "skills") view.innerHTML = skillsHTML();
+    if (state.view === "board") view.innerHTML = boardHTML();
     if (state.view === "instructions") view.innerHTML = instructionsHTML();
     if (state.view === "about") view.innerHTML = aboutHTML();
     if (!navigated)
@@ -4994,6 +5192,7 @@ textarea:hover {
   function usageWindowStart() {
     const now = Date.now(),
       w = state.usageWindow || "month";
+    if (w === "today") return new Date().setHours(0, 0, 0, 0);
     if (w === "7d") return now - 7 * 86400000;
     if (w === "12m") return now - 365 * 86400000;
     if (w === "all") return 0;
@@ -5008,6 +5207,7 @@ textarea:hover {
   function usageWindowLabel() {
     return (
       {
+        today: "Today",
         "7d": "Last 7 days",
         month: "Month",
         "12m": "12 months",
@@ -5017,6 +5217,7 @@ textarea:hover {
   }
   function usageWindowControl() {
     const opts = [
+      ["today", "Today"],
       ["7d", "Last 7 days"],
       ["month", "Month"],
       ["12m", "12 months"],
@@ -5036,13 +5237,94 @@ textarea:hover {
       .slice()
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r) => `<div class="usage-table-row"><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></div>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    state._recentSessions = recent;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
     const d = new Date(ms),
       p = (n) => String(n).padStart(2, "0");
     return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function fmtFullStamp(ms) {
+    if (!ms) return "—";
+    const d = new Date(ms),
+      p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  function cwdBasename(cwd) {
+    return String(cwd || "").split("/").filter(Boolean).pop() || "";
+  }
+  function sessionTitle(r) {
+    return r.title || cwdBasename(r.cwd) || "Session";
+  }
+  function sessionDetailRow(label, value) {
+    if (value == null || value === "") return "";
+    return `<div class="session-detail-row"><span class="tiny muted">${esc(label)}</span><span>${value}</span></div>`;
+  }
+  function sessionDetailHTML(r) {
+    const cost = sessionCost(r);
+    const costNote = !hasTelemetry(r)
+      ? ""
+      : r.cost != null && Number(r.cost) > 0
+        ? " (recorded)"
+        : cost != null
+          ? " (estimated)"
+          : "";
+    const range = isIncompleteSession(r)
+      ? `${esc(fmtFullStamp(r.started))} → incomplete`
+      : `${esc(fmtFullStamp(r.started))} → ${esc(fmtFullStamp(r.ended))}`;
+    return `<div class="refined-list">${[
+      sessionDetailRow("Title", esc(sessionTitle(r))),
+      sessionDetailRow(
+        "Project",
+        `${esc(cwdBasename(r.cwd) || "Unknown")}<br><span class="tiny muted">${esc(r.cwd || "Unknown")}</span>`,
+      ),
+      sessionDetailRow("Machine", esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))),
+      sessionDetailRow(
+        "Editor / IDE / harness",
+        `${brandLabel(normalizeEditor(r))} · ${brandLabel(normalizeIde(r.ide))} · ${brandLabel(normalizeHarness(r.harness || r.ide))}`,
+      ),
+      sessionDetailRow(
+        "Backend / model",
+        `${brandLabel(normalizeBackend(r.backend))} · ${brandLabel(normalizeModel(r.model))}`,
+      ),
+      sessionDetailRow(
+        "Started → ended",
+        `${range}${isIncompleteSession(r) ? "" : ` · ${esc(fmtDuration(durationMs(r)))}`}`,
+      ),
+      sessionDetailRow(
+        "Tokens in / out / total",
+        `${fmtTokens(r.inputTokens || 0)} / ${fmtTokens(r.outputTokens || 0)} / ${fmtTokens(r.totalTokens || 0)}`,
+      ),
+      sessionDetailRow(
+        "Cache read / creation",
+        `${fmtTokens(r.cacheReadTokens || 0)} / ${fmtTokens(r.cacheCreationTokens || 0)}${r.cacheHitRatio != null ? ` · ${Math.round(r.cacheHitRatio * 100)}% hit ratio` : ""}`,
+      ),
+      sessionDetailRow("Requests", r.requests != null ? esc(String(r.requests)) : null),
+      sessionDetailRow("Prompts", r.promptCount != null ? esc(String(r.promptCount)) : null),
+      sessionDetailRow("Tool failures", r.toolFailCount != null ? esc(String(r.toolFailCount)) : null),
+      sessionDetailRow(
+        "Waiting / active time",
+        `${fmtDuration(r.waitingMs || 0)} waiting · ${fmtDuration(r.activeMs || 0)} active`,
+      ),
+      sessionDetailRow(
+        "Cost",
+        `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
+      ),
+    ]
+      .filter(Boolean)
+      .join("")}</div>`;
+  }
+  function bindSessionRows(root) {
+    $$("[data-session-idx]", root).forEach(
+      (b) =>
+        (b.onclick = () => {
+          const r = (state._recentSessions || [])[+b.dataset.sessionIdx];
+          if (!r) return;
+          modal(sessionTitle(r), sessionDetailHTML(r), "wide");
+        }),
+    );
   }
   function laneCompareRows(rows) {
     const anthropic = rows.filter(
@@ -5055,19 +5337,6 @@ textarea:hover {
         normalizeModel(r.model).toLowerCase().includes("codex"),
     );
     const cursor = rows.filter((r) => normalizeIde(r.ide) === "Cursor");
-    const azureAll =
-      (state.usageWindow === "all" ? state.azureUsage?.allTime : null) || {};
-    const azureEstimate = (input, output) =>
-      (input * 5) / 1000000 + (output * 30) / 1000000;
-    const azureInput = Number(
-        (azureAll.inputTokens ?? tokenSum(azure, "inputTokens")) || 0,
-      ),
-      azureOutput = Number(
-        (azureAll.outputTokens ?? tokenSum(azure, "outputTokens")) || 0,
-      );
-    const azureCost =
-      (state.usageWindow === "all" ? state.azureUsage?.allTimeCost : null) ??
-      azureEstimate(azureInput, azureOutput);
     const mk = (label, rs, extra = {}) => ({
       label,
       input: tokenSum(rs, "inputTokens"),
@@ -5081,20 +5350,32 @@ textarea:hover {
       untracked: rs.filter((r) => !hasTelemetry(r)).length,
       ...extra,
     });
-    return [
-      mk("Anthropic", anthropic),
-      mk("Azure", azure, {
-        input: azureInput,
-        output: azureOutput,
-        requests: azureAll.requests ?? tokenSum(azure, "requests"),
-        cost: azureCost,
-        estimated: true,
-      }),
-      mk("Codex", codex),
-      mk("Cursor", cursor, {
-        cost: state.cursorUsage?.spend ?? costSum(cursor),
-      }),
-    ]
+    // The lane table's Input/Output/Requests/Cost always come from
+    // session telemetry (tokenSum/costSum over the windowed rows), never
+    // from a billing snapshot. Windowed row-sets nest (7d ⊆ month ⊆ 12m ⊆
+    // all), so these sums are guaranteed monotonic across time frames.
+    // Billing snapshots (Azure's log-scrape totals, Cursor's monthly spend)
+    // are a *different* data source that covers a different, sometimes
+    // much narrower window than what's selected - swapping a lane's primary
+    // number to that source for one window only (as this used to do for
+    // Azure on "all") broke monotonicity, since the snapshot could be far
+    // smaller than the session-telemetry sum for a shorter window. Surface
+    // it instead as a labeled aside, same pattern as "N/M sessions
+    // untracked", so nothing silently swaps sources.
+    const azureRow = mk("Azure", azure, { estimated: true });
+    if (state.azureUsage?.allTime) {
+      const snapInput = Number(state.azureUsage.allTime.inputTokens || 0),
+        snapOutput = Number(state.azureUsage.allTime.outputTokens || 0);
+      const snapCost =
+        state.azureUsage.allTimeCost ??
+        (snapInput * 5) / 1000000 + (snapOutput * 30) / 1000000;
+      azureRow.snapshotNote = `billing-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) since the scraper last reset - a different source, not filtered by time frame`;
+    }
+    const cursorRow = mk("Cursor", cursor);
+    if (state.cursorUsage?.spend != null) {
+      cursorRow.snapshotNote = `billing snapshot: ${fmtCostMaybe(state.cursorUsage.spend)} this billing month from Cursor - a different source, not filtered by time frame`;
+    }
+    return [mk("Anthropic", anthropic), azureRow, mk("Codex", codex), cursorRow]
       .filter(
         (r) =>
           r.label !== "Codex" || r.input || r.output || r.requests || r.cost,
@@ -5102,7 +5383,7 @@ textarea:hover {
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
   function comparisonTable(rows) {
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}${r.untracked ? ` <span class="tiny muted">(${r.untracked}/${r.sessions} sessions untracked)</span>` : ""}</span></div>`).join("")}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}${r.untracked ? ` <span class="tiny muted">(${r.untracked}/${r.sessions} sessions untracked)</span>` : ""}${r.snapshotNote ? `<br><span class="tiny muted">${esc(r.snapshotNote)}</span>` : ""}</span></div>`).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
@@ -5194,7 +5475,41 @@ textarea:hover {
     }
     return tips;
   }
+  // tools/efficiency-tips.json is written by a separate generator (outside
+  // the dashboard) and may not exist yet - fall back to the tips computed
+  // here from session rows whenever it's missing or empty.
+  function fileEfficiencyTips() {
+    const file = state.efficiencyTipsFile;
+    const tips = Array.isArray(file?.tips) ? file.tips.filter((t) => t?.title) : [];
+    if (!tips.length) return null;
+    return {
+      generated: file.generated,
+      tips: tips
+        .slice()
+        .sort((a, b) => (a.severity === "warn" ? 0 : 1) - (b.severity === "warn" ? 0 : 1)),
+    };
+  }
   function tipsHTML(rows) {
+    const fromFile = fileEfficiencyTips();
+    if (fromFile) {
+      const age = fromFile.generated
+        ? Math.round((Date.now() - fromFile.generated) / 3600000)
+        : null;
+      const stamp =
+        age == null
+          ? ""
+          : age < 1
+            ? "generated just now"
+            : age < 48
+              ? `generated ${age}h ago`
+              : `generated ${Math.round(age / 24)}d ago`;
+      return `<div class="usage-card"><h3>AI-efficiency tips</h3><div class="ops-list">${fromFile.tips
+        .map(
+          (t) =>
+            `<div class="ops-row"><span>${statusDot(t.severity === "warn" ? "bad" : "idle")}<b>${esc(t.title)}</b></span><span class="prompt-snippet muted">${esc(t.detail || "")}</span><span>${t.metric ? `<span class="chip">${esc(t.metric)}</span>` : ""}</span></div>`,
+        )
+        .join("")}</div>${stamp ? `<p class="tiny muted" style="margin-top:8px">${esc(stamp)}</p>` : ""}</div>`;
+    }
     const tips = efficiencyTips(rows);
     return `<div class="usage-card"><h3>AI-efficiency tips</h3>${tips.length ? `<div class="ops-list">${tips.map(([t, b]) => `<div class="ops-row"><span>${statusDot("idle")}${esc(t)}</span><span class="prompt-snippet">${esc(b)}</span><span></span></div>`).join("")}</div>` : '<p class="muted">No data-backed efficiency warnings right now.</p>'}</div>`;
   }
@@ -5210,6 +5525,7 @@ textarea:hover {
           }
         }),
     );
+    bindSessionRows($(".modal-scrim.dyn"));
   }
   function openUsageDetail() {
     modal(
@@ -5565,6 +5881,8 @@ textarea:hover {
     if (v !== "project") state.proj = null;
     if (v === "skills" && !state.skillCatalog)
       ensureSkillCatalog().then(() => state.view === "skills" && render());
+    if (v === "board" && !state.boardPool)
+      ensureBoardPool().then(() => state.view === "board" && render());
     render();
     scrollTo(0, 0);
   }
@@ -5945,15 +6263,22 @@ textarea:hover {
     text += `\n- [${title}](${rel})\n`;
     await writePath("Index.md", text);
   }
-  function openSkill(slug) {
+  async function openSkill(slug) {
     const s = [
       ...(state.skillCatalog?.custom || []),
       ...(state.skillCatalog?.store || []),
     ].find((x) => x.slug === slug);
     if (!s) return;
+    // Cache per skill after first load: mutate the catalog entry in place so
+    // a second open reuses the body instead of re-reading SKILL.md.
+    if (s.body == null && s.path) {
+      s.body = (await readPath(s.path).catch(() => null)) || "";
+    }
+    const { body: mdBody } = parseFM(s.body || "");
     modal(
       s.name,
-      `<p class="muted">${esc(s.description || "")}</p><div class="card"><code>${esc(s.invoke || "/" + s.slug)}</code><button class="btn" data-copy-text="${esc(s.invoke || "/" + s.slug)}">Copy</button></div><p class="tiny">${esc(s.path || s.source || "")}</p>`,
+      `<p class="muted">${esc(s.description || "")}</p>${s.argumentHint ? `<p class="tiny" style="margin-top:6px"><span class="chip">Arguments</span> ${esc(s.argumentHint)}</p>` : ""}<div class="card compact" style="margin-top:10px"><code>${esc(s.invoke || "/" + s.slug)}</code><button class="btn" data-copy-text="${esc(s.invoke || "/" + s.slug)}">Copy</button></div>${mdBody.trim() ? `<div class="markdown" style="margin-top:14px">${md(mdBody)}</div>` : ""}<p class="tiny" style="margin-top:10px">${esc(s.path || s.source || "")}</p>`,
+      "wide",
     );
     $("[data-copy-text]")?.addEventListener("click", (e) =>
       copyText(e.target.dataset.copyText),
@@ -6273,6 +6598,15 @@ textarea:hover {
         ...(state.skillCatalog?.custom || []),
         ...(state.skillCatalog?.store || []),
       ].map((s) => ({ t: s.name, s: "Skill", run: () => openSkill(s.slug) })),
+      { t: "Board of Advisors", s: "View", run: () => go("board") },
+      ...boardPersonas().map((p) => ({
+        t: p.title,
+        s: "Advisor · " + p.id,
+        run: () => {
+          go("board");
+          setTimeout(() => openBoardPersona(p.id), 260);
+        },
+      })),
       ...(state.backend === "github"
         ? [{ t: "Refresh data", s: "Action", run: doReload }]
         : [
@@ -6351,11 +6685,12 @@ textarea:hover {
     refresh();
     $("#palInput").focus();
     if (!state.skillCatalog) ensureSkillCatalog().then(refresh);
+    if (!state.boardPool) ensureBoardPool().then(refresh);
   }
   function openMore() {
     modal(
       "More",
-      `<div class="refined-list"><button class="refined-row pressable" data-view="skills"><span class="refined-title">Skills</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="instructions"><span class="refined-title">Instructions</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="about"><span class="refined-title">About</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span class="refined-title">Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
+      `<div class="refined-list"><button class="refined-row pressable" data-view="skills"><span class="refined-title">Skills</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="board"><span class="refined-title">Board</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="instructions"><span class="refined-title">Instructions</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="about"><span class="refined-title">About</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span class="refined-title">Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
     );
     bindView($(".modal-scrim.dyn"));
   }
