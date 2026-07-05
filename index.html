@@ -1442,6 +1442,10 @@ textarea:hover {
   cursor: pointer;
   text-align: left;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   border: 1px solid var(--border-subtle);
   background: var(--base);
   border-radius: 12px;
@@ -1634,7 +1638,10 @@ textarea:hover {
   width: 100%;
   position: relative;
   overflow: hidden;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 .ops-card .rail-title {
   display: flex;
@@ -2094,13 +2101,19 @@ textarea:hover {
   box-shadow: var(--shadow-xs);
   transform: translateY(-1px);
 }
+.refined-row > span:first-child {
+  min-width: 0;
+  display: block;
+}
 .refined-title {
+  display: block;
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .refined-sub {
+  display: block;
   font-size: 12px;
   color: var(--text-2);
   margin-top: 2px;
@@ -2306,7 +2319,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.55";
+  const WB_VERSION = "2026-07-04.57";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -3854,6 +3867,17 @@ textarea:hover {
     }</div></div></div></div></section>`;
   }
 
+  function projectsFiltered() {
+    const q = state.pq.toLowerCase().trim();
+    return state.projects.filter(
+      (p) =>
+        (state.area === "All" || p.section === state.area) &&
+        (!q ||
+          (p.data.project + " " + (p.data.tagline || ""))
+            .toLowerCase()
+            .includes(q)),
+    );
+  }
   function projectsHTML() {
     const rows = projectsFiltered();
     return `<section class="page reveal"><div class="hero"><div><h1>Projects</h1><p class="lede">${rows.length} projects across Work and Personal.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.area === a ? "active" : ""}" data-area="${a}">${a}</button>`).join("")}</div><input class="input" style="max-width:280px" placeholder="Filter projects…" value="${esc(state.pq)}" data-project-search><div class="seg"><button class="${state.projectView === "gallery" ? "active" : ""}" data-project-view="gallery">Gallery</button><button class="${state.projectView === "table" ? "active" : ""}" data-project-view="table">Table</button></div></div>${state.projectView === "gallery" ? `<div class="gallery">${rows.map(projectTile).join("")}</div>` : `<div class="table"><div class="table-head"><span></span><span>Project</span><span>Area</span><span>Progress</span><span>Open</span><span>Blocked</span><span>Ideas</span><span>Updated</span></div>${rows.map(projectTableRow).join("")}</div>`}</section>`;
@@ -5356,7 +5380,7 @@ textarea:hover {
   function modal(title, body, wide = "") {
     closeModal();
     const d = document.createElement("div");
-    d.className = "modal-scrim";
+    d.className = "modal-scrim dyn";
     d.innerHTML = `<div class="modal-card ${wide === "wide" ? "modal-wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div><div class="kicker">Workbench detail</div><h2>${esc(title)}</h2></div><button class="iconbtn" data-close aria-label="Close">×</button></div>${body}</div>`;
     d.addEventListener("click", (e) => {
       if (e.target === d) closeModal();
@@ -5366,7 +5390,10 @@ textarea:hover {
     d.querySelector("button,input,textarea,select,a")?.focus();
   }
   function closeModal() {
-    const d = $(".modal-scrim");
+    // Only ever close dynamic modals - #landing is also a .modal-scrim and
+    // removing it crashes every later $("#landing") access (the phone
+    // connect crash).
+    const d = $(".modal-scrim.dyn");
     if (!d) return;
     if (d._closing) return;
     d._closing = true;
@@ -5481,7 +5508,9 @@ textarea:hover {
       }
       state.root = h;
       state.backend = "fsa";
-      await idb.set("root", h);
+      // Best-effort persistence - private browsing or a non-cloneable test
+      // root must not block connecting.
+      await idb.set("root", h).catch(() => {});
       await scan();
     } catch (e) {
       if (e.name !== "AbortError")
