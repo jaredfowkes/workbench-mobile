@@ -835,23 +835,21 @@ textarea:hover {
     grid-template-columns: 1fr;
   }
   .status-rail {
-    display: flex;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    margin: 0 -14px 16px;
-    padding: 0 14px;
+    display: block;
+    margin-bottom: 16px;
   }
-  .status-rail::-webkit-scrollbar {
+  .status-rail .rail-card,
+  .status-rail .credit-card {
     display: none;
   }
-  .rail-card {
-    min-width: 210px;
-    flex: 0 0 auto;
+  .status-rail.expanded .rail-card,
+  .status-rail.expanded .credit-card {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
   }
-  .credit-card {
-    min-width: 230px;
-    flex: 0 0 auto;
+  .status-rail.expanded .rail-summary .rail-caret {
+    transform: rotate(-90deg);
   }
   .project-cover {
     width: 100%;
@@ -2253,6 +2251,57 @@ textarea:hover {
   }
 }
 
+/* Mobile rail summary: the whole ops layer in one tappable line */
+.rail-summary {
+  display: none;
+}
+@media (max-width: 900px) {
+  .rail-summary {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    background: var(--base);
+    border: 1px solid var(--border-subtle);
+    border-radius: 14px;
+    box-shadow: var(--shadow-xs);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+  }
+  .rail-sum-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .rail-caret {
+    margin-left: auto;
+    color: var(--text-3);
+    font-size: 18px;
+    transform: rotate(90deg);
+    transition: transform var(--fast) var(--ease);
+  }
+  .wiz-big {
+    min-height: 56px;
+  }
+}
+.ver-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--base);
+}
+.ver-row .status-dot-ui {
+  margin-top: 5px;
+}
+
   </style>
 </head>
 <body>
@@ -2319,7 +2368,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.58";
+  const WB_VERSION = "2026-07-04.59";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -3263,6 +3312,9 @@ textarea:hover {
       loadJson("tools/dashboard-state.json").then(
         (v) => (state.dashboardState = v || state.dashboardState),
       ),
+      loadJson("tools/dashboard-version.json").then(
+        (v) => (state.latestBuild = v),
+      ),
       loadJson("tools/agent-config.json").then((v) => (state.agentConfig = v)),
       loadJson("skills-lock.json").then((v) => (state.skillsLock = v)),
       loadJson("tools/skills-wiki.json").then((v) => (state.skillsWiki = v)),
@@ -4173,9 +4225,15 @@ textarea:hover {
   function instructionsHTML() {
     return `<section class="page reveal"><div class="hero"><div><h1>Instructions</h1><p class="lede">Setup and operating guides installed in the workbench.</p></div></div><div class="card compact"><div class="refined-list">${GUIDES.map(([t, p]) => `<button class="refined-row pressable" data-open-guide="${esc(p)}"><span><span class="refined-title">${esc(t)}</span><span class="refined-sub">${esc(p)}</span></span><span class="chip">Open ↗</span></button>`).join("")}</div></div></section>`;
   }
+  function versionRow(label, ver, isLatest, whenMs, whenLabel) {
+    const latest = state.latestBuild?.version;
+    return `<div class="ver-row"><span class="status-dot-ui ${isLatest ? "ok" : "warn"}"></span><span><b>${esc(label)}</b> · v${esc(ver || "unknown")} ${isLatest ? '<span class="chip ok">latest</span>' : `<span class="chip warn">latest is v${esc(latest || "?")}</span>`}<span class="refined-sub">${whenMs ? `${whenLabel} ${esc(shortAge(whenMs))}` : ""}</span></span></div>`;
+  }
   function aboutHTML() {
-    const m = mobileState();
-    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>This build</h3><p>v${WB_VERSION}</p><p class="muted">Desktop uses File System Access. iPhone home-screen mode uses the GitHub Contents API and cache-busted reloads.</p><button class="btn" data-check-mobile>Check mobile version</button></div><div class="card"><h3>Mobile publish</h3><p>${esc(m.text)}</p><p class="muted">Published copy is compared by reading WB_VERSION from workbench-mobile.</p></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>No per-project credit attribution yet</li></ul></div></div></section>`;
+    const latest = state.latestBuild?.version;
+    const builtAt = state.latestBuild?.builtAt;
+    const pubAt = state.mobileSync?.updated;
+    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>No per-project credit attribution yet</li></ul></div></div></section>`;
   }
 
   function render() {
@@ -4245,13 +4303,28 @@ textarea:hover {
     ind.style.height = ar.height + "px";
   }
 
+  function railSummaryHTML() {
+    const active = activeSessions();
+    const st = globalStats();
+    const attention =
+      syncItems().some((i) => i.state !== "ok") ||
+      machineStatusRows().some((r) => r.state === "down");
+    return `<button type="button" class="rail-summary" id="railSummaryBtn" aria-expanded="${!!state.railOpen}"><span class="rail-sum-item"><span class="status-dot-ui ${active.length ? "live" : "idle"}"></span>${active.length} active</span><span class="rail-sum-item">${brandIcon("Claude")}${money(state.usage?.spend)} / ${money(state.usage?.limit)}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}<span class="rail-sum-item"><span class="status-dot-ui ${attention ? "warn" : "ok"}"></span>${attention ? "check sync" : "synced"}</span><span class="rail-caret" aria-hidden="true">›</span></button>`;
+  }
   function renderStatusRail() {
     if (!state.connected) return;
     const rail = $("#statusRail");
-    const html = `${sessionsRailHTML()}${machinesRailHTML()}${creditsRailHTML()}${syncRailHTML()}`;
+    const html = `${railSummaryHTML()}${sessionsRailHTML()}${machinesRailHTML()}${creditsRailHTML()}${syncRailHTML()}`;
+    rail.classList.toggle("expanded", !!state.railOpen);
     if (rail._html === html) return;
     rail._html = html;
     rail.innerHTML = html;
+    $("#railSummaryBtn")?.addEventListener("click", () => {
+      state.railOpen = !state.railOpen;
+      const r = $("#statusRail");
+      r.classList.toggle("expanded", state.railOpen);
+      $("#railSummaryBtn")?.setAttribute("aria-expanded", String(state.railOpen));
+    });
     $("#sessionsRailBtn")?.addEventListener("click", openSessionsDetail);
     $("#machinesRailBtn")?.addEventListener("click", openMachinesDetail);
     $("#creditsRailBtn")?.addEventListener("click", openUsageDetail);
@@ -4361,10 +4434,11 @@ textarea:hover {
   function syncItems() {
     const m = mobileState();
     const dirty = state.helperStatus?.dirtyCount;
+    const pubAt = state.mobileSync?.updated;
     return [
       {
-        label: "Folder",
-        value: state.backend === "github" ? "GitHub API" : "connected",
+        label: "Workbench",
+        value: state.backend === "github" ? "connected via GitHub" : "connected",
         state: "ok",
       },
       {
@@ -4378,14 +4452,19 @@ textarea:hover {
         state: state.backend === "github" || state.helperUp ? "ok" : "warn",
       },
       {
-        label: "Repo",
-        value: state.backend === "github" ? "remote" : `${dirty ?? 0} unsynced`,
+        label: "Sync status",
+        value:
+          state.backend === "github"
+            ? "writes save instantly"
+            : dirty
+              ? `${dirty} unsynced`
+              : "everything pushed",
         state: dirty ? "warn" : "ok",
       },
       {
-        label: "Mobile",
-        value: m.text.replace(/^mobile\s*/i, ""),
-        state: m.cls,
+        label: "Last publish",
+        value: pubAt ? shortAge(pubAt) : "unknown",
+        state: m.cls === "ok" ? "ok" : "warn",
       },
     ];
   }
@@ -4783,7 +4862,7 @@ textarea:hover {
     return `<div class="usage-card"><h3>AI-efficiency tips</h3>${tips.length ? `<div class="ops-list">${tips.map(([t, b]) => `<div class="ops-row"><span>${statusDot("idle")}${esc(t)}</span><span class="prompt-snippet">${esc(b)}</span><span></span></div>`).join("")}</div>` : '<p class="muted">No data-backed efficiency warnings right now.</p>'}</div>`;
   }
   function bindUsageWindow() {
-    $$("[data-usage-window]", $(".modal-scrim")).forEach(
+    $$("[data-usage-window]", $(".modal-scrim.dyn")).forEach(
       (b) =>
         (b.onclick = () => {
           state.usageWindow = b.dataset.usageWindow;
@@ -4803,6 +4882,44 @@ textarea:hover {
     );
     bindUsageWindow();
   }
+  async function captureCore(type, destDirName, text, files) {
+    if (type === "note") {
+      await appendInbox(text);
+    } else if (type === "project") {
+      await seedProject(text);
+    } else if (type === "kb") {
+      await writeKbNote(text);
+    } else {
+      const p =
+        state.projects.find((x) => x.dirName === destDirName) ||
+        state.projects[0];
+      const gname = type === "idea" ? "Ideas" : "Tasks";
+      let g = (p.data.groups || []).find((x) => x.name === gname);
+      if (!g) {
+        g = { name: gname, items: [] };
+        (p.data.groups = p.data.groups || []).push(g);
+      }
+      const saved = [];
+      for (const f of files || []) {
+        const name = (f.name || "attachment").replace(/[\\/:*?"<>|]/g, "-");
+        await writeBinaryPath(
+          `${projectBase(p)}/files/capture/${today()}-${name}`,
+          f.blob || f,
+        );
+        saved.push(name);
+      }
+      g.items.push({
+        id: p.dirName.slice(0, 3).toLowerCase() + "-" + Date.now().toString(36),
+        text: saved.length
+          ? `${text} (attachments: ${saved.join(", ")})`
+          : text,
+        status: type === "idea" ? "idea" : "todo",
+        created: today(),
+        ...(state.backend === "github" ? { source: "mobile" } : {}),
+      });
+      await saveProject(p, { silent: true, rethrow: true });
+    }
+  }
   async function saveCapture() {
     const type = $("#capType").value,
       text = $("#capText").value.trim();
@@ -4810,33 +4927,11 @@ textarea:hover {
     const btn = $("#capSave");
     setLoading(btn, true, "Saving…");
     try {
-      if (type === "note") {
-        await appendInbox(text);
-      } else if (type === "project") {
-        await seedProject(text);
-      } else if (type === "kb") {
-        await writeKbNote(text);
-      } else {
-        const p = state.projects.find((x) => x.dirName === $("#capDest").value);
-        const gname = type === "idea" ? "Ideas" : "Tasks";
-        let g = (p.data.groups || []).find((x) => x.name === gname);
-        if (!g) {
-          g = { name: gname, items: [] };
-          (p.data.groups = p.data.groups || []).push(g);
-        }
-        const saved = await saveCaptureFiles(p);
-        g.items.push({
-          id:
-            p.dirName.slice(0, 3).toLowerCase() + "-" + Date.now().toString(36),
-          text: saved.length
-            ? `${text} (attachments: ${saved.join(", ")})`
-            : text,
-          status: type === "idea" ? "idea" : "todo",
-          created: today(),
-          ...(state.backend === "github" ? { source: "mobile" } : {}),
-        });
-        await saveProject(p, { silent: true, rethrow: true });
-      }
+      const files = [...($("#capFiles")?.files || [])].map((f) => ({
+        name: f.name,
+        blob: f,
+      }));
+      await captureCore(type, $("#capDest")?.value, text, files);
       // Only claim success after the write actually landed, and only then
       // discard the user's text with the modal.
       closeModal();
@@ -4847,19 +4942,154 @@ textarea:hover {
       toast(e.message || "Capture failed — your text is still here.", "danger");
     }
   }
-  async function saveCaptureFiles(p) {
-    const input = $("#capFiles");
-    const files = [...(input?.files || [])];
-    const saved = [];
-    for (const f of files) {
-      const name = f.name.replace(/[\\/:*?"<>|]/g, "-");
-      await writeBinaryPath(
-        `${projectBase(p)}/files/capture/${today()}-${name}`,
-        f,
+  function openCaptureWizard() {
+    // Phone capture: one decision per screen with big tap targets, and no
+    // keyboard until the text step is explicitly reached.
+    const w = {
+      step: "type",
+      type: "idea",
+      dest: state.projects[0]?.dirName,
+      text: "",
+      files: [],
+      rec: null,
+    };
+    const TYPES = [
+      ["idea", "Idea", "Goes to the project's Ideas list"],
+      ["task", "Task", "Goes to the project's Tasks list"],
+      ["note", "Loose note", "Lands in the notes inbox for triage"],
+      ["kb", "Knowledge note", "Saved into the knowledge base"],
+      ["project", "New project", "Seeds a fresh project folder"],
+    ];
+    const stepHTML = () => {
+      if (w.step === "type")
+        return `<p class="section-note">What are you capturing?</p><div class="refined-list">${TYPES.map(([v, l, sub]) => `<button class="refined-row pressable wiz-big" data-wiz-type="${v}"><span><span class="refined-title">${l}</span><span class="refined-sub">${sub}</span></span>${v === w.type ? '<span class="chip ok">default</span>' : ""}</button>`).join("")}</div>`;
+      if (w.step === "dest")
+        return `<p class="section-note">Which project?</p><div class="refined-list">${state.projects
+          .slice(0, 12)
+          .map(
+            (p) =>
+              `<button class="refined-row pressable wiz-big" data-wiz-dest="${esc(p.dirName)}"><span><span class="refined-title">${esc(p.data.project)}</span><span class="refined-sub">${esc(p.section)}</span></span></button>`,
+          )
+          .join("")}</div><button class="btn tertiary" data-wiz-back>Back</button>`;
+      const isTask = ["task", "idea"].includes(w.type);
+      return `<p class="section-note">${isTask ? `${w.type === "idea" ? "Idea" : "Task"} → ${esc(state.projects.find((p) => p.dirName === w.dest)?.data.project || "")}` : TYPES.find(([v]) => v === w.type)[1]}</p><textarea class="input" id="wizText" rows="5" placeholder="Type it, or record a voice note…">${esc(w.text)}</textarea>${
+        isTask
+          ? `<div class="action-tools" style="margin-top:10px">${
+              navigator.mediaDevices
+                ? `<button class="btn ${w.rec ? "danger" : ""}" id="wizVoice">${w.rec ? "■ Stop recording" : "● Record voice note"}</button>`
+                : ""
+            }<label class="btn" style="cursor:pointer">Add photos<input id="wizFiles" type="file" multiple hidden accept="image/*,audio/*,video/*"></label></div><div class="tiny" id="wizAttach" style="margin-top:6px">${w.files.map((f) => esc(f.name)).join(" · ")}</div>`
+          : ""
+      }<div class="action-tools" style="margin-top:12px"><button class="btn primary wiz-big" id="wizSave" style="flex:1">Save capture</button><button class="btn tertiary" data-wiz-back>Back</button></div>`;
+    };
+    const bind = () => {
+      const root = $("#capWiz");
+      $$("[data-wiz-type]", root).forEach(
+        (b) =>
+          (b.onclick = () => {
+            w.type = b.dataset.wizType;
+            w.step = ["task", "idea"].includes(w.type) ? "dest" : "text";
+            paint();
+          }),
       );
-      saved.push(name);
+      $$("[data-wiz-dest]", root).forEach(
+        (b) =>
+          (b.onclick = () => {
+            w.dest = b.dataset.wizDest;
+            w.step = "text";
+            paint();
+          }),
+      );
+      $$("[data-wiz-back]", root).forEach(
+        (b) =>
+          (b.onclick = () => {
+            w.text = $("#wizText")?.value ?? w.text;
+            w.step = w.step === "dest" ? "type" : ["task", "idea"].includes(w.type) ? "dest" : "type";
+            paint();
+          }),
+      );
+      $("#wizText")?.addEventListener("input", (e) => (w.text = e.target.value));
+      $("#wizFiles")?.addEventListener("change", (e) => {
+        for (const f of e.target.files) w.files.push({ name: f.name, blob: f });
+        paint();
+      });
+      $("#wizVoice")?.addEventListener("click", () => toggleVoice(w, paint));
+      $("#wizSave")?.addEventListener("click", async () => {
+        w.text = $("#wizText")?.value.trim() || "";
+        if (!w.text && !w.files.length)
+          return toast("Say it, type it, or attach it first.", "warning");
+        if (w.rec) w.rec.stop();
+        const btn = $("#wizSave");
+        setLoading(btn, true, "Saving…");
+        try {
+          await captureCore(w.type, w.dest, w.text || "Voice note", w.files);
+          closeModal();
+          toast("Capture saved.", "success");
+          render();
+        } catch (e) {
+          setLoading(btn, false);
+          toast(e.message || "Capture failed — nothing was lost.", "danger");
+        }
+      });
+    };
+    const paint = () => {
+      $("#capWiz").innerHTML = stepHTML();
+      bind();
+      applyMotion($("#capWiz"));
+    };
+    modal("Quick capture", '<div id="capWiz" class="capture-grid"></div>');
+    paint();
+  }
+  async function toggleVoice(w, paint) {
+    if (w.rec) {
+      w.rec.stop();
+      return;
     }
-    return saved;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      const chunks = [];
+      mr.ondataavailable = (e) => chunks.push(e.data);
+      mr.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop());
+        const type = mr.mimeType || "audio/mp4";
+        const ext = type.includes("mp4") || type.includes("aac") ? "m4a" : type.includes("webm") ? "webm" : "audio";
+        w.files.push({
+          name: `voice-${nowStamp().replace(/[: ]/g, "-")}.${ext}`,
+          blob: new Blob(chunks, { type }),
+        });
+        w.rec = null;
+        paint();
+      };
+      mr.start();
+      w.rec = mr;
+      // Best-effort live transcription where the platform supports it.
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SR) {
+        try {
+          const sr = new SR();
+          sr.continuous = true;
+          sr.interimResults = false;
+          sr.onresult = (e) => {
+            const txt = [...e.results].map((r) => r[0].transcript).join(" ");
+            const ta = $("#wizText");
+            if (ta) {
+              ta.value = (w.text ? w.text + " " : "") + txt;
+              w.text = ta.value;
+            }
+          };
+          sr.start();
+          mr.addEventListener("stop", () => {
+            try {
+              sr.stop();
+            } catch {}
+          });
+        } catch {}
+      }
+      paint();
+    } catch (e) {
+      toast("Microphone unavailable: " + (e.message || e.name), "warning");
+    }
   }
   async function appendInbox(note) {
     let t =
@@ -4993,6 +5223,7 @@ textarea:hover {
   }
   function go(v) {
     if (!v) return;
+    closeModal();
     state.view = v;
     if (v !== "project") state.proj = null;
     if (v === "skills" && !state.skillCatalog)
@@ -5417,9 +5648,10 @@ textarea:hover {
     setTimeout(kill, 220);
   }
   function openCapture() {
+    if (isMobile()) return openCaptureWizard();
     modal(
       "Quick capture",
-      `<div class="capture-grid"><label class="form-row">Type<select id="capType"><option value="task">Task</option><option value="idea">Idea</option><option value="project">New project</option><option value="kb">Knowledge note</option><option value="note">Loose note</option></select></label><label class="form-row" id="capDestRow">Destination<select id="capDest">${state.projects.map((p) => `<option value="${esc(p.dirName)}">${esc(p.section + " / " + p.data.project)}</option>`).join("")}</select></label><label class="form-row">Text<textarea id="capText" rows="6" placeholder="Capture…"></textarea></label><label class="form-row" id="capFilesRow">Attachments<input id="capFiles" type="file" multiple></label><button class="btn primary" id="capSave">Save capture</button></div>`,
+      `<div class="capture-grid"><label class="form-row">Type<select id="capType"><option value="idea" selected>Idea</option><option value="task">Task</option><option value="project">New project</option><option value="kb">Knowledge note</option><option value="note">Loose note</option></select></label><label class="form-row" id="capDestRow">Destination<select id="capDest">${state.projects.map((p) => `<option value="${esc(p.dirName)}">${esc(p.section + " / " + p.data.project)}</option>`).join("")}</select></label><label class="form-row">Text<textarea id="capText" rows="6" placeholder="Capture…"></textarea></label><label class="form-row" id="capFilesRow">Attachments<input id="capFiles" type="file" multiple></label><button class="btn primary" id="capSave">Save capture</button></div>`,
     );
     // Destination and attachments only apply to task/idea captures — showing
     // them for notes/KB implied a choice that was silently ignored.
@@ -5460,7 +5692,7 @@ textarea:hover {
       `<div class="refined-list">${rows.map((r) => `<button class="refined-row pressable" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(displayText(r.it.text))}</span><span class="refined-sub">${esc(r.p.data.project)} · ${esc(r.g.name)}</span></span><span aria-hidden="true">›</span></button>`).join("") || '<div class="empty-state">Nothing here.</div>'}</div>`,
       "wide",
     );
-    bindView($(".modal-scrim"));
+    bindView($(".modal-scrim.dyn"));
   }
   async function fetchMobileVersion() {
     try {
@@ -5788,7 +6020,7 @@ textarea:hover {
       "More",
       `<div class="refined-list"><button class="refined-row pressable" data-view="skills"><span class="refined-title">Skills</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="instructions"><span class="refined-title">Instructions</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-view="about"><span class="refined-title">About</span><span aria-hidden="true">›</span></button><button class="refined-row pressable" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span class="refined-title">Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
     );
-    bindView($(".modal-scrim"));
+    bindView($(".modal-scrim.dyn"));
   }
   (async function init() {
     document.documentElement.dataset.theme =
