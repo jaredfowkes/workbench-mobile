@@ -2319,7 +2319,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.57";
+  const WB_VERSION = "2026-07-04.58";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2476,7 +2476,15 @@ textarea:hover {
   // files from IndexedDB instead of refetching the whole repo every load.
   let ghTreeShas = {};
   const binaryURLs = new Map();
-  const idb = {
+  // IndexedDB can hang indefinitely in some contexts (private modes, storage
+  // pressure, headless file://). Nothing here is critical enough to block
+  // boot on - every call races a short timeout instead.
+  const idbTimeout = (p, fallback) =>
+    Promise.race([
+      p,
+      new Promise((res) => setTimeout(() => res(fallback), 2000)),
+    ]);
+  const idbRaw = {
     open: () =>
       new Promise((res, rej) => {
         const r = indexedDB.open("workbench-dash", 3);
@@ -2488,7 +2496,7 @@ textarea:hover {
         r.onerror = () => rej(r.error);
       }),
     async set(k, v) {
-      const db = await idb.open();
+      const db = await idbRaw.open();
       return new Promise((res, rej) => {
         const t = db.transaction("kv", "readwrite");
         t.objectStore("kv").put(v, k);
@@ -2497,7 +2505,7 @@ textarea:hover {
       });
     },
     async get(k) {
-      const db = await idb.open();
+      const db = await idbRaw.open();
       return new Promise((res, rej) => {
         const t = db.transaction("kv");
         const q = t.objectStore("kv").get(k);
@@ -2506,7 +2514,7 @@ textarea:hover {
       });
     },
     async del(k) {
-      const db = await idb.open();
+      const db = await idbRaw.open();
       return new Promise((res, rej) => {
         const t = db.transaction("kv", "readwrite");
         t.objectStore("kv").delete(k);
@@ -2514,6 +2522,12 @@ textarea:hover {
         t.onerror = () => rej(t.error);
       });
     },
+  };
+  const idb = {
+    open: idbRaw.open,
+    set: (k, v) => idbTimeout(idbRaw.set(k, v).catch(() => undefined), undefined),
+    get: (k) => idbTimeout(idbRaw.get(k).catch(() => undefined), undefined),
+    del: (k) => idbTimeout(idbRaw.del(k).catch(() => undefined), undefined),
   };
   function toast(msg, type = "", action = null) {
     const t = $("#toast");
