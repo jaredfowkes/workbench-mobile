@@ -2401,7 +2401,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-04.61";
+  const WB_VERSION = "2026-07-04.62";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4677,6 +4677,11 @@ textarea:hover {
             maximumFractionDigits: n < 10 ? 2 : 0,
           });
   }
+  function pricingEntry(model) {
+    const models = state.modelPricing?.models || {};
+    const key = String(model || "").toLowerCase();
+    return models[key] || models[model] || null;
+  }
   function estimateSessionCost(r) {
     const backend = normalizeBackend(r.backend),
       model = normalizeModel(r.model);
@@ -4688,7 +4693,24 @@ textarea:hover {
       const assumedOutput = output || Math.max(0, total - assumedInput);
       return (assumedInput * 5) / 1000000 + (assumedOutput * 30) / 1000000;
     }
-    return null;
+    const entry = pricingEntry(r.model);
+    if (!entry) return null;
+    const inRate = entry.inputPerM,
+      outRate = entry.outputPerM;
+    if (inRate == null || outRate == null) return null;
+    const input = Number(r.inputTokens || 0),
+      output = Number(r.outputTokens || 0),
+      cacheWrite = Number(r.cacheCreationTokens || 0),
+      cacheRead = Number(r.cacheReadTokens || 0);
+    const cacheWriteRate =
+      entry.cacheWritePerM != null ? entry.cacheWritePerM : inRate;
+    const cacheReadRate = entry.cacheReadPerM;
+    let cost =
+      (input * inRate) / 1000000 + (output * outRate) / 1000000;
+    if (cacheWrite) cost += (cacheWrite * cacheWriteRate) / 1000000;
+    if (cacheRead && cacheReadRate != null)
+      cost += (cacheRead * cacheReadRate) / 1000000;
+    return Math.round(cost * 10000) / 10000;
   }
   function sessionCost(r) {
     const saved = Number(r.cost);
