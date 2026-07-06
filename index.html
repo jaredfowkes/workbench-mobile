@@ -903,6 +903,9 @@ textarea:hover {
     width: 100%;
     margin-top: 10px;
   }
+  .status-rail:not(.expanded) .mobile-extra-credit {
+    display: none;
+  }
   .status-rail.expanded .rail-summary .rail-caret {
     transform: rotate(-90deg);
   }
@@ -1572,6 +1575,9 @@ textarea:hover {
 .creditbar.cursor i {
   background: var(--purple);
 }
+.creditbar.local i {
+  background: var(--positive);
+}
 .creditbar.hot i {
   background: var(--danger);
 }
@@ -2124,20 +2130,20 @@ textarea:hover {
 .cost-inline {
   font-weight: 700;
 }
-.info-chip {
-  margin-left: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--subtle);
-  color: var(--text-2);
-  border-radius: var(--pill);
-  padding: 3px 8px;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-}
-.info-chip:hover {
-  border-color: var(--border);
+.cost-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
   color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.cost-link:hover {
+  color: var(--brand-deep);
 }
 [data-theme="dark"] .brand-icon.anthropic {
   background: #262625;
@@ -2513,6 +2519,12 @@ textarea:hover {
     gap: 6px;
     white-space: nowrap;
   }
+  #mobileSummary .mobile-expanded-only {
+    display: none;
+  }
+  #mobileSummary .rail-summary[aria-expanded="true"] .mobile-expanded-only {
+    display: inline-flex;
+  }
   .rail-caret {
     margin-left: auto;
     color: var(--text-3);
@@ -2679,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.31";
+  const WB_VERSION = "2026-07-05.32";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5013,13 +5025,15 @@ textarea:hover {
       : "ok";
     const pa = pct(state.usage);
     const pc = pct(state.cursorUsage);
+    const paz = pct(azureCredit());
+    const pl = pct(localSavingsCredit());
     const dot = active.length
       ? active.some((s) => !s._stale)
         ? "live"
         : "warn"
       : "idle";
     const reasonChip = `<span class="rail-sum-item"><span class="status-dot-ui ${reasonDot}"></span>${esc(displayText(String(reason), 28))}</span>`;
-    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
+    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(paz, "azure")}${paz == null ? "Azure —" : "Azure " + paz + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
     // A problem chip leads so it can never scroll out of sight; all-good sits last.
     return `<button type="button" class="rail-summary" aria-expanded="${!!state.railOpen}" aria-label="Workbench status">${attention ? reasonChip + chips : chips + reasonChip}<span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
@@ -5304,21 +5318,37 @@ textarea:hover {
     if (h < 48) return `checked ${h}h ago`;
     return `checked ${Math.round(h / 24)}d ago`;
   }
-  function creditLaneHTML(name, u, cls = "") {
+  function creditLaneHTML(name, u, cls = "", opts = {}) {
     const raw = pct(u);
     if (raw == null) {
       return `<div class="credit-mini-row"><span class="credit-name">${brandLabel(name)}</span><span class="creditbar no-data ${cls} ${brandKind(name)}" role="progressbar" aria-label="${esc(name)} credits no data"><i style="width:0%"></i></span><span class="credit-amt">no data</span></div>`;
     }
     const p = Math.max(0, Math.min(100, raw));
-    const hot = p >= 85;
-    return `<div class="credit-mini-row"><span class="credit-name">${brandLabel(name)}</span><span class="creditbar ${cls} ${brandKind(name)} ${hot ? "hot" : ""}" role="progressbar" aria-label="${esc(name)} credits ${p}%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></span><span class="credit-amt">${money(u?.spend)} / ${money(u?.limit)}</span></div>`;
+    const hot = !opts.positive && p >= 85;
+    return `<div class="credit-mini-row ${opts.mobileExtra ? "mobile-extra-credit" : ""}"><span class="credit-name">${brandLabel(name)}</span><span class="creditbar ${cls} ${brandKind(name)} ${hot ? "hot" : ""}" role="progressbar" aria-label="${esc(name)} credits ${p}%" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${p}"><i style="width:${p}%"></i></span><span class="credit-amt">${money(u?.spend)} / ${money(u?.limit)}</span></div>`;
+  }
+  function currentUsageRows() {
+    return usageRows((state.sessionMetrics?.sessions || []).filter(Boolean));
+  }
+  function syntheticCredit(spend, limit = 2000) {
+    return { spend, limit, percent: limit ? Math.round((Number(spend || 0) / limit) * 100) : null };
+  }
+  function azureCredit() {
+    const row = laneCompareRows(currentUsageRows()).find((r) => r.label === "Azure");
+    return syntheticCredit(row?.cost || 0);
+  }
+  function localSavingsCredit() {
+    return syntheticCredit(localSavedSum(currentUsageRows()) || 0);
+  }
+  function allCreditLanesHTML() {
+    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${creditLaneHTML("Azure", azureCredit(), "azure", { mobileExtra: true })}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
   }
   function creditsRailHTML() {
     const ages = [state.usage?.updated, state.cursorUsage?.updated].filter(
       Boolean,
     );
     const fresh = ages.length ? Math.max(...ages) : null;
-    return `<button type="button" class="credit-card interactive-lift" id="creditsRailBtn"><div class="rail-title">Credits</div><div class="credit-mini">${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}</div><div class="credit-age">${esc(ageLabel(fresh))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</div></button>`;
+    return `<button type="button" class="credit-card interactive-lift" id="creditsRailBtn"><div class="rail-title">Credits</div><div class="credit-mini">${allCreditLanesHTML()}</div><div class="credit-age">${esc(ageLabel(fresh))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</div></button>`;
   }
   // Rows with no ended time that started over 24h ago are abandoned beacons,
   // not marathon sessions - counting Date.now() as their end would blow up
@@ -5765,7 +5795,7 @@ textarea:hover {
   }
   function comparisonTable(rows) {
     state._laneInfoRows = rows;
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r, i) => { const info = laneInfoText(r); return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost"><span class="cost-inline">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}</span>${info ? `<button type="button" class="info-chip" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">Details</button>` : ""}</span></div>`; }).join("")}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r, i) => { const info = laneInfoText(r); const costText = `${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}`; return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
