@@ -2691,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.34";
+  const WB_VERSION = "2026-07-05.35";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -3905,7 +3905,10 @@ textarea:hover {
           c.done++;
           c.total++;
         } else if (it.status === "idea") c.idea++;
-        else {
+        else if (it.status === "skipped" || it.status === "cancelled") {
+          c.done++;
+          c.total++;
+        } else {
           c.open++;
           c.total++;
           c[it.status] = (c[it.status] || 0) + 1;
@@ -3949,11 +3952,14 @@ textarea:hover {
   function progress(c) {
     return `<span class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${c.pct ?? 0}" aria-label="Progress ${c.pct ?? 0}%"><i style="width:${c.pct ?? 0}%"></i></span>`;
   }
+  function isClosedStatus(status) {
+    return status === "done" || status === "skipped" || status === "cancelled";
+  }
   function label(status, text = status) {
     const cls =
       status === "blocked"
         ? "bad"
-        : status === "done"
+        : isClosedStatus(status)
           ? "ok"
           : status === "doing"
             ? "ok"
@@ -4549,6 +4555,7 @@ textarea:hover {
       for (const it of g.items || []) {
         const row = { g, it, idx: idx++ };
         const open = ["todo", "doing", "blocked"].includes(it.status);
+        const doneLike = isClosedStatus(it.status);
         // A search query means "find this task", full stop - it should not
         // also require it to match the current status filter (idea/done
         // items were invisible under the default "open" filter even when
@@ -4558,6 +4565,7 @@ textarea:hover {
           ? true
           : state.pfilter === "all" ||
             (state.pfilter === "open" && open) ||
+            (state.pfilter === "done" && doneLike) ||
             it.status === state.pfilter;
         if (
           ok &&
@@ -4575,7 +4583,7 @@ textarea:hover {
     if (!rows.length)
       return '<div class="empty-state">No tasks match this filter.</div>';
     const row = (r) =>
-      `<button class="refined-row pressable" data-task-idx="${r.idx}"><span><span class="refined-title">${statusDot(r.it.status === "blocked" ? "bad" : r.it.status === "done" ? "ok" : r.it.status === "doing" ? "live" : "idle")}${esc(displayText(r.it.text))}</span><span class="refined-sub">${esc(r.g.name)}${r.it.completed ? ` · completed ${esc(r.it.completed)}` : ""}</span></span><span class="refined-meta">${(
+      `<button class="refined-row pressable" data-task-idx="${r.idx}"><span><span class="refined-title">${statusDot(r.it.status === "blocked" ? "bad" : isClosedStatus(r.it.status) ? "ok" : r.it.status === "doing" ? "live" : "idle")}${esc(displayText(r.it.text))}</span><span class="refined-sub">${esc(r.g.name)}${r.it.completed ? ` · completed ${esc(r.it.completed)}` : ""}</span></span><span class="refined-meta">${(
         r.it.tags || []
       )
         .slice(0, 2)
@@ -4587,7 +4595,7 @@ textarea:hover {
       return `<div class="refined-list">${rows.map(row).join("")}</div>`;
     const groups =
       state.pgroup === "status"
-        ? ["blocked", "doing", "todo", "idea", "done"]
+        ? ["blocked", "doing", "todo", "idea", "done", "skipped", "cancelled"]
         : (p.data.groups || []).map((g) => g.name);
     return groups
       .map((g) => {
@@ -6393,7 +6401,7 @@ textarea:hover {
   async function setTaskStatus(r, status) {
     const prev = { status: r.it.status, completed: r.it.completed };
     r.it.status = status;
-    if (status === "done") r.it.completed = today();
+    if (status === "done" || status === "skipped" || status === "cancelled") r.it.completed = today();
     else delete r.it.completed;
     render();
     try {
@@ -6420,10 +6428,10 @@ textarea:hover {
   function openStatusMenu(r) {
     modal(
       "Set status",
-      `<p class="muted">${esc(displayText(r.it.text, 120))}</p><div class="refined-list" style="margin-top:12px">${["todo", "doing", "blocked", "done", "idea"]
+      `<p class="muted">${esc(displayText(r.it.text, 120))}</p><div class="refined-list" style="margin-top:12px">${["todo", "doing", "blocked", "done", "skipped", "cancelled", "idea"]
         .map(
           (s) =>
-            `<button class="refined-row pressable" data-set-status="${s}"><span class="refined-title">${statusDot(s === "blocked" ? "bad" : s === "done" ? "ok" : s === "doing" ? "live" : "idle")}${s}</span>${r.it.status === s ? '<span class="chip">current</span>' : ""}</button>`,
+            `<button class="refined-row pressable" data-set-status="${s}"><span class="refined-title">${statusDot(s === "blocked" ? "bad" : s === "done" || s === "skipped" || s === "cancelled" ? "ok" : s === "doing" ? "live" : "idle")}${s}</span>${r.it.status === s ? '<span class="chip">current</span>' : ""}</button>`,
         )
         .join("")}</div>`,
     );
