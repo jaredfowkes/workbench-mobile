@@ -2627,7 +2627,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.28";
+  const WB_VERSION = "2026-07-05.29";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -3847,7 +3847,10 @@ textarea:hover {
           c[it.status] = (c[it.status] || 0) + 1;
         }
       }
-    c.pct = c.total ? Math.round((c.done / c.total) * 100) : null;
+    c.archivedDone = Number(p.data.archivedDone || 0);
+    c.doneWithArchive = c.done + c.archivedDone;
+    c.totalWithArchive = c.total + c.archivedDone;
+    c.pct = c.totalWithArchive ? Math.round((c.doneWithArchive / c.totalWithArchive) * 100) : null;
     return c;
   }
   function globalStats() {
@@ -3857,7 +3860,7 @@ textarea:hover {
       s.open += c.open;
       s.doing += c.doing;
       s.blocked += c.blocked;
-      s.done += c.done;
+      s.done += c.doneWithArchive;
       s.idea += c.idea;
       for (const g of p.data.groups || [])
         for (const it of g.items || [])
@@ -5469,6 +5472,31 @@ textarea:hover {
     const est = estimateSessionCost(r);
     return est != null ? est : r.cost != null ? saved : null;
   }
+  function localSavedCost(r) {
+    if (!isLocalRow(r) || !hasTelemetry(r)) return null;
+    const clone = { ...r, backend: "anthropic" };
+    const model = String(r.model || "").toLowerCase();
+    clone.model = model.includes("opus")
+      ? "claude-opus-4-8-thinking-high"
+      : model.includes("fable")
+        ? "claude-fable-5"
+        : model.includes("haiku")
+          ? "claude-haiku-4-5"
+          : "claude-sonnet-5";
+    return estimateSessionCost(clone);
+  }
+  function localSavedSum(rows) {
+    let total = 0,
+      any = false;
+    for (const r of rows) {
+      const saved = localSavedCost(r);
+      if (saved != null) {
+        total += saved;
+        any = true;
+      }
+    }
+    return any ? total : null;
+  }
   function usageWindowStart() {
     const now = Date.now(),
       w = state.usageWindow || "month";
@@ -5510,6 +5538,7 @@ textarea:hover {
       rows = usageRows(allRows);
     const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
     const incompleteCount = rows.filter(isIncompleteSession).length;
+    const savedLocal = localSavedSum(rows);
     const backends = groupMetrics(rows, (r) => backendLane(r));
     const models = groupMetrics(rows, (r) => normalizeModel(r.model));
     const ides = groupMetrics(rows, (r) => normalizeIde(r.ide));
@@ -5518,7 +5547,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions (the local-agent delegation lane) run locally, so they show under the Local lane at $0 — their tokens count toward volume but are never charged.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Saved by local models</div><div class="usage-big">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated paid-model equivalent for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions run locally, so they show under the Local lane at $0, their tokens count toward volume, and their paid-model equivalent appears as savings.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -5590,7 +5619,7 @@ textarea:hover {
       ),
       sessionDetailRow(
         "Cost",
-        `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
+        `${esc(fmtCostMaybe(cost))}${esc(costNote)}${isLocalRow(r) && localSavedCost(r) != null ? ` · saved ${esc(fmtCostMaybe(localSavedCost(r)))}` : ""}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
       ),
     ]
       .filter(Boolean)
@@ -5659,7 +5688,7 @@ textarea:hover {
     const localRow = mk("Local", local);
     if (local.length) {
       localRow.snapshotNote =
-        "on-device MLX (local-agent delegation) - runs on-device, so tokens are tracked but never charged";
+        `on-device MLX - ${fmtCostMaybe(localSavedSum(local))} estimated paid-model equivalent saved; actual local cost is $0`;
     }
     return [
       mk("Anthropic", anthropic),
