@@ -1162,6 +1162,27 @@ textarea:hover {
   animation: wb-shimmer 1.2s linear infinite;
   border-radius: var(--r-md);
 }
+/* Boot screen: cached-paint + progress while GitHub loads */
+.chip.refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.chip.refreshing .spin {
+  width: 11px;
+  height: 11px;
+  border: 2px solid var(--muted-surface);
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+.boot-status {
+  margin-top: 12px;
+  color: var(--muted);
+}
+.boot-proj {
+  opacity: 0.85;
+}
 .modal-card {
   animation: wb-soft-pop var(--standard) var(--ease);
 }
@@ -1999,6 +2020,26 @@ textarea:hover {
 .creditbar.cursor i {
   background: var(--cursor-black);
 }
+.brand-icon.local {
+  background: #e7f7ef;
+  border-color: #b7e6ce;
+  color: #0f9d63;
+}
+.brand-icon.local img {
+  width: 12px;
+  height: 12px;
+}
+[data-theme="dark"] .brand-icon.local {
+  background: #10241b;
+  border-color: #1f5b40;
+  color: #34d399;
+}
+.creditbar.local i {
+  background: #10b981;
+}
+.brand-label.local {
+  color: var(--text);
+}
 .mix-row {
   grid-template-columns: 150px minmax(0, 1fr) 56px;
 }
@@ -2586,7 +2627,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.26";
+  const WB_VERSION = "2026-07-05.28";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2627,10 +2668,32 @@ textarea:hover {
   const BRAND_ASSETS = {
     anthropic: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQ4IiBoZWlnaHQ9IjI0OCIgdmlld0JveD0iMCAwIDI0OCAyNDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Mi40Mjg1IDE2Mi44NzNMOTguNzg0NCAxMzYuODc5TDk5LjU0ODUgMTM0LjYwMkw5OC43ODQ0IDEzMy4zMzRIOTYuNDkyMUw4OC43MjM3IDEzMi44NjJMNjIuMjM0NiAxMzIuMTUzTDM5LjMxMTMgMTMxLjIwN0wxNy4wMjQ5IDEzMC4wMjZMMTEuNDIxNCAxMjguODQ0TDYuMiAxMjEuODczTDYuNzA5NCAxMTguNDQ3TDExLjQyMTQgMTE1LjI1N0wxOC4xNzEgMTE1Ljg0N0wzMy4wNzExIDExNi45MTFMNTUuNDg1IDExOC40NDdMNzEuNjU4NiAxMTkuMzkyTDk1LjcyOCAxMjEuODczSDk5LjU0ODVMMTAwLjA1OCAxMjAuMzM3TDk4Ljc4NDQgMTE5LjM5Mkw5Ny43NjU2IDExOC40NDdMNzQuNTg3NyAxMDIuNzMyTDQ5LjQ5OTUgODYuMTkwNUwzNi4zODIzIDc2LjYyTDI5LjM3NzkgNzEuNzc1N0wyNS44MTIxIDY3LjI4NThMMjQuMjgzOSA1Ny4zNjA4TDMwLjY1MTUgNTAuMjcxNkwzOS4zMTEzIDUwLjg2MjNMNDEuNDc2MyA1MS40NTMxTDUwLjI2MzYgNTguMTg3OUw2OC45ODQyIDcyLjcyMDlMOTMuNDM1NyA5MC42ODA0TDk3LjAwMTUgOTMuNjM0M0w5OC40Mzc0IDkyLjY2NTJMOTguNjU3MSA5MS45ODAxTDk3LjAwMTUgODkuMjYyNUw4My43NTcgNjUuMjc3Mkw2OS42MjEgNDAuODE5Mkw2My4yNTM0IDMwLjY1NzlMNjEuNTk3OCAyNC42MzJDNjAuOTU2NSAyMi4xMDMyIDYwLjU3OSAyMC4wMTExIDYwLjU3OSAxNy40MjQ2TDY3LjgzODEgNy40OTk2NUw3MS45MTMzIDYuMTk5OTVMODEuNzE5MyA3LjQ5OTY1TDg1Ljc5NDYgMTEuMDQ0M0w5MS45MDc0IDI0Ljk4NjVMMTAxLjcxNCA0Ni44NDUxTDExNi45OTYgNzYuNjJMMTIxLjQ1MyA4NS40ODE2TDEyMy44NzMgOTMuNjM0M0wxMjQuNzY0IDk2LjExNTVIMTI2LjI5MlY5NC42OTc2TDEyNy41NjYgNzcuOTE5N0wxMjkuODU4IDU3LjM2MDhMMTMyLjE1IDMwLjg5NDJMMTMyLjkxNSAyMy40NTA1TDEzNi42MDggMTQuNDcwOEwxNDMuOTk0IDkuNjI2NDNMMTQ5LjcyNSAxMi4zNDRMMTU0LjQzNyAxOS4wNzg4TDE1My44IDIzLjQ1MDVMMTUwLjk5OCA0MS42NDYzTDE0NS41MjIgNzAuMTIxNUwxNDEuOTU3IDg5LjI2MjVIMTQzLjk5NEwxNDYuNDE0IDg2Ljc4MTNMMTU2LjA5MyA3NC4wMjA2TDE3Mi4yNjYgNTMuNjk4TDE3OS4zOTggNDUuNjYzNUwxODcuODAzIDM2LjgwMkwxOTMuMTUyIDMyLjU0ODRIMjAzLjM0TDIxMC43MjYgNDMuNjU0OUwyMDcuNDE1IDU1LjExNTlMMTk2Ljk3MiA2OC4zNDkyTDE4OC4zMTIgNzkuNTczOUwxNzUuODk2IDk2LjIwOTVMMTY4LjE5MSAxMDkuNTg1TDE2OC44ODIgMTEwLjY4OUwxNzAuNzM4IDExMC41M0wxOTguNzU1IDEwNC41MDRMMjEzLjkxIDEwMS43ODdMMjMxLjk5NCA5OC43MTQ5TDI0MC4xNDQgMTAyLjQ5NkwyNDEuMDM2IDEwNi4zOTVMMjM3Ljg1MiAxMTQuMzExTDIxOC40OTUgMTE5LjAzN0wxOTUuODI2IDEyMy42NDVMMTYyLjA3IDEzMS41OTJMMTYxLjY5NiAxMzEuODkzTDE2Mi4xMzcgMTMyLjU0N0wxNzcuMzYgMTMzLjkyNUwxODMuODU1IDEzNC4yNzlIMTk5Ljc3NEwyMjkuNDQ3IDEzNi41MjRMMjM3LjIxNSAxNDEuNjA1TDI0MS44IDE0Ny44NjdMMjQxLjAzNiAxNTIuNzExTDIyOS4wNjUgMTU4LjczN0wyMTMuMDE5IDE1NC45NTZMMTc1LjQ1IDE0NS45NzdMMTYyLjU4NyAxNDIuNzg3SDE2MC44MDVWMTQzLjg1TDE3MS41MDIgMTU0LjM2NkwxOTEuMjQyIDE3Mi4wODlMMjE1LjgyIDE5NS4wMTFMMjE3LjA5NCAyMDAuNjgyTDIxMy45MSAyMDUuMTcyTDIxMC41OTkgMjA0LjY5OUwxODguOTQ5IDE4OC4zOTRMMTgwLjU0NCAxODEuMDY5TDE2MS42OTYgMTY1LjExOEgxNjAuNDIyVjE2Ni43NzJMMTY0Ljc1MiAxNzMuMTUyTDE4Ny44MDMgMjA3Ljc3MUwxODguOTQ5IDIxOC40MDVMMTg3LjI5NCAyMjEuODMyTDE4MS4zMDggMjIzLjk1OUwxNzQuODEzIDIyMi43NzdMMTYxLjE4NyAyMDMuNzU0TDE0Ny4zMDUgMTgyLjQ4NkwxMzYuMDk4IDE2My4zNDVMMTM0Ljc0NSAxNjQuMkwxMjguMDc1IDIzNS40MkwxMjUuMDE5IDIzOS4wODJMMTE3Ljg4NyAyNDEuOEwxMTEuOTAyIDIzNy4zMUwxMDguNzE4IDIyOS45ODRMMTExLjkwMiAyMTUuNDUyTDExNS43MjIgMTk2LjU0N0wxMTguNzc5IDE4MS41NDFMMTIxLjU4IDE2Mi44NzNMMTIzLjI5MSAxNTYuNjM2TDEyMy4xNCAxNTYuMjE5TDEyMS43NzMgMTU2LjQ0OUwxMDcuNjk5IDE3NS43NTJMODYuMzA0IDIwNC42OTlMNjkuMzY2MyAyMjIuNzc3TDY1LjI5MSAyMjQuNDMxTDU4LjI4NjcgMjIwLjc2OEw1OC45MjM1IDIxNC4yN0w2Mi44NzEzIDIwOC40OEw4Ni4zMDQgMTc4LjcwNUwxMDAuNDQgMTYwLjE1NUwxMDkuNTUxIDE0OS41MDdMMTA5LjQ2MiAxNDcuOTY3TDEwOC45NTkgMTQ3LjkyNEw0Ni42OTc3IDE4OC41MTJMMzUuNjE4MiAxODkuOTNMMzAuNzc4OCAxODUuNDRMMzEuNDE1NiAxNzguMTE1TDMzLjcwNzkgMTc1Ljc1Mkw1Mi40Mjg1IDE2Mi44NzNaIiBmaWxsPSIjRDk3NzU3Ii8+Cjwvc3ZnPgo=",
     cursor: "data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5DdXJzb3I8L3RpdGxlPjxwYXRoIGQ9Ik0yMi4xMDYgNS42OEwxMi41LjEzNWEuOTk4Ljk5OCAwIDAwLS45OTggMEwxLjg5MyA1LjY4YS44NC44NCAwIDAwLS40MTkuNzI2djExLjE4NmMwIC4zLjE2LjU3Ny40Mi43MjdsOS42MDcgNS41NDdhLjk5OS45OTkgMCAwMC45OTggMGw5LjYwOC01LjU0N2EuODQuODQgMCAwMC40Mi0uNzI3VjYuNDA3YS44NC44NCAwIDAwLS40Mi0uNzI2em0tLjYwMyAxLjE3NkwxMi4yMjggMjIuOTJjLS4wNjMuMTA4LS4yMjguMDY0LS4yMjgtLjA2MVYxMi4zNGEuNTkuNTkgMCAwMC0uMjk1LS41MWwtOS4xMS01LjI2Yy0uMTA3LS4wNjItLjA2My0uMjI4LjA2Mi0uMjI4aDE4LjU1Yy4yNjQgMCAuNDI4LjI4Ni4yOTYuNTE0eiI+PC9wYXRoPjwvc3ZnPg==",
+    local: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSI2IiB5PSI2IiB3aWR0aD0iMTIiIGhlaWdodD0iMTIiIHJ4PSIyIi8+PHJlY3QgeD0iOS41IiB5PSI5LjUiIHdpZHRoPSI1IiBoZWlnaHQ9IjUiIHJ4PSIxIi8+PHBhdGggZD0iTTkgMnYyLjJNMTUgMnYyLjJNOSAxOS44VjIyTTE1IDE5LjhWMjJNMiA5aDIuMk0yIDE1aDIuMk0xOS44IDlIMjJNMTkuOCAxNUgyMiIvPjwvc3ZnPg==",
     azure: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTUwIiBoZWlnaHQ9IjE1MCIgdmlld0JveD0iMCAwIDk2IDk2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogICAgPGRlZnM+CiAgICAgICAgPGxpbmVhckdyYWRpZW50IGlkPSJlMzk5YzE5Zi1iNjhmLTQyOWQtYjE3Ni0xOGMyMTE3ZmY3M2MiIHgxPSItMTAzMi4xNzIiIHgyPSItMTA1OS4yMTMiIHkxPSIxNDUuMzEyIiB5Mj0iNjUuNDI2IiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KDEgMCAwIC0xIDEwNzUgMTU4KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxMTRhOGIiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDY2OWJjIi8+CiAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgICAgICA8bGluZWFyR3JhZGllbnQgaWQ9ImFjMmE2ZmMyLWNhNDgtNDMyNy05YTNjLWQ0ZGNjMzI1NmUxNSIgeDE9Ii0xMDIzLjcyNSIgeDI9Ii0xMDI5Ljk4IiB5MT0iMTA4LjA4MyIgeTI9IjEwNS45NjgiIGdyYWRpZW50VHJhbnNmb3JtPSJtYXRyaXgoMSAwIDAgLTEgMTA3NSAxNTgpIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iMCIgc3RvcC1vcGFjaXR5PSIuMyIvPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9Ii4wNzEiIHN0b3Atb3BhY2l0eT0iLjIiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIuMzIxIiBzdG9wLW9wYWNpdHk9Ii4xIi8+CiAgICAgICAgICAgIDxzdG9wIG9mZnNldD0iLjYyMyIgc3RvcC1vcGFjaXR5PSIuMDUiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLW9wYWNpdHk9IjAiLz4KICAgICAgICA8L2xpbmVhckdyYWRpZW50PgogICAgICAgIDxsaW5lYXJHcmFkaWVudCBpZD0iYTdmZWU5NzAtYTc4NC00YmIxLWFmOGQtNjNkMThlNWY3ZGI5IiB4MT0iLTEwMjcuMTY1IiB4Mj0iLTk5Ny40ODIiIHkxPSIxNDcuNjQyIiB5Mj0iNjguNTYxIiBncmFkaWVudFRyYW5zZm9ybT0ibWF0cml4KDEgMCAwIC0xIDEwNzUgMTU4KSIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICAgICAgICA8c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMzY2NiZjQiLz4KICAgICAgICAgICAgPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMjg5MmRmIi8+CiAgICAgICAgPC9saW5lYXJHcmFkaWVudD4KICAgIDwvZGVmcz4KICAgIDxwYXRoIGZpbGw9InVybCgjZTM5OWMxOWYtYjY4Zi00MjlkLWIxNzYtMThjMjExN2ZmNzNjKSIgZD0iTTMzLjMzOCA2LjU0NGgyNi4wMzhsLTI3LjAzIDgwLjA4N2E0LjE1MiA0LjE1MiAwIDAgMS0zLjkzMyAyLjgyNEg4LjE0OWE0LjE0NSA0LjE0NSAwIDAgMS0zLjkyOC01LjQ3TDI5LjQwNCA5LjM2OGE0LjE1MiA0LjE1MiAwIDAgMSAzLjkzNC0yLjgyNXoiLz4KICAgIDxwYXRoIGZpbGw9IiMwMDc4ZDQiIGQ9Ik03MS4xNzUgNjAuMjYxaC00MS4yOWExLjkxMSAxLjkxMSAwIDAgMC0xLjMwNSAzLjMwOWwyNi41MzIgMjQuNzY0YTQuMTcxIDQuMTcxIDAgMCAwIDIuODQ2IDEuMTIxaDIzLjM4eiIvPgogICAgPHBhdGggZmlsbD0idXJsKCNhYzJhNmZjMi1jYTQ4LTQzMjctOWEzYy1kNGRjYzMyNTZlMTUpIiBkPSJNMzMuMzM4IDYuNTQ0YTQuMTE4IDQuMTE4IDAgMCAwLTMuOTQzIDIuODc5TDQuMjUyIDgzLjkxN2E0LjE0IDQuMTQgMCAwIDAgMy45MDggNS41MzhoMjAuNzg3YTQuNDQzIDQuNDQzIDAgMCAwIDMuNDEtMi45bDUuMDE0LTE0Ljc3NyAxNy45MSAxNi43MDVhNC4yMzcgNC4yMzcgMCAwIDAgMi42NjYuOTcySDgxLjI0TDcxLjAyNCA2MC4yNjFsLTI5Ljc4MS4wMDdMNTkuNDcgNi41NDR6Ii8+CiAgICA8cGF0aCBmaWxsPSJ1cmwoI2E3ZmVlOTcwLWE3ODQtNGJiMS1hZjhkLTYzZDE4ZTVmN2RiOSkiIGQ9Ik02Ni41OTUgOS4zNjRhNC4xNDUgNC4xNDUgMCAwIDAtMy45MjgtMi44MkgzMy42NDhhNC4xNDYgNC4xNDYgMCAwIDEgMy45MjggMi44MmwyNS4xODQgNzQuNjJhNC4xNDYgNC4xNDYgMCAwIDEtMy45MjggNS40NzJoMjkuMDJhNC4xNDYgNC4xNDYgMCAwIDAgMy45MjctNS40NzJ6Ii8+Cjwvc3ZnPg==",
     openai: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCI+PHBhdGggZD0iTTExLjI0OCAxOC4yNXEtLjgyNSAwLTEuNTY4LS4zMTRhNC4zIDQuMyAwIDAgMS0xLjMyLS44NzQgNCA0IDAgMCAxLTEuMzA0LjIxNCA0IDQgMCAwIDEtMi4wNDYtLjU0NCA0LjI3IDQuMjcgMCAwIDEtMS41MTgtMS40ODUgNCA0IDAgMCAxLS41Ni0yLjA5NXEwLS40OC4xMzEtMS4wNEE0LjQgNC40IDAgMCAxIDIuMDQgMTAuNzFhNC4wNyA0LjA3IDAgMCAxIC4wMTctMy40IDQuMiA0LjIgMCAwIDEgMS4wNTYtMS40MTggMy44IDMuOCAwIDAgMSAxLjYtLjg0MiAzLjkgMy45IDAgMCAxIC43Ni0xLjY4M3EuNTkzLS43NTkgMS40NTEtMS4xODhhNC4wNCA0LjA0IDAgMCAxIDEuODMyLS40MjlxLjgyNSAwIDEuNTY3LjMxMy43NDIuMzE0IDEuMzIuODc1YTQgNCAwIDAgMSAxLjMwNC0uMjE1cTEuMTA2IDAgMi4wNDYuNTQ1YTQuMTQgNC4xNCAwIDAgMSAxLjUwMSAxLjQ4NXEuNTc4Ljk0MS41NzggMi4wOTUgMCAuNDgtLjEzMiAxLjA0LjY2LjYxIDEuMDIzIDEuNDE5LjM2My43OTIuMzYzIDEuNjY2IDAgLjg5Mi0uMzggMS43MTdhNC4zIDQuMyAwIDAgMS0xLjA3MiAxLjQzNSAzLjggMy44IDAgMCAxLTEuNTg0LjgyNSAzLjggMy44IDAgMCAxLS43NzUgMS42ODMgNC4wNiA0LjA2IDAgMCAxLTEuNDM2IDEuMTg4IDQuMDQgNC4wNCAwIDAgMS0xLjgzMi40MjltLTQuMDc2LTIuMDYycS44MjUgMCAxLjQzNS0uMzQ3bDMuMTAzLTEuNzgyYS4zNi4zNiAwIDAgMCAuMTY0LS4zMTN2LTEuNDJMNy44ODEgMTQuNjJhLjY3LjY3IDAgMCAxLS43MjYgMGwtMy4xMTgtMS43OThhLjUuNSAwIDAgMS0uMDE3LjExNXYuMTk4cTAgLjg0MS4zOTYgMS41NTEuNDEzLjY5MyAxLjEzOSAxLjA4OWEzLjIgMy4yIDAgMCAwIDEuNjE3LjQxMm0uMTY1LTIuNjlhLjQuNCAwIDAgMCAuMTgxLjA1cS4wODMgMCAuMTY1LS4wNWwxLjIzOC0uNzEtMy45NzctMi4zMWEuNy43IDAgMCAxLS4zNjMtLjY0M3YtMy41OHEtLjgyNS4zNjItMS4zMiAxLjEyMmEyLjkgMi45IDAgMCAwLS40OTUgMS42NXEwIC44MDkuNDEzIDEuNTUuNDEyLjc0MyAxLjA3MiAxLjEyM3ptMy45MSAzLjY2M3EuODc1IDAgMS41ODUtLjM5NmEyLjk2IDIuOTYgMCAwIDAgMS41MzQtMi42NHYtMy41NjRhLjMyLjMyIDAgMCAwLS4xNjUtLjI5N2wtMS4yNTQtLjcyNnY0LjYwNGEuNy43IDAgMCAxLS4zNjMuNjQzbC0zLjExOSAxLjc5OWEzIDMgMCAwIDAgMS43ODMuNTc3bS42MjctNi4wMzlWOC44NzhMMTAuMDEgNy44MjIgOC4xMjkgOC44Nzh2Mi4yNDRsMS44ODEgMS4wNTZ6TTcuMDU3IDUuODU5YS43LjcgMCAwIDEgLjM2My0uNjQ0bDMuMTE5LTEuNzk4YTMgMyAwIDAgMC0xLjc4Mi0uNTc4cS0uODc0IDAtMS41ODQuMzk2QTIuOTYgMi45NiAwIDAgMCA2LjA1IDQuMzI0YTMuMDcgMy4wNyAwIDAgMC0uMzk2IDEuNTUxdjMuNTQ3cTAgLjE5OS4xNjUuMzE0bDEuMjM3LjcyNnptOC4zODMgNy44ODdxLjgyNS0uMzY0IDEuMzAzLTEuMTIzLjQ5NS0uNzU4LjQ5NS0xLjY1YTMuMTUgMy4xNSAwIDAgMC0uNDEyLTEuNTVxLS40MTMtLjc0My0xLjA3My0xLjEyM2wtMy4wODYtMS43ODJxLS4wOTktLjA2NS0uMTgxLS4wNDlhLjMuMyAwIDAgMC0uMTY1LjA1bC0xLjIzOC42OTIgMy45OTMgMi4zMjdhLjYuNiAwIDAgMSAuMjY0LjI2NC42NC42NCAwIDAgMSAuMS4zNjN6bS0zLjMxNy04LjM4MmEuNjMuNjMgMCAwIDEgLjcyNiAwbDMuMTM1IDEuODMxdi0uMjk3cTAtLjc5Mi0uMzk2LTEuNTAxYTIuODYgMi44NiAwIDAgMC0xLjEwNS0xLjE1NXEtLjcxLS40My0xLjY1LS40My0uODI1IDAtMS40MzYuMzQ3TDguMjk0IDUuOTQxYS4zNi4zNiAwIDAgMC0uMTY1LjMxNHYxLjQxOHoiLz48L3N2Zz4=",
     vscode: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxtYXNrIGlkPSJtYXNrMCIgbWFzay10eXBlPSJhbHBoYSIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTcwLjkxMTkgOTkuMzE3MUM3Mi40ODY5IDk5LjkzMDcgNzQuMjgyOCA5OS44OTE0IDc1Ljg3MjUgOTkuMTI2NEw5Ni40NjA4IDg5LjIxOTdDOTguNjI0MiA4OC4xNzg3IDEwMCA4NS45ODkyIDEwMCA4My41ODcyVjE2LjQxMzNDMTAwIDE0LjAxMTMgOTguNjI0MyAxMS44MjE4IDk2LjQ2MDkgMTAuNzgwOEw3NS44NzI1IDAuODczNzU2QzczLjc4NjIgLTAuMTMwMTI5IDcxLjM0NDYgMC4xMTU3NiA2OS41MTM1IDEuNDQ2OTVDNjkuMjUyIDEuNjM3MTEgNjkuMDAyOCAxLjg0OTQzIDY4Ljc2OSAyLjA4MzQxTDI5LjM1NTEgMzguMDQxNUwxMi4xODcyIDI1LjAwOTZDMTAuNTg5IDIzLjc5NjUgOC4zNTM2MyAyMy44OTU5IDYuODY5MzMgMjUuMjQ2MUwxLjM2MzAzIDMwLjI1NDlDLTAuNDUyNTUyIDMxLjkwNjQgLTAuNDU0NjMzIDM0Ljc2MjcgMS4zNTg1MyAzNi40MTdMMTYuMjQ3MSA1MC4wMDAxTDEuMzU4NTMgNjMuNTgzMkMtMC40NTQ2MzMgNjUuMjM3NCAtMC40NTI1NTIgNjguMDkzOCAxLjM2MzAzIDY5Ljc0NTNMNi44NjkzMyA3NC43NTQxQzguMzUzNjMgNzYuMTA0MyAxMC41ODkgNzYuMjAzNyAxMi4xODcyIDc0Ljk5MDVMMjkuMzU1MSA2MS45NTg3TDY4Ljc2OSA5Ny45MTY3QzY5LjM5MjUgOTguNTQwNiA3MC4xMjQ2IDk5LjAxMDQgNzAuOTExOSA5OS4zMTcxWk03NS4wMTUyIDI3LjI5ODlMNDUuMTA5MSA1MC4wMDAxTDc1LjAxNTIgNzIuNzAxMlYyNy4yOTg5WiIgZmlsbD0id2hpdGUiLz4KPC9tYXNrPgo8ZyBtYXNrPSJ1cmwoI21hc2swKSI+CjxwYXRoIGQ9Ik05Ni40NjE0IDEwLjc5NjJMNzUuODU2OSAwLjg3NTU0MkM3My40NzE5IC0wLjI3Mjc3MyA3MC42MjE3IDAuMjExNjExIDY4Ljc1IDIuMDgzMzNMMS4yOTg1OCA2My41ODMyQy0wLjUxNTY5MyA2NS4yMzczIC0wLjUxMzYwNyA2OC4wOTM3IDEuMzAzMDggNjkuNzQ1Mkw2LjgxMjcyIDc0Ljc1NEM4LjI5NzkzIDc2LjEwNDIgMTAuNTM0NyA3Ni4yMDM2IDEyLjEzMzggNzQuOTkwNUw5My4zNjA5IDEzLjM2OTlDOTYuMDg2IDExLjMwMjYgMTAwIDEzLjI0NjIgMTAwIDE2LjY2NjdWMTYuNDI3NUMxMDAgMTQuMDI2NSA5OC42MjQ2IDExLjgzNzggOTYuNDYxNCAxMC43OTYyWiIgZmlsbD0iIzAwNjVBOSIvPgo8ZyBmaWx0ZXI9InVybCgjZmlsdGVyMF9kKSI+CjxwYXRoIGQ9Ik05Ni40NjE0IDg5LjIwMzhMNzUuODU2OSA5OS4xMjQ1QzczLjQ3MTkgMTAwLjI3MyA3MC42MjE3IDk5Ljc4ODQgNjguNzUgOTcuOTE2N0wxLjI5ODU4IDM2LjQxNjlDLTAuNTE1NjkzIDM0Ljc2MjcgLTAuNTEzNjA3IDMxLjkwNjMgMS4zMDMwOCAzMC4yNTQ4TDYuODEyNzIgMjUuMjQ2QzguMjk3OTMgMjMuODk1OCAxMC41MzQ3IDIzLjc5NjQgMTIuMTMzOCAyNS4wMDk1TDkzLjM2MDkgODYuNjMwMUM5Ni4wODYgODguNjk3NCAxMDAgODYuNzUzOCAxMDAgODMuMzMzNFY4My41NzI2QzEwMCA4NS45NzM1IDk4LjYyNDYgODguMTYyMiA5Ni40NjE0IDg5LjIwMzhaIiBmaWxsPSIjMDA3QUNDIi8+CjwvZz4KPGcgZmlsdGVyPSJ1cmwoI2ZpbHRlcjFfZCkiPgo8cGF0aCBkPSJNNzUuODU3OCA5OS4xMjYzQzczLjQ3MjEgMTAwLjI3NCA3MC42MjE5IDk5Ljc4ODUgNjguNzUgOTcuOTE2NkM3MS4wNTY0IDEwMC4yMjMgNzUgOTguNTg5NSA3NSA5NS4zMjc4VjQuNjcyMTNDNzUgMS40MTAzOSA3MS4wNTY0IC0wLjIyMzEwNiA2OC43NSAyLjA4MzI5QzcwLjYyMTkgMC4yMTE0MDIgNzMuNDcyMSAtMC4yNzM2NjYgNzUuODU3OCAwLjg3MzYzM0w5Ni40NTg3IDEwLjc4MDdDOTguNjIzNCAxMS44MjE3IDEwMCAxNC4wMTEyIDEwMCAxNi40MTMyVjgzLjU4NzFDMTAwIDg1Ljk4OTEgOTguNjIzNCA4OC4xNzg2IDk2LjQ1ODYgODkuMjE5Nkw3NS44NTc4IDk5LjEyNjNaIiBmaWxsPSIjMUY5Q0YwIi8+CjwvZz4KPGcgc3R5bGU9Im1peC1ibGVuZC1tb2RlOm92ZXJsYXkiIG9wYWNpdHk9IjAuMjUiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTcwLjg1MTEgOTkuMzE3MUM3Mi40MjYxIDk5LjkzMDYgNzQuMjIyMSA5OS44OTEzIDc1LjgxMTcgOTkuMTI2NEw5Ni40IDg5LjIxOTdDOTguNTYzNCA4OC4xNzg3IDk5LjkzOTIgODUuOTg5MiA5OS45MzkyIDgzLjU4NzFWMTYuNDEzM0M5OS45MzkyIDE0LjAxMTIgOTguNTYzNSAxMS44MjE3IDk2LjQwMDEgMTAuNzgwN0w3NS44MTE3IDAuODczNjk1QzczLjcyNTUgLTAuMTMwMTkgNzEuMjgzOCAwLjExNTY5OSA2OS40NTI3IDEuNDQ2ODhDNjkuMTkxMiAxLjYzNzA1IDY4Ljk0MiAxLjg0OTM3IDY4LjcwODIgMi4wODMzNUwyOS4yOTQzIDM4LjA0MTRMMTIuMTI2NCAyNS4wMDk2QzEwLjUyODMgMjMuNzk2NCA4LjI5Mjg1IDIzLjg5NTkgNi44MDg1NSAyNS4yNDZMMS4zMDIyNSAzMC4yNTQ4Qy0wLjUxMzMzNCAzMS45MDY0IC0wLjUxNTQxNSAzNC43NjI3IDEuMjk3NzUgMzYuNDE2OUwxNi4xODYzIDUwTDEuMjk3NzUgNjMuNTgzMkMtMC41MTU0MTUgNjUuMjM3NCAtMC41MTMzMzQgNjguMDkzNyAxLjMwMjI1IDY5Ljc0NTJMNi44MDg1NSA3NC43NTRDOC4yOTI4NSA3Ni4xMDQyIDEwLjUyODMgNzYuMjAzNiAxMi4xMjY0IDc0Ljk5MDVMMjkuMjk0MyA2MS45NTg2TDY4LjcwODIgOTcuOTE2N0M2OS4zMzE3IDk4LjU0MDUgNzAuMDYzOCA5OS4wMTA0IDcwLjg1MTEgOTkuMzE3MVpNNzQuOTU0NCAyNy4yOTg5TDQ1LjA0ODMgNTBMNzQuOTU0NCA3Mi43MDEyVjI3LjI5ODlaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXIpIi8+CjwvZz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9kIiB4PSItOC4zOTQxMSIgeT0iMTUuODI5MSIgd2lkdGg9IjExNi43MjciIGhlaWdodD0iOTIuMjQ1NiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVDb2xvck1hdHJpeCBpbj0iU291cmNlQWxwaGEiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAxMjcgMCIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI0LjE2NjY3Ii8+CjxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwLjI1IDAiLz4KPGZlQmxlbmQgbW9kZT0ib3ZlcmxheSIgaW4yPSJCYWNrZ3JvdW5kSW1hZ2VGaXgiIHJlc3VsdD0iZWZmZWN0MV9kcm9wU2hhZG93Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iZWZmZWN0MV9kcm9wU2hhZG93IiByZXN1bHQ9InNoYXBlIi8+CjwvZmlsdGVyPgo8ZmlsdGVyIGlkPSJmaWx0ZXIxX2QiIHg9IjYwLjQxNjciIHk9Ii04LjA3NTU4IiB3aWR0aD0iNDcuOTE2NyIgaGVpZ2h0PSIxMTYuMTUxIiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIi8+CjxmZU9mZnNldC8+CjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjQuMTY2NjciLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMjUgMCIvPgo8ZmVCbGVuZCBtb2RlPSJvdmVybGF5IiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJlZmZlY3QxX2Ryb3BTaGFkb3ciLz4KPGZlQmxlbmQgbW9kZT0ibm9ybWFsIiBpbj0iU291cmNlR3JhcGhpYyIgaW4yPSJlZmZlY3QxX2Ryb3BTaGFkb3ciIHJlc3VsdD0ic2hhcGUiLz4KPC9maWx0ZXI+CjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhciIgeDE9IjQ5LjkzOTIiIHkxPSIwLjI1NzgxMiIgeDI9IjQ5LjkzOTIiIHkyPSI5OS43NDIzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IndoaXRlIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0id2hpdGUiIHN0b3Atb3BhY2l0eT0iMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=",
   };
+  // On-device MLX / oMLX lane (local-agent delegation, claude-omlx.sh). Hints
+  // come from tools/model-pricing.json so the collector and dashboard agree;
+  // "local" is the backend label the beacon stamps once detection is in place.
+  const LOCAL_MODEL_HINTS_FALLBACK = [
+    "gpt-oss",
+    "mxfp4",
+    "-4bit",
+    "-8bit",
+    "-mlx",
+    "nemotron",
+    "glm-",
+    "qwen3",
+    "qwopus",
+  ];
+  function isLocalLabel(label) {
+    const v = String(label || "").toLowerCase();
+    if (!v) return false;
+    if (v.includes("local")) return true;
+    const hints = state.modelPricing?.localModels || LOCAL_MODEL_HINTS_FALLBACK;
+    return hints.some((h) => v.includes(String(h).toLowerCase()));
+  }
   function brandKind(label) {
     const v = String(label || "").toLowerCase();
     if (
@@ -2640,6 +2703,7 @@ textarea:hover {
     )
       return "vscode";
     if (v.includes("cursor")) return "cursor";
+    if (isLocalLabel(v)) return "local";
     if (v.includes("azure")) return "azure";
     if (v.includes("codex") || v.includes("openai") || v.includes("gpt"))
       return "openai";
@@ -2692,7 +2756,7 @@ textarea:hover {
       : normalizeIde(r.ide);
   }
   function routeLabel(r) {
-    return `${brandLabel(normalizeEditor(r))}<span class="route-arrow">›</span>${brandLabel(normalizeBackend(r.backend))}`;
+    return `${brandLabel(normalizeEditor(r))}<span class="route-arrow">›</span>${brandLabel(backendLane(r))}`;
   }
   const state = {
     root: null,
@@ -3030,6 +3094,35 @@ textarea:hover {
     );
     return tree;
   }
+  // Keep the cached tree warm across our own writes instead of nuking it (which
+  // forced a full cold tree refetch on the very next boot after any capture).
+  // Patch the sha in place, add the path if new, and bump the timestamp. A
+  // change made on another machine is still picked up by GH_TREE_TTL or the
+  // explicit "Refresh data" action.
+  function patchTreeCache(path, sha) {
+    try {
+      const cfg = ghConfig();
+      const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
+      if (
+        !c ||
+        c.owner !== cfg.owner ||
+        c.repo !== cfg.repo ||
+        c.branch !== cfg.branch
+      ) {
+        localStorage.removeItem(GH_TREE_KEY);
+        return;
+      }
+      c.shas = c.shas || {};
+      if (sha) c.shas[path] = sha;
+      else delete c.shas[path];
+      c.tree = c.tree || [];
+      if (sha && !c.tree.includes(path)) c.tree.push(path);
+      c.at = ghTreeCacheAt = Date.now();
+      localStorage.setItem(GH_TREE_KEY, JSON.stringify(c));
+    } catch {
+      localStorage.removeItem(GH_TREE_KEY);
+    }
+  }
   async function ghGetFile(path) {
     const cfg = ghConfig();
     const treeSha = ghTreeShas[path];
@@ -3104,7 +3197,7 @@ textarea:hover {
     // read would serve the pre-write version from IndexedDB.
     ghTreeShas[path] = j.content.sha;
     idb.set("ghc:" + j.content.sha, text).catch(() => {});
-    localStorage.removeItem(GH_TREE_KEY);
+    patchTreeCache(path, j.content.sha);
     return j;
   }
   async function ghPutBinary(path, blob, message) {
@@ -3135,8 +3228,9 @@ textarea:hover {
     }
     const j = await res.json();
     ghShaCache.set(path, j.content.sha);
-    delete ghTreeShas[path];
-    localStorage.removeItem(GH_TREE_KEY);
+    ghTreeShas[path] = j.content.sha;
+    binaryURLs.delete(path);
+    patchTreeCache(path, j.content.sha);
   }
   const MIME = {
     png: "image/png",
@@ -3356,6 +3450,9 @@ textarea:hover {
           const lf = await ghGetFile(base + "/log.md").catch(() => null);
           p.log = parseLog(lf?.text);
           state.projects.push(p);
+          updateBootProgress(
+            `Loaded ${state.projects.length} of ${tasks.length} projects…`,
+          );
         });
       },
       async scanKB() {
@@ -3495,6 +3592,7 @@ textarea:hover {
     $("#landing").classList.add("hidden");
     $("#app").classList.remove("hidden");
     render();
+    saveBootSnapshot();
     hydrate();
   }
   async function enrichProject(p) {
@@ -4227,6 +4325,81 @@ textarea:hover {
     const n = state.intake?.length || 0;
     if (!n) return "";
     return `<div class="card intake-banner"><div class="cardhead" style="margin-bottom:0"><div><div class="kicker">Intake waiting</div><h3>${n} captured item${n === 1 ? "" : "s"} to triage</h3><p class="muted">Paste the triage prompt into a workbench session and the agent files everything.</p></div><div class="action-tools"><button type="button" class="btn primary" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.">Copy triage prompt</button></div></div></div>`;
+  }
+  // --- Boot screen -------------------------------------------------------
+  // The GitHub backend blocks on a tree fetch + per-project content fetches
+  // before the first real render. Instead of a blank #app, paint the last
+  // known state instantly (with a "refreshing" chip) or a skeleton on a cold
+  // start, plus a progress line as projects stream in.
+  const BOOT_SNAP_KEY = "wb-boot-snapshot";
+  function saveBootSnapshot() {
+    if (state.backend !== "github") return;
+    try {
+      const st = globalStats();
+      const projects = state.projects.slice(0, 12).map((p) => {
+        const c = counts(p);
+        return {
+          name: p.data.project,
+          open: c.open,
+          done: c.done,
+          blocked: c.blocked,
+        };
+      });
+      localStorage.setItem(
+        BOOT_SNAP_KEY,
+        JSON.stringify({ at: Date.now(), st, projects }),
+      );
+    } catch {}
+  }
+  function bootScreenHTML(progress) {
+    let snap = null;
+    try {
+      snap = JSON.parse(localStorage.getItem(BOOT_SNAP_KEY) || "null");
+    } catch {}
+    const chip = `<span class="chip refreshing"><span class="spin" aria-hidden="true"></span>Refreshing${snap?.at ? ` · as of ${shortAge(snap.at)}` : ""}</span>`;
+    const status = `<div class="boot-status tiny" id="bootStatus">${esc(progress || (snap ? "Fetching the latest…" : "Fetching the repo tree…"))}</div>`;
+    if (snap && snap.st) {
+      const st = snap.st;
+      const tiles = [
+        ["Open", st.open],
+        ["In flight", st.doing],
+        ["Blocked", st.blocked],
+        ["Done this week", st.week],
+      ]
+        .map(
+          ([l, n]) =>
+            `<div class="metric-card"><div class="label">${l}</div><div class="num">${n ?? 0}</div></div>`,
+        )
+        .join("");
+      const cards = (snap.projects || [])
+        .map(
+          (p) =>
+            `<div class="card compact boot-proj"><div class="row-title">${esc(p.name)}</div><div class="row-meta"><span class="chip">${p.open} open</span><span class="chip">${p.done} done</span>${p.blocked ? `<span class="chip">${p.blocked} blocked</span>` : ""}</div></div>`,
+        )
+        .join("");
+      return `<section class="page"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">Loading the latest from GitHub. ${chip}</p></div></div><div class="metric-grid">${tiles}</div>${status}<div class="grid cols-2" style="margin-top:14px">${cards}</div></section>`;
+    }
+    const skTiles = Array.from(
+      { length: 4 },
+      () =>
+        `<div class="metric-card"><div class="skeleton" style="height:12px;width:55%"></div><div class="skeleton" style="height:30px;width:38%;margin-top:12px"></div></div>`,
+    ).join("");
+    const skCards = Array.from(
+      { length: 4 },
+      () =>
+        `<div class="card"><div class="skeleton" style="height:16px;width:50%"></div><div class="skeleton" style="height:12px;width:80%;margin-top:12px"></div></div>`,
+    ).join("");
+    return `<section class="page"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">Connecting to GitHub. ${chip}</p></div></div><div class="metric-grid">${skTiles}</div>${status}<div class="grid cols-2" style="margin-top:14px">${skCards}</div></section>`;
+  }
+  function showBoot(progress) {
+    const view = $("#view");
+    $("#landing")?.classList.add("hidden");
+    $("#app")?.classList.remove("hidden");
+    if (view) view.innerHTML = bootScreenHTML(progress);
+  }
+  function updateBootProgress(text) {
+    const el = $("#bootStatus");
+    if (el) el.textContent = text;
   }
   function overviewHTML() {
     const st = globalStats(),
@@ -5108,8 +5281,23 @@ textarea:hover {
     if (v.includes("azure")) return "Azure";
     if (v.includes("codex")) return "Codex";
     if (v.includes("cursor")) return "Cursor";
+    if (v.includes("local")) return "Local";
     if (v.includes("anthropic") || v === "claude") return "Anthropic";
     return v ? v.replace(/\b\w/g, (c) => c.toUpperCase()) : "Unknown";
+  }
+  // A session ran on-device (free) if the beacon tagged its backend "local" OR
+  // its model id is an on-device MLX model - the second case also reclassifies
+  // rows an older beacon mislabeled as "anthropic" before local detection.
+  function isLocalRow(r) {
+    return (
+      String(r.backend || "").toLowerCase().includes("local") ||
+      isLocalLabel(r.model)
+    );
+  }
+  // Billing lane a row belongs to for spend/traffic grouping - on-device rows
+  // roll up under "Local" regardless of a stale backend field.
+  function backendLane(r) {
+    return isLocalRow(r) ? "Local" : normalizeBackend(r.backend);
   }
   function normalizeIde(v) {
     v = String(v || "claude").toLowerCase();
@@ -5120,6 +5308,7 @@ textarea:hover {
   }
   function normalizeModel(v) {
     v = String(v || "unspecified").toLowerCase();
+    if (v.includes("gpt-oss")) return "GPT-OSS 20B";
     if (v.includes("gpt-5.5")) return "GPT-5.5";
     if (v.includes("opus")) return "Opus";
     if (v.includes("sonnet")) return "Sonnet";
@@ -5245,6 +5434,7 @@ textarea:hover {
   }
   function estimateSessionCost(r) {
     if (!hasTelemetry(r)) return null;
+    if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
     const backend = normalizeBackend(r.backend),
       model = normalizeModel(r.model);
     let entry = pricingEntry(r.model);
@@ -5273,6 +5463,7 @@ textarea:hover {
   }
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
+    if (isLocalRow(r)) return 0; // on-device MLX: free, don't charge to a paid lane
     const saved = Number(r.cost);
     if (r.cost != null && saved > 0) return saved;
     const est = estimateSessionCost(r);
@@ -5319,7 +5510,7 @@ textarea:hover {
       rows = usageRows(allRows);
     const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
     const incompleteCount = rows.filter(isIncompleteSession).length;
-    const backends = groupMetrics(rows, (r) => normalizeBackend(r.backend));
+    const backends = groupMetrics(rows, (r) => backendLane(r));
     const models = groupMetrics(rows, (r) => normalizeModel(r.model));
     const ides = groupMetrics(rows, (r) => normalizeIde(r.ide));
     const recent = rows
@@ -5327,7 +5518,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(normalizeBackend(r.backend))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records when tools saved them; older sessions may show 0 because they did not record enough detail. Costs from saved billing snapshots are actual; Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions (the local-agent delegation lane) run locally, so they show under the Local lane at $0 — their tokens count toward volume but are never charged.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -5376,7 +5567,7 @@ textarea:hover {
       ),
       sessionDetailRow(
         "Backend / model",
-        `${brandLabel(normalizeBackend(r.backend))} · ${brandLabel(normalizeModel(r.model))}`,
+        `${brandLabel(backendLane(r))} · ${brandLabel(normalizeModel(r.model))}`,
       ),
       sessionDetailRow(
         "Started → ended",
@@ -5417,8 +5608,9 @@ textarea:hover {
   }
   function laneCompareRows(rows) {
     const anthropic = rows.filter(
-      (r) => normalizeBackend(r.backend) === "Anthropic",
+      (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
     );
+    const local = rows.filter(isLocalRow);
     const azure = rows.filter((r) => normalizeBackend(r.backend) === "Azure");
     const codex = rows.filter(
       (r) =>
@@ -5464,11 +5656,23 @@ textarea:hover {
     if (state.cursorUsage?.spend != null) {
       cursorRow.snapshotNote = `billing snapshot: ${fmtCostMaybe(state.cursorUsage.spend)} this billing month from Cursor - a different source, not filtered by time frame`;
     }
-    return [mk("Anthropic", anthropic), azureRow, mk("Codex", codex), cursorRow]
+    const localRow = mk("Local", local);
+    if (local.length) {
+      localRow.snapshotNote =
+        "on-device MLX (local-agent delegation) - runs on-device, so tokens are tracked but never charged";
+    }
+    return [
+      mk("Anthropic", anthropic),
+      azureRow,
+      mk("Codex", codex),
+      cursorRow,
+      localRow,
+    ]
       .filter(
         (r) =>
           r.label !== "Codex" || r.input || r.output || r.requests || r.cost,
       )
+      .filter((r) => r.label !== "Local" || r.sessions)
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
   function comparisonTable(rows) {
@@ -5501,7 +5705,7 @@ textarea:hover {
         const c = sessionCost(r);
         if (c != null) cur.cost = (cur.cost || 0) + Number(c);
       }
-      const lane = normalizeBackend(r.backend);
+      const lane = backendLane(r);
       cur.lanes.set(
         lane,
         (cur.lanes.get(lane) || 0) + Number(r.totalTokens || 0),
@@ -5657,7 +5861,8 @@ textarea:hover {
           : text,
         status: type === "idea" ? "idea" : "todo",
         created: today(),
-        ...(state.backend === "github" ? { source: "mobile" } : {}),
+        needsTriage: true,
+        capturedVia: "dashboard",
       });
       await saveProject(p, { silent: true, rethrow: true });
     }
@@ -5859,7 +6064,8 @@ textarea:hover {
                   text,
                   status: "todo",
                   created: today(),
-                  ...(state.backend === "github" ? { source: "mobile" } : {}),
+                  needsTriage: true,
+                  capturedVia: "dashboard",
                 },
               ],
             },
@@ -5903,18 +6109,45 @@ textarea:hover {
       `Personal/Processes/${file}`,
     );
   }
+  // List repo paths under a prefix, backend-aware. GitHub reads the already
+  // fetched tree; FSA walks the folder (best-effort — legacy folder may be
+  // absent).
+  async function listUnder(prefix) {
+    if (state.backend === "github")
+      return Object.keys(ghTreeShas).filter((p) => p.startsWith(prefix));
+    try {
+      const parts = prefix.replace(/\/$/, "").split("/");
+      let d = state.root;
+      for (const seg of parts) d = await d.getDirectoryHandle(seg);
+      const out = [];
+      for await (const [name, h] of d.entries())
+        if (h.kind === "file") out.push(prefix.replace(/\/$/, "") + "/" + name);
+      return out;
+    } catch {
+      return [];
+    }
+  }
   async function pendingIntake() {
     const out = [];
     for (const p of state.projects)
       for (const g of p.data.groups || [])
         for (const it of g.items || [])
-          if (it.source === "mobile")
-            out.push({ kind: "mobile", text: it.text });
+          // needsTriage is the current, backend-agnostic signal;
+          // source:"mobile" is the legacy flag kept for un-migrated rows.
+          if (it.needsTriage === true || it.source === "mobile")
+            out.push({ kind: "capture", text: it.text });
     const inbox = await readPath("notes-inbox.md").catch(() => null);
     if (inbox) {
       const body = inbox.replace(/^# Notes Inbox[\s\S]*?---\s*/i, "");
       for (const l of body.split(/\r?\n/).filter((x) => /^\s*-\s+/.test(x)))
         out.push({ kind: "note", text: l.replace(/^\s*-\s+/, "") });
+    }
+    // Legacy local-fallback-inbox drafts (Ollama lane, removed 2026-07-03) —
+    // surface any leftover files so they get triaged, not stranded.
+    for (const path of await listUnder("local-fallback-inbox/")) {
+      const name = path.split("/").pop();
+      if (name && !/^\./.test(name))
+        out.push({ kind: "fallback", text: name });
     }
     return out;
   }
@@ -5995,7 +6228,8 @@ textarea:hover {
       text: e.target.value.trim(),
       status: gname === "Ideas" ? "idea" : "todo",
       created: today(),
-      ...(state.backend === "github" ? { source: "mobile" } : {}),
+      needsTriage: true,
+      capturedVia: "dashboard",
     });
     e.target.value = "";
     await saveProject(p);
@@ -6524,6 +6758,9 @@ textarea:hover {
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
+    // Paint cached/skeleton content immediately so the tree + content fetches
+    // don't happen behind a blank screen.
+    showBoot();
     await ghGetTree(!!opts.forceTree);
     await scan();
   }
@@ -6540,8 +6777,7 @@ textarea:hover {
     if (rec) rec.textContent = gh ? "Reconnect GitHub" : "Reconnect";
   }
   async function autoGithub(cfg, attempt = 1) {
-    $("#landing").classList.add("hidden");
-    $("#app").classList.remove("hidden");
+    showBoot();
     try {
       await connectGithub(cfg, {
         forceTree:
