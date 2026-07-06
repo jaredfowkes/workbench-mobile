@@ -2691,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.33";
+  const WB_VERSION = "2026-07-05.34";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5908,7 +5908,7 @@ textarea:hover {
       const metric = Array.isArray(t) ? "" : t.metric;
       return `${i + 1}. ${title}${metric ? ` (${metric})` : ""}: ${detail || ""}`;
     });
-    return `Review these Workbench AI-efficiency issues and propose practical fixes. For each item, decide whether the best answer is to educate me/change my workflow, update Workbench repo automation/dashboard/hooks, or both. If repo changes are appropriate, inspect the code first, implement the smallest durable fix, update tasks/status/log as required, verify it, and report only what changed and what remains blocked.\n\nIssues:\n${lines.join("\n") || "No current issues were listed; inspect the usage metrics and identify the highest-leverage improvements."}`;
+    return `Review these Workbench AI-efficiency issues and propose practical fixes. For each item, decide whether the best answer is to educate me/change my workflow, update Workbench repo automation/dashboard/hooks, or both. If repo changes are appropriate, inspect the code first, implement the smallest durable fix, update tasks/status/log as required, and verify it. After fixing or otherwise resolving an item, clear the solved tip from its source (tools/efficiency-tips.json or the deterministic rule that emits it) while keeping any still-valid tips. Report only what changed, which tips were cleared, which remain, and what is blocked.\n\nIssues:\n${lines.join("\n") || "No current issues were listed; inspect the usage metrics and identify the highest-leverage improvements."}`;
   }
   function tipsHTML(rows) {
     const fromFile = fileEfficiencyTips();
