@@ -2121,6 +2121,24 @@ textarea:hover {
   min-width: 0;
   flex-wrap: wrap;
 }
+.cost-inline {
+  font-weight: 700;
+}
+.info-chip {
+  margin-left: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--subtle);
+  color: var(--text-2);
+  border-radius: var(--pill);
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+.info-chip:hover {
+  border-color: var(--border);
+  color: var(--text);
+}
 [data-theme="dark"] .brand-icon.anthropic {
   background: #262625;
   border-color: #40403e;
@@ -2154,9 +2172,13 @@ textarea:hover {
     overflow-wrap: anywhere;
   }
   .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) span[data-label="Cost"] {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--border-subtle);
-    padding-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) span[data-label="Cost"]::before {
+    flex-basis: 100%;
   }
   .usage-table-row span[data-label]::before {
     content: attr(data-label);
@@ -2657,7 +2679,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.30";
+  const WB_VERSION = "2026-07-05.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5734,8 +5756,16 @@ textarea:hover {
       .filter((r) => r.label !== "Local" || r.sessions)
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
+  function laneInfoText(r) {
+    const bits = [];
+    if (r.estimated) bits.push("Cost is estimated from recorded tokens and the configured model price.");
+    if (r.untracked) bits.push(`${r.untracked}/${r.sessions} sessions in this lane are still missing telemetry.`);
+    if (r.snapshotNote) bits.push(r.snapshotNote);
+    return bits.join(" ");
+  }
   function comparisonTable(rows) {
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r) => `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}${r.untracked ? ` <span class="tiny muted">(${r.untracked}/${r.sessions} sessions untracked)</span>` : ""}${r.snapshotNote ? `<br><span class="tiny muted">${esc(r.snapshotNote)}</span>` : ""}</span></div>`).join("")}</div></div>`;
+    state._laneInfoRows = rows;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r, i) => { const info = laneInfoText(r); return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost"><span class="cost-inline">${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}</span>${info ? `<button type="button" class="info-chip" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">Details</button>` : ""}</span></div>`; }).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
@@ -5877,7 +5907,13 @@ textarea:hover {
           }
         }),
     );
-    bindSessionRows($(".modal-scrim.dyn"));
+    const root = $(".modal-scrim.dyn");
+    $$('[data-lane-info]', root).forEach((b) => (b.onclick = () => {
+      const row = (state._laneInfoRows || [])[+b.dataset.laneInfo];
+      if (!row) return;
+      modal(`${row.label} lane details`, `<p class="muted">${esc(laneInfoText(row))}</p>`, "");
+    }));
+    bindSessionRows(root);
   }
   function openUsageDetail() {
     modal(
