@@ -2691,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.35";
+  const WB_VERSION = "2026-07-05.36";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -4929,7 +4929,7 @@ textarea:hover {
     const latest = state.latestBuild?.version;
     const builtAt = state.latestBuild?.builtAt;
     const pubAt = state.mobileSync?.updated;
-    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>Azure fallback usage, estimated from logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
+    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>Azure route usage, estimated from logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
   }
 
   function render() {
