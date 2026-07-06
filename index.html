@@ -2691,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.36";
+  const WB_VERSION = "2026-07-05.37";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5623,6 +5623,43 @@ textarea:hover {
     ];
     return `<div class="usage-window usage-card"><div><h3>Time frame</h3><p class="muted">Applies to the session-based boxes below.</p></div><div class="seg">${opts.map(([k, l]) => `<button class="${(state.usageWindow || "month") === k ? "active" : ""}" data-usage-window="${k}">${l}</button>`).join("")}</div></div>`;
   }
+  // The Claude billing snapshot (usage.json) is the *whole* account's monthly
+  // spend, so it already includes tokens burned outside workbench - the Excel
+  // add-in, claude.ai chat, other API keys. Workbench only attributes the slice
+  // that ran through session hooks. Subtracting the hooked-session estimate from
+  // the real billed total surfaces everything else as "outside workbench".
+  // Fixed to a trailing-30d proxy for the billing month (not the modal's time
+  // frame selector) so it always lines up with the billed number it's compared
+  // against.
+  function claudeAttribution() {
+    const spend = Number(state.usage?.spend);
+    if (!isFinite(spend) || spend <= 0) return null;
+    const start = Date.now() - 30 * 86400000;
+    const wbRows = (state.sessionMetrics?.sessions || [])
+      .filter(Boolean)
+      .filter((r) => Number(r.started || r.ended || 0) >= start)
+      .filter(
+        (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
+      );
+    const workbench = Number(costSum(wbRows) || 0);
+    const outside = Math.max(0, spend - workbench);
+    return {
+      spend,
+      workbench,
+      outside,
+      sessions: wbRows.length,
+      wbPct: Math.round((Math.min(workbench, spend) / spend) * 100),
+      outPct: Math.round((outside / spend) * 100),
+      overAttributed: workbench > spend,
+    };
+  }
+  function claudeAttributionCard() {
+    const a = claudeAttribution();
+    if (!a) return "";
+    const row = (label, amt, p, kind, sub) =>
+      `<div class="mix-row"><div><div class="mix-label">${esc(label)}</div><div class="mix-sub">${esc(sub)}</div></div><span class="creditbar ${kind}"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></span><span class="credit-amt">${esc(fmtCostMaybe(amt))}</span></div>`;
+    return `<div class="usage-card"><div class="tiny">Claude spend attribution · billing month</div><div class="usage-big">${esc(fmtCostMaybe(a.spend))} billed</div>${row("In workbench", a.workbench, a.wbPct, "anthropic", `${a.sessions} hooked session${a.sessions === 1 ? "" : "s"} · estimated from tokens`)}${row("Outside workbench", a.outside, a.outPct, "", "Excel add-in, claude.ai, other tools + estimate drift")}<p class="muted">Billed total is the real Claude monthly spend and already covers usage from outside workbench. The in-workbench slice is estimated from hooked-session tokens${a.overAttributed ? "; it currently exceeds the billed total, so outside reads $0 (estimate drift)" : ""}, so the outside slice is approximate.</p></div>`;
+  }
   function usageDetailBody() {
     const allRows = (state.sessionMetrics?.sessions || []).filter(Boolean),
       rows = usageRows(allRows);
@@ -5637,7 +5674,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div><div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Saved by local models</div><div class="usage-big">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated paid-model equivalent for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions run locally, so they show under the Local lane at $0, their tokens count toward volume, and their paid-model equivalent appears as savings.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Saved by local models</div><div class="usage-big">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated paid-model equivalent for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions run locally, so they show under the Local lane at $0, their tokens count toward volume, and their paid-model equivalent appears as savings.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
