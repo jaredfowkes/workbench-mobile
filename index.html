@@ -2691,7 +2691,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.32";
+  const WB_VERSION = "2026-07-05.33";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5901,6 +5901,15 @@ textarea:hover {
         .sort((a, b) => (a.severity === "warn" ? 0 : 1) - (b.severity === "warn" ? 0 : 1)),
     };
   }
+  function efficiencyPrompt(tips) {
+    const lines = (tips || []).map((t, i) => {
+      const title = Array.isArray(t) ? t[0] : t.title;
+      const detail = Array.isArray(t) ? t[1] : t.detail;
+      const metric = Array.isArray(t) ? "" : t.metric;
+      return `${i + 1}. ${title}${metric ? ` (${metric})` : ""}: ${detail || ""}`;
+    });
+    return `Review these Workbench AI-efficiency issues and propose practical fixes. For each item, decide whether the best answer is to educate me/change my workflow, update Workbench repo automation/dashboard/hooks, or both. If repo changes are appropriate, inspect the code first, implement the smallest durable fix, update tasks/status/log as required, verify it, and report only what changed and what remains blocked.\n\nIssues:\n${lines.join("\n") || "No current issues were listed; inspect the usage metrics and identify the highest-leverage improvements."}`;
+  }
   function tipsHTML(rows) {
     const fromFile = fileEfficiencyTips();
     if (fromFile) {
@@ -5915,15 +5924,17 @@ textarea:hover {
             : age < 48
               ? `generated ${age}h ago`
               : `generated ${Math.round(age / 24)}d ago`;
-      return `<div class="usage-card"><h3>AI-efficiency tips</h3><div class="ops-list">${fromFile.tips
+      const prompt = efficiencyPrompt(fromFile.tips);
+      return `<div class="usage-card"><div class="cardhead"><div><h3>AI-efficiency tips</h3>${stamp ? `<p class="tiny muted">${esc(stamp)}</p>` : ""}</div><button type="button" class="btn tertiary" data-copy-efficiency-prompt="${esc(prompt)}">Copy fix prompt</button></div><div class="ops-list">${fromFile.tips
         .map(
           (t) =>
             `<div class="ops-row"><span>${statusDot(t.severity === "warn" ? "bad" : "idle")}<b>${esc(t.title)}</b></span><span class="prompt-snippet muted">${esc(t.detail || "")}</span><span>${t.metric ? `<span class="chip">${esc(t.metric)}</span>` : ""}</span></div>`,
         )
-        .join("")}</div>${stamp ? `<p class="tiny muted" style="margin-top:8px">${esc(stamp)}</p>` : ""}</div>`;
+        .join("")}</div></div>`;
     }
     const tips = efficiencyTips(rows);
-    return `<div class="usage-card"><h3>AI-efficiency tips</h3>${tips.length ? `<div class="ops-list">${tips.map(([t, b]) => `<div class="ops-row"><span>${statusDot("idle")}${esc(t)}</span><span class="prompt-snippet">${esc(b)}</span><span></span></div>`).join("")}</div>` : '<p class="muted">No data-backed efficiency warnings right now.</p>'}</div>`;
+    const prompt = efficiencyPrompt(tips);
+    return `<div class="usage-card"><div class="cardhead"><div><h3>AI-efficiency tips</h3></div><button type="button" class="btn tertiary" data-copy-efficiency-prompt="${esc(prompt)}">Copy fix prompt</button></div>${tips.length ? `<div class="ops-list">${tips.map(([t, b]) => `<div class="ops-row"><span>${statusDot("idle")}${esc(t)}</span><span class="prompt-snippet">${esc(b)}</span><span></span></div>`).join("")}</div>` : '<p class="muted">No data-backed efficiency warnings right now.</p>'}</div>`;
   }
   function bindUsageWindow() {
     $$("[data-usage-window]", $(".modal-scrim.dyn")).forEach(
@@ -5943,6 +5954,9 @@ textarea:hover {
       if (!row) return;
       modal(`${row.label} lane details`, `<p class="muted">${esc(laneInfoText(row))}</p>`, "");
     }));
+    $$('[data-copy-efficiency-prompt]', root).forEach(
+      (b) => (b.onclick = () => copyText(b.dataset.copyEfficiencyPrompt, "Prompt copied.")),
+    );
     bindSessionRows(root);
   }
   function openUsageDetail() {
