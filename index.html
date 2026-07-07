@@ -2094,16 +2094,6 @@ textarea:hover {
   color: inherit;
   cursor: pointer;
 }
-
-/* Chip styling for savings indicators */
-.chip.green {
-  background: var(--status-success-solid);
-  color: white;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-}
 .recent-sessions-table .usage-table-row:not(.head):hover {
   border-color: var(--border);
   background: var(--muted-surface);
@@ -2723,7 +2713,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-06.21";
+  const WB_VERSION = "2026-07-06.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5951,7 +5941,7 @@ textarea:hover {
     // Special handling for local usage to show savings clearly
     let costText = `${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}`;
     if (r.label === "Local" && r.savingsAmount) {
-      costText = `<span class="chip green">SAVED: ${esc(fmtCostMaybe(r.savingsAmount))}</span>`;
+      costText = `<span class="cost-savings">${esc(fmtCostMaybe(r.savingsAmount))}</span>`;
     }
     return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
   }
