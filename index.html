@@ -2094,6 +2094,16 @@ textarea:hover {
   color: inherit;
   cursor: pointer;
 }
+
+/* Chip styling for savings indicators */
+.chip.green {
+  background: var(--status-success-solid);
+  color: white;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
 .recent-sessions-table .usage-table-row:not(.head):hover {
   border-color: var(--border);
   background: var(--muted-surface);
@@ -2145,7 +2155,13 @@ textarea:hover {
 .cost-link:hover {
   color: var(--brand-deep);
 }
-[data-theme="dark"] .brand-icon.anthropic {
+.cost-savings {
+  color: var(--positive-deep);
+  font-weight: 800;
+}
+[data-theme="dark"] .cost-savings {
+  color: var(--positive);
+}
   background: #262625;
   border-color: #40403e;
 }
@@ -2707,7 +2723,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-05.38";
+  const WB_VERSION = "2026-07-06.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2766,6 +2782,7 @@ textarea:hover {
     "glm-",
     "qwen3",
     "qwopus",
+    "workbench-coder",
   ];
   function isLocalLabel(label) {
     const v = String(label || "").toLowerCase();
@@ -5619,14 +5636,29 @@ textarea:hover {
   }
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
-    if (isLocalRow(r)) return 0; // on-device MLX: free, don't charge to a paid lane
+    if (isLocalRow(r)) return 0; // on-device: free, don't charge to a paid lane
     const saved = Number(r.cost);
     if (r.cost != null && saved > 0) return saved;
     const est = estimateSessionCost(r);
     return est != null ? est : r.cost != null ? saved : null;
   }
+  function sessionCostHTML(r) {
+    if (isLocalRow(r)) {
+      if (!hasTelemetry(r)) return '<span class="muted">untracked</span>';
+      const savings = localSavedCost(r);
+      if (savings != null) {
+        return `<span class="cost-savings">${esc(fmtCostMaybe(savings))} savings</span>`;
+      }
+      return '<span class="muted">$0.00</span>';
+    }
+    const c = sessionCost(r);
+    if (c == null) return '<span class="muted">untracked</span>';
+    const est = r.cost == null && c != null ? " est." : "";
+    return `${esc(fmtCostMaybe(c))}${est}`;
+  }
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
+    if (r.savedEstimate != null) return Number(r.savedEstimate);
     const clone = { ...r, backend: "anthropic" };
     const model = String(r.model || "").toLowerCase();
     clone.model = model.includes("opus")
@@ -5737,7 +5769,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Saved by local models</div><div class="usage-big">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated paid-model equivalent for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device MLX sessions run locally, so they show under the Local lane at $0, their tokens count toward volume, and their paid-model equivalent appears as savings.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${esc(fmtCostMaybe(sessionCost(r)))}${r.cost == null && sessionCost(r) != null ? " est." : ""}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -5809,8 +5841,16 @@ textarea:hover {
       ),
       sessionDetailRow(
         "Cost",
-        `${esc(fmtCostMaybe(cost))}${esc(costNote)}${isLocalRow(r) && localSavedCost(r) != null ? ` · saved ${esc(fmtCostMaybe(localSavedCost(r)))}` : ""}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
+        isLocalRow(r) && localSavedCost(r) != null
+          ? `<span class="cost-savings">${esc(fmtCostMaybe(localSavedCost(r)))} savings</span> · $0.00 charged${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`
+          : `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
       ),
+      isLocalRow(r) && r.savedEstimate != null
+        ? sessionDetailRow(
+            "Avoided cloud spend",
+            `<span class="cost-savings">${esc(fmtCostMaybe(r.savedEstimate))}</span>`,
+          )
+        : "",
     ]
       .filter(Boolean)
       .join("")}</div>`;
@@ -5877,8 +5917,12 @@ textarea:hover {
     }
     const localRow = mk("Local", local);
     if (local.length) {
+      const savings = localSavedSum(local);
       localRow.snapshotNote =
-        `on-device MLX - ${fmtCostMaybe(localSavedSum(local))} estimated paid-model equivalent saved; actual local cost is $0`;
+        `on-device — ${fmtCostMaybe(savings)} estimated avoided cloud spend (savings); actual local cost is $0`;
+      // Add a clear visual indicator that this represents savings
+      localRow.isSavings = true;
+      localRow.savingsAmount = savings;
     }
     return [
       mk("Anthropic", anthropic),
@@ -5903,7 +5947,13 @@ textarea:hover {
   }
   function comparisonTable(rows) {
     state._laneInfoRows = rows;
-    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r, i) => { const info = laneInfoText(r); const costText = `${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}`; return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
+    return `<div class="usage-card"><h3>Spend and token lanes</h3><div class="usage-table"><div class="usage-table-row head"><span>Lane</span><span>Input</span><span>Output</span><span>Requests</span><span>Cost</span></div>${rows.map((r, i) => { const info = laneInfoText(r);
+    // Special handling for local usage to show savings clearly
+    let costText = `${esc(fmtCostMaybe(r.cost))}${r.estimated ? " est." : ""}`;
+    if (r.label === "Local" && r.savingsAmount) {
+      costText = `<span class="chip green">SAVED: ${esc(fmtCostMaybe(r.savingsAmount))}</span>`;
+    }
+    return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}</span><span data-label="Input">${r.input == null ? "—" : fmtTokens(r.input)}</span><span data-label="Output">${r.output == null ? "—" : fmtTokens(r.output)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
