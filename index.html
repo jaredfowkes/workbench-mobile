@@ -2,129 +2,224 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com http://127.0.0.1:7787; img-src 'self' data: blob:; frame-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Workbench">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#F6F7FB">
+  <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
   <title>Workbench Dashboard</title>
   <style>
-/* Workbench Dashboard Vibe rebuild source */
+/* Workbench Dashboard — Notion-like design system (v5)
+   Contract: DESIGN.md in this directory. Class names and custom-property
+   NAMES are a stable API for app.js — re-valued here, never removed.
+   Sections:
+     1. Tokens (light)          2. Tokens (dark — single override block)
+     3. Reset & base            4. Typography
+     5. Shell: sidebar/nav/main 6. Page scaffolding & callout
+     7. Buttons & inputs        8. Chips, tags, dots, donuts
+     9. Cards, grids, tiles    10. Rows, lists, tables
+    11. Status rail & ops      12. Usage & charts
+    13. Modals, toast, misc    14. Motion & states
+    15. Markdown               16. Responsive + reduced motion
+*/
 
-/* Imported from Claude Design Vibe export */
-:root {
-  --motion-fast: 140ms;
-  --motion-standard: 240ms;
-  --motion-emphasized: 420ms;
-  --ease-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-press: cubic-bezier(0.4, 0, 1, 1);
-  --status-success-soft: #e6f9f3;
-  --status-success-solid: #33cc99;
-  --status-success-text: #1f7a5c;
-  --status-warning-soft: #fffae7;
-  --status-warning-solid: #fde05d;
-  --status-warning-text: #988220;
-  --status-error-soft: #ffe9e9;
-  --status-error-solid: #ff4545;
-  --status-error-text: #992929;
-  --status-info-soft: #e4eaea;
-  --status-info-solid: #497174;
-  --status-info-text: #112e31;
-}
-
+/* ============ 1. Tokens (light) ============ */
 :root {
   color-scheme: light;
-  --font-body:
-    Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    sans-serif;
-  --font-display:
-    Poppins, Figtree, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    sans-serif;
-  --canvas: #f6f7fb;
+
+  /* Type */
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+    "Apple Color Emoji", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
+    "Apple Color Emoji", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+    monospace;
+
+  /* Surfaces & ink */
+  --canvas: #f7f7f5;
   --base: #ffffff;
   --raised: #ffffff;
-  --subtle: #ecedf5;
-  --muted-surface: #e7e9ef;
-  --text: #323338;
-  --text-2: #676879;
-  --text-3: #9699a5;
+  --subtle: rgba(55, 53, 47, 0.06);
+  --muted-surface: rgba(55, 53, 47, 0.04);
+  --text: #37352f;
+  --text-2: rgba(55, 53, 47, 0.65);
+  --text-3: rgba(55, 53, 47, 0.45);
   --inverted: #ffffff;
-  --border: #dcdfec;
-  --border-subtle: #e7e9ef;
-  --border-strong: #c3c6d4;
-  --focus: #0073ea;
-  --brand: #0073ea;
-  --brand-hover: #0060b9;
-  --brand-soft: #cce4ff;
-  --brand-deep: #133774;
-  --danger: #d83a52;
-  --danger-hover: #b63546;
-  --danger-soft: #f4c3cb;
-  --positive: #00c875;
-  --positive-deep: #00854d;
-  --positive-soft: #b5cec0;
-  --warning: #ffc300;
-  --warning-soft: #fceba1;
-  --purple: #a358df;
-  --pink: #ff5a85;
-  --blue: #579bfc;
-  --yellow: #ffcb00;
-  --shadow-xs: 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-  --shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.14);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.16);
-  --shadow-lg: 0 15px 50px rgba(0, 0, 0, 0.24);
-  --r-xs: 2px;
+  --border: rgba(55, 53, 47, 0.16);
+  --border-subtle: rgba(55, 53, 47, 0.09);
+  --border-strong: rgba(55, 53, 47, 0.28);
+
+  /* Accent — the one color */
+  --focus: #2383e2;
+  --brand: #2383e2;
+  --brand-hover: #1a73c7;
+  --brand-soft: rgba(35, 131, 226, 0.12);
+  --brand-deep: #17629f;
+
+  /* Signals */
+  --danger: #eb5757;
+  --danger-hover: #d64545;
+  --danger-soft: rgba(235, 87, 87, 0.12);
+  --positive: #448361;
+  --positive-deep: #337356;
+  --positive-soft: rgba(68, 131, 97, 0.12);
+  --warning: #d9730d;
+  --warning-soft: rgba(217, 115, 13, 0.12);
+
+  /* Muted tag palette (Notion database-tag style) */
+  --tag-gray-bg: rgba(55, 53, 47, 0.08);
+  --tag-gray-text: #6b6a66;
+  --tag-blue-bg: rgba(51, 126, 169, 0.14);
+  --tag-blue-text: #2b6a8f;
+  --tag-green-bg: rgba(68, 131, 97, 0.14);
+  --tag-green-text: #337356;
+  --tag-orange-bg: rgba(217, 115, 13, 0.14);
+  --tag-orange-text: #a75a08;
+  --tag-purple-bg: rgba(144, 101, 176, 0.14);
+  --tag-purple-text: #7a539b;
+
+  /* Legacy hue names re-valued to the muted palette */
+  --purple: #9065b0;
+  --pink: #b0567f;
+  --blue: #337ea9;
+  --yellow: #cb912f;
+
+  /* Legacy status tokens re-valued */
+  --status-success-soft: rgba(68, 131, 97, 0.12);
+  --status-success-solid: #448361;
+  --status-success-text: #337356;
+  --status-warning-soft: rgba(217, 115, 13, 0.12);
+  --status-warning-solid: #d9730d;
+  --status-warning-text: #a75a08;
+  --status-error-soft: rgba(235, 87, 87, 0.12);
+  --status-error-solid: #eb5757;
+  --status-error-text: #c04141;
+  --status-info-soft: rgba(51, 126, 169, 0.12);
+  --status-info-solid: #337ea9;
+  --status-info-text: #2b6a8f;
+
+  /* AI-lane identity (muted; used by creditbars/donuts/brand icons) */
+  --anthropic-slate: #262625;
+  --anthropic-cloud: #91918d;
+  --anthropic-ivory: #fafaf7;
+  --anthropic-focus: #c96f3f;
+  --anthropic-error: #bf4d43;
+  --cursor-black: #37352f;
+  --gpt-blue: #337ea9;
+  --openai-green: #448361;
+  --vscode-blue: #337ea9;
+
+  /* Elevation: borders do the work, not shadows */
+  --shadow-xs: 0 0 0 1px var(--border-subtle);
+  --shadow-sm: 0 1px 2px rgba(15, 15, 15, 0.06);
+  --shadow-md: 0 0 0 1px rgba(15, 15, 15, 0.05),
+    0 3px 6px rgba(15, 15, 15, 0.1), 0 9px 24px rgba(15, 15, 15, 0.2);
+  --shadow-lg: 0 0 0 1px rgba(15, 15, 15, 0.05),
+    0 3px 6px rgba(15, 15, 15, 0.1), 0 9px 24px rgba(15, 15, 15, 0.2);
+
+  /* Radius */
+  --r-xs: 3px;
   --r-sm: 4px;
-  --r-md: 8px;
-  --r-lg: 16px;
-  --r-xl: 24px;
-  --r-xxl: 32px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 12px;
+  --r-xxl: 12px;
   --pill: 9999px;
-  --fast: 120ms;
-  --standard: 180ms;
-  --slow: 280ms;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --side: 280px;
-  --bottom-nav: 76px;
+
+  /* Motion — quiet, no springs */
+  --fast: 100ms;
+  --standard: 170ms;
+  --slow: 170ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --motion-fast: 100ms;
+  --motion-standard: 170ms;
+  --motion-emphasized: 170ms;
+  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --ease-settle: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.2, 0, 0, 1);
+  --ease-press: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --side: 240px;
+  --bottom-nav: 62px;
 }
+
+/* ============ 2. Tokens (dark) — the ONE dark override block ============ */
 [data-theme="dark"] {
   color-scheme: dark;
-  --canvas: #11131a;
-  --base: #171a22;
-  --raised: #1d212b;
-  --subtle: #252a36;
-  --muted-surface: #303645;
-  --text: #f4f6fb;
-  --text-2: #c5c9d3;
-  --text-3: #8e94a3;
-  --inverted: #11131a;
-  --border: #3a4150;
-  --border-subtle: #2c3240;
-  --border-strong: #586174;
-  --focus: #579bfc;
-  --brand: #579bfc;
-  --brand-hover: #77aeff;
-  --brand-soft: #183a61;
-  --brand-deep: #bfdfff;
-  --danger: #ff6b80;
-  --danger-hover: #ff8a9a;
-  --danger-soft: #4b1f2a;
-  --positive: #00c875;
-  --positive-deep: #7ee2b8;
-  --positive-soft: #163c30;
-  --warning: #ffcb00;
-  --warning-soft: #463b14;
+  --canvas: #202020;
+  --base: #191919;
+  --raised: #252525;
+  --subtle: rgba(255, 255, 255, 0.055);
+  --muted-surface: rgba(255, 255, 255, 0.03);
+  --text: rgba(255, 255, 255, 0.81);
+  --text-2: rgba(255, 255, 255, 0.46);
+  --text-3: rgba(255, 255, 255, 0.28);
+  --inverted: #191919;
+  --border: rgba(255, 255, 255, 0.13);
+  --border-subtle: rgba(255, 255, 255, 0.075);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --focus: #529cca;
+  --brand: #529cca;
+  --brand-hover: #5fa8d6;
+  --brand-soft: rgba(82, 156, 202, 0.16);
+  --brand-deep: #9ec9e8;
+  --danger: #eb5757;
+  --danger-hover: #f06e6e;
+  --danger-soft: rgba(235, 87, 87, 0.18);
+  --positive: #4f9768;
+  --positive-deep: #6fb18a;
+  --positive-soft: rgba(79, 151, 104, 0.18);
+  --warning: #d9730d;
+  --warning-soft: rgba(217, 115, 13, 0.18);
+  --tag-gray-bg: rgba(255, 255, 255, 0.08);
+  --tag-gray-text: rgba(255, 255, 255, 0.6);
+  --tag-blue-bg: rgba(82, 156, 202, 0.18);
+  --tag-blue-text: #86b9d9;
+  --tag-green-bg: rgba(79, 151, 104, 0.18);
+  --tag-green-text: #83b697;
+  --tag-orange-bg: rgba(217, 115, 13, 0.2);
+  --tag-orange-text: #d9935a;
+  --tag-purple-bg: rgba(144, 101, 176, 0.22);
+  --tag-purple-text: #b295c9;
+  --purple: #b295c9;
+  --pink: #c98aa6;
+  --blue: #529cca;
+  --yellow: #c9924b;
+  --status-success-soft: rgba(79, 151, 104, 0.18);
+  --status-success-solid: #4f9768;
+  --status-success-text: #83b697;
+  --status-warning-soft: rgba(217, 115, 13, 0.2);
+  --status-warning-solid: #d9730d;
+  --status-warning-text: #d9935a;
+  --status-error-soft: rgba(235, 87, 87, 0.18);
+  --status-error-solid: #eb5757;
+  --status-error-text: #e08a8a;
+  --status-info-soft: rgba(82, 156, 202, 0.18);
+  --status-info-solid: #529cca;
+  --status-info-text: #86b9d9;
+  --anthropic-focus: #d08a5e;
+  --anthropic-ivory: #2e2c28;
+  --cursor-black: rgba(255, 255, 255, 0.81);
+  --gpt-blue: #529cca;
+  --openai-green: #4f9768;
+  --vscode-blue: #529cca;
+  --shadow-xs: 0 0 0 1px var(--border-subtle);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 3px 6px rgba(0, 0, 0, 0.3), 0 9px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 3px 6px rgba(0, 0, 0, 0.3), 0 9px 24px rgba(0, 0, 0, 0.5);
 }
+
+/* ============ 3. Reset & base ============ */
 * {
   box-sizing: border-box;
 }
-/* Scrolling stays fully functional everywhere - only the scrollbar chrome is
-   hidden, globally, so the dashboard never shows a track/thumb on desktop or
-   touchpads. Iframes (docs viewer) render their own document and are exempt -
-   that content is out of our styling reach and native scrollbars there are
-   fine. */
+/* Scrolling stays fully functional everywhere — only the scrollbar chrome is
+   hidden. Iframes (docs viewer) render their own document and are exempt. */
 html,
 body,
 * {
@@ -142,8 +237,8 @@ body {
   font-family: var(--font-body);
   background: var(--canvas);
   color: var(--text);
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 14.5px;
+  line-height: 1.55;
 }
 body {
   overflow-x: hidden;
@@ -159,7 +254,7 @@ button {
 }
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 a {
   color: var(--brand);
@@ -168,36 +263,97 @@ a {
 a:hover {
   text-decoration: underline;
 }
+code {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  background: var(--muted-surface);
+  border-radius: var(--r-sm);
+  padding: 1px 5px;
+}
 .hidden {
   display: none !important;
 }
 :focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus) 35%, transparent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+/* ============ 4. Typography ============ */
 h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.1px;
   margin: 0;
   color: var(--text);
 }
 h1 {
-  font-size: 32px;
-  line-height: 40px;
-  font-weight: 600;
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 h2 {
-  font-size: 24px;
-  line-height: 30px;
+  font-size: 18px;
+  line-height: 1.3;
   font-weight: 600;
 }
 h3 {
-  font-size: 18px;
-  line-height: 24px;
+  font-size: 14.5px;
+  line-height: 1.4;
   font-weight: 600;
 }
+.lede {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 6px 0 0;
+}
+.muted {
+  color: var(--text-2);
+}
+.tiny {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+.kicker {
+  font-size: 11.5px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.section-note {
+  margin: 2px 0 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.num {
+  font-variant-numeric: tabular-nums;
+}
+.reco-title {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-2,
+.clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.clamp-2 {
+  -webkit-line-clamp: 2;
+}
+.clamp-3 {
+  -webkit-line-clamp: 3;
+}
+
+/* ============ 5. Shell: sidebar, nav, main ============ */
 .shell {
   min-height: 100vh;
   display: grid;
@@ -207,37 +363,37 @@ h3 {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 20px;
-  background: var(--base);
+  padding: 14px 10px;
+  background: var(--canvas);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 14px;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+  padding: 4px 8px;
 }
 .mark {
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand), var(--brand-deep));
-  box-shadow: var(--shadow-xs);
+  background: #37352f;
+  border-radius: var(--r-md);
+  flex: none;
 }
-.wordmark {
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 18px;
+[data-theme="dark"] .mark {
+  background: rgba(255, 255, 255, 0.14);
 }
 .mark-sm {
-  width: 28px;
-  height: 28px;
-  border-radius: 9px;
-  flex: none;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
+}
+.wordmark {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
 }
 #mobileSummary {
   flex: 1;
@@ -250,7 +406,8 @@ h3 {
 }
 .nav {
   display: grid;
-  gap: 6px;
+  gap: 1px;
+  position: relative;
 }
 .nav button,
 .moreitem {
@@ -258,52 +415,81 @@ h3 {
   background: transparent;
   color: var(--text-2);
   border-radius: var(--r-md);
-  padding: 10px 12px;
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 14px;
+  font-weight: 500;
   text-align: left;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  min-height: 44px;
+  gap: 8px;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.nav button svg {
+  flex: none;
+  color: var(--text-3);
+  transition: color var(--fast) var(--ease);
 }
 .nav button:hover,
 .moreitem:hover {
   background: var(--subtle);
   color: var(--text);
 }
+/* Active nav = quiet ink on a soft fill, not blue (Notion) */
 .nav button.active {
-  background: var(--brand-soft);
-  color: var(--brand-deep);
+  background: var(--subtle);
+  color: var(--text);
   font-weight: 600;
+}
+.nav button.active svg,
+.nav button:hover svg {
+  color: var(--text-2);
+}
+/* setupNavIndicator() still injects and positions this element; the active
+   state is pure CSS now, so the indicator is styled inert and invisible. */
+.nav-indicator {
+  display: none;
 }
 .side-actions {
   margin-top: auto;
   display: grid;
-  gap: 4px;
+  gap: 1px;
 }
-/* Quiet the sidebar utility stack: one primary (capture), the rest ghost rows */
-.side-actions .btn:not(.primary) {
+/* Quiet text rows; only Quick capture keeps a bordered button look */
+.side-actions .btn {
   border-color: transparent;
   background: transparent;
   color: var(--text-2);
   font-weight: 500;
-  padding: 7px 10px;
+  min-height: 28px;
+  padding: 4px 8px;
   justify-content: flex-start;
   text-align: left;
   box-shadow: none;
 }
-.side-actions .btn:not(.primary):hover {
+.side-actions .btn:hover {
   background: var(--subtle);
   color: var(--text);
 }
 .side-actions .btn.primary {
-  margin-bottom: 6px;
+  background: var(--base);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 8px;
+  justify-content: center;
 }
+.side-actions .btn.primary:hover {
+  background: var(--subtle);
+}
+/* Content plane: white sheet against the canvas frame */
 .main {
   min-width: 0;
-  padding: 28px 32px 48px;
+  background: var(--base);
+  padding: 40px 32px 64px;
 }
 .main > * {
-  max-width: 1560px;
+  max-width: 1100px;
   margin-inline: auto;
 }
 .status-rail,
@@ -314,150 +500,375 @@ h3 {
 .mobile-tabs {
   display: none;
 }
-.status-rail {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 20px;
-  align-items: stretch;
-}
-.rail-card,
-.card,
-.panel,
-.modal-card,
-.sheet-card {
-  background: var(--base);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-xs);
-}
-.rail-card {
-  padding: 10px 12px;
-  align-self: stretch;
-  align-content: start;
-  height: 100%;
-}
-.rail-title {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.rail-value {
-  font-weight: 600;
-  margin-top: 4px;
-}
+
+/* ============ 6. Page scaffolding & callout ============ */
 .page {
   display: grid;
-  gap: 20px;
+  gap: 24px;
 }
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 20px;
   align-items: end;
+  padding-bottom: 4px;
 }
-.lede {
-  font-size: 16px;
-  line-height: 22px;
+/* Notion callout block — the Overview "What's next" signature element */
+.callout {
+  background: var(--muted-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+}
+.callout .cardhead {
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 0;
+}
+.callout-glyph {
+  flex: none;
+  font-size: 20px;
+  line-height: 1.3;
+}
+.callout .cardhead > div:not(.action-tools) {
+  flex: 1;
+  min-width: 0;
+}
+.empty-state {
+  border: 1px dashed var(--border);
+  background: transparent;
+  border-radius: var(--r-lg);
+  padding: 18px;
+  text-align: center;
   color: var(--text-2);
-  margin: 8px 0 0;
 }
-.health {
+
+/* ============ 7. Buttons & inputs ============ */
+.btn,
+.iconbtn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: var(--r-md);
+  min-height: 28px;
+  padding: 3px 10px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.btn:hover,
+.iconbtn:hover {
+  background: var(--subtle);
+}
+.btn:active,
+.iconbtn:active {
+  background: var(--muted-surface);
+}
+.btn.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+.btn.primary:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn.danger:hover {
+  background: var(--danger-hover);
+}
+.btn.tertiary {
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+}
+.btn.tertiary:hover {
+  background: var(--subtle);
+  color: var(--text);
+}
+.iconbtn {
+  width: 28px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--text-2);
+}
+.iconbtn:hover {
+  color: var(--text);
+}
+.wiz-big {
+  min-height: 44px;
+}
+.input,
+select,
+textarea {
+  border: 1px solid var(--border);
+  background: var(--base);
+  color: var(--text);
+  border-radius: var(--r-md);
+  padding: 5px 10px;
+  min-height: 30px;
+  width: 100%;
+  font-size: 14.5px;
+  transition: border-color var(--fast) var(--ease),
+    box-shadow var(--fast) var(--ease);
+}
+.input::placeholder,
+textarea::placeholder {
+  color: var(--text-3);
+}
+.input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--border-strong);
+}
+.input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 2px var(--brand-soft);
+}
+.toolbar {
   display: flex;
-  flex-wrap: wrap;
   gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
 }
+.tag-cloud {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+}
+.form-row {
+  display: grid;
+  gap: 6px;
+}
+.form-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.capture-grid {
+  display: grid;
+  gap: 12px;
+}
+.task-filter-inline {
+  display: contents;
+}
+.filter-sheet-btn {
+  display: none;
+}
+
+/* Segmented filters: quiet text chips, active = soft ink fill */
+.tabs,
+.seg {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+}
+.tab,
+.seg button {
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-md);
+  padding: 3px 10px;
+  min-height: 28px;
+  color: var(--text-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.tab:hover,
+.seg button:hover {
+  background: var(--subtle);
+  color: var(--text);
+}
+.tab.active,
+.seg button.active {
+  background: var(--subtle);
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ============ 8. Chips, tags, dots, donuts ============ */
 .chip,
 .tag,
 .healthchip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border);
-  background: var(--base);
-  color: var(--text-2);
-  border-radius: var(--pill);
-  padding: 6px 10px;
+  border: 0;
+  background: var(--tag-gray-bg);
+  color: var(--tag-gray-text);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
   font-size: 12px;
-  line-height: 16px;
-  min-height: 30px;
+  line-height: 1.5;
+  font-weight: 500;
+  min-height: 22px;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+button.chip:hover,
+button.tag:hover {
+  background: var(--subtle);
+  color: var(--text);
 }
 .chip.active,
 .tag.active {
   background: var(--brand-soft);
-  border-color: color-mix(in srgb, var(--brand) 35%, var(--border));
   color: var(--brand-deep);
   font-weight: 600;
 }
+.chip.ok {
+  background: var(--tag-green-bg);
+  color: var(--tag-green-text);
+}
+.chip.warn {
+  background: var(--tag-orange-bg);
+  color: var(--tag-orange-text);
+}
+.chip.bad {
+  background: var(--status-error-soft);
+  color: var(--status-error-text);
+}
 .healthchip.ok {
-  background: var(--positive-soft);
-  color: var(--positive-deep);
-  border-color: transparent;
+  background: var(--tag-green-bg);
+  color: var(--tag-green-text);
 }
 .healthchip.warn {
-  background: var(--warning-soft);
-  color: #6b5200;
-  border-color: transparent;
+  background: var(--tag-orange-bg);
+  color: var(--tag-orange-text);
 }
 .healthchip.bad {
-  background: var(--danger-soft);
-  color: var(--danger);
-  border-color: transparent;
+  background: var(--status-error-soft);
+  color: var(--status-error-text);
 }
-.btn,
-.iconbtn {
-  border: 1px solid var(--border);
-  background: var(--base);
-  color: var(--text);
-  border-radius: var(--r-md);
-  min-height: 40px;
-  padding: 9px 14px;
-  font-weight: 600;
+.health {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip.refreshing {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition:
-    background var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    transform var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease);
+  gap: 6px;
 }
-.btn:hover,
-.iconbtn:hover {
-  background: var(--subtle);
-  box-shadow: var(--shadow-xs);
+.chip.refreshing .spin {
+  width: 10px;
+  height: 10px;
+  border: 1.5px solid var(--border);
+  border-top-color: var(--text-2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
-.btn:active,
-.iconbtn:active {
-  transform: scale(0.985);
+/* Status dots: quiet 6px marks, no glow rings */
+.status-dot-ui,
+.machine-dot,
+.sync-dot,
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--status-info-solid);
 }
-.btn.primary {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: white;
+.status-dot-ui {
+  margin-right: 6px;
 }
-.btn.primary:hover {
-  background: var(--brand-hover);
+.status-dot-ui.live,
+.status-dot-ui.ok,
+.status-dot-ui.active,
+.machine-dot.active,
+.sync-dot.ok,
+.live-dot {
+  background: var(--positive);
 }
-.btn.danger {
+.status-dot-ui.warn,
+.status-dot-ui.idle,
+.machine-dot.idle,
+.sync-dot.warn {
+  background: var(--warning);
+}
+.status-dot-ui.bad,
+.status-dot-ui.down,
+.machine-dot.down,
+.sync-dot.bad {
   background: var(--danger);
-  border-color: var(--danger);
-  color: white;
 }
-.btn.tertiary {
-  border-color: transparent;
-  background: transparent;
+.status-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: inline-block;
 }
-.iconbtn {
-  width: 40px;
-  padding: 0;
+.status-dot.doing {
+  border-color: var(--brand);
+  background: linear-gradient(90deg, var(--brand) 50%, transparent 50%);
 }
+.status-dot.done {
+  background: var(--positive);
+  border-color: var(--positive);
+}
+.status-dot.blocked {
+  background: var(--warning);
+  border-color: var(--warning);
+}
+.status-dot.idea {
+  border-style: dashed;
+}
+/* Pure-CSS donut: track --subtle, fill --brand via --p */
+.donut {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  border-radius: 50%;
+  display: inline-block;
+  background: conic-gradient(
+    var(--donut-c, var(--brand)) calc(var(--p, 0) * 1%),
+    var(--subtle) 0
+  );
+  -webkit-mask: radial-gradient(circle, transparent 4.5px, #000 5px);
+  mask: radial-gradient(circle, transparent 4.5px, #000 5px);
+}
+.donut.anthropic {
+  --donut-c: var(--anthropic-focus);
+}
+.donut.cursor {
+  --donut-c: var(--cursor-black);
+}
+.donut.openai {
+  --donut-c: var(--gpt-blue);
+}
+.donut.codex {
+  --donut-c: var(--openai-green);
+}
+.donut.local {
+  --donut-c: var(--positive);
+}
+.donut.no-data {
+  background: var(--subtle);
+  opacity: 0.55;
+  outline: 1px dashed var(--text-3);
+  outline-offset: -1px;
+}
+
+/* ============ 9. Cards, grids, tiles ============ */
 .grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 .cols-2 {
   grid-template-columns: 1.2fr 0.8fr;
@@ -465,52 +876,109 @@ h3 {
 .cols-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.rail-card,
+.card,
+.panel,
+.modal-card,
+.sheet-card {
+  background: var(--raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: none;
+}
 .card {
-  padding: 18px;
+  padding: 16px;
+  transition: background var(--standard) var(--ease),
+    border-color var(--standard) var(--ease);
+}
+.card.compact {
+  padding: 14px;
 }
 .cardhead {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   align-items: start;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
-.muted {
-  color: var(--text-2);
-}
-.tiny {
-  font-size: 12px;
-  color: var(--text-3);
-}
-.queue {
+.metric-grid {
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
-.qrow,
-.table-row,
-.task-row,
-.kb-row {
-  width: 100%;
+.metric-card {
   border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: var(--r-md);
-  padding: 12px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+  background: var(--raised);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  min-height: 84px;
   text-align: left;
   color: var(--text);
-  transition:
-    background var(--fast) var(--ease),
+  transition: background var(--fast) var(--ease),
     border-color var(--fast) var(--ease);
 }
-.qrow:hover,
-.table-row:hover,
-.task-row:hover,
-.kb-row:hover {
+button.metric-card:hover {
   background: var(--subtle);
   border-color: var(--border);
+}
+.metric-card .num {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.metric-card .label {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.metric-card .hint {
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 2px;
+}
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 14px;
+}
+.project-tile {
+  border: 1px solid var(--border-subtle);
+  background: var(--raised);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  text-align: left;
+  color: var(--text);
+  box-shadow: none;
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.project-tile:hover {
+  border-color: var(--border-strong);
+  background: var(--muted-surface);
+}
+.cover {
+  height: 130px;
+  background: var(--muted-surface);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.cover > span {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+.tilebody {
+  padding: 12px 14px;
 }
 .row-title {
   font-weight: 600;
@@ -523,135 +991,32 @@ h3 {
   flex-wrap: wrap;
   margin-top: 4px;
 }
-.action-tools {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-.tabs,
-.seg {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.tab,
-.seg button {
-  border: 1px solid var(--border);
-  background: var(--base);
-  border-radius: var(--pill);
-  padding: 8px 12px;
-  min-height: 36px;
-  color: var(--text-2);
-  font-weight: 600;
-}
-.tab.active,
-.seg button.active {
-  background: var(--brand-soft);
-  color: var(--brand-deep);
-  border-color: transparent;
-}
-.input,
-select,
-textarea {
-  border: 1px solid var(--border);
-  background: var(--base);
-  color: var(--text);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
-  min-height: 40px;
-  width: 100%;
-  font-size: 16px;
-}
-.input:hover,
-select:hover,
-textarea:hover {
-  border-color: var(--border-strong);
-}
-.toolbar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 16px;
-}
-.project-tile {
-  border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: var(--r-lg);
-  overflow: hidden;
-  text-align: left;
-  color: var(--text);
-  box-shadow: var(--shadow-xs);
-  transition:
-    transform var(--standard) var(--ease),
-    box-shadow var(--standard) var(--ease);
-}
-.project-tile:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border);
-}
-.cover {
-  height: 142px;
-  background: linear-gradient(135deg, var(--subtle), var(--brand-soft));
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-}
-.cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.tilebody {
-  padding: 14px;
-}
 .progress {
-  height: 6px;
+  height: 4px;
   border-radius: var(--pill);
   background: var(--subtle);
   overflow: hidden;
+  display: block;
 }
 .progress i {
   display: block;
   height: 100%;
   background: var(--brand);
   border-radius: inherit;
-}
-.table {
-  display: grid;
-  gap: 8px;
-}
-.table-head,
-.table-row {
-  grid-template-columns: 44px minmax(
-      180px,
-      1.4fr
-    ) 0.7fr 0.7fr 0.5fr 0.5fr 0.5fr 0.8fr;
-}
-.table-head {
-  display: grid;
-  gap: 12px;
-  padding: 0 12px;
-  color: var(--text-3);
-  font-size: 12px;
-  font-weight: 600;
+  transition: width var(--standard) var(--ease);
 }
 .project-header {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) auto;
-  gap: 20px;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 18px;
   align-items: center;
 }
 .project-cover {
-  width: 160px;
-  height: 110px;
-  border-radius: var(--r-lg);
-  background: var(--subtle);
+  width: 150px;
+  height: 100px;
+  border-radius: var(--r-md);
+  background: var(--muted-surface);
+  border: 1px solid var(--border-subtle);
   overflow: hidden;
 }
 .project-cover img {
@@ -661,41 +1026,12 @@ textarea:hover {
 }
 .task-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 18px;
 }
-/* taskListHTML renders one .card.compact per group, concatenated with no
-   separator markup - without this the groups had zero vertical gap between
-   them (e.g. no space between "PCF modernization" and "Vendors"). Matches
-   the page's existing 16px card rhythm (.grid gap). */
 #taskList {
   display: grid;
-  gap: 16px;
-}
-.task-row {
-  grid-template-columns: 44px minmax(0, 1fr) auto;
-}
-.status-dot {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 2px solid var(--border-strong);
-  display: inline-block;
-}
-.status-dot.doing {
-  border-color: var(--brand);
-  background: linear-gradient(90deg, var(--brand) 50%, transparent 50%);
-}
-.status-dot.done {
-  background: var(--positive);
-  border-color: var(--positive);
-}
-.status-dot.blocked {
-  background: var(--danger);
-  border-color: var(--danger);
-}
-.status-dot.idea {
-  border-style: dashed;
+  gap: 14px;
 }
 .docs,
 .shots {
@@ -705,817 +1041,419 @@ textarea:hover {
   padding-bottom: 4px;
 }
 .shot {
-  width: 132px;
-  height: 88px;
+  width: 124px;
+  height: 82px;
   border-radius: var(--r-md);
+  border: 1px solid var(--border-subtle);
   object-fit: cover;
-  background: var(--subtle);
+  background: var(--muted-surface);
   flex: 0 0 auto;
 }
-.markdown {
-  line-height: 1.6;
-}
-.markdown h1,
-.markdown h2,
-.markdown h3 {
-  margin: 18px 0 8px;
-}
-.markdown p {
-  margin: 0 0 10px;
-}
-.markdown table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 12px 0;
-}
-.markdown td,
-.markdown th {
-  border: 1px solid var(--border);
-  padding: 8px;
-}
-.modal-scrim,
-.sheet-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(18, 18, 18, 0.42);
-  z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-}
-.modal-card {
-  width: min(840px, 100%);
-  max-height: min(86vh, 900px);
-  overflow: auto;
-  padding: 22px;
-}
-.modal-wide {
-  width: min(1120px, 100%);
-}
-.modal-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  align-items: flex-start;
-}
-.modal-head p {
-  margin: 4px 0 0;
-  color: var(--text-2);
-}
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 24px;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: var(--base);
-  padding: 10px 14px;
-  border-radius: var(--pill);
-  box-shadow: var(--shadow-md);
-  z-index: 80;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity var(--standard) var(--ease),
-    transform var(--standard) var(--ease);
-}
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
-}
-.palette-list {
-  display: grid;
-  gap: 6px;
-}
-.cmd-row {
-  border: 0;
-  background: transparent;
-  border-radius: var(--r-md);
-  padding: 10px;
-  text-align: left;
-  color: var(--text);
-  display: flex;
-  justify-content: space-between;
-}
-.cmd-row:hover,
-.cmd-row.active {
-  background: var(--subtle);
-}
-.capture-grid {
-  display: grid;
-  gap: 12px;
-}
-.form-row {
-  display: grid;
-  gap: 6px;
-}
-.form-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-.lightbox {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.86);
-  z-index: 70;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-}
-.lightbox img {
-  max-width: 92vw;
-  max-height: 82vh;
-  border-radius: var(--r-md);
-}
-@media (max-width: 900px) {
-  .shell {
-    display: block;
-  }
-  .sidebar {
-    display: none;
-  }
-  .main {
-    padding: 76px 14px
-      calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 18px);
-  }
-  .mobile-top {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
-    background: var(--base);
-    border-bottom: 1px solid var(--border-subtle);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 20;
-  }
-  .mobile-tabs {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    min-height: var(--bottom-nav);
-    padding: 8px 6px calc(env(safe-area-inset-bottom) + 8px);
-    background: var(--base);
-    border-top: 1px solid var(--border-subtle);
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 4px;
-    z-index: 20;
-  }
-  .mobile-tabs button {
-    border: 0;
-    background: transparent;
-    color: var(--text-2);
-    border-radius: var(--r-md);
-    font-size: 12px;
-    min-height: 44px;
-  }
-  .mobile-tabs button.active {
-    background: var(--brand-soft);
-    color: var(--brand-deep);
-    font-weight: 600;
-  }
-  .status-rail,
-  .cols-2,
-  .cols-3,
-  .task-layout,
-  .project-header,
-  .hero {
-    grid-template-columns: 1fr;
-  }
-  .status-rail {
-    display: block;
-    margin-bottom: 16px;
-  }
-  .status-rail .rail-card,
-  .status-rail .credit-card {
-    display: none;
-  }
-  .status-rail.expanded .rail-card,
-  .status-rail.expanded .credit-card {
-    display: flex;
-    width: 100%;
-    margin-top: 10px;
-  }
-  .status-rail:not(.expanded) .mobile-extra-credit {
-    display: none;
-  }
-  .status-rail.expanded .rail-summary .rail-caret {
-    transform: rotate(-90deg);
-  }
-  .project-cover {
-    width: 100%;
-    height: 180px;
-  }
-  .table-head {
-    display: none;
-  }
-  .table-row {
-    grid-template-columns: 1fr;
-  }
-  .toolbar {
-    align-items: stretch;
-  }
-  .toolbar > * {
-    flex: 1 1 auto;
-  }
-  .modal-scrim {
-    align-items: end;
-    padding: 0;
-  }
-  .modal-card {
-    width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top) - 18px);
-    border-radius: 24px 24px 0 0;
-    padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px);
-    margin-top: auto;
-    scroll-padding-top: 92px;
-    animation: wb-sheet-up var(--standard) var(--ease-settle);
-  }
-  .modal-scrim.closing .modal-card {
-    animation: wb-sheet-up var(--fast) var(--ease-press) reverse forwards;
-  }
-  .iconbtn {
-    width: 44px;
-    min-height: 44px;
-  }
-  .form-two {
-    grid-template-columns: 1fr;
-  }
-  .gallery {
-    grid-template-columns: 1fr;
-  }
-  .qrow,
-  .task-row,
-  .kb-row {
-    grid-template-columns: 1fr;
-  }
-  .action-tools {
-    width: 100%;
-  }
-  .action-tools .btn {
-    flex: 1;
-  }
-}
-@media (min-width: 901px) and (max-width: 1180px) {
-  .task-layout,
-  .cols-2 {
-    grid-template-columns: 1fr;
-  }
-  .metric-grid,
-  .status-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-  }
-  .project-tile:hover {
-    transform: none;
-  }
+.intake-banner {
+  border-color: rgba(217, 115, 13, 0.35);
+  background: var(--warning-soft);
 }
 
-/* Vibe motion/state layer */
-@keyframes wb-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ============ 10. Rows, lists, tables ============ */
+.queue {
+  display: grid;
+  gap: 0;
 }
-@keyframes wb-sheet-up {
-  from {
-    opacity: 0;
-    transform: translateY(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes wb-soft-pop {
-  0% {
-    opacity: 0;
-    transform: scale(0.985);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes wb-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-.reveal {
-  opacity: 0;
-  animation: wb-fade-up var(--slow) var(--ease) forwards;
-  animation-delay: var(--stagger, 0ms);
-}
-.vibe-ready .card,
-.vibe-ready .rail-card,
-.vibe-ready .panel,
-.vibe-ready .project-tile,
-.vibe-ready .qrow,
-.vibe-ready .table-row,
-.vibe-ready .task-row,
-.vibe-ready .kb-row {
-  will-change: transform, box-shadow, border-color, background-color;
-}
-.card,
-.rail-card,
-.panel {
-  transition:
-    box-shadow var(--standard) var(--ease),
-    border-color var(--standard) var(--ease),
-    background-color var(--standard) var(--ease);
-}
-.card:hover,
-.panel:hover {
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border);
-}
-.interactive-lift {
-  transition:
-    transform var(--standard) var(--ease),
-    box-shadow var(--standard) var(--ease),
-    border-color var(--standard) var(--ease),
-    background-color var(--standard) var(--ease);
-}
-.interactive-lift:hover,
-.interactive-lift.vibe-hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border);
-}
-.interactive-lift:active,
-.interactive-lift.vibe-press {
-  transform: translateY(0) scale(0.985);
-}
-.pressable {
-  transition:
-    transform var(--standard) var(--ease-spring),
-    background-color var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease);
-}
-.pressable:active,
-.pressable.vibe-press {
-  transform: scale(0.985);
-  transition-duration: var(--fast);
-  transition-timing-function: var(--ease-press);
-}
+/* Notion database rows: hairline dividers, hover tint, no boxes */
 .qrow,
 .table-row,
 .task-row,
 .kb-row {
-  position: relative;
-  overflow: hidden;
-  transition:
-    background-color var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
-}
-.qrow::before,
-.table-row::before,
-.task-row::before,
-.kb-row::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--brand) 7%, transparent),
-    transparent
-  );
-  opacity: 0;
-  transform: translateX(-40%);
-  transition:
-    opacity var(--fast) var(--ease),
-    transform var(--standard) var(--ease);
-  pointer-events: none;
-}
-.qrow:hover::before,
-.table-row:hover::before,
-.task-row:hover::before,
-.kb-row:hover::before {
-  opacity: 1;
-  transform: translateX(40%);
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  border-radius: 0;
+  padding: 10px 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  text-align: left;
+  color: var(--text);
+  transition: background var(--fast) var(--ease);
 }
 .qrow:hover,
 .table-row:hover,
 .task-row:hover,
 .kb-row:hover {
-  box-shadow: var(--shadow-xs);
-  transform: translateY(-1px);
+  background: var(--subtle);
 }
-.btn.loading,
-.iconbtn.loading,
-[aria-busy="true"] {
-  position: relative;
-  color: transparent !important;
-  pointer-events: none;
+.qrow:first-child,
+.table-row:first-child,
+.task-row:first-child,
+.kb-row:first-child {
+  border-top: 1px solid var(--border-subtle);
 }
-.btn.loading::after,
-.iconbtn.loading::after,
-[aria-busy="true"]::after {
-  content: "";
-  position: absolute;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
-  color: var(--brand);
-  animation: spin 800ms linear infinite;
+.task-row {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
 }
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+.table {
+  display: grid;
+  gap: 0;
 }
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--subtle),
-    var(--muted-surface),
-    var(--subtle)
-  );
-  background-size: 200% 100%;
-  animation: wb-shimmer 1.2s linear infinite;
-  border-radius: var(--r-md);
+.table-head,
+.table-row {
+  grid-template-columns: 44px minmax(180px, 1.4fr) 0.7fr 0.7fr 0.5fr 0.5fr 0.5fr 0.8fr;
 }
-/* Boot screen: cached-paint + progress while GitHub loads */
-.chip.refreshing {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.table-head {
+  display: grid;
+  gap: 12px;
+  padding: 6px 8px;
+  color: var(--text-3);
+  font-size: 12.5px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-subtle);
 }
-.chip.refreshing .spin {
-  width: 11px;
-  height: 11px;
-  border: 2px solid var(--muted-surface);
-  border-top-color: var(--brand);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.refined-list {
+  display: grid;
+  gap: 0;
 }
-.boot-status {
-  margin-top: 12px;
-  color: var(--muted);
-}
-.boot-proj {
-  opacity: 0.85;
-}
-.modal-card {
-  animation: wb-soft-pop var(--standard) var(--ease);
-}
-.modal-scrim.closing {
-  animation: backdrop-in var(--fast) var(--ease) reverse forwards;
-  pointer-events: none;
-}
-.modal-scrim.closing .modal-card {
-  animation: wb-soft-pop var(--fast) var(--ease-press) reverse forwards;
-}
-.mobile-tabs button,
-.nav button,
-.tab,
-.seg button,
-.chip,
-.tag {
-  transition:
-    background-color var(--fast) var(--ease),
-    color var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
-}
-.mobile-tabs button:active,
-.nav button:active,
-.tab:active,
-.seg button:active,
-.chip:active,
-.tag:active {
-  transform: scale(0.985);
-}
-
-/* Sliding Vibe navigation selection */
-.nav {
-  position: relative;
-  isolation: isolate;
-}
-.nav-indicator {
-  position: absolute;
-  left: 0;
-  top: 0;
+.refined-row {
   width: 100%;
-  height: 44px;
-  border-radius: var(--r-md);
-  background: var(--brand-soft);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 18%, transparent);
-  transform: translateY(var(--nav-y, 0));
-  opacity: 0;
-  transition:
-    transform var(--slow) var(--ease),
-    height var(--slow) var(--ease),
-    opacity var(--fast) var(--ease),
-    background-color var(--standard) var(--ease);
-  z-index: -1;
-  pointer-events: none;
-}
-.nav.has-active .nav-indicator {
-  opacity: 1;
-}
-.nav button {
-  position: relative;
-  z-index: 1;
-  background: transparent !important;
-  transition:
-    color var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
-}
-.nav button.active {
-  color: var(--brand-deep);
-  font-weight: 600;
-  background: transparent !important;
-}
-.nav button:hover:not(.active) {
-  background: color-mix(in srgb, var(--subtle) 75%, transparent) !important;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  border-radius: 0;
+  padding: 10px 8px;
   color: var(--text);
+  text-align: left;
+  transition: background var(--fast) var(--ease);
 }
-[data-theme="dark"] .nav button.active {
-  color: #d7e9ff;
+.refined-row:last-child {
+  border-bottom: 0;
 }
-[data-theme="dark"] .nav-indicator {
-  background: color-mix(in srgb, var(--brand) 25%, var(--base));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
+.refined-row:hover {
+  background: var(--subtle);
 }
-
-.modal-scrim {
-  backdrop-filter: blur(8px);
-  animation: backdrop-in var(--standard) var(--ease);
+.refined-row > span:first-child {
+  min-width: 0;
+  display: block;
 }
-@keyframes backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+.refined-title {
+  display: block;
+  font-weight: 600;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
-.modal-card {
-  box-shadow: var(--shadow-lg);
-  border-color: var(--border);
+.refined-sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-2);
+  margin-top: 1px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.refined-meta {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.action-tools {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 .qrow .action-tools,
 .task-row .action-tools,
-.kb-row .action-tools {
-  opacity: 0.72;
-  transform: translateX(2px);
-  transition:
-    opacity var(--fast) var(--ease),
-    transform var(--fast) var(--ease);
+.kb-row .action-tools,
+.refined-row .action-tools {
+  opacity: 0.75;
+  transition: opacity var(--fast) var(--ease);
 }
 .qrow:hover .action-tools,
 .task-row:hover .action-tools,
 .kb-row:hover .action-tools,
+.refined-row:hover .action-tools,
 .qrow:focus-visible .action-tools,
 .task-row:focus-visible .action-tools,
 .kb-row:focus-visible .action-tools {
   opacity: 1;
-  transform: translateX(0);
 }
-.btn:focus-visible,
-.iconbtn:focus-visible,
-.qrow:focus-visible,
-.table-row:focus-visible,
-.task-row:focus-visible,
-.kb-row:focus-visible,
-.project-tile:focus-visible,
-.nav button:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--focus) 42%, transparent);
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 1px var(--focus),
-    var(--shadow-sm);
+.lane-clear {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--r-md);
+  color: var(--text-3);
+  font-size: 12.5px;
 }
-[aria-disabled="true"],
-.disabled {
-  opacity: 0.52;
-  filter: saturate(0.7);
-  pointer-events: none;
+.lane-clear-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--positive);
+  flex: none;
 }
-.toast.success {
-  background: var(--positive-deep);
-  color: white;
+.lane-empty {
+  border-style: dashed;
+  box-shadow: none;
 }
-.toast.warning {
-  background: #6b5200;
-  color: white;
+.lane-empty .cardhead {
+  margin-bottom: 0;
 }
-.toast.danger {
-  background: var(--danger);
-  color: white;
+.palette-list {
+  display: grid;
+  gap: 1px;
 }
-.toast.info {
-  background: var(--brand);
-  color: white;
+.cmd-row {
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+  transition: background var(--fast) var(--ease);
 }
-
-/* Desktop density: professional dashboard, not tablet scale */
-@media (min-width: 901px) {
-  :root {
-    --side: 252px;
-  }
-  body {
-    font-size: 13px;
-    line-height: 18px;
-  }
-  .sidebar {
-    padding: 18px 14px;
-    gap: 14px;
-  }
-  .brand {
-    gap: 10px;
-  }
-  .mark {
-    width: 30px;
-    height: 30px;
-    border-radius: 10px;
-  }
-  .wordmark {
-    font-size: 16px;
-  }
-  .nav {
-    gap: 3px;
-  }
-  .nav button,
-  .moreitem {
-    min-height: 34px;
-    padding: 7px 10px;
-    border-radius: 7px;
-    font-size: 13px;
-  }
-  .nav-indicator {
-    height: 34px;
-    border-radius: 7px;
-  }
-  .side-actions {
-    gap: 6px;
-  }
-  .main {
-    padding: 22px 26px 38px;
-  }
-  .status-rail {
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .rail-card {
-    padding: 10px 12px;
-    border-radius: 12px;
-  }
-  .rail-value {
-    margin-top: 2px;
-  }
-  .page {
-    gap: 16px;
-  }
-  .hero {
-    gap: 16px;
-  }
-  .lede {
-    font-size: 14px;
-    line-height: 20px;
-    margin-top: 5px;
-  }
-  h1 {
-    font-size: 28px;
-    line-height: 34px;
-  }
-  h2 {
-    font-size: 21px;
-    line-height: 27px;
-  }
-  h3 {
-    font-size: 16px;
-    line-height: 22px;
-  }
-  .card {
-    padding: 14px;
-    border-radius: 14px;
-  }
-  .cardhead {
-    margin-bottom: 10px;
-  }
-  .grid {
-    gap: 12px;
-  }
-  .btn {
-    min-height: 32px;
-    padding: 6px 11px;
-    border-radius: 7px;
-    font-size: 13px;
-  }
-  .iconbtn {
-    width: 32px;
-    min-height: 32px;
-    border-radius: 7px;
-  }
-  .chip,
-  .tag,
-  .healthchip {
-    min-height: 24px;
-    padding: 4px 8px;
-    font-size: 11px;
-    line-height: 14px;
-  }
-  .input,
-  select,
-  textarea {
-    min-height: 34px;
-    padding: 7px 10px;
-    border-radius: 7px;
-    font-size: 14px;
-  }
-  .tab,
-  .seg button {
-    min-height: 30px;
-    padding: 5px 10px;
-    font-size: 12px;
-  }
-  .qrow,
-  .table-row,
-  .task-row,
-  .kb-row {
-    padding: 9px 10px;
-    border-radius: 9px;
-    gap: 10px;
-  }
-  .gallery {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 12px;
-  }
-  .cover {
-    height: 118px;
-  }
-  .tilebody {
-    padding: 12px;
-  }
-  .project-tile {
-    border-radius: 14px;
-  }
-  .project-header {
-    grid-template-columns: 132px minmax(0, 1fr) auto;
-    gap: 16px;
-  }
-  .project-cover {
-    width: 132px;
-    height: 88px;
-    border-radius: 12px;
-  }
-  .task-layout {
-    grid-template-columns: minmax(0, 1fr) 330px;
-    gap: 14px;
-  }
-  .task-row {
-    grid-template-columns: 34px minmax(0, 1fr) auto;
-  }
-  .status-dot {
-    width: 15px;
-    height: 15px;
-  }
-  .modal-card {
-    padding: 18px;
-    border-radius: 18px;
-  }
-  .modal-head {
-    margin-bottom: 12px;
-  }
-  .shot {
-    width: 112px;
-    height: 74px;
-  }
+.cmd-row:hover,
+.cmd-row.active {
+  background: var(--subtle);
+}
+.sheet-list {
+  background: var(--raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.sheet-list .sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14.5px;
+  font-weight: 500;
+  text-align: left;
+  transition: background var(--fast) var(--ease);
+}
+.sheet-list .sheet-row + .sheet-row {
+  border-top: 1px solid var(--border-subtle);
+}
+.sheet-list .sheet-row:hover,
+.sheet-list .sheet-row:active {
+  background: var(--subtle);
+}
+.sheet-chev {
+  color: var(--text-3);
+  font-size: 16px;
+}
+.ver-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+}
+.ver-row:last-child {
+  border-bottom: 0;
+}
+.ver-main {
+  min-width: 0;
+}
+.ver-title {
+  display: block;
+  font-weight: 600;
+}
+.ver-main .refined-sub {
+  margin-top: 1px;
+}
+.ver-row .chip {
+  white-space: nowrap;
 }
 
+/* ============ 11. Status rail & ops ============ */
+.status-rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+.rail-card {
+  padding: 10px 12px;
+  align-self: stretch;
+  align-content: start;
+  height: 100%;
+}
+.rail-title {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.rail-value {
+  font-weight: 600;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+.ops-card {
+  min-height: 74px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.ops-card:hover {
+  background: var(--muted-surface);
+  border-color: var(--border);
+}
+.ops-card .rail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-height: 18px;
+}
+.machine-strip,
+.sync-strip {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.machine-chip,
+.sync-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: var(--tag-gray-bg);
+  border-radius: var(--r-sm);
+  padding: 2px 7px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.ops-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.ops-list {
+  display: grid;
+  gap: 0;
+}
+.ops-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+}
+.ops-row:last-child {
+  border-bottom: 0;
+}
+.prompt-snippet {
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-summary {
+  display: none;
+}
+.rail-sum-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.momentum-card {
+  overflow: hidden;
+}
+.momentum-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.momentum-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.momentum-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+.stat-chips {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+}
+.stat-chip {
+  border: 1px solid var(--border-subtle);
+  background: var(--raised);
+  border-radius: var(--r-md);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text);
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.stat-chip:hover {
+  background: var(--subtle);
+  border-color: var(--border);
+}
+.stat-chip .v {
+  font-weight: 600;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-chip .l {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+.boot-status {
+  margin-top: 12px;
+  color: var(--text-2);
+}
+.boot-proj {
+  opacity: 0.85;
+}
+
+/* ============ 12. Usage & charts ============ */
 .credit-card {
   cursor: pointer;
   text-align: left;
@@ -1525,13 +1463,19 @@ textarea:hover {
   align-items: stretch;
   justify-content: flex-start;
   border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: 12px;
+  background: var(--raised);
+  border-radius: var(--r-lg);
   padding: 10px 12px;
-  box-shadow: var(--shadow-xs);
+  box-shadow: none;
   align-self: stretch;
   align-content: start;
   height: 100%;
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.credit-card:hover {
+  background: var(--muted-surface);
+  border-color: var(--border);
 }
 .credit-mini {
   display: grid;
@@ -1550,17 +1494,18 @@ textarea:hover {
   font-size: 12px;
 }
 .credit-amt {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-2);
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .credit-age {
-  font-size: 11px;
+  font-size: 11.5px;
   color: var(--text-3);
   margin-top: 6px;
 }
 .creditbar {
-  height: 5px;
+  height: 4px;
   border-radius: var(--pill);
   background: var(--subtle);
   overflow: hidden;
@@ -1570,10 +1515,21 @@ textarea:hover {
   height: 100%;
   border-radius: inherit;
   background: var(--brand);
-  transition: width var(--slow) var(--ease);
+  transition: width var(--standard) var(--ease);
+}
+.creditbar.anthropic i,
+.creditbar.claude i {
+  background: var(--anthropic-focus);
+}
+.creditbar.gpt i,
+.creditbar.openai i {
+  background: var(--gpt-blue);
+}
+.creditbar.codex i {
+  background: var(--openai-green);
 }
 .creditbar.cursor i {
-  background: var(--purple);
+  background: var(--cursor-black);
 }
 .creditbar.local i {
   background: var(--positive);
@@ -1601,475 +1557,21 @@ textarea:hover {
 .usage-card {
   padding: 14px;
   border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  background: var(--base);
+  border-radius: var(--r-lg);
+  background: var(--raised);
   height: 100%;
-}
-.usage-big {
-  font-size: 24px;
-  line-height: 30px;
-  font-weight: 700;
-  margin-top: 6px;
-}
-.mix-row {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr) 70px;
-  gap: 10px;
-  align-items: center;
-  margin: 8px 0;
-}
-.mix-label {
-  font-weight: 600;
-}
-.mix-sub {
-  font-size: 11px;
-  color: var(--text-3);
-}
-.usage-table {
-  display: grid;
-  gap: 6px;
-}
-.usage-table-row {
-  display: grid;
-  grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.7fr;
-  gap: 10px;
-  padding: 8px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  background: var(--base);
-  font-size: 12px;
-  align-items: center;
-}
-.usage-table-row.head {
-  border-color: transparent;
-  background: transparent;
-  color: var(--text-3);
-  font-weight: 600;
-}
-@media (max-width: 900px) {
-  .usage-grid {
-    grid-template-columns: 1fr;
-  }
-  .usage-table-row {
-    grid-template-columns: 1fr;
-  }
-  .mix-row {
-    grid-template-columns: 1fr;
-  }
-  .usage-window {
-    display: grid;
-  }
-  .usage-window .seg {
-    justify-content: flex-start;
-  }
-}
-
-.healthchip {
-  background: var(--base) !important;
-  border-color: var(--border-subtle) !important;
-  color: var(--text-2) !important;
-  font-weight: 600;
-}
-.healthchip::before,
-.chip.ok::before,
-.chip.warn::before,
-.chip.bad::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--status-info-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-info-solid) 18%, transparent);
-}
-.healthchip.ok::before,
-.chip.ok::before {
-  background: var(--status-success-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-success-solid) 18%, transparent);
-}
-.healthchip.warn::before,
-.chip.warn::before {
-  background: var(--status-warning-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-warning-solid) 22%, transparent);
-}
-.healthchip.bad::before,
-.chip.bad::before {
-  background: var(--status-error-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-error-solid) 18%, transparent);
-}
-.live-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--status-success-solid);
-  box-shadow: 0 0 0 0
-    color-mix(in srgb, var(--status-success-solid) 34%, transparent);
-  animation: live-pulse 1.8s var(--ease-out-soft) infinite;
-}
-@keyframes live-pulse {
-  0% {
-    box-shadow: 0 0 0 0
-      color-mix(in srgb, var(--status-success-solid) 35%, transparent);
-  }
-  70% {
-    box-shadow: 0 0 0 7px transparent;
-  }
-  100% {
-    box-shadow: 0 0 0 0 transparent;
-  }
-}
-
-.ops-card {
-  min-height: 78px;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-start;
-}
-.ops-card .rail-title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  min-height: 18px;
-}
-.machine-strip,
-.sync-strip {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.machine-chip,
-.sync-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 11px;
-  line-height: 14px;
-  color: var(--text-2);
-  font-weight: 600;
-}
-.machine-dot,
-.sync-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--status-info-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-info-solid) 16%, transparent);
-}
-.machine-dot.active,
-.sync-dot.ok {
-  background: var(--status-success-solid);
-  box-shadow: 0 0 0 0
-    color-mix(in srgb, var(--status-success-solid) 34%, transparent);
-  animation: live-pulse 1.8s var(--ease-out-soft) infinite;
-}
-.machine-dot.idle,
-.sync-dot.warn {
-  background: var(--status-warning-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-warning-solid) 20%, transparent);
-}
-.machine-dot.down,
-.sync-dot.bad {
-  background: var(--status-error-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-error-solid) 18%, transparent);
-}
-.ops-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-.ops-list {
-  display: grid;
-  gap: 8px;
-}
-.ops-row {
-  display: grid;
-  grid-template-columns: 140px minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 9px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  background: var(--base);
-}
-.prompt-snippet {
-  color: var(--text-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-@media (max-width: 900px) {
-  .ops-detail-grid {
-    grid-template-columns: 1fr;
-  }
-  .ops-row {
-    grid-template-columns: 1fr;
-  }
-  .ops-card {
-    min-width: 220px;
-  }
-}
-
-.action-tools .btn {
-  color: var(--text) !important;
-  opacity: 1 !important;
-  background: var(--base);
-  border-color: var(--border);
-}
-.action-tools .btn.tertiary {
-  background: transparent;
-  border-color: transparent;
-  color: var(--text-2) !important;
-}
-.action-tools .btn.primary {
-  background: var(--brand) !important;
-  border-color: var(--brand) !important;
-  color: #fff !important;
-}
-.qrow .action-tools .btn {
-  min-width: 58px;
-  color: var(--brand) !important;
-  background: transparent;
-  border-color: transparent;
-}
-.qrow:hover .action-tools .btn {
-  background: var(
-    --primary-background-hover-color,
-    color-mix(in srgb, var(--brand) 7%, transparent)
-  );
-  border-color: transparent;
-}
-
-.status-dot-ui {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  vertical-align: middle;
-  margin-right: 6px;
-  background: var(--status-info-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-info-solid) 16%, transparent);
-}
-.status-dot-ui.live,
-.status-dot-ui.ok {
-  background: var(--status-success-solid);
-  animation: live-pulse 1.8s var(--ease-out-soft) infinite;
-  box-shadow: 0 0 0 0
-    color-mix(in srgb, var(--status-success-solid) 34%, transparent);
-}
-.status-dot-ui.warn,
-.status-dot-ui.idle {
-  background: var(--status-warning-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-warning-solid) 22%, transparent);
-}
-.status-dot-ui.bad,
-.status-dot-ui.down {
-  background: var(--status-error-solid);
-  box-shadow: 0 0 0 2px
-    color-mix(in srgb, var(--status-error-solid) 18%, transparent);
-}
-.momentum-card {
-  overflow: hidden;
-}
-.momentum-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-.stat-chips {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  margin: 10px 0 14px;
-}
-.stat-chip {
-  border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: 10px;
-  padding: 8px 9px;
-  text-align: left;
-  color: var(--text);
-  transition:
-    transform var(--motion-fast) var(--ease-spring),
-    background var(--motion-fast) var(--ease-out-soft),
-    border-color var(--motion-fast) var(--ease-out-soft);
-}
-.stat-chip:hover {
-  transform: translateY(-1px);
-  background: var(--subtle);
-  border-color: var(--border);
-}
-.stat-chip .v {
-  font-weight: 800;
-  font-size: 18px;
-  line-height: 22px;
-}
-.stat-chip .l {
-  font-size: 11px;
-  color: var(--text-3);
-  margin-top: 1px;
-}
-.momentum-summary {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 10px;
-  color: var(--text-2);
-  font-size: 12px;
-}
-.momentum-summary span {
-  display: inline-flex;
-  align-items: center;
-}
-@media (max-width: 1100px) {
-  .stat-chips {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/* Brand clarity for AI usage lanes */
-:root {
-  --anthropic-slate: #262625;
-  --anthropic-cloud: #91918d;
-  --anthropic-ivory: #fafaf7;
-  --anthropic-focus: #d97745;
-  --anthropic-error: #bf4d43;
-  --cursor-black: #000000;
-  --azure-blue: #0078d4;
-  --openai-green: #10a37f;
-  --vscode-blue: #007acc;
-}
-.brand-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  font-weight: 650;
-  color: var(--text);
-}
-.brand-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 6px;
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 18px;
-  background: var(--subtle);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-}
-.brand-icon img {
-  width: 13px;
-  height: 13px;
-  object-fit: contain;
-  display: block;
-}
-.brand-icon.vscode img {
-  width: 15px;
-  height: 15px;
-}
-.brand-icon.cursor {
-  background: var(--cursor-black);
-  border-color: var(--cursor-black);
-}
-.brand-icon.cursor img {
-  filter: invert(1);
-}
-.brand-icon.anthropic {
-  background: var(--anthropic-ivory);
-  border-color: #ebddcc;
-}
-.brand-icon.azure,
-.brand-icon.openai {
-  background: #eaf4ff;
-  border-color: #c9e4ff;
-}
-.brand-icon.vscode {
-  background: #eaf4ff;
-  border-color: #bbd9ff;
-}
-.brand-icon.neutral::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-3);
-}
-.creditbar.anthropic i,
-.creditbar.claude i {
-  background: var(--anthropic-focus);
-}
-.creditbar.azure i,
-.creditbar.openai i {
-  background: var(--azure-blue);
-}
-.creditbar.cursor i {
-  background: var(--cursor-black);
-}
-.brand-icon.local {
-  background: #e7f7ef;
-  border-color: #b7e6ce;
-  color: #0f9d63;
-}
-.brand-icon.local img {
-  width: 12px;
-  height: 12px;
-}
-[data-theme="dark"] .brand-icon.local {
-  background: #10241b;
-  border-color: #1f5b40;
-  color: #34d399;
-}
-.creditbar.local i {
-  background: #10b981;
-}
-.brand-label.local {
-  color: var(--text);
-}
-.mix-row {
-  grid-template-columns: 150px minmax(0, 1fr) 56px;
-}
-.mix-label .brand-label {
-  font-size: 13px;
-}
-.usage-table-row .brand-label {
-  font-weight: 600;
-}
-.usage-table-row .brand-icon {
-  width: 16px;
-  height: 16px;
-  flex-basis: 16px;
-  border-radius: 5px;
-}
-.usage-table-row .brand-icon img {
-  width: 11px;
-  height: 11px;
 }
 .usage-card h3 {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.usage-big {
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
 }
 .usage-window,
 .usage-full {
@@ -2084,6 +1586,49 @@ textarea:hover {
 .usage-window .seg {
   justify-content: flex-end;
 }
+.mix-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 56px;
+  gap: 10px;
+  align-items: center;
+  margin: 8px 0;
+}
+.mix-label {
+  font-weight: 600;
+}
+.mix-label .brand-label {
+  font-size: 13px;
+}
+.mix-sub {
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.usage-table {
+  display: grid;
+  gap: 0;
+}
+.usage-table-row {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 0.8fr 0.8fr 0.7fr;
+  gap: 10px;
+  padding: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  border-radius: 0;
+  background: transparent;
+  font-size: 12.5px;
+  align-items: center;
+  transition: background var(--fast) var(--ease);
+}
+.usage-table-row.head {
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-3);
+  font-weight: 500;
+}
+.usage-table-row:last-child:not(.head) {
+  border-bottom: 0;
+}
 .recent-sessions-table .usage-table-row {
   grid-template-columns: 1.2fr 0.75fr 1fr 1fr 1fr 1fr 1fr 0.7fr 0.6fr 0.7fr;
 }
@@ -2095,8 +1640,32 @@ textarea:hover {
   cursor: pointer;
 }
 .recent-sessions-table .usage-table-row:not(.head):hover {
-  border-color: var(--border);
-  background: var(--muted-surface);
+  background: var(--subtle);
+}
+.session-summary {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-3);
+  line-height: 1.4;
+}
+.session-projects {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.session-proj-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  background: var(--tag-gray-bg);
+  border: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--tag-gray-text);
+  white-space: nowrap;
 }
 .session-detail-row {
   display: grid;
@@ -2104,21 +1673,11 @@ textarea:hover {
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 13px;
+  font-size: 13.5px;
+  overflow-wrap: anywhere;
 }
 .session-detail-row:last-child {
   border-bottom: none;
-}
-@media (max-width: 900px) {
-  .session-detail-row {
-    grid-template-columns: 1fr;
-    gap: 2px;
-  }
-}
-.route-arrow {
-  color: var(--text-3);
-  font-weight: 800;
-  margin: 0 2px;
 }
 .session-route {
   display: flex;
@@ -2127,8 +1686,14 @@ textarea:hover {
   min-width: 0;
   flex-wrap: wrap;
 }
+.route-arrow {
+  color: var(--text-3);
+  font-weight: 600;
+  margin: 0 2px;
+}
 .cost-inline {
-  font-weight: 700;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 .cost-link {
   border: 0;
@@ -2136,266 +1701,393 @@ textarea:hover {
   padding: 0;
   color: var(--text);
   font: inherit;
-  font-weight: 800;
+  font-weight: 600;
   text-decoration: underline;
   text-decoration-thickness: 1px;
-  text-underline-offset: 4px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 .cost-link:hover {
-  color: var(--brand-deep);
+  color: var(--brand);
 }
 .cost-savings {
   color: var(--positive-deep);
-  font-weight: 800;
+  font-weight: 600;
 }
-[data-theme="dark"] .cost-savings {
-  color: var(--positive);
+.brand-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text);
 }
-  background: #262625;
-  border-color: #40403e;
-}
+.brand-label.local,
 .brand-label.cursor {
   color: var(--text);
 }
-@media (max-width: 900px) {
-  .mix-row {
-    grid-template-columns: 1fr;
-  }
-  .brand-icon {
-    width: 17px;
-    height: 17px;
-    flex-basis: 17px;
-  }
-  .recent-sessions-table .usage-table-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .usage-table-row.head {
-    display: none;
-  }
-  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) {
-    grid-template-columns: minmax(92px, 0.95fr) repeat(4, minmax(0, 1fr));
-    align-items: start;
-    gap: 10px;
-  }
-  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) span[data-label] {
-    min-width: 0;
-    word-break: normal;
-    overflow-wrap: anywhere;
-  }
-  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) span[data-label="Cost"] {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) span[data-label="Cost"]::before {
-    flex-basis: 100%;
-  }
-  .usage-table-row span[data-label]::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-3);
-    margin-bottom: 2px;
-  }
+.brand-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-sm);
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 18px;
+  background: var(--muted-surface);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+.brand-icon img {
+  width: 13px;
+  height: 13px;
+  object-fit: contain;
+  display: block;
+}
+.brand-icon.vscode img {
+  width: 15px;
+  height: 15px;
+}
+.brand-icon.cursor {
+  background: #37352f;
+  border-color: #37352f;
+}
+.brand-icon.cursor img {
+  filter: invert(1);
+}
+.brand-icon.anthropic {
+  background: var(--anthropic-ivory);
+  border-color: var(--border-subtle);
+}
+.brand-icon.openai,
+.brand-icon.vscode {
+  background: var(--muted-surface);
+  border-color: var(--border-subtle);
+}
+.brand-icon.neutral::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.brand-icon.local {
+  background: var(--positive-soft);
+  border-color: var(--border-subtle);
+  color: var(--positive);
+}
+.brand-icon.local img {
+  width: 12px;
+  height: 12px;
+}
+.usage-table-row .brand-label {
+  font-weight: 600;
+}
+.usage-table-row .brand-icon {
+  width: 16px;
+  height: 16px;
+  flex-basis: 16px;
+  border-radius: var(--r-xs);
+}
+.usage-table-row .brand-icon img {
+  width: 11px;
+  height: 11px;
 }
 
-/* Popup refinement system reused app-wide */
-.kicker {
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 700;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.metric-grid {
+/* ============ 13. Modals, toast, misc ============ */
+.modal-scrim,
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 15, 15, 0.55);
+  z-index: 50;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-.metric-card {
-  border: 1px solid var(--border-subtle);
-  background: linear-gradient(
-    180deg,
-    var(--base),
-    color-mix(in srgb, var(--subtle) 22%, var(--base))
-  );
-  border-radius: 14px;
-  padding: 12px;
-  min-height: 92px;
-}
-.metric-card .num {
-  font-size: 26px;
-  line-height: 30px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-.metric-card .label {
-  font-size: 11px;
-  color: var(--text-3);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.metric-card .hint {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-top: 4px;
-}
-.refined-list {
-  display: grid;
-  gap: 8px;
-}
-.refined-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--border-subtle);
-  background: var(--base);
-  border-radius: 12px;
-  padding: 11px 12px;
-  color: var(--text);
-  text-align: left;
-  transition:
-    background var(--fast) var(--ease),
-    border-color var(--fast) var(--ease),
-    transform var(--fast) var(--ease),
-    box-shadow var(--fast) var(--ease);
-}
-.refined-row:hover {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--brand) 4%, var(--base)),
-    var(--base)
-  );
-  border-color: var(--border);
-  box-shadow: var(--shadow-xs);
-  transform: translateY(-1px);
-}
-.refined-row > span:first-child {
-  min-width: 0;
-  display: block;
-}
-.refined-title {
-  display: block;
-  font-weight: 700;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-.refined-sub {
-  display: block;
-  font-size: 12px;
-  color: var(--text-2);
-  margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.refined-meta {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-.empty-state {
-  border: 1px dashed var(--border);
-  background: color-mix(in srgb, var(--subtle) 45%, transparent);
-  border-radius: 14px;
-  padding: 18px;
-  text-align: center;
-  color: var(--text-2);
-}
-/* Project task filters: inline controls on desktop, one Filters button that
-   opens a bottom sheet on mobile (dsh-305). */
-.task-filter-inline {
-  display: contents;
-}
-.filter-sheet-btn {
-  display: none;
-}
-.card.compact {
-  padding: 14px;
-}
-.card .section-note {
-  margin: 2px 0 0;
-  color: var(--text-2);
-  font-size: 12px;
+  place-items: center;
+  padding: 24px;
+  animation: backdrop-in 120ms var(--ease);
 }
 .modal-card {
+  width: min(840px, 100%);
+  max-height: min(86vh, 900px);
+  overflow: auto;
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+  border: 0;
   scrollbar-gutter: stable;
+  animation: modal-in 120ms var(--ease);
+}
+.modal-wide {
+  width: min(1120px, 100%);
+}
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.modal-head p {
+  margin: 4px 0 0;
+  color: var(--text-2);
 }
 .modal-head h2 {
-  letter-spacing: -0.03em;
+  letter-spacing: -0.01em;
 }
-.modal-card .card,
-.modal-card .usage-card {
-  background: linear-gradient(
-    180deg,
-    var(--base),
-    color-mix(in srgb, var(--subtle) 18%, var(--base))
-  );
+.modal-scrim.closing {
+  animation: backdrop-in var(--fast) var(--ease) reverse forwards;
+  pointer-events: none;
 }
-@media (max-width: 900px) {
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.modal-scrim.closing .modal-card {
+  animation: modal-in var(--fast) var(--ease) reverse forwards;
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
   }
-  .refined-row {
-    grid-template-columns: 1fr;
+  to {
+    opacity: 1;
   }
-  .refined-meta {
-    justify-content: flex-start;
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
-  .refined-title,
-  .refined-sub {
-    white-space: normal;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .task-filter-inline {
-    display: none;
-  }
-  .filter-sheet-btn {
-    display: inline-flex;
-  }
-  .filter-sheet-list .refined-title {
-    text-transform: capitalize;
-  }
-  .modal-head {
-    position: sticky;
-    top: -18px;
-    background: color-mix(in srgb, var(--base) 94%, transparent);
-    backdrop-filter: blur(14px);
-    z-index: 2;
-    margin: -18px -18px 14px;
-    padding: 18px 18px 10px;
-    border-bottom: 1px solid var(--border-subtle);
-  }
-  .modal-head h2 {
-    font-size: clamp(26px, 8vw, 38px);
-    line-height: 1.02;
-    padding-right: 56px;
-  }
-  .modal-head .iconbtn {
-    position: absolute;
-    top: 16px;
-    right: 18px;
-    background: var(--base);
-  }
+}
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #37352f;
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  font-size: 14px;
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--standard) var(--ease);
+}
+[data-theme="dark"] .toast {
+  background: #2f2f2f;
+  color: rgba(255, 255, 255, 0.9);
+}
+.toast.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.toast.success {
+  background: var(--positive-deep);
+}
+.toast.warning {
+  background: #8a5a10;
+}
+.toast.danger {
+  background: var(--danger);
+}
+.toast.info {
+  background: var(--brand-hover);
+}
+.toast-action {
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  margin-left: 10px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86);
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.lightbox img {
+  max-width: 92vw;
+  max-height: 82vh;
+  border-radius: var(--r-md);
+}
+.doc-frame-wrap {
+  height: min(74vh, 900px);
+}
+.doc-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: #fff;
+}
+.filter-sheet-list .refined-title {
+  text-transform: capitalize;
+}
+[aria-disabled="true"],
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
 }
 
-/* App-wide equal-height card rows: side-by-side cards match the tallest item while content stays top-aligned. */
+/* ============ 14. Motion & states ============ */
+/* reveal: a subtle 120ms fade, no travel */
+@keyframes wb-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.reveal {
+  animation: wb-fade-in 120ms var(--ease) both;
+  animation-delay: var(--stagger, 0ms);
+}
+/* pressable / vibe-press / vibe-hover: background tints only — no scale */
+.pressable {
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.pressable:active,
+.pressable.vibe-press,
+.vibe-press {
+  background-color: var(--subtle);
+}
+.btn.primary.pressable:active,
+.btn.primary.vibe-press {
+  background-color: var(--brand-hover);
+}
+.btn.danger.pressable:active,
+.btn.danger.vibe-press {
+  background-color: var(--danger-hover);
+}
+.interactive-lift {
+  transition: background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+.interactive-lift:hover,
+.interactive-lift.vibe-hover {
+  border-color: var(--border);
+}
+.interactive-lift:active,
+.interactive-lift.vibe-press {
+  background-color: var(--subtle);
+}
+.vibe-ready .card,
+.vibe-ready .project-tile {
+  will-change: background-color, border-color;
+}
+.btn.loading,
+.iconbtn.loading,
+[aria-busy="true"] {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+.btn.loading::after,
+.iconbtn.loading::after,
+[aria-busy="true"]::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  color: var(--text-2);
+  animation: spin 800ms linear infinite;
+}
+.btn.primary.loading::after {
+  color: #fff;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes wb-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--subtle),
+    var(--muted-surface),
+    var(--subtle)
+  );
+  background-size: 200% 100%;
+  animation: wb-shimmer 1.4s linear infinite;
+  border-radius: var(--r-sm);
+}
+.btn:focus-visible,
+.iconbtn:focus-visible,
+.qrow:focus-visible,
+.table-row:focus-visible,
+.task-row:focus-visible,
+.kb-row:focus-visible,
+.refined-row:focus-visible,
+.project-tile:focus-visible,
+.nav button:focus-visible,
+.mobile-tabs button:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* ============ 15. Markdown (reading view) ============ */
+.markdown {
+  font-size: 16px;
+  line-height: 1.6;
+  max-width: 44rem;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+  margin: 20px 0 8px;
+}
+.markdown p {
+  margin: 0 0 10px;
+}
+.markdown table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 14.5px;
+}
+.markdown td,
+.markdown th {
+  border: 1px solid var(--border-subtle);
+  padding: 6px 10px;
+  text-align: left;
+}
+.markdown th {
+  color: var(--text-2);
+  font-weight: 500;
+  background: var(--muted-surface);
+}
+.markdown code {
+  font-family: var(--font-mono);
+}
+.markdown blockquote {
+  margin: 12px 0;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid var(--text);
+  color: var(--text-2);
+}
+
+/* Equal-height card rows */
 .grid,
 .status-rail,
 .usage-grid,
@@ -2417,99 +2109,108 @@ textarea:hover {
   align-content: start;
 }
 
-.toast-action {
-  border: 0;
-  background: transparent;
-  color: var(--blue);
-  font-weight: 700;
-  margin-left: 10px;
-  padding: 2px 4px;
-  cursor: pointer;
-}
-.cover > span {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--brand-deep);
-  opacity: 0.75;
-}
-.lane-empty {
-  border-style: dashed;
-  box-shadow: none;
-}
-.lane-empty .cardhead {
-  margin-bottom: 0;
-}
-/* Empty lanes collapse to one quiet line instead of a full card */
-.lane-clear {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 1px dashed var(--border-subtle);
-  border-radius: var(--r-md);
-  color: var(--text-3);
-  font-size: 12.5px;
-}
-.lane-clear-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--positive);
-  flex: none;
-}
-.intake-banner {
-  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
-  background: color-mix(in srgb, var(--warning-soft) 30%, var(--base));
-}
-.doc-frame-wrap {
-  height: min(74vh, 900px);
-}
-.doc-frame {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  border-radius: 10px;
-  background: #fff;
-}
-.reco-title {
-  font-size: 19px;
-  line-height: 26px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.clamp-2,
-.clamp-3 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.clamp-2 {
-  -webkit-line-clamp: 2;
-}
-.clamp-3 {
-  -webkit-line-clamp: 3;
-}
+/* ============ 16. Responsive ============ */
 @media (max-width: 900px) {
-  [data-project-view] {
+  .shell {
+    display: block;
+  }
+  .sidebar {
     display: none;
   }
-  .doc-frame-wrap {
-    height: 70vh;
+  .main {
+    padding: 72px 16px
+      calc(var(--bottom-nav) + env(safe-area-inset-bottom) + 20px);
+    min-height: 100vh;
   }
-}
-
-/* Mobile rail summary: the whole ops layer in one tappable line */
-.rail-summary {
-  display: none;
-}
-@media (max-width: 900px) {
-  /* The summary chips live in the merged mobile top bar (#mobileSummary),
-     not as a separate card row in the content. */
+  .mobile-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    padding: calc(env(safe-area-inset-top) + 8px) 14px 8px;
+    background: var(--canvas);
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 20;
+  }
+  .mobile-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-height: var(--bottom-nav);
+    padding: 6px 6px calc(env(safe-area-inset-bottom) + 6px);
+    background: var(--canvas);
+    border-top: 1px solid var(--border-subtle);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 2px;
+    z-index: 20;
+  }
+  .mobile-tabs button {
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+    border-radius: var(--r-md);
+    font-size: 11px;
+    font-weight: 500;
+    min-height: 44px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: background var(--fast) var(--ease),
+      color var(--fast) var(--ease);
+  }
+  .mobile-tabs button svg {
+    color: inherit;
+  }
+  .mobile-tabs button.active {
+    background: var(--subtle);
+    color: var(--text);
+    font-weight: 600;
+  }
+  .page {
+    gap: 18px;
+  }
+  .status-rail,
+  .cols-2,
+  .cols-3,
+  .task-layout,
+  .project-header,
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .hero > .btn {
+    width: 100%;
+  }
+  .status-rail {
+    display: none;
+    margin-bottom: 16px;
+  }
+  .status-rail.expanded {
+    display: block;
+  }
+  .status-rail .rail-card,
+  .status-rail .credit-card {
+    display: none;
+  }
+  .status-rail.expanded .rail-card,
+  .status-rail.expanded .credit-card {
+    display: flex;
+    width: 100%;
+    margin-top: 10px;
+  }
+  .status-rail:not(.expanded) .mobile-extra-credit {
+    display: none;
+  }
+  .status-rail .rail-summary {
+    display: none;
+  }
   #mobileSummary .rail-summary {
     display: flex;
     align-items: center;
@@ -2521,24 +2222,9 @@ textarea:hover {
     border: 0;
     box-shadow: none;
     font-size: 12.5px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
     overflow-x: auto;
-    white-space: nowrap;
-  }
-  .status-rail {
-    display: none;
-  }
-  .status-rail.expanded {
-    display: block;
-  }
-  .status-rail .rail-summary {
-    display: none;
-  }
-  .rail-sum-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     white-space: nowrap;
   }
   #mobileSummary .mobile-expanded-only {
@@ -2550,99 +2236,231 @@ textarea:hover {
   .rail-caret {
     margin-left: auto;
     color: var(--text-3);
-    font-size: 18px;
+    font-size: 16px;
     transform: rotate(90deg);
     transition: transform var(--fast) var(--ease);
   }
   #mobileSummary .rail-summary[aria-expanded="true"] .rail-caret {
     transform: rotate(-90deg);
   }
+  .status-rail.expanded .rail-summary .rail-caret {
+    transform: rotate(-90deg);
+  }
+  .project-cover {
+    width: 100%;
+    height: 180px;
+  }
+  .table-head {
+    display: none;
+  }
+  .table-row {
+    grid-template-columns: 1fr;
+  }
+  .toolbar {
+    align-items: stretch;
+  }
+  .toolbar > * {
+    flex: 1 1 auto;
+  }
+  .modal-scrim {
+    align-items: end;
+    padding: 0;
+  }
+  .modal-card {
+    width: 100%;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 18px);
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px);
+    margin-top: auto;
+    scroll-padding-top: 92px;
+  }
+  .modal-head {
+    position: sticky;
+    top: -18px;
+    background: var(--raised);
+    z-index: 2;
+    margin: -18px -18px 14px;
+    padding: 18px 18px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .modal-head h2 {
+    font-size: 22px;
+    line-height: 1.2;
+    padding-right: 56px;
+  }
+  .modal-head .iconbtn {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+  }
+  .iconbtn {
+    width: 44px;
+    min-height: 44px;
+  }
+  .btn {
+    min-height: 40px;
+  }
+  .input,
+  select,
+  textarea {
+    min-height: 40px;
+    font-size: 16px;
+  }
+  .tab,
+  .seg button {
+    min-height: 36px;
+  }
+  .chip,
+  .tag {
+    min-height: 26px;
+  }
+  .form-two {
+    grid-template-columns: 1fr;
+  }
+  .gallery {
+    grid-template-columns: 1fr;
+  }
+  .qrow,
+  .task-row,
+  .kb-row {
+    grid-template-columns: 1fr;
+  }
+  .action-tools {
+    width: 100%;
+  }
+  .action-tools .btn {
+    flex: 1;
+  }
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .refined-row {
+    grid-template-columns: 1fr;
+  }
+  .refined-meta {
+    justify-content: flex-start;
+  }
+  .refined-title,
+  .refined-sub {
+    white-space: normal;
+  }
+  .task-filter-inline {
+    display: none;
+  }
+  .filter-sheet-btn {
+    display: inline-flex;
+  }
+  .usage-grid {
+    grid-template-columns: 1fr;
+  }
+  .usage-table-row {
+    grid-template-columns: 1fr;
+  }
+  .mix-row {
+    grid-template-columns: 1fr;
+  }
+  .usage-window {
+    display: grid;
+  }
+  .usage-window .seg {
+    justify-content: flex-start;
+  }
+  .recent-sessions-table .usage-table-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .usage-table-row.head {
+    display: none;
+  }
+  .usage-table:not(.recent-sessions-table) .usage-table-row:not(.head) {
+    grid-template-columns: minmax(92px, 0.95fr) repeat(4, minmax(0, 1fr));
+    align-items: start;
+    gap: 10px;
+  }
+  .usage-table:not(.recent-sessions-table)
+    .usage-table-row:not(.head)
+    span[data-label] {
+    min-width: 0;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+  .usage-table:not(.recent-sessions-table)
+    .usage-table-row:not(.head)
+    span[data-label="Cost"] {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .usage-table:not(.recent-sessions-table)
+    .usage-table-row:not(.head)
+    span[data-label="Cost"]::before {
+    flex-basis: 100%;
+  }
+  .usage-table-row span[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-3);
+    margin-bottom: 2px;
+  }
+  .brand-icon {
+    width: 17px;
+    height: 17px;
+    flex-basis: 17px;
+  }
+  .ops-detail-grid {
+    grid-template-columns: 1fr;
+  }
+  .ops-row {
+    grid-template-columns: 1fr;
+  }
+  .ops-card {
+    min-width: 220px;
+  }
+  .session-detail-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  [data-project-view] {
+    display: none;
+  }
+  .doc-frame-wrap {
+    height: 70vh;
+  }
   .wiz-big {
     min-height: 56px;
   }
+  .stat-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-/* Compact grouped rows for bottom sheets (mobile More menu etc.) */
-.sheet-list {
-  background: var(--base);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-md);
-  overflow: hidden;
+@media (min-width: 901px) and (max-width: 1180px) {
+  .task-layout,
+  .cols-2 {
+    grid-template-columns: 1fr;
+  }
+  .metric-grid,
+  .status-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-.sheet-list .sheet-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 500;
-  text-align: left;
+@media (max-width: 1100px) {
+  .stat-chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
-.sheet-list .sheet-row + .sheet-row {
-  border-top: 1px solid var(--border-subtle);
-}
-.sheet-list .sheet-row:hover,
-.sheet-list .sheet-row:active {
-  background: var(--subtle);
-}
-.sheet-chev {
-  color: var(--text-3);
-  font-size: 18px;
-}
-.ver-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  background: var(--base);
-}
-.ver-main {
-  min-width: 0;
-}
-.ver-title {
-  display: block;
-  font-weight: 650;
-}
-.ver-main .refined-sub {
-  margin-top: 1px;
-}
-.ver-row .chip {
-  white-space: nowrap;
-}
-.donut {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
-  border-radius: 50%;
-  display: inline-block;
-  background: conic-gradient(
-    var(--donut-c, var(--brand)) calc(var(--p, 0) * 1%),
-    var(--subtle) 0
-  );
-  -webkit-mask: radial-gradient(circle, transparent 4.5px, #000 5px);
-  mask: radial-gradient(circle, transparent 4.5px, #000 5px);
-}
-.donut.anthropic {
-  --donut-c: var(--anthropic-focus);
-}
-.donut.cursor {
-  --donut-c: var(--cursor-black);
-}
-[data-theme="dark"] .donut.cursor {
-  --donut-c: #f4f6fb;
-}
-.donut.no-data {
-  background: var(--subtle);
-  opacity: 0.55;
-  outline: 1px dashed var(--text-3);
-  outline-offset: -1px;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
 }
 
   </style>
@@ -2679,13 +2497,13 @@ textarea:hover {
       <aside class="sidebar">
         <div class="brand"><span class="mark mark-sm" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="wordmark">Workbench</span></div>
         <nav class="nav" aria-label="Primary">
-          <button data-view="overview">Overview</button>
-          <button data-view="projects">Projects</button>
-          <button data-view="knowledge">Knowledge</button>
-          <button data-view="skills">Skills</button>
-          <button data-view="board">Board</button>
-          <button data-view="instructions">Instructions</button>
-          <button data-view="about">About</button>
+          <button data-view="overview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg>Overview</button>
+          <button data-view="projects"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
+          <button data-view="knowledge"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge</button>
+          <button data-view="skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.1 6.4L20.5 12l-6.4 2.1L12 20.5l-2.1-6.4L3.5 12l6.4-2.1z"/></svg>Skills</button>
+          <button data-view="board"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-3 2.3-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 20c.2-2.4 1.6-4 3.5-3.9 1.1.1 2 .9 2 2.4"/></svg>Board</button>
+          <button data-view="instructions"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7.5L19 7.5V21H7z"/><path d="M10 12h6M10 16h6"/></svg>Instructions</button>
+          <button data-view="about"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>About</button>
         </nav>
         <div class="side-actions">
           <button class="btn primary" id="captureBtn">Quick capture</button>
@@ -2702,18 +2520,18 @@ textarea:hover {
       </main>
     </div>
     <nav class="mobile-tabs" aria-label="Mobile primary">
-      <button data-view="overview">Overview</button>
-      <button data-view="projects">Projects</button>
-      <button id="mobileCapture" data-view="capture">Capture</button>
-      <button data-view="knowledge">Knowledge</button>
-      <button data-view="more">More</button>
+      <button data-view="overview"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg>Overview</button>
+      <button data-view="projects"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
+      <button id="mobileCapture" data-view="capture"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Capture</button>
+      <button data-view="knowledge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge</button>
+      <button data-view="more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>More</button>
     </nav>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-06.23";
+  const WB_VERSION = "2026-07-08.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2791,7 +2609,6 @@ textarea:hover {
       return "vscode";
     if (v.includes("cursor")) return "cursor";
     if (isLocalLabel(v)) return "local";
-    if (v.includes("azure")) return "azure";
     if (v.includes("codex") || v.includes("openai") || v.includes("gpt"))
       return "openai";
     if (
@@ -2870,7 +2687,7 @@ textarea:hover {
     mobileVersion: null,
     mobileSourceVersion: null,
     mobileSync: null,
-    azureUsage: null,
+    ccrUsage: null,
     efficiencyTipsFile: null,
     modelPricing: null,
     helperUp: false,
@@ -3718,7 +3535,9 @@ textarea:hover {
       loadJson("tools/mobile-sync-status.json").then(
         (v) => (state.mobileSync = v),
       ),
-      loadJson("tools/azure-usage.json").then((v) => (state.azureUsage = v)),
+      loadJson("tools/ccr-usage.json").then((v) => {
+        if (v) state.ccrUsage = v;
+      }),
       loadJson("tools/efficiency-tips.json").then(
         (v) => (state.efficiencyTipsFile = v),
       ),
@@ -4389,7 +4208,7 @@ textarea:hover {
             if (idx >= 0 && idx < arr.length) arr[idx]++;
           }
     const max = Math.max(1, ...arr);
-    return `<div style="display:flex;align-items:end;gap:6px;height:130px;margin-top:14px">${arr.map((v, i) => `<span title="${v}" style="flex:1;height:${Math.max(4, (v / max) * 110)}px;background:${i === arr.length - 1 ? "var(--brand)" : "var(--muted-surface)"};border-radius:6px 6px 2px 2px"></span>`).join("")}</div><div class="tiny" style="display:flex;justify-content:space-between"><span>14 days ago</span><span>today</span></div>`;
+    return `<div style="display:flex;align-items:end;gap:6px;height:130px;margin-top:14px">${arr.map((v, i) => `<span title="${v}" style="flex:1;height:${Math.max(4, (v / max) * 110)}px;background:${i === arr.length - 1 ? "var(--brand)" : "var(--border-strong)"};border-radius:3px 3px 2px 2px"></span>`).join("")}</div><div class="tiny" style="display:flex;justify-content:space-between"><span>14 days ago</span><span>today</span></div>`;
   }
   function statusDot(cls) {
     return `<span class="status-dot-ui ${cls}" aria-hidden="true"></span>`;
@@ -4520,7 +4339,7 @@ textarea:hover {
       agent: take((a) => a.kind === "doing"),
       quick: take((a) => a.kind === "wnext" || a.kind === "next" || a.kind === "todo"),
     };
-    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card"><div class="cardhead"><div><div class="kicker">What's next · ${esc(top.p.data.project)}</div><h3 class="reco-title">${esc(displayText(top.text))}</h3>${top.wn && (top.wn.leftOff || top.wn.why) ? `<p class="muted">${top.wn.leftOff ? `Left off: ${esc(top.wn.leftOff)}` : ""}${top.wn.leftOff && top.wn.why ? " · " : ""}${top.wn.why ? esc(top.wn.why) : ""}</p>` : ""}</div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card callout"><div class="cardhead"><span class="callout-glyph" aria-hidden="true">🧭</span><div><div class="kicker">What's next · ${esc(top.p.data.project)}</div><h3 class="reco-title">${esc(displayText(top.text))}</h3>${top.wn && (top.wn.leftOff || top.wn.why) ? `<p class="muted">${top.wn.leftOff ? `Left off: ${esc(top.wn.leftOff)}` : ""}${top.wn.leftOff && top.wn.why ? " · " : ""}${top.wn.why ? esc(top.wn.why) : ""}</p>` : ""}</div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
       recentActivity()
         .map(
           (r) =>
@@ -4543,7 +4362,11 @@ textarea:hover {
   }
   function projectsHTML() {
     const rows = projectsFiltered();
-    return `<section class="page reveal"><div class="hero"><div><h1>Projects</h1><p class="lede">${rows.length} projects across Work and Personal.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.area === a ? "active" : ""}" data-area="${a}">${a}</button>`).join("")}</div><input class="input" style="max-width:280px" placeholder="Filter projects…" value="${esc(state.pq)}" data-project-search><div class="seg"><button class="${state.projectView === "gallery" ? "active" : ""}" data-project-view="gallery">Gallery</button><button class="${state.projectView === "table" ? "active" : ""}" data-project-view="table">Table</button></div></div>${state.projectView === "gallery" ? `<div class="gallery">${rows.map(projectTile).join("")}</div>` : `<div class="table"><div class="table-head"><span></span><span>Project</span><span>Area</span><span>Progress</span><span>Open</span><span>Blocked</span><span>Ideas</span><span>Updated</span></div>${rows.map(projectTableRow).join("")}</div>`}</section>`;
+    // The Gallery/Table toggle is hidden at <=900px (style.css), so a
+    // stored "table" view would strand mobile users with no way to switch
+    // back — always render the gallery on narrow viewports.
+    const view = isMobile() ? "gallery" : state.projectView;
+    return `<section class="page reveal"><div class="hero"><div><h1>Projects</h1><p class="lede">${rows.length} projects across Work and Personal.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.area === a ? "active" : ""}" data-area="${a}">${a}</button>`).join("")}</div><input class="input" style="max-width:280px" placeholder="Filter projects…" value="${esc(state.pq)}" data-project-search><div class="seg"><button class="${state.projectView === "gallery" ? "active" : ""}" data-project-view="gallery">Gallery</button><button class="${state.projectView === "table" ? "active" : ""}" data-project-view="table">Table</button></div></div>${view === "gallery" ? `<div class="gallery">${rows.map(projectTile).join("")}</div>` : `<div class="table"><div class="table-head"><span></span><span>Project</span><span>Area</span><span>Progress</span><span>Open</span><span>Blocked</span><span>Ideas</span><span>Updated</span></div>${rows.map(projectTableRow).join("")}</div>`}</section>`;
   }
   function projectTile(p) {
     const c = counts(p);
@@ -4565,7 +4388,7 @@ textarea:hover {
     return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span></div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.data.whatsNext?.text || p.nextSteps?.length ? `<div class="card"><div class="kicker">What's next${p.data.whatsNext?.updated ? ` · recorded ${esc(p.data.whatsNext.updated)}` : ""}</div><h3 class="reco-title">${esc(p.data.whatsNext?.text || p.nextSteps[0])}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools" style="margin-top:10px"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList"><span class="skeleton" style="width:110px;height:26px"></span><span class="skeleton" style="width:90px;height:26px"></span></div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div></div></aside></div></section>`;
   }
   function digestHTML(fm = {}, text = "", kind) {
-    if (!text) return '<p class="muted">Not written yet.</p>';
+    if (!text) return '<div class="empty-state">Not written yet.</div>';
     const { body } = parseFM(text);
     const summary =
       fm.summary || body.split(/\n\s*\n/).find((x) => x.trim()) || "";
@@ -4678,7 +4501,7 @@ textarea:hover {
       .slice(0, state.kShowAllTags ? 40 : 8)
       .map(([k]) => k);
     const hiddenTags = Math.max(0, Object.keys(tagCounts).length - tags.length);
-    return `<section class="page reveal"><div class="hero"><div><h1>Knowledge</h1><p class="lede">Search glossary, processes, decisions, and project notes.</p></div><button class="btn primary" data-new-entry>New entry</button></div><div class="toolbar"><input class="input" placeholder="Search knowledge…" data-k-search value="${esc(state.kq)}"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.karea === a ? "active" : ""}" data-karea="${a}">${a}</button>`).join("")}</div></div><div class="toolbar"><div class="seg">${["all", "how", "what", "why", "gotcha"].map((i) => `<button class="${state.kintent === i ? "active" : ""}" data-kintent="${i}">${i}</button>`).join("")}</div>${tags.map((t) => `<button class="tag ${state.ktag === t ? "active" : ""}" data-ktag="${esc(t)}">${esc(t)}</button>`).join("")}${hiddenTags ? `<button class="tag" data-toggle-tags>${state.kShowAllTags ? "Show fewer" : `+${hiddenTags} more`}</button>` : ""}</div>${
+    return `<section class="page reveal"><div class="hero"><div><h1>Knowledge</h1><p class="lede">Search glossary, processes, decisions, and project notes.</p></div><button class="btn primary" data-new-entry>New entry</button></div><div class="toolbar"><input class="input" placeholder="Search knowledge…" data-k-search value="${esc(state.kq)}"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.karea === a ? "active" : ""}" data-karea="${a}">${a}</button>`).join("")}</div></div><div class="toolbar"><div class="seg">${["all", "how", "what", "why", "gotcha"].map((i) => `<button class="${state.kintent === i ? "active" : ""}" data-kintent="${i}">${i}</button>`).join("")}</div><div class="tag-cloud">${tags.map((t) => `<button class="tag ${state.ktag === t ? "active" : ""}" data-ktag="${esc(t)}">${esc(t)}</button>`).join("")}${hiddenTags ? `<button class="tag" data-toggle-tags>${state.kShowAllTags ? "Show fewer" : `+${hiddenTags} more`}</button>` : ""}</div></div>${
       SUBS.map((sub) => {
         const list = entries.filter((e) => e.sub === sub);
         return list.length
@@ -4989,7 +4812,7 @@ textarea:hover {
     const latest = state.latestBuild?.version;
     const builtAt = state.latestBuild?.builtAt;
     const pubAt = state.mobileSync?.updated;
-    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>Azure route usage, estimated from logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
+    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>CCR (gpt-5.5 / gpt-5.3-codex) route usage, estimated from router logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
   }
 
   function render() {
@@ -5093,7 +4916,8 @@ textarea:hover {
       : "ok";
     const pa = pct(state.usage);
     const pc = pct(state.cursorUsage);
-    const paz = pct(azureCredit());
+    const pg = pct(ccrModelCredit("GPT-5.5"));
+    const pcx = pct(ccrModelCredit("GPT-5.3-codex"));
     const pl = pct(localSavingsCredit());
     const dot = active.length
       ? active.some((s) => !s._stale)
@@ -5101,7 +4925,7 @@ textarea:hover {
         : "warn"
       : "idle";
     const reasonChip = `<span class="rail-sum-item"><span class="status-dot-ui ${reasonDot}"></span>${esc(displayText(String(reason), 28))}</span>`;
-    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(paz, "azure")}${paz == null ? "Azure —" : "Azure " + paz + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
+    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pg, "openai")}${pg == null ? "GPT-5.5 —" : "GPT-5.5 " + pg + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pcx, "codex")}${pcx == null ? "Codex —" : "Codex " + pcx + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
     // A problem chip leads so it can never scroll out of sight; all-good sits last.
     return `<button type="button" class="rail-summary" aria-expanded="${!!state.railOpen}" aria-label="Workbench status">${attention ? reasonChip + chips : chips + reasonChip}<span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
@@ -5411,15 +5235,19 @@ textarea:hover {
   function syntheticCredit(spend, limit = 2000) {
     return { spend, limit, percent: limit ? Math.round((Number(spend || 0) / limit) * 100) : null };
   }
-  function azureCredit() {
-    const row = laneCompareRows(currentUsageRows()).find((r) => r.label === "Azure");
+  // Synthetic spend "credit" for one CCR model lane (GPT-5.5 / GPT-5.3-codex),
+  // reusing the same $2000 synthetic cap the old single CCR bar used.
+  function ccrModelCredit(modelLabel) {
+    const row = laneCompareRows(currentUsageRows()).find(
+      (r) => r.label === modelLabel,
+    );
     return syntheticCredit(row?.cost || 0);
   }
   function localSavingsCredit() {
     return syntheticCredit(localSavedSum(currentUsageRows()) || 0);
   }
   function allCreditLanesHTML() {
-    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${creditLaneHTML("Azure", azureCredit(), "azure", { mobileExtra: true })}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
+    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${creditLaneHTML("GPT-5.5", ccrModelCredit("GPT-5.5"), "gpt", { mobileExtra: true })}${creditLaneHTML("GPT-5.3-codex", ccrModelCredit("GPT-5.3-codex"), "codex", { mobileExtra: true })}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
   }
   function creditsRailHTML() {
     const ages = [state.usage?.updated, state.cursorUsage?.updated].filter(
@@ -5441,7 +5269,10 @@ textarea:hover {
   }
   function normalizeBackend(v) {
     v = String(v || "anthropic").toLowerCase();
-    if (v.includes("azure")) return "Azure";
+    // claude-code-router lane. New rows say "ccr"; legacy rows say
+    // "route-azure"/"azure" — all three are the same CCR lane. It is displayed
+    // split by model (GPT-5.5 / GPT-5.3-codex), never as a single "Azure" lane.
+    if (v.includes("ccr") || v.includes("azure")) return "CCR";
     if (v.includes("codex")) return "Codex";
     if (v.includes("cursor")) return "Cursor";
     if (v.includes("local")) return "Local";
@@ -5457,10 +5288,22 @@ textarea:hover {
       isLocalLabel(r.model)
     );
   }
+  // CCR (claude-code-router) sessions are shown split by model. Map any CCR
+  // model id to one of the two visible lanes; default unknown/blank to GPT-5.5
+  // (the router's general lane).
+  function ccrModelLabel(model) {
+    return normalizeModel(model) === "GPT-5.3-codex"
+      ? "GPT-5.3-codex"
+      : "GPT-5.5";
+  }
   // Billing lane a row belongs to for spend/traffic grouping - on-device rows
-  // roll up under "Local" regardless of a stale backend field.
+  // roll up under "Local", and CCR rows split into their model lane
+  // (GPT-5.5 / GPT-5.3-codex) rather than a single provider lane.
   function backendLane(r) {
-    return isLocalRow(r) ? "Local" : normalizeBackend(r.backend);
+    if (isLocalRow(r)) return "Local";
+    const b = normalizeBackend(r.backend);
+    if (b === "CCR") return ccrModelLabel(r.model);
+    return b;
   }
   function normalizeIde(v) {
     v = String(v || "claude").toLowerCase();
@@ -5472,6 +5315,7 @@ textarea:hover {
   function normalizeModel(v) {
     v = String(v || "unspecified").toLowerCase();
     if (v.includes("gpt-oss")) return "GPT-OSS 20B";
+    if (v.includes("gpt-5.3") || v.includes("codex")) return "GPT-5.3-codex";
     if (v.includes("gpt-5.5")) return "GPT-5.5";
     if (v.includes("opus")) return "Opus";
     if (v.includes("sonnet")) return "Sonnet";
@@ -5516,11 +5360,12 @@ textarea:hover {
         ? rows
             .map((r) => {
               const p = totalMs ? Math.round((r.ms / totalMs) * 100) : 0;
-              const extra = r.tokens
+              const base = r.tokens
                 ? `${r.tokens.toLocaleString()} tokens`
                 : r.requests
                   ? `${r.requests} requests`
                   : `${r.count} sessions · ${fmtDuration(r.ms)}`;
+              const extra = r.cost ? `${base} · ${fmtCostMaybe(r.cost)}` : base;
               return `<div class="mix-row"><div><div class="mix-label">${brandLabel(r.label)}</div><div class="mix-sub">${esc(extra)}</div></div><span class="creditbar ${brandKind(r.label)}"><i style="width:${p}%"></i></span><span class="credit-amt">${p}%</span></div>`;
             })
             .join("")
@@ -5566,6 +5411,8 @@ textarea:hover {
     if (key.includes("opus")) return models["claude-opus-4-8-thinking-high"];
     if (key.includes("sonnet")) return models["claude-sonnet-5"];
     if (key.includes("haiku")) return models["claude-haiku-4-5"];
+    if (key.includes("gpt-5.3") || key.includes("codex"))
+      return models["gpt-5.3-codex"];
     if (key.includes("gpt-5.5")) return models["gpt-5.5"];
     return null;
   }
@@ -5595,34 +5442,60 @@ textarea:hover {
       Number(r.totalTokens || 0)
     );
   }
-  function estimateSessionCost(r) {
-    if (!hasTelemetry(r)) return null;
-    if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
-    const backend = normalizeBackend(r.backend),
-      model = normalizeModel(r.model);
-    let entry = pricingEntry(r.model);
-    if (!entry && (backend === "Azure" || model === "GPT-5.5")) {
+  // Cost of one model's token bundle (inputTokens/outputTokens/cache*) at the
+  // pricing in effect on asOfMs. CCR rows whose model has no explicit pricing
+  // entry fall back to gpt-5.5 rates. Returns null when unpriceable.
+  function priceTokens(model, tok, asOfMs, backend) {
+    let entry = pricingEntry(model);
+    if (!entry && normalizeBackend(backend) === "CCR") {
       entry = pricingEntry("gpt-5.5");
     }
-    const asOfMs = Number(r.started || r.ended || 0) || Date.now();
     const rates = pricingRates(entry, asOfMs);
     if (!rates) return null;
     const inRate = rates.inputPerM,
       outRate = rates.outputPerM;
     if (inRate == null || outRate == null) return null;
-    const input = Number(r.inputTokens || 0),
-      output = Number(r.outputTokens || 0),
-      cacheWrite = Number(r.cacheCreationTokens || 0),
-      cacheRead = Number(r.cacheReadTokens || 0);
+    const input = Number(tok.inputTokens || 0),
+      output = Number(tok.outputTokens || 0),
+      cacheWrite = Number(tok.cacheCreationTokens || 0),
+      cacheRead = Number(tok.cacheReadTokens || 0);
     const cacheWriteRate =
       rates.cacheWritePerM != null ? rates.cacheWritePerM : inRate;
     const cacheReadRate = rates.cacheReadPerM;
-    let cost =
-      (input * inRate) / 1000000 + (output * outRate) / 1000000;
+    let cost = (input * inRate) / 1000000 + (output * outRate) / 1000000;
     if (cacheWrite) cost += (cacheWrite * cacheWriteRate) / 1000000;
     if (cacheRead && cacheReadRate != null)
       cost += (cacheRead * cacheReadRate) / 1000000;
-    return Math.round(cost * 10000) / 10000;
+    return cost;
+  }
+  function estimateSessionCost(r) {
+    if (!hasTelemetry(r)) return null;
+    if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
+    const asOfMs = Number(r.started || r.ended || 0) || Date.now();
+    // Multi-model / subagent sessions carry a per-model breakdown; prefer the
+    // recorded per-model cost (falling back to a token estimate when a model
+    // is unpriced) for the most accurate session total.
+    if (
+      r.byModel &&
+      typeof r.byModel === "object" &&
+      Object.keys(r.byModel).length
+    ) {
+      let total = 0,
+        any = false;
+      for (const [mid, m] of Object.entries(r.byModel)) {
+        if (!m) continue;
+        let c = Number(m.cost);
+        if (m.cost == null || !isFinite(c))
+          c = priceTokens(mid, m, asOfMs, r.backend);
+        if (c != null && isFinite(c)) {
+          total += c;
+          any = true;
+        }
+      }
+      if (any) return Math.round(total * 10000) / 10000;
+    }
+    const c = priceTokens(r.model, r, asOfMs, r.backend);
+    return c == null ? null : Math.round(c * 10000) / 10000;
   }
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
@@ -5649,7 +5522,10 @@ textarea:hover {
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
     if (r.savedEstimate != null) return Number(r.savedEstimate);
-    const clone = { ...r, backend: "anthropic" };
+    // Re-price the whole session's raw tokens at Claude rates. Drop byModel so
+    // estimateSessionCost uses the row totals + the substituted Claude model
+    // rather than the recorded local ($0) per-model costs.
+    const clone = { ...r, backend: "anthropic", byModel: undefined };
     const model = String(r.model || "").toLowerCase();
     clone.model = model.includes("opus")
       ? "claude-opus-4-8-thinking-high"
@@ -5672,6 +5548,12 @@ textarea:hover {
     }
     return any ? total : null;
   }
+  function monthStart() {
+    // Calendar-month window shared by every lane: Cursor resets on the 1st,
+    // Anthropic/Azure/Local on the last day - both mean the current month.
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  }
   function usageWindowStart() {
     const now = Date.now(),
       w = state.usageWindow || "month";
@@ -5679,7 +5561,7 @@ textarea:hover {
     if (w === "7d") return now - 7 * 86400000;
     if (w === "12m") return now - 365 * 86400000;
     if (w === "all") return 0;
-    return now - 30 * 86400000;
+    return monthStart();
   }
   function usageRows(rows) {
     const start = usageWindowStart();
@@ -5713,13 +5595,12 @@ textarea:hover {
   // add-in, claude.ai chat, other API keys. Workbench only attributes the slice
   // that ran through session hooks. Subtracting the hooked-session estimate from
   // the real billed total surfaces everything else as "outside workbench".
-  // Fixed to a trailing-30d proxy for the billing month (not the modal's time
-  // frame selector) so it always lines up with the billed number it's compared
-  // against.
+  // Fixed to the current calendar month (not the modal's time frame selector)
+  // so it always lines up with the billed number it's compared against.
   function claudeAttribution() {
     const spend = Number(state.usage?.spend);
     if (!isFinite(spend) || spend <= 0) return null;
-    const start = Date.now() - 30 * 86400000;
+    const start = monthStart();
     const wbRows = (state.sessionMetrics?.sessions || [])
       .filter(Boolean)
       .filter((r) => Number(r.started || r.ended || 0) >= start)
@@ -5759,7 +5640,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. CCR (gpt-5.5 / gpt-5.3-codex) sessions are estimated from model pricing when no router billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -5797,6 +5678,13 @@ textarea:hover {
       : `${esc(fmtFullStamp(r.started))} → ${esc(fmtFullStamp(r.ended))}`;
     return `<div class="refined-list">${[
       sessionDetailRow("Title", esc(sessionTitle(r))),
+      sessionDetailRow("Summary", r.summary ? esc(String(r.summary)) : null),
+      sessionDetailRow(
+        "Projects",
+        Array.isArray(r.projects) && r.projects.length
+          ? `<span class="session-projects">${r.projects.map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>`
+          : null,
+      ),
       sessionDetailRow(
         "Project",
         `${esc(cwdBasename(r.cwd) || "Unknown")}<br><span class="tiny muted">${esc(r.cwd || "Unknown")}</span>`,
@@ -5860,13 +5748,11 @@ textarea:hover {
       (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
     );
     const local = rows.filter(isLocalRow);
-    const azure = rows.filter((r) => normalizeBackend(r.backend) === "Azure");
-    const codex = rows.filter(
-      (r) =>
-        normalizeBackend(r.backend) === "Codex" ||
-        normalizeModel(r.model).toLowerCase().includes("codex"),
-    );
     const cursor = rows.filter((r) => normalizeIde(r.ide) === "Cursor");
+    // claude-code-router lane, split per model into GPT-5.5 / GPT-5.3-codex.
+    const ccr = rows.filter(
+      (r) => !isLocalRow(r) && normalizeBackend(r.backend) === "CCR",
+    );
     const mk = (label, rs, extra = {}) => ({
       label,
       input: tokenSum(rs, "inputTokens"),
@@ -5884,22 +5770,95 @@ textarea:hover {
     // session telemetry (tokenSum/costSum over the windowed rows), never
     // from a billing snapshot. Windowed row-sets nest (7d ⊆ month ⊆ 12m ⊆
     // all), so these sums are guaranteed monotonic across time frames.
-    // Billing snapshots (Azure's log-scrape totals, Cursor's monthly spend)
-    // are a *different* data source that covers a different, sometimes
-    // much narrower window than what's selected - swapping a lane's primary
-    // number to that source for one window only (as this used to do for
-    // Azure on "all") broke monotonicity, since the snapshot could be far
-    // smaller than the session-telemetry sum for a shorter window. Surface
-    // it instead as a labeled aside, same pattern as "N/M sessions
-    // untracked", so nothing silently swaps sources.
-    const azureRow = mk("Azure", azure, { estimated: true });
-    if (state.azureUsage?.allTime) {
-      const snapInput = Number(state.azureUsage.allTime.inputTokens || 0),
-        snapOutput = Number(state.azureUsage.allTime.outputTokens || 0);
+    // Billing snapshots (the CCR router-log totals, Cursor's monthly spend)
+    // are a *different* data source that covers a different, sometimes much
+    // narrower window than what's selected - surface it as a labeled aside,
+    // same pattern as "N/M sessions untracked", so nothing silently swaps
+    // sources.
+    //
+    // CCR sessions are aggregated per model from each row's byModel breakdown
+    // (captures subagent usage on a different model than the row's primary),
+    // falling back to the row's single model when byModel is absent. This is
+    // the per-model cost table.
+    const ccrLanes = new Map();
+    const ensure = (label) => {
+      let l = ccrLanes.get(label);
+      if (!l) {
+        l = {
+          label,
+          input: 0,
+          output: 0,
+          requests: 0,
+          cost: 0,
+          hasCost: false,
+          sessions: 0,
+          untracked: 0,
+          approx: false,
+          estimated: true,
+        };
+        ccrLanes.set(label, l);
+      }
+      return l;
+    };
+    for (const r of ccr) {
+      const asOfMs = Number(r.started || r.ended || 0) || Date.now();
+      const approx = r.tokenSource === "ccr-log-approx";
+      const bm =
+        r.byModel && typeof r.byModel === "object" ? r.byModel : null;
+      if (bm && Object.keys(bm).length) {
+        for (const [mid, m] of Object.entries(bm)) {
+          if (!m) continue;
+          const lane = ensure(ccrModelLabel(mid));
+          lane.input += Number(m.inputTokens || 0);
+          lane.output += Number(m.outputTokens || 0);
+          lane.requests += Number(m.requests || 0);
+          let c = Number(m.cost);
+          if (m.cost == null || !isFinite(c))
+            c = priceTokens(mid, m, asOfMs, r.backend);
+          if (c != null && isFinite(c)) {
+            lane.cost += c;
+            lane.hasCost = true;
+          }
+          lane.sessions += 1;
+          if (approx) lane.approx = true;
+        }
+      } else {
+        const lane = ensure(ccrModelLabel(r.model));
+        lane.input += Number(r.inputTokens || 0);
+        lane.output += Number(r.outputTokens || 0);
+        lane.requests += Number(r.requests || 0);
+        const c = sessionCost(r);
+        if (c != null && isFinite(c)) {
+          lane.cost += Number(c);
+          lane.hasCost = true;
+        }
+        lane.sessions += 1;
+        if (!hasTelemetry(r)) lane.untracked += 1;
+        if (approx) lane.approx = true;
+      }
+    }
+    const ccrRows = [...ccrLanes.values()].map((l) => ({
+      label: l.label,
+      input: l.input,
+      output: l.output,
+      requests: l.requests,
+      cost: l.hasCost ? Math.round(l.cost * 10000) / 10000 : null,
+      approx: l.approx,
+      sessions: l.sessions,
+      untracked: l.untracked,
+      estimated: true,
+    }));
+    const snap = state.ccrUsage?.allTime;
+    if (snap && ccrRows.length) {
+      const snapInput = Number(snap.inputTokens || 0),
+        snapOutput = Number(snap.outputTokens || 0);
       const snapCost =
-        state.azureUsage.allTimeCost ??
+        state.ccrUsage.allTimeCost ??
         (snapInput * 5) / 1000000 + (snapOutput * 30) / 1000000;
-      azureRow.snapshotNote = `billing-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) since the scraper last reset - a different source, not filtered by time frame`;
+      const top = ccrRows
+        .slice()
+        .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0))[0];
+      top.snapshotNote = `router-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) across CCR models since the scraper last reset - a different source, not filtered by time frame`;
     }
     const cursorRow = mk("Cursor", cursor);
     if (state.cursorUsage?.spend != null) {
@@ -5914,17 +5873,7 @@ textarea:hover {
       localRow.isSavings = true;
       localRow.savingsAmount = savings;
     }
-    return [
-      mk("Anthropic", anthropic),
-      azureRow,
-      mk("Codex", codex),
-      cursorRow,
-      localRow,
-    ]
-      .filter(
-        (r) =>
-          r.label !== "Codex" || r.input || r.output || r.requests || r.cost,
-      )
+    return [mk("Anthropic", anthropic), ...ccrRows, cursorRow, localRow]
       .filter((r) => r.label !== "Local" || r.sessions)
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
@@ -6021,16 +5970,16 @@ textarea:hover {
         `${fails} tool failures recorded. Look for flaky helper/browser/file operations before long implementation runs.`,
       ]);
     const byProj = projectBreakdown(rows);
+    const ccrTokensOf = (p) =>
+      (p.lanes?.get?.("GPT-5.5") || 0) + (p.lanes?.get?.("GPT-5.3-codex") || 0);
     const heavy = byProj.find(
-      (p) =>
-        p.lane === "Azure" ||
-        (p.lanes?.get?.("Azure") || 0) > (p.input + p.output) * 0.5,
+      (p) => ccrTokensOf(p) > (p.input + p.output) * 0.5,
     );
     if (heavy) {
-      const azureTokens = heavy.lanes?.get?.("Azure") || 0;
+      const ccrTokens = ccrTokensOf(heavy);
       tips.push([
-        "Azure concentrated",
-        `${heavy.cwd.split("/").pop()} has ${fmtTokens(azureTokens)} Azure tokens. Consider scheduling heavy work around Anthropic quota resets when possible.`,
+        "CCR concentrated",
+        `${heavy.cwd.split("/").pop()} has ${fmtTokens(ccrTokens)} CCR (gpt-5.5 / gpt-5.3-codex) tokens. Consider scheduling heavy work around Anthropic quota resets when possible.`,
       ]);
     }
     return tips;
@@ -6609,7 +6558,7 @@ textarea:hover {
                 `<button class="chip" data-doc-open="${esc(d.path)}">${esc(d.name)}</button>`,
             )
             .join("")
-        : '<span class="muted">No HTML docs.</span>';
+        : '<div class="empty-state">No HTML docs.</div>';
       $$("[data-doc-open]", docs).forEach(
         (b) => (b.onclick = () => openDocPath(b.dataset.docOpen)),
       );
@@ -6626,7 +6575,7 @@ textarea:hover {
           (state.backend === "fsa"
             ? '<button class="btn" data-add-shot>Add photos</button>'
             : "")
-        : '<span class="muted">No screenshots.</span>';
+        : '<div class="empty-state">No screenshots.</div>';
       $$("[data-lightbox]", shots).forEach(
         (img) => (img.onclick = () => openLightbox(img.dataset.lightbox)),
       );
@@ -6731,7 +6680,7 @@ textarea:hover {
       wrap.innerHTML = "";
       const frame = document.createElement("iframe");
       frame.className = "doc-frame";
-      frame.setAttribute("sandbox", "allow-scripts allow-same-origin");
+      frame.setAttribute("sandbox", "allow-scripts");
       frame.srcdoc = f.text;
       wrap.appendChild(frame);
     } catch (e) {
@@ -6816,7 +6765,7 @@ textarea:hover {
       .replace(/_([^_]+)_/g, "<em>$1</em>")
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, href) =>
         /^(https?:|mailto:|#|\/|\.)/i.test(href.trim())
-          ? `<a href="${href}" target="_blank" rel="noopener">${label}</a>`
+          ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
           : label,
       );
   }
