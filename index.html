@@ -1956,7 +1956,7 @@ textarea:hover {
   --anthropic-focus: #d97745;
   --anthropic-error: #bf4d43;
   --cursor-black: #000000;
-  --azure-blue: #0078d4;
+  --gpt-blue: #0078d4;
   --openai-green: #10a37f;
   --vscode-blue: #007acc;
 }
@@ -2000,7 +2000,6 @@ textarea:hover {
   background: var(--anthropic-ivory);
   border-color: #ebddcc;
 }
-.brand-icon.azure,
 .brand-icon.openai {
   background: #eaf4ff;
   border-color: #c9e4ff;
@@ -2020,9 +2019,12 @@ textarea:hover {
 .creditbar.claude i {
   background: var(--anthropic-focus);
 }
-.creditbar.azure i,
+.creditbar.gpt i,
 .creditbar.openai i {
-  background: var(--azure-blue);
+  background: var(--gpt-blue);
+}
+.creditbar.codex i {
+  background: var(--openai-green);
 }
 .creditbar.cursor i {
   background: var(--cursor-black);
@@ -2065,6 +2067,31 @@ textarea:hover {
 .usage-table-row .brand-icon img {
   width: 11px;
   height: 11px;
+}
+.session-summary {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-3);
+  line-height: 1.35;
+}
+.session-projects {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.session-proj-chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--pill);
+  background: var(--subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  white-space: nowrap;
 }
 .usage-card h3 {
   display: flex;
@@ -2638,6 +2665,12 @@ textarea:hover {
 [data-theme="dark"] .donut.cursor {
   --donut-c: #f4f6fb;
 }
+.donut.openai {
+  --donut-c: var(--gpt-blue);
+}
+.donut.codex {
+  --donut-c: var(--openai-green);
+}
 .donut.no-data {
   background: var(--subtle);
   opacity: 0.55;
@@ -2713,7 +2746,7 @@ textarea:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-06.23";
+  const WB_VERSION = "2026-07-08.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2791,7 +2824,6 @@ textarea:hover {
       return "vscode";
     if (v.includes("cursor")) return "cursor";
     if (isLocalLabel(v)) return "local";
-    if (v.includes("azure")) return "azure";
     if (v.includes("codex") || v.includes("openai") || v.includes("gpt"))
       return "openai";
     if (
@@ -2870,7 +2902,7 @@ textarea:hover {
     mobileVersion: null,
     mobileSourceVersion: null,
     mobileSync: null,
-    azureUsage: null,
+    ccrUsage: null,
     efficiencyTipsFile: null,
     modelPricing: null,
     helperUp: false,
@@ -3718,7 +3750,9 @@ textarea:hover {
       loadJson("tools/mobile-sync-status.json").then(
         (v) => (state.mobileSync = v),
       ),
-      loadJson("tools/azure-usage.json").then((v) => (state.azureUsage = v)),
+      loadJson("tools/ccr-usage.json").then((v) => {
+        if (v) state.ccrUsage = v;
+      }),
       loadJson("tools/efficiency-tips.json").then(
         (v) => (state.efficiencyTipsFile = v),
       ),
@@ -4989,7 +5023,7 @@ textarea:hover {
     const latest = state.latestBuild?.version;
     const builtAt = state.latestBuild?.builtAt;
     const pubAt = state.mobileSync?.updated;
-    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>Azure route usage, estimated from logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
+    return `<section class="page reveal"><h1>About Workbench</h1><p class="lede">A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.</p><div class="grid cols-2"><div class="card"><h3>Versions</h3><div class="refined-list">${versionRow("This copy", WB_VERSION, !latest || WB_VERSION === latest, builtAt, "built")}${versionRow("Mobile (workbench-mobile)", state.mobileVersion, !!latest && state.mobileVersion === latest, pubAt, "published")}</div><p class="muted" style="margin-top:10px">Latest = the newest build recorded in the repo. A stale copy just needs a reload (mobile republish happens on push).</p><button class="btn" data-check-mobile>Re-check mobile version</button></div><div class="card"><h3>Tracked</h3><ul><li>Project files and task counts</li><li>Live session beacons</li><li>Machine health snapshots</li><li>Claude/Cursor credit snapshots</li><li>CCR (gpt-5.5 / gpt-5.3-codex) route usage, estimated from router logs when no billing total is saved</li></ul></div><div class="card"><h3>Not tracked</h3><ul><li>No app database</li><li>No hidden server state</li><li>Per-project costs (in the usage modal) are estimates derived from session telemetry, not billing-grade figures</li></ul></div></div></section>`;
   }
 
   function render() {
@@ -5093,7 +5127,8 @@ textarea:hover {
       : "ok";
     const pa = pct(state.usage);
     const pc = pct(state.cursorUsage);
-    const paz = pct(azureCredit());
+    const pg = pct(ccrModelCredit("GPT-5.5"));
+    const pcx = pct(ccrModelCredit("GPT-5.3-codex"));
     const pl = pct(localSavingsCredit());
     const dot = active.length
       ? active.some((s) => !s._stale)
@@ -5101,7 +5136,7 @@ textarea:hover {
         : "warn"
       : "idle";
     const reasonChip = `<span class="rail-sum-item"><span class="status-dot-ui ${reasonDot}"></span>${esc(displayText(String(reason), 28))}</span>`;
-    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(paz, "azure")}${paz == null ? "Azure —" : "Azure " + paz + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
+    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pg, "openai")}${pg == null ? "GPT-5.5 —" : "GPT-5.5 " + pg + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pcx, "codex")}${pcx == null ? "Codex —" : "Codex " + pcx + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
     // A problem chip leads so it can never scroll out of sight; all-good sits last.
     return `<button type="button" class="rail-summary" aria-expanded="${!!state.railOpen}" aria-label="Workbench status">${attention ? reasonChip + chips : chips + reasonChip}<span class="rail-caret" aria-hidden="true">›</span></button>`;
   }
@@ -5411,15 +5446,19 @@ textarea:hover {
   function syntheticCredit(spend, limit = 2000) {
     return { spend, limit, percent: limit ? Math.round((Number(spend || 0) / limit) * 100) : null };
   }
-  function azureCredit() {
-    const row = laneCompareRows(currentUsageRows()).find((r) => r.label === "Azure");
+  // Synthetic spend "credit" for one CCR model lane (GPT-5.5 / GPT-5.3-codex),
+  // reusing the same $2000 synthetic cap the old single CCR bar used.
+  function ccrModelCredit(modelLabel) {
+    const row = laneCompareRows(currentUsageRows()).find(
+      (r) => r.label === modelLabel,
+    );
     return syntheticCredit(row?.cost || 0);
   }
   function localSavingsCredit() {
     return syntheticCredit(localSavedSum(currentUsageRows()) || 0);
   }
   function allCreditLanesHTML() {
-    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${creditLaneHTML("Azure", azureCredit(), "azure", { mobileExtra: true })}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
+    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${creditLaneHTML("GPT-5.5", ccrModelCredit("GPT-5.5"), "gpt", { mobileExtra: true })}${creditLaneHTML("GPT-5.3-codex", ccrModelCredit("GPT-5.3-codex"), "codex", { mobileExtra: true })}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
   }
   function creditsRailHTML() {
     const ages = [state.usage?.updated, state.cursorUsage?.updated].filter(
@@ -5441,7 +5480,10 @@ textarea:hover {
   }
   function normalizeBackend(v) {
     v = String(v || "anthropic").toLowerCase();
-    if (v.includes("azure")) return "Azure";
+    // claude-code-router lane. New rows say "ccr"; legacy rows say
+    // "route-azure"/"azure" — all three are the same CCR lane. It is displayed
+    // split by model (GPT-5.5 / GPT-5.3-codex), never as a single "Azure" lane.
+    if (v.includes("ccr") || v.includes("azure")) return "CCR";
     if (v.includes("codex")) return "Codex";
     if (v.includes("cursor")) return "Cursor";
     if (v.includes("local")) return "Local";
@@ -5457,10 +5499,22 @@ textarea:hover {
       isLocalLabel(r.model)
     );
   }
+  // CCR (claude-code-router) sessions are shown split by model. Map any CCR
+  // model id to one of the two visible lanes; default unknown/blank to GPT-5.5
+  // (the router's general lane).
+  function ccrModelLabel(model) {
+    return normalizeModel(model) === "GPT-5.3-codex"
+      ? "GPT-5.3-codex"
+      : "GPT-5.5";
+  }
   // Billing lane a row belongs to for spend/traffic grouping - on-device rows
-  // roll up under "Local" regardless of a stale backend field.
+  // roll up under "Local", and CCR rows split into their model lane
+  // (GPT-5.5 / GPT-5.3-codex) rather than a single provider lane.
   function backendLane(r) {
-    return isLocalRow(r) ? "Local" : normalizeBackend(r.backend);
+    if (isLocalRow(r)) return "Local";
+    const b = normalizeBackend(r.backend);
+    if (b === "CCR") return ccrModelLabel(r.model);
+    return b;
   }
   function normalizeIde(v) {
     v = String(v || "claude").toLowerCase();
@@ -5472,6 +5526,7 @@ textarea:hover {
   function normalizeModel(v) {
     v = String(v || "unspecified").toLowerCase();
     if (v.includes("gpt-oss")) return "GPT-OSS 20B";
+    if (v.includes("gpt-5.3") || v.includes("codex")) return "GPT-5.3-codex";
     if (v.includes("gpt-5.5")) return "GPT-5.5";
     if (v.includes("opus")) return "Opus";
     if (v.includes("sonnet")) return "Sonnet";
@@ -5516,11 +5571,12 @@ textarea:hover {
         ? rows
             .map((r) => {
               const p = totalMs ? Math.round((r.ms / totalMs) * 100) : 0;
-              const extra = r.tokens
+              const base = r.tokens
                 ? `${r.tokens.toLocaleString()} tokens`
                 : r.requests
                   ? `${r.requests} requests`
                   : `${r.count} sessions · ${fmtDuration(r.ms)}`;
+              const extra = r.cost ? `${base} · ${fmtCostMaybe(r.cost)}` : base;
               return `<div class="mix-row"><div><div class="mix-label">${brandLabel(r.label)}</div><div class="mix-sub">${esc(extra)}</div></div><span class="creditbar ${brandKind(r.label)}"><i style="width:${p}%"></i></span><span class="credit-amt">${p}%</span></div>`;
             })
             .join("")
@@ -5566,6 +5622,8 @@ textarea:hover {
     if (key.includes("opus")) return models["claude-opus-4-8-thinking-high"];
     if (key.includes("sonnet")) return models["claude-sonnet-5"];
     if (key.includes("haiku")) return models["claude-haiku-4-5"];
+    if (key.includes("gpt-5.3") || key.includes("codex"))
+      return models["gpt-5.3-codex"];
     if (key.includes("gpt-5.5")) return models["gpt-5.5"];
     return null;
   }
@@ -5595,34 +5653,60 @@ textarea:hover {
       Number(r.totalTokens || 0)
     );
   }
-  function estimateSessionCost(r) {
-    if (!hasTelemetry(r)) return null;
-    if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
-    const backend = normalizeBackend(r.backend),
-      model = normalizeModel(r.model);
-    let entry = pricingEntry(r.model);
-    if (!entry && (backend === "Azure" || model === "GPT-5.5")) {
+  // Cost of one model's token bundle (inputTokens/outputTokens/cache*) at the
+  // pricing in effect on asOfMs. CCR rows whose model has no explicit pricing
+  // entry fall back to gpt-5.5 rates. Returns null when unpriceable.
+  function priceTokens(model, tok, asOfMs, backend) {
+    let entry = pricingEntry(model);
+    if (!entry && normalizeBackend(backend) === "CCR") {
       entry = pricingEntry("gpt-5.5");
     }
-    const asOfMs = Number(r.started || r.ended || 0) || Date.now();
     const rates = pricingRates(entry, asOfMs);
     if (!rates) return null;
     const inRate = rates.inputPerM,
       outRate = rates.outputPerM;
     if (inRate == null || outRate == null) return null;
-    const input = Number(r.inputTokens || 0),
-      output = Number(r.outputTokens || 0),
-      cacheWrite = Number(r.cacheCreationTokens || 0),
-      cacheRead = Number(r.cacheReadTokens || 0);
+    const input = Number(tok.inputTokens || 0),
+      output = Number(tok.outputTokens || 0),
+      cacheWrite = Number(tok.cacheCreationTokens || 0),
+      cacheRead = Number(tok.cacheReadTokens || 0);
     const cacheWriteRate =
       rates.cacheWritePerM != null ? rates.cacheWritePerM : inRate;
     const cacheReadRate = rates.cacheReadPerM;
-    let cost =
-      (input * inRate) / 1000000 + (output * outRate) / 1000000;
+    let cost = (input * inRate) / 1000000 + (output * outRate) / 1000000;
     if (cacheWrite) cost += (cacheWrite * cacheWriteRate) / 1000000;
     if (cacheRead && cacheReadRate != null)
       cost += (cacheRead * cacheReadRate) / 1000000;
-    return Math.round(cost * 10000) / 10000;
+    return cost;
+  }
+  function estimateSessionCost(r) {
+    if (!hasTelemetry(r)) return null;
+    if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
+    const asOfMs = Number(r.started || r.ended || 0) || Date.now();
+    // Multi-model / subagent sessions carry a per-model breakdown; prefer the
+    // recorded per-model cost (falling back to a token estimate when a model
+    // is unpriced) for the most accurate session total.
+    if (
+      r.byModel &&
+      typeof r.byModel === "object" &&
+      Object.keys(r.byModel).length
+    ) {
+      let total = 0,
+        any = false;
+      for (const [mid, m] of Object.entries(r.byModel)) {
+        if (!m) continue;
+        let c = Number(m.cost);
+        if (m.cost == null || !isFinite(c))
+          c = priceTokens(mid, m, asOfMs, r.backend);
+        if (c != null && isFinite(c)) {
+          total += c;
+          any = true;
+        }
+      }
+      if (any) return Math.round(total * 10000) / 10000;
+    }
+    const c = priceTokens(r.model, r, asOfMs, r.backend);
+    return c == null ? null : Math.round(c * 10000) / 10000;
   }
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
@@ -5649,7 +5733,10 @@ textarea:hover {
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
     if (r.savedEstimate != null) return Number(r.savedEstimate);
-    const clone = { ...r, backend: "anthropic" };
+    // Re-price the whole session's raw tokens at Claude rates. Drop byModel so
+    // estimateSessionCost uses the row totals + the substituted Claude model
+    // rather than the recorded local ($0) per-model costs.
+    const clone = { ...r, backend: "anthropic", byModel: undefined };
     const model = String(r.model || "").toLowerCase();
     clone.model = model.includes("opus")
       ? "claude-opus-4-8-thinking-high"
@@ -5759,7 +5846,7 @@ textarea:hover {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. Azure is estimated with GPT-5.5 pricing when no Azure billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. CCR (gpt-5.5 / gpt-5.3-codex) sessions are estimated from model pricing when no router billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -5797,6 +5884,13 @@ textarea:hover {
       : `${esc(fmtFullStamp(r.started))} → ${esc(fmtFullStamp(r.ended))}`;
     return `<div class="refined-list">${[
       sessionDetailRow("Title", esc(sessionTitle(r))),
+      sessionDetailRow("Summary", r.summary ? esc(String(r.summary)) : null),
+      sessionDetailRow(
+        "Projects",
+        Array.isArray(r.projects) && r.projects.length
+          ? `<span class="session-projects">${r.projects.map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>`
+          : null,
+      ),
       sessionDetailRow(
         "Project",
         `${esc(cwdBasename(r.cwd) || "Unknown")}<br><span class="tiny muted">${esc(r.cwd || "Unknown")}</span>`,
@@ -5860,13 +5954,11 @@ textarea:hover {
       (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
     );
     const local = rows.filter(isLocalRow);
-    const azure = rows.filter((r) => normalizeBackend(r.backend) === "Azure");
-    const codex = rows.filter(
-      (r) =>
-        normalizeBackend(r.backend) === "Codex" ||
-        normalizeModel(r.model).toLowerCase().includes("codex"),
-    );
     const cursor = rows.filter((r) => normalizeIde(r.ide) === "Cursor");
+    // claude-code-router lane, split per model into GPT-5.5 / GPT-5.3-codex.
+    const ccr = rows.filter(
+      (r) => !isLocalRow(r) && normalizeBackend(r.backend) === "CCR",
+    );
     const mk = (label, rs, extra = {}) => ({
       label,
       input: tokenSum(rs, "inputTokens"),
@@ -5884,22 +5976,95 @@ textarea:hover {
     // session telemetry (tokenSum/costSum over the windowed rows), never
     // from a billing snapshot. Windowed row-sets nest (7d ⊆ month ⊆ 12m ⊆
     // all), so these sums are guaranteed monotonic across time frames.
-    // Billing snapshots (Azure's log-scrape totals, Cursor's monthly spend)
-    // are a *different* data source that covers a different, sometimes
-    // much narrower window than what's selected - swapping a lane's primary
-    // number to that source for one window only (as this used to do for
-    // Azure on "all") broke monotonicity, since the snapshot could be far
-    // smaller than the session-telemetry sum for a shorter window. Surface
-    // it instead as a labeled aside, same pattern as "N/M sessions
-    // untracked", so nothing silently swaps sources.
-    const azureRow = mk("Azure", azure, { estimated: true });
-    if (state.azureUsage?.allTime) {
-      const snapInput = Number(state.azureUsage.allTime.inputTokens || 0),
-        snapOutput = Number(state.azureUsage.allTime.outputTokens || 0);
+    // Billing snapshots (the CCR router-log totals, Cursor's monthly spend)
+    // are a *different* data source that covers a different, sometimes much
+    // narrower window than what's selected - surface it as a labeled aside,
+    // same pattern as "N/M sessions untracked", so nothing silently swaps
+    // sources.
+    //
+    // CCR sessions are aggregated per model from each row's byModel breakdown
+    // (captures subagent usage on a different model than the row's primary),
+    // falling back to the row's single model when byModel is absent. This is
+    // the per-model cost table.
+    const ccrLanes = new Map();
+    const ensure = (label) => {
+      let l = ccrLanes.get(label);
+      if (!l) {
+        l = {
+          label,
+          input: 0,
+          output: 0,
+          requests: 0,
+          cost: 0,
+          hasCost: false,
+          sessions: 0,
+          untracked: 0,
+          approx: false,
+          estimated: true,
+        };
+        ccrLanes.set(label, l);
+      }
+      return l;
+    };
+    for (const r of ccr) {
+      const asOfMs = Number(r.started || r.ended || 0) || Date.now();
+      const approx = r.tokenSource === "ccr-log-approx";
+      const bm =
+        r.byModel && typeof r.byModel === "object" ? r.byModel : null;
+      if (bm && Object.keys(bm).length) {
+        for (const [mid, m] of Object.entries(bm)) {
+          if (!m) continue;
+          const lane = ensure(ccrModelLabel(mid));
+          lane.input += Number(m.inputTokens || 0);
+          lane.output += Number(m.outputTokens || 0);
+          lane.requests += Number(m.requests || 0);
+          let c = Number(m.cost);
+          if (m.cost == null || !isFinite(c))
+            c = priceTokens(mid, m, asOfMs, r.backend);
+          if (c != null && isFinite(c)) {
+            lane.cost += c;
+            lane.hasCost = true;
+          }
+          lane.sessions += 1;
+          if (approx) lane.approx = true;
+        }
+      } else {
+        const lane = ensure(ccrModelLabel(r.model));
+        lane.input += Number(r.inputTokens || 0);
+        lane.output += Number(r.outputTokens || 0);
+        lane.requests += Number(r.requests || 0);
+        const c = sessionCost(r);
+        if (c != null && isFinite(c)) {
+          lane.cost += Number(c);
+          lane.hasCost = true;
+        }
+        lane.sessions += 1;
+        if (!hasTelemetry(r)) lane.untracked += 1;
+        if (approx) lane.approx = true;
+      }
+    }
+    const ccrRows = [...ccrLanes.values()].map((l) => ({
+      label: l.label,
+      input: l.input,
+      output: l.output,
+      requests: l.requests,
+      cost: l.hasCost ? Math.round(l.cost * 10000) / 10000 : null,
+      approx: l.approx,
+      sessions: l.sessions,
+      untracked: l.untracked,
+      estimated: true,
+    }));
+    const snap = state.ccrUsage?.allTime;
+    if (snap && ccrRows.length) {
+      const snapInput = Number(snap.inputTokens || 0),
+        snapOutput = Number(snap.outputTokens || 0);
       const snapCost =
-        state.azureUsage.allTimeCost ??
+        state.ccrUsage.allTimeCost ??
         (snapInput * 5) / 1000000 + (snapOutput * 30) / 1000000;
-      azureRow.snapshotNote = `billing-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) since the scraper last reset - a different source, not filtered by time frame`;
+      const top = ccrRows
+        .slice()
+        .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0))[0];
+      top.snapshotNote = `router-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) across CCR models since the scraper last reset - a different source, not filtered by time frame`;
     }
     const cursorRow = mk("Cursor", cursor);
     if (state.cursorUsage?.spend != null) {
@@ -5914,17 +6079,7 @@ textarea:hover {
       localRow.isSavings = true;
       localRow.savingsAmount = savings;
     }
-    return [
-      mk("Anthropic", anthropic),
-      azureRow,
-      mk("Codex", codex),
-      cursorRow,
-      localRow,
-    ]
-      .filter(
-        (r) =>
-          r.label !== "Codex" || r.input || r.output || r.requests || r.cost,
-      )
+    return [mk("Anthropic", anthropic), ...ccrRows, cursorRow, localRow]
       .filter((r) => r.label !== "Local" || r.sessions)
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
@@ -6021,16 +6176,16 @@ textarea:hover {
         `${fails} tool failures recorded. Look for flaky helper/browser/file operations before long implementation runs.`,
       ]);
     const byProj = projectBreakdown(rows);
+    const ccrTokensOf = (p) =>
+      (p.lanes?.get?.("GPT-5.5") || 0) + (p.lanes?.get?.("GPT-5.3-codex") || 0);
     const heavy = byProj.find(
-      (p) =>
-        p.lane === "Azure" ||
-        (p.lanes?.get?.("Azure") || 0) > (p.input + p.output) * 0.5,
+      (p) => ccrTokensOf(p) > (p.input + p.output) * 0.5,
     );
     if (heavy) {
-      const azureTokens = heavy.lanes?.get?.("Azure") || 0;
+      const ccrTokens = ccrTokensOf(heavy);
       tips.push([
-        "Azure concentrated",
-        `${heavy.cwd.split("/").pop()} has ${fmtTokens(azureTokens)} Azure tokens. Consider scheduling heavy work around Anthropic quota resets when possible.`,
+        "CCR concentrated",
+        `${heavy.cwd.split("/").pop()} has ${fmtTokens(ccrTokens)} CCR (gpt-5.5 / gpt-5.3-codex) tokens. Consider scheduling heavy work around Anthropic quota resets when possible.`,
       ]);
     }
     return tips;
