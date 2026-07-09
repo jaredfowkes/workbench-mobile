@@ -2531,7 +2531,7 @@ button.metric-card:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-08.23";
+  const WB_VERSION = "2026-07-08.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -3559,6 +3559,7 @@ button.metric-card:hover {
       loadSessions().then((v) => (state.sessions = v)),
       loadMachines().then((v) => (state.machines = v)),
       loadSyncStatus().then((v) => (state.syncStatus = v)),
+      loadCheckouts().then((v) => (state.checkouts = v)),
       fetchMobileVersion().then((v) => (state.mobileVersion = v)),
       fetchSourceVersion().then((v) => (state.mobileSourceVersion = v)),
       pendingIntake().then((v) => (state.intake = v)),
@@ -3701,6 +3702,67 @@ button.metric-card:hover {
       );
     }
     return out;
+  }
+  // Checkout ledger: per-machine derived indexes written by
+  // tools/checkout-ledger.py. Two small files instead of enumerating
+  // tools/checkouts/events/ (one GitHub API fetch per file on the phone).
+  async function loadCheckouts() {
+    const indexes = [];
+    if (state.backend === "fsa") {
+      try {
+        const t = await state.root.getDirectoryHandle("tools");
+        const d = await t.getDirectoryHandle("checkouts");
+        for await (const [n, h] of d.entries()) {
+          if (h.kind === "file" && /^index-.+\.json$/.test(n))
+            try {
+              indexes.push(JSON.parse(await (await h.getFile()).text()));
+            } catch {}
+        }
+      } catch {}
+    } else {
+      const tree = await ghGetTree().catch(() => []);
+      await batch(
+        tree.filter((p) => /^tools\/checkouts\/index-[^/]+\.json$/.test(p)),
+        async (p) => {
+          try {
+            const f = await ghGetFile(p);
+            if (f) indexes.push(JSON.parse(f.text));
+          } catch {}
+        },
+      );
+    }
+    // merge per scope, freshest machine's view wins
+    const scopes = {};
+    for (const idx of indexes)
+      for (const [scope, st] of Object.entries(idx.scopes || {})) {
+        const prev = scopes[scope];
+        if (!prev || (st.lastEventTs || 0) >= (prev.lastEventTs || 0))
+          scopes[scope] = st;
+      }
+    return scopes;
+  }
+  function claimIsLive(st) {
+    if (!st || st.state !== "checked-out" || !st.owner) return false;
+    if ((st.expiresAt || 0) <= Date.now()) return false;
+    // live only when the owning session's beacon is present and fresh
+    const beacon = (state.sessions || []).find(
+      (s) =>
+        sessionMachine(s) === st.owner.machine &&
+        (s.session || "") === st.owner.session,
+    );
+    return !!beacon && !isStaleSession(beacon) && beacon.status !== "ended";
+  }
+  function checkoutForProject(p) {
+    const scopes = state.checkouts || {};
+    return scopes[`${p.section}/Projects/${p.dirName}/**`] || null;
+  }
+  function checkoutChipHTML(p) {
+    const st = checkoutForProject(p);
+    if (!st || st.state !== "checked-out" || !st.owner) return "";
+    const who = `${st.owner.ide || "agent"} @ ${machineName(st.owner.machine)}`;
+    if (claimIsLive(st))
+      return `<span class="chip warn" title="Checked out by ${esc(who)} — coordinate before editing">🔒 ${esc(who)}</span>`;
+    return `<span class="chip" title="Stale checkout by ${esc(who)} — takeover allowed">stale lock · ${esc(who)}</span>`;
   }
   async function pingHelper() {
     try {
@@ -4370,7 +4432,7 @@ button.metric-card:hover {
   }
   function projectTile(p) {
     const c = counts(p);
-    return `<button class="project-tile interactive-lift" data-open-project="${esc(p.dirName)}"><div class="cover" data-cover-for="${esc(p.dirName)}"><span>${esc((p.data.project || "?").slice(0, 2))}</span></div><div class="tilebody"><div class="kicker">${esc(p.section)}</div><div class="row-title">${esc(p.data.project)}</div><p class="muted">${esc(p.data.tagline || "")}</p><div class="row-meta">${label(c.blocked ? "blocked" : c.doing ? "doing" : c.open ? "todo" : "done", c.blocked ? "Blocked" : c.doing ? "In progress" : c.open ? "Open" : "Done")}<span class="chip">${c.open} open</span><span class="chip">${c.pct ?? 0}%</span></div><div style="margin-top:12px">${progress(c)}</div></div></button>`;
+    return `<button class="project-tile interactive-lift" data-open-project="${esc(p.dirName)}"><div class="cover" data-cover-for="${esc(p.dirName)}"><span>${esc((p.data.project || "?").slice(0, 2))}</span></div><div class="tilebody"><div class="kicker">${esc(p.section)}</div><div class="row-title">${esc(p.data.project)}</div><p class="muted">${esc(p.data.tagline || "")}</p><div class="row-meta">${label(c.blocked ? "blocked" : c.doing ? "doing" : c.open ? "todo" : "done", c.blocked ? "Blocked" : c.doing ? "In progress" : c.open ? "Open" : "Done")}<span class="chip">${c.open} open</span><span class="chip">${c.pct ?? 0}%</span>${checkoutChipHTML(p)}</div><div style="margin-top:12px">${progress(c)}</div></div></button>`;
   }
   function projectTableRow(p) {
     const c = counts(p);
@@ -4385,7 +4447,7 @@ button.metric-card:hover {
     const p = state.proj;
     if (!p) return "";
     const c = counts(p);
-    return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span></div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.data.whatsNext?.text || p.nextSteps?.length ? `<div class="card"><div class="kicker">What's next${p.data.whatsNext?.updated ? ` · recorded ${esc(p.data.whatsNext.updated)}` : ""}</div><h3 class="reco-title">${esc(p.data.whatsNext?.text || p.nextSteps[0])}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools" style="margin-top:10px"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList"><span class="skeleton" style="width:110px;height:26px"></span><span class="skeleton" style="width:90px;height:26px"></span></div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div></div></aside></div></section>`;
+    return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span>${checkoutChipHTML(p)}</div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.data.whatsNext?.text || p.nextSteps?.length ? `<div class="card"><div class="kicker">What's next${p.data.whatsNext?.updated ? ` · recorded ${esc(p.data.whatsNext.updated)}` : ""}</div><h3 class="reco-title">${esc(p.data.whatsNext?.text || p.nextSteps[0])}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools" style="margin-top:10px"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList"><span class="skeleton" style="width:110px;height:26px"></span><span class="skeleton" style="width:90px;height:26px"></span></div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div></div></aside></div></section>`;
   }
   function digestHTML(fm = {}, text = "", kind) {
     if (!text) return '<div class="empty-state">Not written yet.</div>';
@@ -5172,9 +5234,21 @@ button.metric-card:hover {
     const empty = state.sessionsLoadFailed
       ? '<div class="empty-state"><span class="chip warn">Couldn\'t read sessions</span></div>'
       : '<div class="empty-state">No active sessions.</div>';
+    const checkouts = Object.entries(state.checkouts || {}).filter(
+      ([, st]) => st.state === "checked-out" && st.owner,
+    );
+    const checkoutList = checkouts.length
+      ? `<h3 style="margin-top:16px">Checkouts</h3><div class="refined-list">${checkouts
+          .map(([scope, st]) => {
+            const live = claimIsLive(st);
+            const name = scope.replace(/^(Personal|Work)\/Projects\//, "").replace(/\/\*\*$/, "");
+            return `<div class="refined-row"><span><span class="refined-title">${statusDot(live ? "live" : "warn")}${esc(name)}</span><span class="refined-sub">${esc(`${st.owner.ide || "agent"} @ ${machineName(st.owner.machine)} · session ${st.owner.session}`)}</span></span><span class="refined-meta">${live ? '<span class="chip ok">live</span>' : '<span class="chip warn">stale lock</span>'}<span class="chip">${esc(shortAge(st.claimedAt))}</span></span></div>`;
+          })
+          .join("")}</div>`
+      : "";
     modal(
       "Live sessions",
-      `<div class="refined-list">${rows.map((s) => `<div class="refined-row"><span><span class="refined-title">${statusDot(s._stale ? "warn" : "live")}${esc(machineName(sessionMachine(s)))}</span><span class="refined-sub">${esc(displayText(s.prompt || s.cwd || "Running session", 180))}</span></span><span class="refined-meta">${s._stale ? '<span class="chip warn">possibly stale</span>' : ""}<span class="chip">${esc(fmtDuration(sessionRuntime(s)))}</span></span></div>`).join("") || empty}</div>`,
+      `<div class="refined-list">${rows.map((s) => `<div class="refined-row"><span><span class="refined-title">${statusDot(s._stale ? "warn" : "live")}${esc(machineName(sessionMachine(s)))}</span><span class="refined-sub">${esc(displayText(s.prompt || s.cwd || "Running session", 180))}</span></span><span class="refined-meta">${s._stale ? '<span class="chip warn">possibly stale</span>' : ""}<span class="chip">${esc(fmtDuration(sessionRuntime(s)))}</span></span></div>`).join("") || empty}</div>${checkoutList}`,
       "wide",
     );
   }
@@ -6075,6 +6149,18 @@ button.metric-card:hover {
       const p =
         state.projects.find((x) => x.dirName === destDirName) ||
         state.projects[0];
+      // If a live session has this project checked out, don't mutate its
+      // tasks.json underneath the agent — queue a standalone intake file
+      // instead (new-file writes can never conflict on either backend).
+      const co = checkoutForProject(p);
+      if (co && claimIsLive(co)) {
+        await queueIntakeCapture(type, p, text, files, co);
+        toast(
+          `${p.data.project} is being worked on by ${co.owner.ide || "an agent"} @ ${machineName(co.owner.machine)} — queued as intake.`,
+          "success",
+        );
+        return;
+      }
       const gname = type === "idea" ? "Ideas" : "Tasks";
       let g = (p.data.groups || []).find((x) => x.name === gname);
       if (!g) {
@@ -6102,6 +6188,43 @@ button.metric-card:hover {
       });
       await saveProject(p, { silent: true, rethrow: true });
     }
+  }
+  async function queueIntakeCapture(type, p, text, files, co) {
+    const saved = [];
+    for (const f of files || []) {
+      const name = (f.name || "attachment").replace(/[\\/:*?"<>|]/g, "-");
+      await writeBinaryPath(
+        `${projectBase(p)}/files/capture/${today()}-${name}`,
+        f.blob || f,
+      );
+      saved.push(name);
+    }
+    const ts = Date.now();
+    const rand = Math.random().toString(36).slice(2, 6);
+    await writePath(
+      `tools/intake/${ts}-${rand}.json`,
+      JSON.stringify(
+        {
+          v: 1,
+          type,
+          project: p.data.project,
+          section: p.section,
+          dirName: p.dirName,
+          text: saved.length ? `${text} (attachments: ${saved.join(", ")})` : text,
+          created: ts,
+          capturedVia: "dashboard",
+          needsTriage: true,
+          ownerContext: {
+            machine: co.owner.machine,
+            session: co.owner.session,
+            ide: co.owner.ide,
+            claimedAt: co.claimedAt,
+          },
+        },
+        null,
+        2,
+      ) + "\n",
+    );
   }
   async function saveCapture() {
     const type = $("#capType").value,
@@ -6385,6 +6508,17 @@ button.metric-card:hover {
       if (name && !/^\./.test(name))
         out.push({ kind: "fallback", text: name });
     }
+    // Captures queued as standalone files because their target project was
+    // checked out by a live session at capture time.
+    for (const path of await listUnder("tools/intake/")) {
+      if (!path.endsWith(".json")) continue;
+      try {
+        const rec = JSON.parse((await readPath(path)) || "{}");
+        out.push({ kind: "capture", text: `${rec.project ? rec.project + ": " : ""}${rec.text || path}` });
+      } catch {
+        out.push({ kind: "capture", text: path.split("/").pop() });
+      }
+    }
     return out;
   }
   function applyMotion(root = document) {
@@ -6534,6 +6668,19 @@ button.metric-card:hover {
     );
   }
   async function saveProject(p, opts = {}) {
+    // Advisory checkout guard: an agent session holding this project should
+    // not have its tasks.json rewritten underneath it from the phone. It's
+    // still Jared's data, so confirm rather than hard-block.
+    const co = checkoutForProject(p);
+    if (co && claimIsLive(co) && !opts.ignoreCheckout) {
+      const who = `${co.owner.ide || "an agent"} @ ${machineName(co.owner.machine)}`;
+      if (!confirm(`${p.data.project} is checked out by ${who}. Save anyway?\n(Cancel and use Capture to queue it as intake instead.)`)) {
+        const err = new Error(`Not saved — ${p.data.project} is checked out by ${who}.`);
+        if (opts.rethrow) throw err;
+        toast(err.message, "warning");
+        return;
+      }
+    }
     try {
       await Backends[state.backend].saveProject(p);
       if (!opts.silent) toast("Saved · " + p.data.project, "success");
