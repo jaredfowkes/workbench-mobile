@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="light" data-lob="custom" style="--accent-hero:#3D4A41">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com http://127.0.0.1:7787; img-src 'self' data: blob:; frame-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
@@ -7,11 +7,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Workbench">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#FBFAF8" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
   <title>Workbench Dashboard</title>
   <style>
-/* Workbench Dashboard — Notion-like design system (v5)
+/* Workbench Dashboard — KnowsMore operating-site adapter (v6)
    Contract: DESIGN.md in this directory. Class names and custom-property
    NAMES are a stable API for app.js — re-valued here, never removed.
    Sections:
@@ -30,33 +30,33 @@
   color-scheme: light;
 
   /* Type */
-  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
-    "Apple Color Emoji", Arial, sans-serif;
-  --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica,
-    "Apple Color Emoji", Arial, sans-serif;
+  --font-body: Avenir Next, Avenir, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: Avenir Next, Avenir, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
     monospace;
 
   /* Surfaces & ink */
-  --canvas: #f7f7f5;
-  --base: #ffffff;
+  --canvas: #fbfaf8;
+  --base: #fbfaf8;
   --raised: #ffffff;
   --subtle: rgba(55, 53, 47, 0.06);
   --muted-surface: rgba(55, 53, 47, 0.04);
-  --text: #37352f;
-  --text-2: rgba(55, 53, 47, 0.65);
-  --text-3: rgba(55, 53, 47, 0.45);
+  --text: #1c1b18;
+  --text-2: rgba(28, 27, 24, 0.66);
+  --text-3: rgba(28, 27, 24, 0.46);
   --inverted: #ffffff;
-  --border: rgba(55, 53, 47, 0.16);
-  --border-subtle: rgba(55, 53, 47, 0.09);
-  --border-strong: rgba(55, 53, 47, 0.28);
+  --border: rgba(28, 27, 24, 0.16);
+  --border-subtle: rgba(28, 27, 24, 0.09);
+  --border-strong: rgba(28, 27, 24, 0.26);
 
   /* Accent — the one color */
-  --focus: #2383e2;
-  --brand: #2383e2;
-  --brand-hover: #1a73c7;
-  --brand-soft: rgba(35, 131, 226, 0.12);
-  --brand-deep: #17629f;
+  --accent-hero: #3d4a41;
+  --accent-hero-contrast: #ffffff;
+  --focus: var(--accent-hero);
+  --brand: var(--accent-hero);
+  --brand-hover: color-mix(in srgb, var(--accent-hero) 86%, black);
+  --brand-soft: color-mix(in srgb, var(--accent-hero) 12%, transparent);
+  --brand-deep: color-mix(in srgb, var(--accent-hero) 75%, black);
 
   /* Signals */
   --danger: #eb5757;
@@ -122,27 +122,27 @@
   /* Radius */
   --r-xs: 3px;
   --r-sm: 4px;
-  --r-md: 6px;
+  --r-md: 8px;
   --r-lg: 10px;
-  --r-xl: 12px;
-  --r-xxl: 12px;
+  --r-xl: 14px;
+  --r-xxl: 16px;
   --pill: 9999px;
 
   /* Motion — quiet, no springs */
-  --fast: 100ms;
-  --standard: 170ms;
-  --slow: 170ms;
+  --fast: 140ms;
+  --standard: 240ms;
+  --slow: 420ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
-  --motion-fast: 100ms;
-  --motion-standard: 170ms;
-  --motion-emphasized: 170ms;
-  --ease-out-soft: cubic-bezier(0.2, 0, 0, 1);
+  --motion-fast: 140ms;
+  --motion-standard: 240ms;
+  --motion-emphasized: 420ms;
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-settle: cubic-bezier(0.2, 0, 0, 1);
-  --ease-spring: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.22, 1.56, 0.36, 1);
   --ease-press: cubic-bezier(0.2, 0, 0, 1);
 
   /* Layout */
-  --side: 240px;
+  --side: 248px;
   --bottom-nav: 62px;
 }
 
@@ -238,6 +238,7 @@ body {
   background: var(--canvas);
   color: var(--text);
   font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
   line-height: 1.55;
 }
 body {
@@ -1286,11 +1287,74 @@ button.metric-card:hover {
 
 /* ============ 11. Status rail & ops ============ */
 .status-rail {
+  margin-bottom: 26px;
+}
+.operating-rail {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 24px;
-  align-items: stretch;
+}
+.rail-chip {
+  min-width: 0;
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  background: var(--raised);
+  color: var(--text);
+  text-align: left;
+  box-shadow: none;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), transform var(--motion-standard) var(--ease-spring);
+}
+.rail-chip:hover {
+  background: var(--muted-surface);
+  border-color: var(--border);
+  transform: translateY(-1px);
+}
+.rail-chip:active {
+  transform: scale(0.98);
+}
+.rail-chip-ring {
+  display: inline-grid;
+  place-items: center;
+}
+.rail-chip-copy {
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+.rail-chip-label {
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rail-chip-value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.rail-chip-note {
+  color: var(--text-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.system-chip.ok {
+  border-color: color-mix(in srgb, var(--positive) 24%, var(--border-subtle));
+}
+.system-chip.warn {
+  border-color: color-mix(in srgb, var(--warning) 34%, var(--border-subtle));
+}
+.system-chip.bad {
+  border-color: color-mix(in srgb, var(--danger) 34%, var(--border-subtle));
 }
 .rail-card {
   padding: 10px 12px;
@@ -1321,8 +1385,7 @@ button.metric-card:hover {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  transition: background var(--fast) var(--ease),
-    border-color var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .ops-card:hover {
   background: var(--muted-surface);
@@ -1428,8 +1491,7 @@ button.metric-card:hover {
   padding: 8px 10px;
   text-align: left;
   color: var(--text);
-  transition: background var(--fast) var(--ease),
-    border-color var(--fast) var(--ease);
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
 .stat-chip:hover {
   background: var(--subtle);
@@ -2109,6 +2171,115 @@ button.metric-card:hover {
   align-content: start;
 }
 
+
+/* ============ 15b. KnowsMore operating-site adapter ============ */
+.nav-group-title {
+  padding: 12px 8px 4px;
+  color: var(--text-3);
+  font-size: 10.5px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.nav button {
+  min-height: 34px;
+  border-radius: var(--r-md);
+}
+.nav button.active {
+  background: var(--brand-soft);
+  color: var(--brand-deep);
+}
+.nav button.active svg {
+  color: var(--brand);
+}
+.sidebar {
+  overflow-y: auto;
+}
+.mark {
+  background: var(--brand);
+}
+.main {
+  background: var(--base);
+}
+.trace-stamp {
+  justify-self: end;
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.today-page {
+  gap: 28px;
+}
+.editorial-hero {
+  min-height: 84px;
+  align-items: start;
+}
+.today-grid,
+.dossier-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  gap: 16px;
+  align-items: stretch;
+}
+.editorial-card {
+  padding: clamp(22px, 4vw, 44px);
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  border-color: var(--border-subtle);
+}
+.editorial-card h2 {
+  font-size: clamp(24px, 3.8vw, 46px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  max-width: 18ch;
+}
+.reading-card {
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.trace-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.below-fold {
+  margin-top: 2px;
+}
+.ds-toolbar {
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--raised);
+  border-radius: var(--r-lg);
+}
+.search-field {
+  max-width: 320px;
+}
+.focus-row .refined-sub {
+  white-space: normal;
+}
+.project-room .project-header {
+  grid-template-columns: 170px minmax(0, 1fr) auto;
+}
+.resume-panel h3 {
+  font-size: 18px;
+  line-height: 1.35;
+  margin-top: 6px;
+}
+.meta-panel {
+  display: grid;
+  gap: 12px;
+}
+.artifact-panel {
+  grid-column: 1 / -1;
+}
 /* ============ 16. Responsive ============ */
 @media (max-width: 900px) {
   .shell {
@@ -2177,12 +2348,14 @@ button.metric-card:hover {
   .page {
     gap: 18px;
   }
-  .status-rail,
   .cols-2,
   .cols-3,
   .task-layout,
   .project-header,
-  .hero {
+  .hero,
+  .today-grid,
+  .dossier-grid,
+  .project-room .project-header {
     grid-template-columns: 1fr;
   }
   .hero > .btn {
@@ -2190,61 +2363,32 @@ button.metric-card:hover {
   }
   .status-rail {
     display: none;
-    margin-bottom: 16px;
   }
-  .status-rail.expanded {
-    display: block;
-  }
-  .status-rail .rail-card,
-  .status-rail .credit-card {
-    display: none;
-  }
-  .status-rail.expanded .rail-card,
-  .status-rail.expanded .credit-card {
+  #mobileSummary .operating-rail {
     display: flex;
-    width: 100%;
-    margin-top: 10px;
-  }
-  .status-rail:not(.expanded) .mobile-extra-credit {
-    display: none;
-  }
-  .status-rail .rail-summary {
-    display: none;
-  }
-  #mobileSummary .rail-summary {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-    min-width: 0;
-    padding: 0;
-    background: transparent;
-    border: 0;
-    box-shadow: none;
-    font-size: 12.5px;
-    font-weight: 500;
-    color: var(--text);
+    gap: 6px;
     overflow-x: auto;
-    white-space: nowrap;
   }
-  #mobileSummary .mobile-expanded-only {
+  #mobileSummary .rail-chip {
+    min-height: 36px;
+    grid-template-columns: auto minmax(58px, 1fr);
+    gap: 7px;
+    padding: 5px 8px;
+    flex: 0 0 auto;
+  }
+  #mobileSummary .rail-chip-note {
     display: none;
   }
-  #mobileSummary .rail-summary[aria-expanded="true"] .mobile-expanded-only {
-    display: inline-flex;
+  #mobileSummary .rail-chip-label {
+    font-size: 9.5px;
   }
-  .rail-caret {
-    margin-left: auto;
-    color: var(--text-3);
-    font-size: 16px;
-    transform: rotate(90deg);
-    transition: transform var(--fast) var(--ease);
+  #mobileSummary .rail-chip-value {
+    font-size: 11.5px;
   }
-  #mobileSummary .rail-summary[aria-expanded="true"] .rail-caret {
-    transform: rotate(-90deg);
-  }
-  .status-rail.expanded .rail-summary .rail-caret {
-    transform: rotate(-90deg);
+  #mobileSummary .donut {
+    width: 14px;
+    height: 14px;
+    flex-basis: 14px;
   }
   .project-cover {
     width: 100%;
@@ -2333,6 +2477,13 @@ button.metric-card:hover {
   }
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .editorial-card,
+  .reading-card {
+    min-height: auto;
+  }
+  .editorial-card h2 {
+    max-width: none;
   }
   .refined-row {
     grid-template-columns: 1fr;
@@ -2442,9 +2593,11 @@ button.metric-card:hover {
   .cols-2 {
     grid-template-columns: 1fr;
   }
-  .metric-grid,
-  .status-rail {
+  .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .operating-rail {
+    grid-template-columns: 1fr;
   }
 }
 @media (max-width: 1100px) {
@@ -2497,13 +2650,27 @@ button.metric-card:hover {
       <aside class="sidebar">
         <div class="brand"><span class="mark mark-sm" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="wordmark">Workbench</span></div>
         <nav class="nav" aria-label="Primary">
-          <button data-view="overview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg>Overview</button>
+          <div class="nav-group-title">Work</div>
+          <button data-view="overview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h16"/></svg>Today</button>
+          <button data-view="focus"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 12h10M9 17h6"/></svg>Focus queue</button>
           <button data-view="projects"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
-          <button data-view="knowledge"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge</button>
+          <button data-view="intake"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Intake</button>
+          <button data-view="followups"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><path d="m17 16 2 2 3-4"/></svg>Follow-ups</button>
+          <div class="nav-group-title">Memory</div>
+          <button data-view="knowledge"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge base</button>
+          <button data-view="ideas"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M8 14a6 6 0 1 1 8 0c-.9.7-1.2 1.5-1.2 2H9.2c0-.5-.3-1.3-1.2-2z"/></svg>Ideas</button>
+          <button data-view="artifacts"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 15l2.5-3 2 2 2.5-4 3 5"/></svg>Artifacts</button>
+          <button data-view="inventory"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h16M9 10v9"/></svg>Inventory</button>
           <button data-view="skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.1 6.4L20.5 12l-6.4 2.1L12 20.5l-2.1-6.4L3.5 12l6.4-2.1z"/></svg>Skills</button>
-          <button data-view="board"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><path d="M4 20c0-3 2.3-5 5-5s5 2 5 5"/><circle cx="17" cy="9" r="2.3"/><path d="M15.5 20c.2-2.4 1.6-4 3.5-3.9 1.1.1 2 .9 2 2.4"/></svg>Board</button>
-          <button data-view="instructions"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3h7.5L19 7.5V21H7z"/><path d="M10 12h6M10 16h6"/></svg>Instructions</button>
-          <button data-view="about"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>About</button>
+          <button data-view="creative"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16l9-9 2 2-9 9H7z"/></svg>Creative studio</button>
+          <div class="nav-group-title">Systems</div>
+          <button data-view="usage"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg>Usage metrics</button>
+          <button data-view="models"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Models & costs</button>
+          <button data-view="machines"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="10" rx="2"/><path d="M8 19h8M10 15v4M14 15v4"/></svg>Machines & sync</button>
+          <div class="nav-group-title">Review</div>
+          <button data-view="briefings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Briefings</button>
+          <button data-view="weekly"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Weekly review</button>
+          <button data-view="preflight"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Preflight</button>
         </nav>
         <div class="side-actions">
           <button class="btn primary" id="captureBtn">Quick capture</button>
@@ -2520,10 +2687,10 @@ button.metric-card:hover {
       </main>
     </div>
     <nav class="mobile-tabs" aria-label="Mobile primary">
-      <button data-view="overview"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5.5v-6h-5v6H4a1 1 0 0 1-1-1z"/></svg>Overview</button>
+      <button data-view="overview"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h16"/></svg>Today</button>
+      <button data-view="focus"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 12h10M9 17h6"/></svg>Focus</button>
       <button data-view="projects"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
-      <button id="mobileCapture" data-view="capture"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>Capture</button>
-      <button data-view="knowledge"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge</button>
+      <button data-view="intake"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Intake</button>
       <button data-view="more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>More</button>
     </nav>
   </div>
@@ -2531,7 +2698,7 @@ button.metric-card:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-08.24";
+  const WB_VERSION = "2026-07-08.28";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -2667,6 +2834,9 @@ button.metric-card:hover {
     backend: "fsa",
     connected: false,
     view: "overview",
+    focusMode: "now",
+    followMode: "waiting",
+    inventoryTab: "projects",
     area: "All",
     projects: [],
     kb: [],
@@ -2692,6 +2862,9 @@ button.metric-card:hover {
     modelPricing: null,
     helperUp: false,
     usageWindow: "month",
+    focusMode: "now",
+    followMode: "waiting",
+    inventoryTab: "projects",
     helperStatus: null,
     projectView: "gallery",
     projectSort: "updated",
@@ -3879,6 +4052,72 @@ button.metric-card:hover {
       .trim();
     return t.length > n ? t.slice(0, n).replace(/\s+\S*$/, "") + "…" : t;
   }
+  function priorityWeight(v) {
+    v = String(v || "").toLowerCase();
+    if (/^(p0|urgent|critical|highest|now)$/.test(v)) return 4;
+    if (/^(p1|high)$/.test(v)) return 3;
+    if (/^(p2|medium|med)$/.test(v)) return 2;
+    if (/^(p3|low|later)$/.test(v)) return 1;
+    return 0;
+  }
+  function priorityLabel(v) {
+    const w = priorityWeight(v);
+    return w === 4 ? "P0" : w === 3 ? "P1" : w === 2 ? "P2" : w === 1 ? "P3" : "Unprioritized";
+  }
+  function projectPriority(p) {
+    return p?.data?.priority || p?.data?.metadata?.priority || p?.data?.whatsNext?.priority || "";
+  }
+  function projectTargetDate(p) {
+    return p?.data?.targetDate || p?.data?.metadata?.targetDate || p?.data?.whatsNext?.targetDate || "";
+  }
+  function taskPriority(a) {
+    return a?.it?.priority || a?.wn?.priority || projectPriority(a?.p) || "";
+  }
+  function taskDue(a) {
+    return a?.it?.due || a?.it?.targetDate || a?.wn?.due || a?.wn?.targetDate || projectTargetDate(a?.p) || "";
+  }
+  function dueTime(v) {
+    const t = Date.parse(v || "");
+    return isFinite(t) ? t : Infinity;
+  }
+  function dueLabel(v) {
+    if (!v) return "No date";
+    const t = dueTime(v);
+    if (!isFinite(t)) return v;
+    const d = Math.ceil((t - Date.now()) / 86400000);
+    if (d < 0) return `${Math.abs(d)}d overdue`;
+    if (d === 0) return "due today";
+    if (d === 1) return "due tomorrow";
+    return `${d}d out`;
+  }
+  function actionMode(a) {
+    const h = (a.text + " " + (a.g?.name || "") + " " + (a.it?.mode || "")).toLowerCase();
+    if (a.kind === "blocked" || /waiting|blocked|jared|confirm|decide|real device|phone/.test(h)) return "waiting";
+    if (/verify|test|publish|screenshot|smoke|check/.test(h)) return "verify";
+    if (/delegate|agent|bulk|mechanical|update skill/.test(h)) return "delegate";
+    if (/idea|later|someday/.test(h) || a.kind === "idea") return "later";
+    return a.kind === "doing" || a.kind === "wnext" ? "now" : "next";
+  }
+  function actionWhy(a) {
+    if (a.kind === "blocked") return "Blocked work should be cleared before more buildout.";
+    if (a.kind === "wnext") return a.wn?.why || "Recorded as the project handoff.";
+    if (a.kind === "doing") return "Already in flight; finishing avoids context decay.";
+    if (taskDue(a)) return `Date signal: ${dueLabel(taskDue(a))}.`;
+    if (priorityWeight(taskPriority(a))) return `Priority signal: ${priorityLabel(taskPriority(a))}.`;
+    return "First actionable item from the project queue.";
+  }
+  function projectCostSummary(p) {
+    const rows = usageRows((state.sessionMetrics?.sessions || []).filter(Boolean)).filter((r) => {
+      const hay = `${r.cwd || ""} ${(r.projects || []).join(" ")}`.toLowerCase();
+      return hay.includes(p.dirName.toLowerCase()) || hay.includes(String(p.data.project || "").toLowerCase());
+    });
+    return { rows, cost: costSum(rows), tokens: tokenSum(rows, "totalTokens"), sessions: rows.length };
+  }
+  function projectRelatedKB(p) {
+    const key = String(p.data.project || p.dirName || "").toLowerCase();
+    return (state.kb || []).filter((e) => `${e.title} ${e.summary} ${e.body}`.toLowerCase().includes(key)).slice(0, 5);
+  }
+
   function bindView(root) {
     applyMotion(root);
     $$("[data-view]", root).forEach(
@@ -3910,6 +4149,27 @@ button.metric-card:hover {
       (b) =>
         (b.onclick = () => {
           state.area = b.dataset.area;
+          render();
+        }),
+    );
+    $$("[data-focus-mode]", root).forEach(
+      (b) =>
+        (b.onclick = () => {
+          state.focusMode = b.dataset.focusMode;
+          render();
+        }),
+    );
+    $$("[data-follow-mode]", root).forEach(
+      (b) =>
+        (b.onclick = () => {
+          state.followMode = b.dataset.followMode;
+          render();
+        }),
+    );
+    $$("[data-inventory-tab]", root).forEach(
+      (b) =>
+        (b.onclick = () => {
+          state.inventoryTab = b.dataset.inventoryTab;
           render();
         }),
     );
@@ -3991,6 +4251,15 @@ button.metric-card:hover {
     $$("[data-task-idx]", root).forEach(
       (b) => (b.onclick = (e) => taskClick(e, b)),
     );
+    $("[data-save-project-meta]", root)?.addEventListener("click", async () => {
+      if (!state.proj) return;
+      const pri = $("[data-proj-priority]", root)?.value || "";
+      const target = $("[data-proj-target]", root)?.value || "";
+      if (pri) state.proj.data.priority = pri; else delete state.proj.data.priority;
+      if (target) state.proj.data.targetDate = target; else delete state.proj.data.targetDate;
+      await saveProject(state.proj);
+      render();
+    });
     $("[data-project-prompt]", root)?.addEventListener("click", () =>
       copyText(
         state.proj.data.whatsNext?.text
@@ -4173,32 +4442,30 @@ button.metric-card:hover {
             out.push({ p, g, it, kind: it.status, text: it.text });
           else if (it.status === "todo" && !firstTodo)
             firstTodo = { p, g, it, kind: "todo", text: it.text };
+          else if (it.status === "idea" && priorityWeight(it.priority) >= 3)
+            out.push({ p, g, it, kind: "idea", text: it.text });
         }
-      // One representative todo per project so a backlog with nothing "doing"
-      // still surfaces in the queue instead of vanishing.
       if (firstTodo) out.push(firstTodo);
-      // Recorded "What's next" (written by /wrap-session): the deliberate
-      // per-project pick, preferred over heuristic rows for that project.
       const wn = p.data.whatsNext;
       if (wn && wn.text) out.push({ p, kind: "wnext", text: wn.text, wn });
-      for (const step of p.nextSteps || [])
-        out.push({ p, kind: "next", text: step });
+      for (const step of p.nextSteps || []) out.push({ p, kind: "next", text: step });
     }
-    const rank = { blocked: 0, wnext: 0.5, doing: 1, next: 2, todo: 3 };
-    const staleDays = (a) =>
-      Math.min(14, (now - (projectRecency(a.p) || now)) / 86400000);
+    const rank = { blocked: 0, wnext: 0.5, doing: 1, next: 2, todo: 3, idea: 4 };
+    const staleDays = (a) => Math.min(14, (now - (projectRecency(a.p) || now)) / 86400000);
     return out
       .filter((a) => !isSnoozedAction(a))
       .sort((a, b) => {
+        const pw = priorityWeight(taskPriority(b)) - priorityWeight(taskPriority(a));
+        if (pw) return pw;
+        const due = dueTime(taskDue(a)) - dueTime(taskDue(b));
+        if (due) return due;
         const k = rank[a.kind] - rank[b.kind];
         if (k) return k;
-        // Blockers and backlog todos rotate attention to the stalest project;
-        // in-flight work and next steps keep momentum on the freshest.
-        if (a.kind === "blocked" || a.kind === "todo")
-          return staleDays(b) - staleDays(a);
+        if (a.kind === "blocked" || a.kind === "todo") return staleDays(b) - staleDays(a);
         return projectRecency(b.p) - projectRecency(a.p);
       });
   }
+
   function actionPrompt(a) {
     const lead =
       a.kind === "blocked"
@@ -4285,9 +4552,10 @@ button.metric-card:hover {
     return `<div class="momentum-head"><div><h3>Momentum</h3><div class="tiny">Work completed over the last 14 days.</div></div></div>${momentumHTML()}<div class="momentum-summary"><span>${statusDot(st.blocked ? "bad" : "ok")}${st.blocked ? `${st.blocked} blocked` : "No blockers"}</span><span>${statusDot(st.doing ? "live" : "idle")}${st.doing} in progress</span><span>${statusDot("ok")}${st.week} completed this week</span></div>`;
   }
   function actionRow(a) {
-    const kindLabel = { next: "Next", todo: "Up next", wnext: "What's next" }[a.kind] || a.kind;
-    return `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(a.p.dirName)}"><span><span class="refined-title">${esc(displayText(a.text))}</span><span class="refined-sub">${esc(a.p.data.project)} · ${esc(a.g?.name || "Next step")}</span></span><span class="refined-meta">${label(a.kind, kindLabel)}<button type="button" class="btn tertiary" data-copy-action="${esc(actionKey(a))}">Copy</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(a))}" aria-label="Snooze">Zzz</button></span></div>`;
+    const kindLabel = { next: "Next", todo: "Up next", wnext: "What's next", idea: "Idea" }[a.kind] || a.kind;
+    return `<div class="refined-row focus-row pressable" role="button" tabindex="0" data-open-project="${esc(a.p.dirName)}"><span><span class="refined-title">${esc(displayText(a.text))}</span><span class="refined-sub">${esc(a.p.data.project)} · ${esc(a.g?.name || "Project handoff")} · ${esc(actionWhy(a))}</span></span><span class="refined-meta">${label(a.kind, kindLabel)}<span class="chip">${esc(priorityLabel(taskPriority(a)))}</span>${taskDue(a) ? `<span class="chip">${esc(dueLabel(taskDue(a)))}</span>` : ""}<button type="button" class="btn tertiary" data-copy-action="${esc(actionKey(a))}">Copy</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(a))}" aria-label="Snooze">Later</button></span></div>`;
   }
+
   function laneHTML(title, list) {
     const note = {
       "Needs Jared": "Decisions or blockers to clear",
@@ -4296,9 +4564,10 @@ button.metric-card:hover {
       "Quick win": "Small next steps with momentum",
     }[title];
     if (!list.length)
-      return `<div class="lane-clear" title="${note}"><span class="lane-clear-dot" aria-hidden="true"></span>${esc(title)} — clear</div>`;
-    return `<div class="card compact"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${note}</p></div><span class="chip">${list.length}</span></div><div class="refined-list">${list.map((a) => actionRow(a)).join("")}</div></div>`;
+      return `<div class="lane-clear" title="${esc(note)}"><span class="lane-clear-dot" aria-hidden="true"></span>${esc(title)} - clear</div>`;
+    return `<div class="card compact"><div class="cardhead"><div><h3>${esc(title)}</h3><p class="section-note">${esc(note)}</p></div><span class="chip">${list.length}</span></div><div class="refined-list">${list.map((a) => actionRow(a)).join("")}</div></div>`;
   }
+
   function intakeBannerHTML() {
     const n = state.intake?.length || 0;
     if (!n) return "";
@@ -4380,35 +4649,98 @@ button.metric-card:hover {
     if (el) el.textContent = text;
   }
   function overviewHTML() {
-    const st = globalStats(),
-      acts = actionItems(),
-      top = acts[0];
-    // Persist this render's snapshot so click handlers resolve rows by key
-    // against exactly what was painted, never a recomputed list.
+    const st = globalStats(), acts = actionItems(), top = acts[0];
     state._acts = acts;
-    // Lanes partition the queue: an item appears in exactly one lane, and the
-    // recommended item is excluded so the page never shows a row twice.
-    const rest = acts.slice(1);
-    const placed = new Set();
-    const take = (pred) => {
-      const got = rest.filter((a) => !placed.has(actionKey(a)) && pred(a)).slice(0, 4);
-      got.forEach((a) => placed.add(actionKey(a)));
-      return got;
-    };
-    const lanes = {
-      needs: take((a) => a.kind === "blocked"),
-      verify: take((a) => /\b(verify|publish|ship|smoke|screenshot|test)\b/i.test(a.text)),
-      agent: take((a) => a.kind === "doing"),
-      quick: take((a) => a.kind === "wnext" || a.kind === "next" || a.kind === "todo"),
-    };
-    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">${st.open} open items, ${st.doing} in flight, ${st.blocked ? `${st.blocked} blocked` : "nothing blocked"}, ${st.week} done this week.</p></div></div>${intakeBannerHTML()}<div class="metric-grid"><button class="metric-card pressable" data-kpi="open"><div class="label">Open</div><div class="num">${st.open}</div><div class="hint">Across active projects</div></button><button class="metric-card pressable" data-kpi="doing"><div class="label">In flight</div><div class="num">${st.doing}</div><div class="hint">Currently moving</div></button><button class="metric-card pressable" data-kpi="blocked"><div class="label">Blocked</div><div class="num">${st.blocked}</div><div class="hint">Needs a decision</div></button><button class="metric-card pressable" data-kpi="week"><div class="label">Done this week</div><div class="num">${st.week}</div><div class="hint">Recent momentum</div></button></div>${top ? `<div class="card callout"><div class="cardhead"><span class="callout-glyph" aria-hidden="true">🧭</span><div><div class="kicker">What's next · ${esc(top.p.data.project)}</div><h3 class="reco-title">${esc(displayText(top.text))}</h3>${top.wn && (top.wn.leftOff || top.wn.why) ? `<p class="muted">${top.wn.leftOff ? `Left off: ${esc(top.wn.leftOff)}` : ""}${top.wn.leftOff && top.wn.why ? " · " : ""}${top.wn.why ? esc(top.wn.why) : ""}</p>` : ""}</div><div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div></div></div>` : ""}<div class="grid cols-2"><div class="grid">${laneHTML("Needs Jared", lanes.needs)}${laneHTML("Agent can do", lanes.agent)}${laneHTML("Verify or publish", lanes.verify)}${laneHTML("Quick win", lanes.quick)}</div><div class="grid"><div class="card momentum-card">${momentumPanelHTML(st)}</div><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest project log entries</p></div></div><div class="refined-list">${
-      recentActivity()
-        .map(
-          (r) =>
-            `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(r.p.data.project)}</span><span class="refined-sub">${esc(r.ts)} · ${esc(r.text)}</span></span><span aria-hidden="true">›</span></div>`,
-        )
-        .join("") || '<div class="empty-state">No recent activity yet.</div>'
-    }</div></div></div></div></section>`;
+    const second = acts.find((a) => top && actionKey(a) !== actionKey(top));
+    const insight = top
+      ? `The cleanest next move is ${top.p.data.project}: ${displayText(top.text, 130)}`
+      : "Everything is quiet enough for review, cleanup, or a new capture.";
+    const note = st.blocked
+      ? `${st.blocked} blocker${st.blocked === 1 ? "" : "s"} should be cleared before adding more work.`
+      : st.doing
+        ? `${st.doing} item${st.doing === 1 ? "" : "s"} already in flight; finish before widening the queue.`
+        : `${st.open} open items remain across the workbench, with ${st.week} completed this week.`;
+    return `<section class="page reveal today-page"><div class="hero editorial-hero"><div><div class="kicker">Today</div><h1>${greeting()}, Jared.</h1><p class="lede">A calm operating brief from the repo.</p></div><div class="trace-stamp">${esc(today())} · ${state.backend === "github" ? "GitHub" : "local folder"}</div></div>${intakeBannerHTML()}<div class="today-grid"><article class="card editorial-card"><div class="kicker">Operating note</div><h2>${esc(insight)}</h2><p class="muted">${esc(note)}</p><div class="trace-row"><span class="chip">${st.open} open</span><span class="chip">${st.doing} in flight</span><span class="chip ${st.blocked ? "bad" : "ok"}">${st.blocked ? `${st.blocked} blocked` : "No blockers"}</span><span class="chip">${st.week} done this week</span></div>${top ? `<div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open project</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy agent prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div>` : ""}</article><aside class="card reading-card"><div class="kicker">Today's read</div><h3>${second ? esc(second.p.data.project) : "Workbench"}</h3><p class="muted">${second ? esc(displayText(second.text, 220)) : "Review recent activity or capture the next idea without forcing a decision yet."}</p>${second ? `<button class="btn tertiary" data-open-direct="${esc(second.p.dirName)}">Read project room</button>` : `<button class="btn tertiary" data-view="projects">Browse projects</button>`}</aside></div><div class="grid cols-2 below-fold"><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest meaningful project log entries</p></div></div><div class="refined-list">${recentActivity().slice(0, 5).map((r) => `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(r.p.data.project)}</span><span class="refined-sub">${esc(r.ts)} · ${esc(r.text)}</span></span><span aria-hidden="true">›</span></div>`).join("") || '<div class="empty-state">No recent activity yet.</div>'}</div></div><div class="card momentum-card">${momentumPanelHTML(st)}</div></div></section>`;
+  }
+
+  function focusHTML() {
+    const acts = actionItems();
+    state._acts = acts;
+    const tabs = [
+      ["now", "Now"], ["next", "Next"], ["waiting", "Waiting/blocked"], ["delegate", "Delegate"], ["later", "Later"]
+    ];
+    const mode = state.focusMode || "now";
+    const visible = acts.filter((a) => {
+      const m = actionMode(a);
+      if (mode === "now") return m === "now" || a.kind === "doing" || a.kind === "wnext";
+      if (mode === "next") return m === "next" || a.kind === "todo" || a.kind === "next";
+      if (mode === "waiting") return m === "waiting" || a.kind === "blocked";
+      if (mode === "delegate") return m === "delegate" || /agent|delegate/i.test(a.text);
+      return m === "later" || a.kind === "idea";
+    }).slice(0, 24);
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Focus queue</div><h1>Priority across projects</h1><p class="lede">Sorted by optional priority and target dates, then by blockers and project recency.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar ds-toolbar"><div class="seg">${tabs.map(([k, l]) => `<button class="${mode === k ? "active" : ""}" data-focus-mode="${k}">${l}</button>`).join("")}</div></div><div class="card compact"><div class="refined-list">${visible.map(actionRow).join("") || '<div class="empty-state">Nothing in this lane right now.</div>'}</div></div></section>`;
+  }
+  function intakeHTML() {
+    const items = state.intake || [];
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Intake</div><h1>Capture first, classify later</h1><p class="lede">Raw notes, queued phone captures, attachments, and triage signals stay visible until the triage workflow files them.</p></div><button class="btn primary" data-capture>New capture</button></div><div class="grid cols-2"><div class="card"><h3>Universal capture</h3><p class="muted">Use the same capture flow for tasks, ideas, project seeds, knowledge notes, screenshots, and voice-note attachments.</p><button class="btn primary" data-capture>Open capture</button></div><div class="card"><h3>Triage workflow</h3><p class="muted">${items.length ? `${items.length} item${items.length === 1 ? "" : "s"} waiting for /triage-intake.` : "No pending intake detected."}</p><button type="button" class="btn" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.">Copy triage prompt</button></div></div><div class="card compact"><div class="cardhead"><div><h3>Raw inbox</h3><p class="section-note">Suggested type and destination are handled by the triage skill.</p></div><span class="chip">${items.length}</span></div><div class="refined-list">${items.map((it) => `<div class="refined-row"><span><span class="refined-title">${esc(displayText(it.text, 150))}</span><span class="refined-sub">${esc(it.kind || "capture")} · unverified until triaged</span></span><span class="chip warn">needs triage</span></div>`).join("") || '<div class="empty-state">No raw captures are waiting.</div>'}</div></div></section>`;
+  }
+  function followupsHTML() {
+    const acts = actionItems();
+    state._acts = acts;
+    const tabs = [["waiting", "Waiting on Jared"], ["machine", "Machine/sync"], ["agent", "Agent"], ["device", "Real-device test"], ["date", "Date/event"], ["verify", "Needs verification"], ["aging", "Aging"]];
+    const mode = state.followMode || "waiting";
+    const rows = acts.filter((a) => {
+      const h = `${a.text} ${a.g?.name || ""}`.toLowerCase();
+      if (mode === "machine") return /machine|sync|x1|mac|windows|publish/.test(h);
+      if (mode === "agent") return /agent|delegate|session/.test(h) || a.kind === "doing";
+      if (mode === "device") return /phone|real device|screenshot|mobile/.test(h);
+      if (mode === "date") return !!taskDue(a) || /date|event|weekly|tomorrow/.test(h);
+      if (mode === "verify") return /verify|test|confirm|check|smoke/.test(h);
+      if (mode === "aging") return projectRecency(a.p) && Date.now() - projectRecency(a.p) > 7 * 86400000;
+      return a.kind === "blocked" || /waiting|jared|decision/.test(h);
+    }).slice(0, 24);
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Follow-ups</div><h1>Waiting and verification</h1><p class="lede">A calm list of promises, blockers, device checks, and stale work that should not disappear into project pages.</p></div></div><div class="toolbar"><div class="seg">${tabs.map(([k, l]) => `<button class="${mode === k ? "active" : ""}" data-follow-mode="${k}">${l}</button>`).join("")}</div></div><div class="card compact"><div class="refined-list">${rows.map(actionRow).join("") || '<div class="empty-state">No follow-ups in this view.</div>'}</div></div></section>`;
+  }
+  function ideasHTML() {
+    const ideas = [];
+    for (const p of state.projects) for (const g of p.data.groups || []) for (const it of g.items || []) if (it.status === "idea") ideas.push({ p, g, it, text: it.text });
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Ideas</div><h1>Idea clusters</h1><p class="lede">Repeated ideas and ready-to-promote items stay separate from execution work.</p></div><button class="btn primary" data-capture>Capture idea</button></div><div class="gallery">${ideas.slice(0, 24).map((a) => `<button class="project-tile interactive-lift" data-open-project="${esc(a.p.dirName)}"><div class="tilebody"><div class="kicker">${esc(a.p.data.project)}</div><div class="row-title">${esc(displayText(a.text, 120))}</div><p class="muted">${esc(a.g.name)} · ${esc(priorityLabel(a.it.priority))}</p></div></button>`).join("") || '<div class="empty-state">No ideas captured yet.</div>'}</div></section>`;
+  }
+  function artifactsHTML() {
+    const rows = state.projects.filter((p) => (p._shotPaths || []).length || (p._docPaths || []).length).slice(0, 24);
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Artifacts</div><h1>Outputs and evidence</h1><p class="lede">Screenshots, HTML readouts, and project deliverables grouped by project.</p></div></div><div class="gallery">${rows.map((p) => `<button class="project-tile interactive-lift" data-open-project="${esc(p.dirName)}"><div class="cover" data-cover-for="${esc(p.dirName)}"><span>${esc((p.data.project || "?").slice(0, 2))}</span></div><div class="tilebody"><div class="row-title">${esc(p.data.project)}</div><p class="muted">${(p._shotPaths || []).length} screenshots · ${(p._docPaths || []).length} docs</p></div></button>`).join("") || '<div class="empty-state">No artifact paths found yet.</div>'}</div></section>`;
+  }
+  function inventoryHTML() {
+    const tabs = [["projects", "Projects"], ["artifacts", "Artifacts"], ["skills", "Skills"], ["machines", "Machines"], ["models", "Models"], ["kb", "KB"]];
+    const tab = state.inventoryTab || "projects";
+    const counts = { projects: state.projects.length, artifacts: state.projects.filter((p) => (p._shotPaths || []).length || (p._docPaths || []).length).length, skills: state.skillCatalog?.total || 0, machines: machineStatusRows().length, models: groupMetrics(currentUsageRows(), (r) => normalizeModel(r.model)).length, kb: state.kb.length };
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Inventory</div><h1>Workbench index</h1><p class="lede">A system map for projects, artifacts, skills, machines, models, and knowledge.</p></div></div><div class="toolbar"><div class="seg">${tabs.map(([k, l]) => `<button class="${tab === k ? "active" : ""}" data-inventory-tab="${k}">${l}</button>`).join("")}</div></div><div class="metric-grid">${Object.entries(counts).map(([k, v]) => `<div class="metric-card"><div class="label">${esc(k)}</div><div class="num">${v}</div></div>`).join("")}</div></section>`;
+  }
+  function creativeHTML() {
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Creative studio</div><h1>Small making prompts</h1><p class="lede">A quieter place for cookbook, design, web, personal creative, inspiration, and visual-asset starts.</p></div><button class="btn primary" data-capture>Capture seed</button></div><div class="grid cols-2"><div class="card"><h3>Ready prompts</h3><p class="muted">Capture a seed, connect it to a project, then promote it when it has a clear output.</p></div><div class="card"><h3>Visual assets</h3><p class="muted">Covers and screenshots stay as project artifacts; logos remain Jared-authored.</p></div></div></section>`;
+  }
+  function usageHTML() {
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Usage metrics</div><h1>Spend, sessions, and savings</h1><p class="lede">Linked session telemetry by provider, project, and time frame.</p></div></div><div id="usageDetailBody">${usageDetailBody()}</div></section>`;
+  }
+  function modelsHTML() {
+    const rows = usageRows((state.sessionMetrics?.sessions || []).filter(Boolean));
+    const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Models & costs</div><h1>Model traffic</h1><p class="lede">Tokens, cost, cache, and lane attribution by model/backend/editor.</p></div></div><div class="usage-grid">${mixRows("Model mix", groupMetrics(rows, (r) => normalizeModel(r.model)), totalMs)}${mixRows("Backend traffic share", groupMetrics(rows, (r) => backendLane(r)), totalMs)}${comparisonTable(laneCompareRows(rows))}${tipsHTML(rows)}</div></section>`;
+  }
+  function machinesHTML() {
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Machines & sync</div><h1>Safe-to-work status</h1><p class="lede">Machine health, live sessions, checkouts, sync, publish, and queued captures.</p></div></div><div class="ops-detail-grid"><div class="usage-card"><h3>Machines</h3><div class="refined-list">${machineStatusRows().map((r) => `<div class="refined-row"><span><span class="refined-title">${statusDot(r.state === "active" ? "live" : r.state === "idle" ? "warn" : "bad")}${esc(r.name)}</span><span class="refined-sub">${r.state === "active" ? `${r.active.length} active session${r.active.length === 1 ? "" : "s"} · longest ${fmtDuration(r.longest)}` : `Last seen ${shortAge(r.last)} · helper ${r.machine?.helperUp ? "up" : "unknown/down"}`}</span></span><span class="chip">${esc(r.state)}</span></div>`).join("") || '<div class="empty-state">No machines reported yet.</div>'}</div></div><div class="usage-card"><h3>Sync</h3><div class="refined-list">${syncItems().map((i) => `<div class="refined-row"><span><span class="refined-title">${statusDot(i.state)}${esc(i.label)}</span><span class="refined-sub">${esc(i.value)}</span></span><span class="chip">${esc(i.state)}</span></div>`).join("")}</div></div></div></section>`;
+  }
+  function briefingsHTML() {
+    const top = actionItems()[0];
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Briefings</div><h1>Daily and project briefs</h1><p class="lede">Concise summaries for day start, weekly review, project prep, cost review, and creative work.</p></div></div><div class="card editorial-card"><div class="kicker">Daily brief</div><h2>${top ? esc(`${top.p.data.project}: ${displayText(top.text, 120)}`) : "No urgent brief today"}</h2><p class="muted">Use the focus queue when you want the agent-ready prompt; use capture when a thought is not ready to classify.</p></div></section>`;
+  }
+  function weeklyHTML() {
+    const st = globalStats();
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Weekly review</div><h1>Projects advanced and stalled</h1><p class="lede">A skim pass over completed work, captures, blockers, costs, and next-week priorities.</p></div></div><div class="metric-grid"><div class="metric-card"><div class="label">Done this week</div><div class="num">${st.week}</div></div><div class="metric-card"><div class="label">Blocked</div><div class="num">${st.blocked}</div></div><div class="metric-card"><div class="label">Captures</div><div class="num">${state.intake?.length || 0}</div></div><div class="metric-card"><div class="label">Open</div><div class="num">${st.open}</div></div></div></section>`;
+  }
+  function preflightHTML() {
+    const checks = ["Scope is claimed or no project files are being edited", "Generated outputs were rebuilt from source", "Dashboard/mobile-sensitive flows were smoke-tested", "Screenshots are real and inspected", "Tracking files are current"];
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Preflight</div><h1>Wrap and ship checklist</h1><p class="lede">Quality gates before publishing, wrapping, archiving, or handing off work.</p></div></div><div class="card compact"><div class="refined-list">${checks.map((c, i) => `<div class="refined-row"><span><span class="refined-title">${i + 1}. ${esc(c)}</span><span class="refined-sub">Verify before declaring done.</span></span><span class="chip">check</span></div>`).join("")}</div></div></section>`;
   }
 
   function projectsFiltered() {
@@ -4424,20 +4756,20 @@ button.metric-card:hover {
   }
   function projectsHTML() {
     const rows = projectsFiltered();
-    // The Gallery/Table toggle is hidden at <=900px (style.css), so a
-    // stored "table" view would strand mobile users with no way to switch
-    // back — always render the gallery on narrow viewports.
     const view = isMobile() ? "gallery" : state.projectView;
-    return `<section class="page reveal"><div class="hero"><div><h1>Projects</h1><p class="lede">${rows.length} projects across Work and Personal.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.area === a ? "active" : ""}" data-area="${a}">${a}</button>`).join("")}</div><input class="input" style="max-width:280px" placeholder="Filter projects…" value="${esc(state.pq)}" data-project-search><div class="seg"><button class="${state.projectView === "gallery" ? "active" : ""}" data-project-view="gallery">Gallery</button><button class="${state.projectView === "table" ? "active" : ""}" data-project-view="table">Table</button></div></div>${view === "gallery" ? `<div class="gallery">${rows.map(projectTile).join("")}</div>` : `<div class="table"><div class="table-head"><span></span><span>Project</span><span>Area</span><span>Progress</span><span>Open</span><span>Blocked</span><span>Ideas</span><span>Updated</span></div>${rows.map(projectTableRow).join("")}</div>`}</section>`;
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Projects</div><h1>Project portfolio</h1><p class="lede">${rows.length} projects across Work and Personal. Select one to open its Project Room dossier.</p></div><button class="btn primary" data-capture>Quick capture</button></div><div class="toolbar ds-toolbar"><div class="seg">${["All", "Work", "Personal"].map((a) => `<button class="${state.area === a ? "active" : ""}" data-area="${a}">${a}</button>`).join("")}</div><input class="input search-field" placeholder="Filter projects..." value="${esc(state.pq)}" data-project-search><div class="seg"><button class="${state.projectView === "gallery" ? "active" : ""}" data-project-view="gallery">Gallery</button><button class="${state.projectView === "table" ? "active" : ""}" data-project-view="table">Table</button></div></div>${view === "gallery" ? `<div class="gallery">${rows.map(projectTile).join("")}</div>` : `<div class="table"><div class="table-head"><span></span><span>Project</span><span>Area</span><span>Priority</span><span>Progress</span><span>Open</span><span>Blocked</span><span>Updated</span></div>${rows.map(projectTableRow).join("")}</div>`}</section>`;
   }
+
   function projectTile(p) {
-    const c = counts(p);
-    return `<button class="project-tile interactive-lift" data-open-project="${esc(p.dirName)}"><div class="cover" data-cover-for="${esc(p.dirName)}"><span>${esc((p.data.project || "?").slice(0, 2))}</span></div><div class="tilebody"><div class="kicker">${esc(p.section)}</div><div class="row-title">${esc(p.data.project)}</div><p class="muted">${esc(p.data.tagline || "")}</p><div class="row-meta">${label(c.blocked ? "blocked" : c.doing ? "doing" : c.open ? "todo" : "done", c.blocked ? "Blocked" : c.doing ? "In progress" : c.open ? "Open" : "Done")}<span class="chip">${c.open} open</span><span class="chip">${c.pct ?? 0}%</span>${checkoutChipHTML(p)}</div><div style="margin-top:12px">${progress(c)}</div></div></button>`;
+    const c = counts(p), pr = priorityLabel(projectPriority(p)), target = projectTargetDate(p);
+    return `<button class="project-tile interactive-lift" data-open-project="${esc(p.dirName)}"><div class="cover" data-cover-for="${esc(p.dirName)}"><span>${esc((p.data.project || "?").slice(0, 2))}</span></div><div class="tilebody"><div class="kicker">${esc(p.section)}</div><div class="row-title">${esc(p.data.project)}</div><p class="muted">${esc(p.data.tagline || "")}</p><div class="row-meta">${label(c.blocked ? "blocked" : c.doing ? "doing" : c.open ? "todo" : "done", c.blocked ? "Blocked" : c.doing ? "In progress" : c.open ? "Open" : "Done")}<span class="chip">${esc(pr)}</span>${target ? `<span class="chip">${esc(dueLabel(target))}</span>` : ""}<span class="chip">${c.open} open</span><span class="chip">${c.pct ?? 0}%</span>${checkoutChipHTML(p)}</div><div style="margin-top:12px">${progress(c)}</div></div></button>`;
   }
+
   function projectTableRow(p) {
     const c = counts(p);
-    return `<button class="table-row pressable" data-open-project="${esc(p.dirName)}"><span>${c.blocked ? "⚑" : ""}</span><span><b>${esc(p.data.project)}</b><br><span class="tiny">${esc(p.data.tagline || "")}</span></span><span>${esc(p.section)}</span><span>${c.pct ?? "-"}%</span><span>${c.open}</span><span>${c.blocked}</span><span>${c.idea}</span><span>${relDate(projectRecency(p))}</span></button>`;
+    return `<button class="table-row pressable" data-open-project="${esc(p.dirName)}"><span>${c.blocked ? "!" : ""}</span><span><b>${esc(p.data.project)}</b><br><span class="tiny">${esc(p.data.tagline || "")}</span></span><span>${esc(p.section)}</span><span>${esc(priorityLabel(projectPriority(p)))}</span><span>${c.pct ?? "-"}%</span><span>${c.open}</span><span>${c.blocked}</span><span>${relDate(projectRecency(p))}</span></button>`;
   }
+
   function relDate(ms) {
     if (!ms) return "—";
     const d = Math.round((Date.now() - ms) / 86400000);
@@ -4446,9 +4778,12 @@ button.metric-card:hover {
   function projectHTML() {
     const p = state.proj;
     if (!p) return "";
-    const c = counts(p);
-    return `<section class="page reveal"><button class="btn tertiary" data-view="projects">← Projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><p class="tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip">${c.blocked} blocked</span>${checkoutChipHTML(p)}</div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div>${p.data.whatsNext?.text || p.nextSteps?.length ? `<div class="card"><div class="kicker">What's next${p.data.whatsNext?.updated ? ` · recorded ${esc(p.data.whatsNext.updated)}` : ""}</div><h3 class="reco-title">${esc(p.data.whatsNext?.text || p.nextSteps[0])}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools" style="margin-top:10px"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps[0] }))}">Copy prompt</button></div></div>` : ""}<div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks…" data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task…"><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group…</option></select></div></div></div><aside class="grid"><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>About</h3>${digestHTML(p.overviewFM, p.overviewText, "overview")}</div><div class="card"><h3>Docs</h3><div class="docs" id="docsList"><span class="skeleton" style="width:110px;height:26px"></span><span class="skeleton" style="width:90px;height:26px"></span></div></div><div class="card"><h3>Screenshots</h3><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div></div></aside></div></section>`;
+    const c = counts(p), cost = projectCostSummary(p), related = projectRelatedKB(p);
+    const activeRows = taskRows(p).filter((r) => !isClosedStatus(r.it.status));
+    const timeline = (p.log || []).slice().reverse().slice(0, 6);
+    return `<section class="page reveal project-room"><button class="btn tertiary" data-view="projects">Back to projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><div class="kicker">Project room · ${esc(p.section)}</div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip ${c.blocked ? "bad" : "ok"}">${c.blocked} blocked</span><span class="chip">${esc(priorityLabel(projectPriority(p)))}</span>${projectTargetDate(p) ? `<span class="chip">${esc(dueLabel(projectTargetDate(p)))}</span>` : ""}${checkoutChipHTML(p)}</div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div><div class="dossier-grid"><section class="card resume-panel"><div class="kicker">Resume</div><h3>${esc(p.data.whatsNext?.text || p.nextSteps?.[0] || "No recorded next step")}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps?.[0] || `Continue ${p.data.project}` }))}">Copy prompt</button></div></section><section class="card meta-panel"><h3>Priority and target</h3><div class="form-two"><label class="form-row"><span class="tiny">Priority</span><select data-proj-priority><option value="">Unprioritized</option>${["P0", "P1", "P2", "P3"].map((v) => `<option value="${v}"${priorityLabel(projectPriority(p)) === v ? " selected" : ""}>${v}</option>`).join("")}</select></label><label class="form-row"><span class="tiny">Target date</span><input class="input" type="date" data-proj-target value="${esc(projectTargetDate(p))}"></label></div><button class="btn" data-save-project-meta>Save metadata</button></section><section class="card artifact-panel"><div class="cardhead"><h3>Visual and docs band</h3></div><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div><div class="docs" id="docsList" style="margin-top:12px"><span class="skeleton" style="width:110px;height:26px"></span></div></section><section class="card"><h3>Session and cost summary</h3><p class="usage-big">${esc(fmtCostMaybe(cost.cost))}</p><p class="muted">${cost.sessions} session${cost.sessions === 1 ? "" : "s"} · ${esc(fmtTokens(cost.tokens || 0))} tokens in the selected usage window.</p></section></div><div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks..." data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task..."><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group...</option></select></div></div></div><aside class="grid"><div class="card"><h3>Actionability</h3><p class="muted">${activeRows.length} open rows, ${c.blocked} blocked, ${c.doing} in flight.</p></div><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>Related knowledge</h3><div class="refined-list">${related.map((e) => `<button class="refined-row" data-open-entry="${esc(e.section + "/" + e.sub + "/" + e.fileName)}"><span><span class="refined-title">${esc(e.title)}</span><span class="refined-sub">${esc(e.sub)} · ${esc(e.summary || "")}</span></span></button>`).join("") || '<div class="empty-state">No direct KB links found.</div>'}</div></div><div class="card"><h3>Timeline</h3><div class="refined-list">${timeline.map((l) => `<div class="refined-row"><span><span class="refined-title">${esc(l.text)}</span><span class="refined-sub">${esc(l.ts)}</span></span></div>`).join("") || '<div class="empty-state">No log entries yet.</div>'}</div></div><div class="card"><h3>File drawer</h3><p class="muted tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">deliverables</span><span class="chip">working files</span><span class="chip">screenshots</span><span class="chip">archive</span></div></div></aside></div></section>`;
   }
+
   function digestHTML(fm = {}, text = "", kind) {
     if (!text) return '<div class="empty-state">Not written yet.</div>';
     const { body } = parseFM(text);
@@ -4898,16 +5233,30 @@ button.metric-card:hover {
     updateNavIndicator();
     const view = $("#view");
     if (state.view === "overview") view.innerHTML = overviewHTML();
+    if (state.view === "focus") view.innerHTML = focusHTML();
     if (state.view === "projects") view.innerHTML = projectsHTML();
     if (state.view === "project") view.innerHTML = projectHTML();
+    if (state.view === "intake") view.innerHTML = intakeHTML();
+    if (state.view === "followups") view.innerHTML = followupsHTML();
     if (state.view === "knowledge") view.innerHTML = knowledgeHTML();
+    if (state.view === "ideas") view.innerHTML = ideasHTML();
+    if (state.view === "artifacts") view.innerHTML = artifactsHTML();
+    if (state.view === "inventory") view.innerHTML = inventoryHTML();
     if (state.view === "skills") view.innerHTML = skillsHTML();
+    if (state.view === "creative") view.innerHTML = creativeHTML();
+    if (state.view === "usage") view.innerHTML = usageHTML();
+    if (state.view === "models") view.innerHTML = modelsHTML();
+    if (state.view === "machines") view.innerHTML = machinesHTML();
+    if (state.view === "briefings") view.innerHTML = briefingsHTML();
+    if (state.view === "weekly") view.innerHTML = weeklyHTML();
+    if (state.view === "preflight") view.innerHTML = preflightHTML();
     if (state.view === "board") view.innerHTML = boardHTML();
     if (state.view === "instructions") view.innerHTML = instructionsHTML();
     if (state.view === "about") view.innerHTML = aboutHTML();
     if (!navigated)
       $$(".reveal", view).forEach((el) => el.classList.remove("reveal"));
     bindView(view);
+    if (state.view === "usage" || state.view === "models") bindUsageWindow(view);
     fillImages(view);
     if (state._focusSel) {
       const el = $(state._focusSel, view);
@@ -4950,17 +5299,23 @@ button.metric-card:hover {
       return `<span class="donut no-data ${cls}" role="img" aria-label="no data"></span>`;
     return `<span class="donut ${cls}" style="--p:${Math.max(0, Math.min(100, p || 0))}" aria-hidden="true"></span>`;
   }
-  function railSummaryHTML() {
-    const active = activeSessions();
-    const st = globalStats();
+  function systemStatus() {
     const items = syncItems();
     const downMachine = machineStatusRows().find((r) => r.state === "down");
-    const worst =
-      items.find((i) => i.state === "bad") ||
-      items.find((i) => i.state !== "ok");
-    const attention = !!(worst || downMachine);
-    // Name the actual problem instead of a generic "Check sync".
-    const reason = downMachine
+    const bad = items.find((i) => i.state === "bad");
+    const warn = items.find((i) => i.state !== "ok");
+    if (bad || downMachine) return { cls: "bad", text: downMachine ? `${downMachine.name} down` : `${bad.label}: ${bad.value}` };
+    if (warn) return { cls: "warn", text: `${warn.label}: ${warn.value}` };
+    return { cls: "ok", text: "Synced" };
+  }
+
+  function railSummaryHTML() {
+    const items = syncItems();
+    const downMachine = machineStatusRows().find((r) => r.state === "down");
+    const worst = items.find((i) => i.state === "bad") || items.find((i) => i.state !== "ok");
+    const systemState = downMachine || worst;
+    const systemCls = systemState ? ((worst && worst.state === "bad") || downMachine ? "bad" : "warn") : "ok";
+    const systemText = downMachine
       ? `${downMachine.name || "Machine"} down`
       : worst
         ? worst.label === "Last publish"
@@ -4970,59 +5325,32 @@ button.metric-card:hover {
             : worst.label === "Sync status"
               ? String(worst.value)
               : `${worst.label}: ${worst.value}`
-        : "Synced";
-    const reasonDot = attention
-      ? (worst && worst.state === "bad") || downMachine
-        ? "bad"
-        : "warn"
-      : "ok";
-    const pa = pct(state.usage);
-    const pc = pct(state.cursorUsage);
-    const pg = pct(ccrModelCredit("GPT-5.5"));
-    const pcx = pct(ccrModelCredit("GPT-5.3-codex"));
-    const pl = pct(localSavingsCredit());
-    const dot = active.length
-      ? active.some((s) => !s._stale)
-        ? "live"
-        : "warn"
-      : "idle";
-    const reasonChip = `<span class="rail-sum-item"><span class="status-dot-ui ${reasonDot}"></span>${esc(displayText(String(reason), 28))}</span>`;
-    const chips = `<span class="rail-sum-item"><span class="status-dot-ui ${dot}"></span>${active.length} active</span><span class="rail-sum-item">${donut(pa, "anthropic")}${pa == null ? "no data" : pa + "%"}</span><span class="rail-sum-item">${donut(pc, "cursor")}${pc == null ? "no data" : pc + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pg, "openai")}${pg == null ? "GPT-5.5 —" : "GPT-5.5 " + pg + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pcx, "codex")}${pcx == null ? "Codex —" : "Codex " + pcx + "%"}</span><span class="rail-sum-item mobile-expanded-only">${donut(pl, "local")}${pl == null ? "Local —" : "Local " + pl + "%"}</span>${st.blocked ? `<span class="rail-sum-item"><span class="status-dot-ui bad"></span>${st.blocked} blocked</span>` : ""}`;
-    // A problem chip leads so it can never scroll out of sight; all-good sits last.
-    return `<button type="button" class="rail-summary" aria-expanded="${!!state.railOpen}" aria-label="Workbench status">${attention ? reasonChip + chips : chips + reasonChip}<span class="rail-caret" aria-hidden="true">›</span></button>`;
+        : "System steady";
+    const providerChip = (key, label, u, cls) => {
+      const p = pct(u);
+      const fresh = ageLabel(u?.updated);
+      return `<button type="button" class="rail-chip provider-chip" data-usage-provider="${key}" aria-label="Open ${esc(label)} usage details"><span class="rail-chip-ring">${donut(p, cls)}</span><span class="rail-chip-copy"><span class="rail-chip-label">${esc(label)}</span><span class="rail-chip-value">${p == null ? "no data" : p + "%"}</span></span><span class="rail-chip-note">${esc(fresh)}</span></button>`;
+    };
+    return `<div class="operating-rail" role="group" aria-label="Workbench operating status">${providerChip("anthropic", "Anthropic", state.usage, "anthropic")}${providerChip("cursor", "Cursor", state.cursorUsage, "cursor")}<button type="button" class="rail-chip system-chip ${systemCls}" data-system-detail aria-label="Open Machines and Sync"><span>${statusDot(systemCls)}</span><span class="rail-chip-copy"><span class="rail-chip-label">System</span><span class="rail-chip-value">${esc(displayText(systemText, 42))}</span></span><span class="rail-chip-note">machines & sync</span></button></div>`;
   }
   function renderStatusRail() {
     if (!state.connected) return;
     const rail = $("#statusRail");
-    const html = `${railSummaryHTML()}${sessionsRailHTML()}${machinesRailHTML()}${creditsRailHTML()}${syncRailHTML()}`;
-    rail.classList.toggle("expanded", !!state.railOpen);
-    if (rail._html === html) return;
-    rail._html = html;
-    rail.innerHTML = html;
-    // Mirror the summary chips into the mobile top bar (merged header row).
+    const html = railSummaryHTML();
+    rail.classList.remove("expanded");
+    if (rail._html !== html) {
+      rail._html = html;
+      rail.innerHTML = html;
+    }
     const ms = $("#mobileSummary");
-    if (ms) ms.innerHTML = railSummaryHTML();
-    const toggleRail = () => {
-      state.railOpen = !state.railOpen;
-      $("#statusRail").classList.toggle("expanded", state.railOpen);
-      $$(".rail-summary").forEach((b) =>
-        b.setAttribute("aria-expanded", String(state.railOpen)),
-      );
-    };
-    $$(".rail-summary").forEach((b) => (b.onclick = toggleRail));
-    $("#sessionsRailBtn")?.addEventListener("click", openSessionsDetail);
-    $("#machinesRailBtn")?.addEventListener("click", openMachinesDetail);
-    $("#creditsRailBtn")?.addEventListener("click", openUsageDetail);
-    $("#syncRailBtn")?.addEventListener("click", openSyncDetail);
-    $$("[data-rail-action]", rail).forEach((b) =>
-      b.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          b.click();
-        }
-      }),
-    );
+    if (ms && ms._html !== html) {
+      ms._html = html;
+      ms.innerHTML = html;
+    }
+    $$('[data-usage-provider]').forEach((b) => (b.onclick = () => openUsageDetail(b.dataset.usageProvider)));
+    $$('[data-system-detail]').forEach((b) => (b.onclick = () => go("machines")));
     applyMotion(rail);
+    if (ms) applyMotion(ms);
   }
   function machineName(raw) {
     return (
@@ -6107,19 +6435,19 @@ button.metric-card:hover {
     const prompt = efficiencyPrompt(tips);
     return `<div class="usage-card"><div class="cardhead"><div><h3>AI-efficiency tips</h3></div><button type="button" class="btn tertiary" data-copy-efficiency-prompt="${esc(prompt)}">Copy fix prompt</button></div>${tips.length ? `<div class="ops-list">${tips.map(([t, b]) => `<div class="ops-row"><span>${statusDot("idle")}${esc(t)}</span><span class="prompt-snippet">${esc(b)}</span><span></span></div>`).join("")}</div>` : '<p class="muted">No data-backed efficiency warnings right now.</p>'}</div>`;
   }
-  function bindUsageWindow() {
-    $$("[data-usage-window]", $(".modal-scrim.dyn")).forEach(
+  function bindUsageWindow(root = null) {
+    root = root || $(".modal-scrim.dyn") || document;
+    $$("[data-usage-window]", root).forEach(
       (b) =>
         (b.onclick = () => {
           state.usageWindow = b.dataset.usageWindow;
-          const body = $("#usageDetailBody");
+          const body = $("#usageDetailBody", root) || $("#usageDetailBody");
           if (body) {
             body.innerHTML = usageDetailBody();
-            bindUsageWindow();
+            bindUsageWindow(root);
           }
         }),
     );
-    const root = $(".modal-scrim.dyn");
     $$('[data-lane-info]', root).forEach((b) => (b.onclick = () => {
       const row = (state._laneInfoRows || [])[+b.dataset.laneInfo];
       if (!row) return;
@@ -6130,9 +6458,10 @@ button.metric-card:hover {
     );
     bindSessionRows(root);
   }
-  function openUsageDetail() {
+
+  function openUsageDetail(provider = "") {
     modal(
-      "Credits and model traffic",
+      provider === "cursor" ? "Cursor usage" : provider === "anthropic" ? "Anthropic usage" : "Credits and model traffic",
       `<div id="usageDetailBody">${usageDetailBody()}</div>`,
       "wide",
     );
@@ -6571,7 +6900,7 @@ button.metric-card:hover {
     closeModal();
     state.view = v;
     if (v !== "project") state.proj = null;
-    if (v === "skills" && !state.skillCatalog)
+    if ((v === "skills" || v === "inventory") && !state.skillCatalog)
       ensureSkillCatalog().then(() => state.view === "skills" && render());
     if (v === "board" && !state.boardPool)
       ensureBoardPool().then(() => state.view === "board" && render());
@@ -7246,10 +7575,10 @@ button.metric-card:hover {
         document.documentElement.dataset.theme === "dark" ? "light" : "dark";
       localStorage.setItem("wb-theme", document.documentElement.dataset.theme);
     };
-    $("#paletteBtn").onclick = openPalette;
-    $("#mobilePalette").onclick = openPalette;
-    $("#mobileReload").onclick = doReload;
-    $("#mobileCapture").onclick = openCapture;
+    $("#paletteBtn")?.addEventListener("click", openPalette);
+    $("#mobilePalette")?.addEventListener("click", openPalette);
+    $("#mobileReload")?.addEventListener("click", doReload);
+    $("#mobileCapture")?.addEventListener("click", openCapture);
     $("#syncBtn").onclick = async () => {
       if (state.backend === "github")
         return toast("Edits save straight to GitHub — nothing to push.");
@@ -7408,9 +7737,15 @@ button.metric-card:hover {
     if (!state.boardPool) ensureBoardPool().then(refresh);
   }
   function openMore() {
+    const groups = [
+      ["Work", [["followups", "Follow-ups"]]],
+      ["Memory", [["knowledge", "Knowledge base"], ["ideas", "Ideas"], ["artifacts", "Artifacts"], ["inventory", "Inventory"], ["skills", "Skills"], ["creative", "Creative studio"]]],
+      ["Systems", [["usage", "Usage metrics"], ["models", "Models & costs"], ["machines", "Machines & sync"]]],
+      ["Review", [["briefings", "Briefings"], ["weekly", "Weekly review"], ["preflight", "Preflight"], ["board", "Board of Advisors"], ["instructions", "Instructions"], ["about", "About"]]],
+    ];
     modal(
       "More",
-      `<div class="sheet-list">${[["skills", "Skills"], ["board", "Board"], ["instructions", "Instructions"], ["about", "About"]].map(([v, t]) => `<button class="sheet-row" data-view="${v}"><span>${t}</span><span class="sheet-chev" aria-hidden="true">›</span></button>`).join("")}</div><div class="sheet-list" style="margin-top:12px"><button class="sheet-row" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span>Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
+      `${groups.map(([title, items]) => `<div class="sheet-list"><div class="nav-group-title">${esc(title)}</div>${items.map(([v, t]) => `<button class="sheet-row" data-view="${v}"><span>${esc(t)}</span><span class="sheet-chev" aria-hidden="true">›</span></button>`).join("")}</div>`).join('<div style="height:10px"></div>')}<div class="sheet-list" style="margin-top:12px"><button class="sheet-row" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations."><span>Copy triage prompt</span><span class="chip">Copy</span></button></div>`,
     );
     bindView($(".modal-scrim.dyn"));
   }
