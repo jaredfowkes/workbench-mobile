@@ -2698,7 +2698,7 @@ button.metric-card:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-08.28";
+  const WB_VERSION = "2026-07-09.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5902,9 +5902,10 @@ button.metric-card:hover {
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
     if (isLocalRow(r)) return 0; // on-device: free, don't charge to a paid lane
+    const est = estimateSessionCost(r);
+    if (normalizeBackend(r.backend) === "CCR" && est != null) return est;
     const saved = Number(r.cost);
     if (r.cost != null && saved > 0) return saved;
-    const est = estimateSessionCost(r);
     return est != null ? est : r.cost != null ? saved : null;
   }
   function sessionCostHTML(r) {
