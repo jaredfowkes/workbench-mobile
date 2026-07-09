@@ -2698,7 +2698,7 @@ button.metric-card:hover {
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.20";
+  const WB_VERSION = "2026-07-09.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -5886,9 +5886,8 @@ button.metric-card:hover {
         any = false;
       for (const [mid, m] of Object.entries(r.byModel)) {
         if (!m) continue;
-        let c = Number(m.cost);
-        if (m.cost == null || !isFinite(c))
-          c = priceTokens(mid, m, asOfMs, r.backend);
+        let c = priceTokens(mid, m, asOfMs, r.backend);
+        if (c == null || !isFinite(c)) c = Number(m.cost);
         if (c != null && isFinite(c)) {
           total += c;
           any = true;
