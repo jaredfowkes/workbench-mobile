@@ -12550,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.40";
+  const WB_VERSION = "2026-07-09.41";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15393,45 +15393,13 @@ function navItems() {
 }
 function ProviderRail() {
   const mobile = useViewport();
-  const compact = mobile && !['today', 'usage', 'sessions', 'machines'].includes(viewName());
-  const provider = (key, label, u, color) => {
-    const p = pct(u);
-    return /*#__PURE__*/React.createElement(Button, {
-      key: key,
-      variant: "secondary",
-      size: "sm",
-      onClick: () => openUsageDetail(key),
-      style: {
-        justifyContent: 'flex-start',
-        minHeight: 58,
-        padding: '8px 12px'
-      }
-    }, /*#__PURE__*/React.createElement(Donut, {
-      value: (p || 0) / 100,
-      size: 34,
-      thickness: 4,
-      color: color,
-      label: p == null ? '—' : p + '%'
-    }), /*#__PURE__*/React.createElement("span", {
-      style: {
-        display: 'grid',
-        gap: 1,
-        textAlign: 'left'
-      }
-    }, /*#__PURE__*/React.createElement("span", {
-      style: {
-        fontSize: 11,
-        color: 'var(--text-muted)',
-        textTransform: 'uppercase',
-        letterSpacing: 'var(--tracking-eyebrow)'
-      }
-    }, label), /*#__PURE__*/React.createElement("span", null, p == null ? 'No usage data' : money(u && u.spend) + ' / ' + money(u && u.limit))));
-  };
+  if (!mobile) return null;
   const items = syncItems();
   const downMachine = machineStatusRows().find(r => r.state === 'down');
   const worst = items.find(i => i.state === 'bad') || items.find(i => i.state !== 'ok');
   const tone = downMachine || worst && worst.state === 'bad' ? 'unfavorable' : worst ? 'warning' : 'favorable';
   const text = downMachine ? downMachine.name + ' down' : worst ? worst.label === 'Sync status' && String(worst.value).includes('unsynced') ? 'Safe to read; ' + worst.value + ' changes need push' : worst.label + ': ' + worst.value : 'System steady';
+  const compact = !['today', 'usage', 'sessions', 'machines'].includes(viewName());
   if (compact) return /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
     size: "sm",
@@ -15450,37 +15418,112 @@ function ProviderRail() {
       whiteSpace: 'nowrap'
     }
   }, displayText(text, 58)));
-  return /*#__PURE__*/React.createElement(Grid, {
-    cols: 3,
-    gap: 3,
+  return /*#__PURE__*/React.createElement(TopStatusStrip, {
+    mobile: true
+  });
+}
+function TopStatusStrip({
+  mobile = false
+}) {
+  const usageChip = (key, label, u, color) => {
+    const p = pct(u);
+    return /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      onClick: () => openUsageDetail(key),
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        minHeight: mobile ? 38 : 34,
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--text-strong)',
+        padding: '2px 4px',
+        borderRadius: 'var(--radius-sm)',
+        cursor: 'pointer',
+        fontFamily: 'var(--font-sans)'
+      }
+    }, /*#__PURE__*/React.createElement(Donut, {
+      value: (p || 0) / 100,
+      size: mobile ? 28 : 26,
+      thickness: 4,
+      color: color,
+      label: p == null ? '—' : p + '%'
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'grid',
+        gap: 0,
+        lineHeight: 1.05,
+        textAlign: 'left'
+      }
+    }, /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--text-muted)',
+        textTransform: 'uppercase',
+        letterSpacing: 'var(--tracking-eyebrow)',
+        fontWeight: 700
+      }
+    }, label), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 12.5,
+        fontWeight: 700,
+        whiteSpace: 'nowrap'
+      }
+    }, p == null ? 'no data' : money(u && u.spend) + ' / ' + money(u && u.limit))));
+  };
+  const items = syncItems();
+  const downMachine = machineStatusRows().find(r => r.state === 'down');
+  const worstItems = items.filter(i => i.state === 'bad' || i.state === 'warn' || i.state === 'unknown');
+  const primary = downMachine ? {
+    state: 'bad',
+    label: downMachine.name + ' down'
+  } : worstItems[0];
+  const tone = primary ? primary.state === 'bad' ? 'unfavorable' : 'warning' : 'favorable';
+  const message = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
+  return /*#__PURE__*/React.createElement(Cluster, {
+    gap: mobile ? 2 : 3,
     style: {
-      marginBottom: 22
+      flexWrap: 'nowrap',
+      minWidth: 0,
+      overflow: 'hidden',
+      alignItems: 'center'
     }
-  }, provider('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), provider('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement(Button, {
-    variant: "secondary",
-    size: "sm",
-    onClick: () => setView('machines'),
+  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement(TraceStamp, {
+    owner: state.backend === 'github' ? 'GitHub' : 'Local folder',
+    action: "connected",
+    when: 'v' + WB_VERSION
+  }), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => primary ? setView('machines') : null,
     style: {
-      justifyContent: 'flex-start',
-      minHeight: 58,
-      padding: '8px 12px'
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 7,
+      minWidth: 0,
+      border: 'none',
+      background: 'transparent',
+      padding: '4px 6px',
+      borderRadius: 'var(--radius-sm)',
+      cursor: primary ? 'pointer' : 'default',
+      color: 'var(--text-strong)',
+      fontFamily: 'var(--font-sans)'
     }
-  }, /*#__PURE__*/React.createElement(Badge, {
+  }, primary ? /*#__PURE__*/React.createElement(Badge, {
     tone: tone
-  }, tone === 'favorable' ? 'OK' : tone === 'warning' ? 'Watch' : 'Down'), /*#__PURE__*/React.createElement("span", {
+  }, primary.state === 'bad' ? 'Down' : 'Watch') : /*#__PURE__*/React.createElement(StatusDot, {
+    state: "ok"
+  }), /*#__PURE__*/React.createElement("span", {
     style: {
-      display: 'grid',
-      gap: 1,
-      textAlign: 'left'
+      minWidth: 0,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      fontSize: 13,
+      color: primary ? 'var(--text-strong)' : 'var(--text-secondary)',
+      fontWeight: primary ? 650 : 500
     }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 11,
-      color: 'var(--text-muted)',
-      textTransform: 'uppercase',
-      letterSpacing: 'var(--tracking-eyebrow)'
-    }
-  }, "System"), /*#__PURE__*/React.createElement("span", null, displayText(text, 46)))));
+  }, message)));
 }
 function PageHeader({
   eyebrow,
@@ -16747,11 +16790,7 @@ function DesktopShell() {
       }, "Toggle theme"))
     }),
     topbar: /*#__PURE__*/React.createElement(TopBar, {
-      left: /*#__PURE__*/React.createElement(TraceStamp, {
-        owner: state.backend === 'github' ? 'GitHub' : 'Local folder',
-        action: "connected",
-        when: 'v' + WB_VERSION
-      }),
+      left: /*#__PURE__*/React.createElement(TopStatusStrip, null),
       right: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
