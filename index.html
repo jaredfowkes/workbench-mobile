@@ -12550,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.44";
+  const WB_VERSION = "2026-07-09.45";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15605,45 +15605,59 @@ function IntakeBanner() {
   }, "Copy triage prompt")));
 }
 function TodayView() {
+  const mobile = useViewport();
   const st = globalStats();
   const acts = actionItems();
   state._acts = acts;
   const top = acts[0];
   const second = acts.find(a => top && actionKey(a) !== actionKey(top));
-  const insight = top ? 'The cleanest next move is ' + projectTitle(top.p) + ': ' + displayText(top.text, 130) : 'Everything is quiet enough for review, cleanup, or a new capture.';
+  const insight = top ? 'The cleanest next move is ' + projectTitle(top.p) + ': ' + displayText(top.text, mobile ? 110 : 150) : 'Everything is quiet enough for review, cleanup, or a new capture.';
+  const note = st.blocked ? st.blocked + ' blocker' + (st.blocked === 1 ? '' : 's') + ' should be cleared before adding more work.' : st.doing ? st.doing + ' item' + (st.doing === 1 ? '' : 's') + ' already in flight; finish before widening the queue.' : st.open + ' open items remain across the workbench, with ' + st.week + ' completed this week.';
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Today",
     title: greeting() + ', Jared.',
     lede: "A calm operating brief from the repo.",
-    action: /*#__PURE__*/React.createElement(TraceStamp, {
+    action: !mobile && /*#__PURE__*/React.createElement(TraceStamp, {
       owner: state.backend === 'github' ? 'GitHub' : 'Local folder',
       action: "read",
       when: today()
     })
   }), /*#__PURE__*/React.createElement(Stack, {
-    gap: 5
-  }, /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement(Grid, {
-    cols: 2,
-    gap: 4
-  }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Operating note",
+    gap: mobile ? 5 : 6
+  }, /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
     style: {
-      minHeight: 290
+      display: 'grid',
+      gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1.35fr) minmax(320px, .65fr)',
+      gap: mobile ? 18 : 28,
+      alignItems: 'start'
     }
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 4
+  }, /*#__PURE__*/React.createElement("section", {
+    style: {
+      padding: mobile ? '8px 2px 12px' : '28px 8px 36px',
+      minHeight: mobile ? 'auto' : 280,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      gap: mobile ? 16 : 22
+    }
   }, /*#__PURE__*/React.createElement("h2", {
     style: {
       ...titleStyle,
-      fontSize: 'clamp(28px, 4vw, 52px)',
-      lineHeight: 1.05,
-      maxWidth: 760
+      fontSize: mobile ? 'clamp(36px, 13vw, 58px)' : 'clamp(42px, 5.2vw, 76px)',
+      lineHeight: mobile ? 0.98 : 0.96,
+      letterSpacing: '-0.055em',
+      maxWidth: mobile ? '9.5ch' : '13ch'
     }
   }, insight), /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, st.blocked ? st.blocked + ' blocker' + (st.blocked === 1 ? '' : 's') + ' should be cleared before adding more work.' : st.doing ? st.doing + ' item' + (st.doing === 1 ? '' : 's') + ' already in flight; finish before widening the queue.' : st.open + ' open items remain across the workbench, with ' + st.week + ' completed this week.'), /*#__PURE__*/React.createElement(Cluster, {
+    style: {
+      ...muted,
+      fontSize: mobile ? 16 : 17,
+      maxWidth: mobile ? '30ch' : '44ch',
+      margin: 0
+    }
+  }, note), /*#__PURE__*/React.createElement(Cluster, {
     gap: 2
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
@@ -15661,7 +15675,7 @@ function TodayView() {
   }, "Copy agent prompt"), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => openSnoozeOptions(top)
-  }, "Snooze")))), /*#__PURE__*/React.createElement(Card, {
+  }, "Snooze"))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Today's read",
     title: second ? projectTitle(second.p) : 'Workbench',
     action: second ? /*#__PURE__*/React.createElement(Button, {
@@ -15676,7 +15690,7 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
   }, second ? displayText(second.text, 220) : 'Review recent activity or capture the next idea without forcing a decision yet.'))), /*#__PURE__*/React.createElement(Grid, {
-    cols: 2,
+    cols: mobile ? undefined : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
     title: "Recent activity"
@@ -16922,9 +16936,9 @@ function MoreDrawer({
   return /*#__PURE__*/React.createElement(Drawer, {
     open: open,
     onClose: onClose,
-    side: "right",
+    side: "left",
     eyebrow: "Workbench",
-    title: "More",
+    title: "Menu",
     width: 390
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 5
