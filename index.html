@@ -12550,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.37";
+  const WB_VERSION = "2026-07-09.38";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15238,7 +15238,21 @@ const commitAndPush = async () => {
 const reconnectSource = () => state.backend === 'github' ? openGithubConnect() : connectFolder(true);
 const sessionFiles = r => Array.isArray(r.filesEdited) ? r.filesEdited : Array.isArray(r.filesChanged) ? r.filesChanged : Array.isArray(r.changedFiles) ? r.changedFiles : Array.isArray(r.files) ? r.files : [];
 const sessionProjectsText = r => Array.isArray(r.projects) && r.projects.length ? r.projects.join(', ') : cwdBasename(r.cwd) || 'Unknown';
-const sessionHeadline = r => r.title || r.summary || cwdBasename(r.cwd) || 'Session ' + (r.session || '').slice(0, 8);
+function cleanSessionHeadline(text, r) {
+  let t = String(text || '').replace(/<[^>]+>/g, ' ').replace(/[`*_#]/g, '').replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  const low = t.toLowerCase();
+  if (low === '/wrap-session' || low === 'wrap up' || low === 'perfect wrap up') return 'Session wrap-up';
+  if (low.startsWith('/workbench-update')) return 'Workbench machine update';
+  if (low.startsWith('/route')) return 'Route/backend switch';
+  if (low.includes('task-notification')) return 'Background task completed';
+  if (low.startsWith('ran into an error running')) return 'Tool error recovery';
+  t = t.replace(/^(please\s+)?(can you|could you|would you)\s+/i, '').replace(/^i\s+need\s+help\s+/i, '').replace(/^help\s+me\s+/i, '').replace(/^continue\s+from\s+where\s+you\s+left\s+off\.?\s*/i, 'Continue previous work').replace(/^go\s+ahead\s+and\s+/i, '').replace(/^execute\s+this\s+plan\.?\s*/i, 'Implement approved plan');
+  t = t.replace(/(my|the)\s+outlook\s+email\s+inbox/i, 'Outlook email inbox').replace(/^triaging\s+/i, 'Triage ').replace(/^triage\s+my\s+/i, 'Triage ');
+  if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, '') + '…';
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+const sessionHeadline = r => cleanSessionHeadline(r.summary, r) || cleanSessionHeadline(r.title, r) || cwdBasename(r.cwd) || 'Session ' + (r.session || '').slice(0, 8);
 function sessionRowsFiltered() {
   const q = String(state.sessionQuery || '').toLowerCase().trim();
   const rows = (state.sessionMetrics?.sessions || []).filter(Boolean).slice().sort((a, b) => Number(b.started || b.ended || 0) - Number(a.started || a.ended || 0));
@@ -17835,8 +17849,34 @@ window.__WBReactRender = function () {
   function cwdBasename(cwd) {
     return String(cwd || "").split("/").filter(Boolean).pop() || "";
   }
+  function cleanSessionHeadline(text) {
+    let t = String(text || "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/[`*_#]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!t) return "";
+    const low = t.toLowerCase();
+    if (low === "/wrap-session" || low === "wrap up" || low === "perfect wrap up") return "Session wrap-up";
+    if (low.startsWith("/workbench-update")) return "Workbench machine update";
+    if (low.startsWith("/route")) return "Route/backend switch";
+    if (low.includes("task-notification")) return "Background task completed";
+    if (low.startsWith("ran into an error running")) return "Tool error recovery";
+    t = t
+      .replace(/^(please\s+)?(can you|could you|would you)\s+/i, "")
+      .replace(/^i\s+need\s+help\s+/i, "")
+      .replace(/^help\s+me\s+/i, "")
+      .replace(/^continue\s+from\s+where\s+you\s+left\s+off\.?\s*/i, "Continue previous work")
+      .replace(/^go\s+ahead\s+and\s+/i, "")
+      .replace(/^execute\s+this\s+plan\.?\s*/i, "Implement approved plan")
+      .replace(/(my|the)\s+outlook\s+email\s+inbox/i, "Outlook email inbox")
+      .replace(/^triaging\s+/i, "Triage ")
+      .replace(/^triage\s+my\s+/i, "Triage ");
+    if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, "") + "…";
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
   function sessionTitle(r) {
-    return r.title || cwdBasename(r.cwd) || "Session";
+    return cleanSessionHeadline(r.summary) || cleanSessionHeadline(r.title) || cwdBasename(r.cwd) || "Session";
   }
   function sessionDetailRow(label, value) {
     if (value == null || value === "") return "";
