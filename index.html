@@ -4510,8 +4510,8 @@ function NavItem({
   };
   return /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
     ref: rowRef,
+    "data-km-nav-row": true,
     title: collapsed ? item.label : undefined,
-    onMouseEnter: () => onHover && onHover(rowRef.current),
     onMouseLeave: () => setPress(false),
     onMouseDown: () => setPress(true),
     onMouseUp: () => setPress(false),
@@ -4588,8 +4588,11 @@ function NavItem({
     }
   }, item.children.map(c => /*#__PURE__*/React.createElement("div", {
     key: c.id,
+    "data-km-nav-row": true,
     onClick: () => onNavigate && onNavigate(c),
     style: {
+      position: 'relative',
+      zIndex: 1,
       display: 'flex',
       alignItems: 'center',
       gap: 9,
@@ -4598,9 +4601,7 @@ function NavItem({
       cursor: 'pointer',
       fontSize: 13,
       color: c.active ? 'var(--accent-ink)' : 'var(--text-muted)'
-    },
-    onMouseEnter: e => e.currentTarget.style.background = 'var(--surface-hover)',
-    onMouseLeave: e => e.currentTarget.style.background = 'transparent'
+    }
   }, /*#__PURE__*/React.createElement("span", {
     style: {
       width: 5,
@@ -4622,6 +4623,8 @@ function NavList({
   style = {}
 }) {
   const [openId, setOpenId] = React.useState(defaultOpenId || null);
+  const wrapRef = React.useRef(null);
+  const lastRow = React.useRef(null);
   const [hi, setHi] = React.useState({
     x: 0,
     y: 0,
@@ -4630,19 +4633,33 @@ function NavList({
     on: false
   });
   const onHover = el => {
-    if (el) setHi({
-      x: el.offsetLeft,
-      y: el.offsetTop,
-      w: el.offsetWidth,
-      h: el.offsetHeight,
+    const wrap = wrapRef.current;
+    if (!el || !wrap) return;
+    lastRow.current = el;
+    const er = el.getBoundingClientRect(),
+      wr = wrap.getBoundingClientRect();
+    setHi({
+      x: er.left - wr.left,
+      y: er.top - wr.top,
+      w: er.width,
+      h: er.height,
       on: true
     });
   };
+  const onOver = e => {
+    const row = e.target && e.target.closest && e.target.closest('[data-km-nav-row]');
+    if (row && wrapRef.current && wrapRef.current.contains(row) && row !== lastRow.current) onHover(row);
+  };
   return /*#__PURE__*/React.createElement("div", {
-    onMouseLeave: () => setHi(s => ({
-      ...s,
-      on: false
-    })),
+    ref: wrapRef,
+    onMouseOver: onOver,
+    onMouseLeave: () => {
+      lastRow.current = null;
+      setHi(s => ({
+        ...s,
+        on: false
+      }));
+    },
     style: {
       position: 'relative',
       display: 'flex',
@@ -12533,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.27";
+  const WB_VERSION = "2026-07-09.37";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -12672,6 +12689,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     focusMode: "now",
     followMode: "waiting",
     inventoryTab: "projects",
+    usageTab: "spend",
+    sessionQuery: "",
     area: "All",
     projects: [],
     kb: [],
@@ -12697,9 +12716,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     modelPricing: null,
     helperUp: false,
     usageWindow: "month",
-    focusMode: "now",
-    followMode: "waiting",
-    inventoryTab: "projects",
     helperStatus: null,
     projectView: "gallery",
     projectSort: "updated",
@@ -15145,6 +15161,29 @@ const dsTone = status => status === 'blocked' ? 'unfavorable' : isClosedStatus(s
 const statusBadge = (status, text) => /*#__PURE__*/React.createElement(Badge, {
   tone: dsTone(status)
 }, text || status);
+const sessionCostNode = r => {
+  if (isLocalRow(r)) {
+    if (!hasTelemetry(r)) return /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: 'var(--text-muted)'
+      }
+    }, "untracked");
+    const savings = localSavedCost(r);
+    return /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: 'var(--fav-ink)',
+        fontWeight: 700
+      }
+    }, savings != null ? fmtCostMaybe(savings) + ' savings' : '$0.00');
+  }
+  const c = sessionCost(r);
+  if (c == null) return /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: 'var(--text-muted)'
+    }
+  }, "untracked");
+  return /*#__PURE__*/React.createElement("span", null, fmtCostMaybe(c), r.cost == null ? ' est.' : '');
+};
 const priorityBadge = v => /*#__PURE__*/React.createElement(Badge, {
   tone: priorityWeight(v) >= 3 ? 'accent' : priorityWeight(v) ? 'info' : 'neutral'
 }, priorityLabel(v));
@@ -15152,6 +15191,60 @@ const dueBadge = v => v ? /*#__PURE__*/React.createElement(Badge, {
   tone: dueTime(v) < Date.now() ? 'unfavorable' : 'warning'
 }, dueLabel(v)) : null;
 const projectTitle = p => p && (p.data.project || p.dirName) || 'Project';
+function StatusDot({
+  state = 'idle'
+}) {
+  const color = state === 'bad' || state === 'blocked' ? 'var(--unfav)' : state === 'live' || state === 'ok' || state === 'done' ? 'var(--fav)' : state === 'warn' ? 'var(--warn)' : 'var(--text-muted)';
+  return /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true",
+    style: {
+      width: 8,
+      height: 8,
+      borderRadius: '50%',
+      background: color,
+      display: 'inline-block',
+      flex: 'none',
+      boxShadow: state === 'live' ? '0 0 0 3px color-mix(in srgb, var(--fav) 18%, transparent)' : 'none'
+    }
+  });
+}
+const statusDotNode = status => /*#__PURE__*/React.createElement(StatusDot, {
+  state: status === 'blocked' ? 'bad' : isClosedStatus(status) ? 'ok' : status === 'doing' ? 'live' : status === 'bad' || status === 'warn' || status === 'live' || status === 'ok' ? status : 'idle'
+});
+const openPaletteActual = () => window.__WBOpenPalette ? window.__WBOpenPalette() : openPalette();
+const openMoreActual = () => window.__WBOpenMore ? window.__WBOpenMore() : openMore();
+const openCaptureActual = () => window.__WBOpenCapture ? window.__WBOpenCapture() : openCapture();
+const openStatusActual = row => window.__WBOpenStatusMenu ? window.__WBOpenStatusMenu(row) : openStatusMenu(row);
+const refreshData = async () => {
+  if (state.backend === 'github') return doReload();
+  try {
+    await helperPost('/pull');
+    toast('Pulled latest.', 'success');
+    doReload();
+  } catch (e) {
+    toast(e.message, 'danger');
+  }
+};
+const commitAndPush = async () => {
+  if (state.backend === 'github') return toast('Edits save straight to GitHub — nothing to push.');
+  try {
+    await helperPost('/sync');
+    toast('Synced.', 'success');
+    pingHelper();
+  } catch (e) {
+    toast(e.message, 'danger');
+  }
+};
+const reconnectSource = () => state.backend === 'github' ? openGithubConnect() : connectFolder(true);
+const sessionFiles = r => Array.isArray(r.filesEdited) ? r.filesEdited : Array.isArray(r.filesChanged) ? r.filesChanged : Array.isArray(r.changedFiles) ? r.changedFiles : Array.isArray(r.files) ? r.files : [];
+const sessionProjectsText = r => Array.isArray(r.projects) && r.projects.length ? r.projects.join(', ') : cwdBasename(r.cwd) || 'Unknown';
+const sessionHeadline = r => r.title || r.summary || cwdBasename(r.cwd) || 'Session ' + (r.session || '').slice(0, 8);
+function sessionRowsFiltered() {
+  const q = String(state.sessionQuery || '').toLowerCase().trim();
+  const rows = (state.sessionMetrics?.sessions || []).filter(Boolean).slice().sort((a, b) => Number(b.started || b.ended || 0) - Number(a.started || a.ended || 0));
+  if (!q) return rows;
+  return rows.filter(r => [sessionHeadline(r), r.summary, r.machine, backendLane(r), normalizeModel(r.model), normalizeEditor(r), normalizeHarness(r.harness || r.ide), sessionProjectsText(r), sessionFiles(r).join(' '), r.cwd, r.session, r.sessionFull].join(' ').toLowerCase().includes(q));
+}
 function useViewport() {
   const [mobile, setMobile] = React.useState(() => matchMedia('(max-width: 900px)').matches);
   React.useEffect(() => {
@@ -15242,12 +15335,12 @@ function navItems() {
     icon: icon('settings'),
     children: [{
       id: 'usage',
-      label: 'Usage metrics',
+      label: 'Usage',
       active: state.view === 'usage'
     }, {
-      id: 'models',
-      label: 'Models & costs',
-      active: state.view === 'models'
+      id: 'sessions',
+      label: 'Sessions',
+      active: state.view === 'sessions'
     }, {
       id: 'machines',
       label: 'Machines & sync',
@@ -15285,6 +15378,8 @@ function navItems() {
   }];
 }
 function ProviderRail() {
+  const mobile = useViewport();
+  const compact = mobile && !['today', 'usage', 'sessions', 'machines'].includes(viewName());
   const provider = (key, label, u, color) => {
     const p = pct(u);
     return /*#__PURE__*/React.createElement(Button, {
@@ -15322,7 +15417,25 @@ function ProviderRail() {
   const downMachine = machineStatusRows().find(r => r.state === 'down');
   const worst = items.find(i => i.state === 'bad') || items.find(i => i.state !== 'ok');
   const tone = downMachine || worst && worst.state === 'bad' ? 'unfavorable' : worst ? 'warning' : 'favorable';
-  const text = downMachine ? downMachine.name + ' down' : worst ? worst.label + ': ' + worst.value : 'System steady';
+  const text = downMachine ? downMachine.name + ' down' : worst ? worst.label === 'Sync status' && String(worst.value).includes('unsynced') ? 'Safe to read; ' + worst.value + ' changes need push' : worst.label + ': ' + worst.value : 'System steady';
+  if (compact) return /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    size: "sm",
+    onClick: () => setView('machines'),
+    style: {
+      width: '100%',
+      justifyContent: 'flex-start',
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: tone
+  }, tone === 'favorable' ? 'OK' : tone === 'warning' ? 'Watch' : 'Down'), /*#__PURE__*/React.createElement("span", {
+    style: {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
+    }
+  }, displayText(text, 58)));
   return /*#__PURE__*/React.createElement(Grid, {
     cols: 3,
     gap: 3,
@@ -15395,7 +15508,7 @@ function ActionListItem({
   return /*#__PURE__*/React.createElement(ListItem, {
     title: displayText(a.text, 150),
     description: projectTitle(a.p) + ' · ' + (a.g && a.g.name || 'Project handoff') + ' · ' + actionWhy(a),
-    leading: statusDot(a.kind === 'blocked' ? 'bad' : a.kind === 'doing' ? 'live' : 'idle'),
+    leading: statusDotNode(a.kind === 'blocked' ? 'bad' : a.kind === 'doing' ? 'live' : 'idle'),
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, statusBadge(a.kind, {
@@ -15524,6 +15637,7 @@ function TodayView() {
   })))));
 }
 function FocusView() {
+  const mobile = useViewport();
   const acts = actionItems();
   state._acts = acts;
   const tabs = [['now', 'Now'], ['next', 'Next'], ['waiting', 'Waiting/blocked'], ['delegate', 'Delegate'], ['later', 'Later']];
@@ -15543,7 +15657,7 @@ function FocusView() {
     title: "Priority across projects",
     lede: "Sorted by optional priority and target dates, then by blockers and project recency.",
     action: /*#__PURE__*/React.createElement(Button, {
-      onClick: openCapture
+      onClick: openCaptureActual
     }, "Quick capture")
   }), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(Stack, {
     gap: 4
@@ -15553,6 +15667,11 @@ function FocusView() {
       state.focusMode = v;
       forceRender();
     },
+    style: mobile ? {
+      overflowX: 'auto',
+      flexWrap: 'nowrap',
+      WebkitOverflowScrolling: 'touch'
+    } : {},
     tabs: tabs.map(([value, label]) => ({
       value,
       label,
@@ -15575,7 +15694,7 @@ function ProjectsView() {
     title: "Project portfolio",
     lede: rows.length + ' projects across Work and Personal. Select one to open its Project Room dossier.',
     action: /*#__PURE__*/React.createElement(Button, {
-      onClick: openCapture
+      onClick: openCaptureActual
     }, "Quick capture")
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 4
@@ -15625,6 +15744,7 @@ function ProjectsView() {
   }))));
 }
 function ProjectRoomView() {
+  const mobile = useViewport();
   const p = state.proj;
   if (!p) return /*#__PURE__*/React.createElement(ProjectsView, null);
   const c = counts(p),
@@ -15636,7 +15756,13 @@ function ProjectRoomView() {
     key: 'text',
     header: 'Task',
     wrap: true,
-    render: (v, r) => /*#__PURE__*/React.createElement("span", null, statusDot(r.status === 'blocked' ? 'bad' : isClosedStatus(r.status) ? 'ok' : r.status === 'doing' ? 'live' : 'idle'), displayText(v, 150))
+    render: (v, r) => /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8
+      }
+    }, statusDotNode(r.status), /*#__PURE__*/React.createElement("span", null, displayText(v, 150)))
   }, {
     key: 'group',
     header: 'Group'
@@ -15759,16 +15885,43 @@ function ProjectRoomView() {
       state.pfilter = v;
       forceRender();
     },
+    style: mobile ? {
+      overflowX: 'auto',
+      flexWrap: 'nowrap',
+      WebkitOverflowScrolling: 'touch'
+    } : {},
     tabs: ['open', 'todo', 'doing', 'blocked', 'done', 'idea', 'all'].map(value => ({
       value,
       label: value
     }))
-  }), /*#__PURE__*/React.createElement(DataTable, {
+  }), mobile ? /*#__PURE__*/React.createElement(List, null, rows.map(r => /*#__PURE__*/React.createElement(ListItem, {
+    key: r.idx,
+    leading: statusDotNode(r.it.status),
+    title: displayText(r.it.text, 150),
+    description: r.g.name + (r.it.completed ? ' · completed ' + r.it.completed : ''),
+    trailing: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, statusBadge(r.it.status), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: e => {
+        e.stopPropagation();
+        copyText(actionPrompt({
+          p,
+          g: r.g,
+          it: r.it,
+          kind: r.it.status,
+          text: r.it.text
+        }), 'Task prompt copied.');
+      }
+    }, "Copy")),
+    onClick: () => openStatusActual(r)
+  }))) : /*#__PURE__*/React.createElement(DataTable, {
     report: true,
     compact: true,
     rows: taskData,
     columns: taskColumns,
-    onRowClick: row => openStatusMenu(row._row),
+    onRowClick: row => openStatusActual(row._row),
     style: {
       marginTop: 12
     }
@@ -15810,7 +15963,7 @@ function IntakeView() {
     title: "Capture first, classify later",
     lede: "Raw notes, queued phone captures, attachments, and triage signals stay visible until the triage workflow files them.",
     action: /*#__PURE__*/React.createElement(Button, {
-      onClick: openCapture
+      onClick: openCaptureActual
     }, "New capture")
   }), /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
@@ -15820,7 +15973,7 @@ function IntakeView() {
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Use the same capture flow for tasks, ideas, project seeds, knowledge notes, screenshots, and voice-note attachments."), /*#__PURE__*/React.createElement(Button, {
-    onClick: openCapture
+    onClick: openCaptureActual
   }, "Open capture")), /*#__PURE__*/React.createElement(Card, {
     title: "Triage workflow"
   }, /*#__PURE__*/React.createElement("p", {
@@ -15845,49 +15998,238 @@ function IntakeView() {
     description: "No intake is waiting right now."
   }))));
 }
-function UsageView({
-  modelsOnly = false
-}) {
+function UsageView() {
   React.useEffect(() => {
     setTimeout(() => bindUsageWindow(document.getElementById('usageDetailBody')), 0);
   });
   const rows = usageRows((state.sessionMetrics && state.sessionMetrics.sessions || []).filter(Boolean));
   const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
+  const tab = state.usageTab || 'spend';
+  const savedLocal = localSavedSum(rows);
+  const claudeCard = claudeAttributionCard();
+  const tabs = [{
+    value: 'spend',
+    label: 'Spend & limits'
+  }, {
+    value: 'models',
+    label: 'Models'
+  }, {
+    value: 'projects',
+    label: 'Projects'
+  }, {
+    value: 'sessions',
+    label: 'Recent sessions'
+  }, {
+    value: 'efficiency',
+    label: 'Efficiency'
+  }];
+  const recent = rows.slice().sort((a, b) => Number(b.started || 0) - Number(a.started || 0)).slice(0, 8);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
-    eyebrow: modelsOnly ? 'Models & costs' : 'Usage metrics',
-    title: modelsOnly ? 'Model traffic' : 'Spend, sessions, and savings',
-    lede: "Linked session telemetry by provider, project, and time frame."
+    eyebrow: "Usage",
+    title: "Spend, models, sessions, and savings",
+    lede: "One place for billing limits, model traffic, project attribution, sessions, and efficiency signals."
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 4
-  }, /*#__PURE__*/React.createElement(SegmentedControl, {
-    value: state.usageWindow || 'month',
+  }, /*#__PURE__*/React.createElement(Tabs, {
+    value: tab,
     onChange: v => {
-      state.usageWindow = v;
+      state.usageTab = v;
+      state.view = 'usage';
       forceRender();
     },
-    options: ['today', '7d', 'month', '12m', 'all']
-  }), /*#__PURE__*/React.createElement(Grid, {
+    style: useViewport() ? {
+      overflowX: 'auto',
+      flexWrap: 'nowrap'
+    } : {},
+    tabs: tabs
+  }), tab === 'spend' && /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
-    title: "Model mix"
+    eyebrow: "Anthropic / Claude monthly allotment",
+    title: money(state.usage?.spend) + ' / ' + money(state.usage?.limit)
+  }, /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: creditLaneHTML('Claude', state.usage, 'anthropic')
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, ageLabel(state.usage?.updated), state.usage?.resetLabel ? ' · resets ' + state.usage.resetLabel : '')), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Cursor monthly allotment",
+    title: money(state.cursorUsage?.spend) + ' / ' + money(state.cursorUsage?.limit)
+  }, /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: creditLaneHTML('Cursor', state.cursorUsage, 'cursor')
+    }
+  }), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ' · resets ' + state.cursorUsage.resetLabel : '')), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Local lane savings",
+    title: fmtCostMaybe(savedLocal)
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.")), /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: claudeCard
+    }
+  })), /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: comparisonTable(laneCompareRows(rows))
+    }
+  })), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
   }, /*#__PURE__*/React.createElement("div", {
     dangerouslySetInnerHTML: {
       __html: mixRows('Model mix', groupMetrics(rows, r => normalizeModel(r.model)), totalMs)
     }
-  })), /*#__PURE__*/React.createElement(Card, {
-    title: "Backend traffic"
-  }, /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     dangerouslySetInnerHTML: {
       __html: mixRows('Backend traffic share', groupMetrics(rows, r => backendLane(r)), totalMs)
     }
-  }))), /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     dangerouslySetInnerHTML: {
-      __html: usageDetailBody()
+      __html: mixRows('Harness mix', groupMetrics(rows, r => normalizeIde(r.ide)), totalMs)
+    }
+  })), tab === 'projects' && /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: projectBreakdownHTML(rows)
+    }
+  }), tab === 'sessions' && /*#__PURE__*/React.createElement(Card, {
+    title: "Recent sessions",
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => setView('sessions')
+    }, "Open all sessions")
+  }, /*#__PURE__*/React.createElement(List, null, recent.map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
+    key: r.session || i,
+    title: sessionHeadline(r),
+    description: `${fmtStamp(r.started || r.ended)} · ${machineName(r.machine || r.host || r.hostname || r.machineId || 'Unknown')} · ${sessionProjectsText(r)}`,
+    trailing: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, fmtTokens(r.totalTokens || 0)), /*#__PURE__*/React.createElement(Badge, {
+      tone: sessionCost(r) != null ? 'accent' : 'warning'
+    }, fmtCostMaybe(sessionCost(r)))),
+    onClick: () => window.__WBOpenSession && window.__WBOpenSession(r)
+  })))), tab === 'efficiency' && /*#__PURE__*/React.createElement("div", {
+    dangerouslySetInnerHTML: {
+      __html: tipsHTML(rows)
     }
   })));
+}
+function SessionsView() {
+  const rows = sessionRowsFiltered();
+  const columns = [{
+    key: 'started',
+    header: 'Time',
+    width: '96px',
+    render: (v, r) => /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended))
+  }, {
+    key: 'headline',
+    header: 'Headline',
+    wrap: true,
+    render: (v, r) => /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, sessionHeadline(r)), r.summary && /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'block',
+        marginTop: 3,
+        color: 'var(--text-muted)',
+        fontWeight: 400
+      }
+    }, displayText(r.summary, 130)))
+  }, {
+    key: 'projectsText',
+    header: 'Project(s)',
+    wrap: true,
+    render: v => /*#__PURE__*/React.createElement("span", null, v)
+  }, {
+    key: 'machineName',
+    header: 'Machine'
+  }, {
+    key: 'route',
+    header: 'Route',
+    render: (v, r) => /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, normalizeEditor(r)), /*#__PURE__*/React.createElement(Badge, {
+      tone: "info"
+    }, backendLane(r)), /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, normalizeModel(r.model)))
+  }, {
+    key: 'tokens',
+    header: 'Usage',
+    align: 'right',
+    numeric: true,
+    render: (v, r) => /*#__PURE__*/React.createElement("span", null, fmtTokens(r.totalTokens || 0), r.requests ? /*#__PURE__*/React.createElement("span", {
+      style: {
+        display: 'block',
+        color: 'var(--text-muted)',
+        fontSize: 11
+      }
+    }, r.requests, " requests") : null)
+  }, {
+    key: 'cost',
+    header: 'Cost',
+    align: 'right',
+    numeric: true,
+    render: (v, r) => sessionCostNode(r)
+  }, {
+    key: 'filesText',
+    header: 'Files',
+    wrap: true,
+    render: v => v ? displayText(v, 80) : '—'
+  }];
+  const tableRows = rows.map(r => ({
+    ...r,
+    headline: sessionHeadline(r),
+    projectsText: sessionProjectsText(r),
+    machineName: machineName(r.machine || r.host || r.hostname || r.machineId || 'Unknown'),
+    tokens: Number(r.totalTokens || 0),
+    cost: sessionCost(r),
+    filesText: sessionFiles(r).join(', ')
+  }));
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
+    eyebrow: "Sessions",
+    title: "Session history",
+    lede: "Latest sessions first, searchable by headline, summary, project, machine, route, and changed files."
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    style: {
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement(SearchField, {
+    value: state.sessionQuery || '',
+    onChange: v => {
+      state.sessionQuery = v;
+      forceRender();
+    },
+    count: rows.length,
+    placeholder: "Search sessions, projects, files, models…",
+    minWidth: 360
+  }), /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    onClick: () => {
+      state.usageTab = 'sessions';
+      setView('usage');
+    }
+  }, "Usage summary")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(DataTable, {
+    rows: tableRows,
+    columns: columns,
+    compact: true,
+    getRowKey: r => r.sessionFull || r.session || String(r.started),
+    onRowClick: r => window.__WBOpenSession && window.__WBOpenSession(r)
+  }))));
 }
 function MachinesView() {
   return /*#__PURE__*/React.createElement("div", {
@@ -15922,34 +16264,363 @@ function MachinesView() {
 function SimpleView({
   kind
 }) {
-  const map = {
-    followups: followupsHTML,
-    knowledge: knowledgeHTML,
-    ideas: ideasHTML,
-    artifacts: artifactsHTML,
-    inventory: inventoryHTML,
-    skills: skillsHTML,
-    creative: creativeHTML,
-    board: boardHTML,
-    instructions: instructionsHTML,
-    about: aboutHTML,
-    briefings: briefingsHTML,
-    weekly: weeklyHTML,
-    preflight: preflightHTML
-  };
-  const fn = map[kind] || aboutHTML;
-  React.useEffect(() => {
-    const node = document.getElementById('legacyReactView');
-    if (node) bindView(node);
-  }, [kind, state.kq, state.sq, state.karea, state.kintent, state.ktag]);
+  const mobile = useViewport();
+  const header = (eyebrow, title, lede, action) => /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
+    eyebrow: eyebrow,
+    title: title,
+    lede: lede,
+    action: action
+  }));
+  if (kind === 'followups') {
+    const acts = actionItems();
+    state._acts = acts;
+    const tabs = [['waiting', 'Waiting'], ['machine', 'Machine/sync'], ['agent', 'Agent'], ['device', 'Device'], ['date', 'Date'], ['verify', 'Verify'], ['aging', 'Aging']];
+    const mode = state.followMode || 'waiting';
+    const rows = acts.filter(a => {
+      const h = `${a.text} ${a.g?.name || ''}`.toLowerCase();
+      if (mode === 'machine') return /machine|sync|x1|mac|windows|publish/.test(h);
+      if (mode === 'agent') return /agent|delegate|session/.test(h) || a.kind === 'doing';
+      if (mode === 'device') return /phone|real device|screenshot|mobile/.test(h);
+      if (mode === 'date') return !!taskDue(a) || /date|event|weekly|tomorrow/.test(h);
+      if (mode === 'verify') return /verify|test|confirm|check|smoke/.test(h);
+      if (mode === 'aging') return projectRecency(a.p) && Date.now() - projectRecency(a.p) > 7 * 86400000;
+      return a.kind === 'blocked' || /waiting|jared|decision/.test(h);
+    }).slice(0, 24);
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Follow-ups', 'Waiting and verification', 'Promises, blockers, device checks, and stale work that should not disappear into project pages.'), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(Stack, {
+      gap: 4
+    }, /*#__PURE__*/React.createElement(Tabs, {
+      value: mode,
+      onChange: v => {
+        state.followMode = v;
+        forceRender();
+      },
+      style: mobile ? {
+        overflowX: 'auto',
+        flexWrap: 'nowrap'
+      } : {},
+      tabs: tabs.map(([value, label]) => ({
+        value,
+        label
+      }))
+    }), rows.length ? /*#__PURE__*/React.createElement(List, null, rows.map(a => /*#__PURE__*/React.createElement(ActionListItem, {
+      key: actionKey(a),
+      a: a
+    }))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No follow-ups in this view",
+      description: "This lane is clear right now."
+    }))));
+  }
+  if (kind === 'knowledge') {
+    const entries = kbFiltered();
+    const grouped = SUBS.map(sub => ({
+      sub,
+      list: entries.filter(e => e.sub === sub)
+    })).filter(x => x.list.length);
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Knowledge base', 'Search-first memory', 'Glossary, processes, decisions, and project notes with intent filters.', /*#__PURE__*/React.createElement(Button, {
+      onClick: () => openEditor()
+    }, "New entry")), /*#__PURE__*/React.createElement(Stack, {
+      gap: 4
+    }, /*#__PURE__*/React.createElement(Cluster, {
+      style: {
+        justifyContent: 'space-between'
+      }
+    }, /*#__PURE__*/React.createElement(SearchField, {
+      value: state.kq,
+      onChange: v => {
+        state.kq = v;
+        forceRender();
+      },
+      count: entries.length,
+      placeholder: "Search knowledge…"
+    }), /*#__PURE__*/React.createElement(SegmentedControl, {
+      value: state.karea,
+      onChange: v => {
+        state.karea = v;
+        forceRender();
+      },
+      options: ['All', 'Work', 'Personal']
+    })), /*#__PURE__*/React.createElement(Tabs, {
+      value: state.kintent,
+      onChange: v => {
+        state.kintent = v;
+        forceRender();
+      },
+      style: mobile ? {
+        overflowX: 'auto',
+        flexWrap: 'nowrap'
+      } : {},
+      tabs: ['all', 'how', 'what', 'why', 'gotcha'].map(value => ({
+        value,
+        label: value
+      }))
+    }), grouped.length ? grouped.map(({
+      sub,
+      list
+    }) => /*#__PURE__*/React.createElement(Card, {
+      key: sub,
+      title: sub,
+      action: /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, list.length)
+    }, /*#__PURE__*/React.createElement(List, null, list.map(e => /*#__PURE__*/React.createElement(ListItem, {
+      key: (e.path || '') + e.fileName,
+      title: e.title,
+      description: e.summary || '',
+      trailing: /*#__PURE__*/React.createElement(Cluster, {
+        gap: 1
+      }, /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, e.section), e.format === 'html' && /*#__PURE__*/React.createElement(Badge, {
+        tone: "info"
+      }, "HTML")),
+      onClick: () => openEntry(e.section + '/' + e.sub + '/' + e.fileName)
+    }))))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "Nothing matches",
+      description: "Try a broader query or switch the intent filter."
+    })));
+  }
+  if (kind === 'ideas') {
+    const ideas = [];
+    for (const p of state.projects) for (const g of p.data.groups || []) for (const it of g.items || []) if (it.status === 'idea') ideas.push({
+      p,
+      g,
+      it,
+      text: it.text
+    });
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Ideas', 'Idea clusters', 'Repeated ideas and ready-to-promote items stay separate from execution work.', /*#__PURE__*/React.createElement(Button, {
+      onClick: openCaptureActual
+    }, "Capture idea")), ideas.length ? /*#__PURE__*/React.createElement(Grid, {
+      min: 280,
+      gap: 4
+    }, ideas.slice(0, 36).map(a => /*#__PURE__*/React.createElement(Card, {
+      key: a.p.dirName + a.it.id,
+      interactive: true,
+      onClick: () => openProject(a.p),
+      eyebrow: projectTitle(a.p),
+      title: displayText(a.text, 120)
+    }, /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, /*#__PURE__*/React.createElement(Badge, {
+      tone: "warning"
+    }, "Idea"), priorityBadge(a.it.priority))))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No ideas captured yet",
+      description: "Use capture when a thought is not ready to become a task."
+    }));
+  }
+  if (kind === 'artifacts') {
+    const rows = state.projects.filter(p => (p._shotPaths || []).length || (p._docPaths || []).length || p.cover).slice(0, 36);
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Artifacts', 'Outputs and evidence', 'Screenshots, HTML readouts, and deliverables grouped by project.'), rows.length ? /*#__PURE__*/React.createElement(Grid, {
+      min: 300,
+      gap: 4
+    }, rows.map(p => /*#__PURE__*/React.createElement(Card, {
+      key: p.dirName,
+      interactive: true,
+      onClick: () => openProject(p),
+      eyebrow: p.section,
+      title: projectTitle(p)
+    }, /*#__PURE__*/React.createElement(DescriptionList, {
+      items: [["Screenshots", (p._shotPaths || []).length], ["Docs", (p._docPaths || []).length], ["Path", projectBase(p)]]
+    })))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No artifacts found",
+      description: "Screenshots and HTML readouts will appear here once projects publish them."
+    }));
+  }
+  if (kind === 'inventory') {
+    const counts = {
+      projects: state.projects.length,
+      artifacts: state.projects.filter(p => (p._shotPaths || []).length || (p._docPaths || []).length).length,
+      skills: state.skillCatalog?.total || 0,
+      machines: machineStatusRows().length,
+      models: groupMetrics(currentUsageRows(), r => normalizeModel(r.model)).length,
+      kb: state.kb.length
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Inventory', 'Workbench index', 'A system map for projects, artifacts, skills, machines, models, and knowledge.'), /*#__PURE__*/React.createElement(Grid, {
+      min: 180,
+      gap: 3
+    }, Object.entries(counts).map(([k, v]) => /*#__PURE__*/React.createElement(KpiStat, {
+      key: k,
+      label: k,
+      value: String(v)
+    }))));
+  }
+  if (kind === 'skills') {
+    const all = [...(state.skillCatalog?.custom || []), ...(state.skillCatalog?.store || [])];
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Skills', 'Skill catalog', 'Repeatable Workbench workflows and synced external skill packs.'), all.length ? /*#__PURE__*/React.createElement(Grid, {
+      min: 300,
+      gap: 4
+    }, all.map(skill => /*#__PURE__*/React.createElement(Card, {
+      key: skill.slug,
+      interactive: true,
+      onClick: () => openSkill(skill.slug),
+      eyebrow: skill.category || skill.kind || 'Skill',
+      title: skill.name
+    }, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, displayText(skill.description || skill.when || '', 180)), /*#__PURE__*/React.createElement(Badge, {
+      tone: "accent"
+    }, skill.invoke || '/' + skill.slug)))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "Skills loading",
+      description: "Refresh if the catalog has not hydrated yet."
+    }));
+  }
+  if (kind === 'creative') return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, header('Creative studio', 'Small making prompts', 'Cookbook, design, web, personal creative, inspiration, and visual-asset starts.', /*#__PURE__*/React.createElement(Button, {
+    onClick: openCaptureActual
+  }, "Capture seed")), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    title: "Ready prompts"
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Capture a seed, connect it to a project, then promote it when it has a clear output.")), /*#__PURE__*/React.createElement(Card, {
+    title: "Visual assets"
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Covers and screenshots stay as project artifacts; logos remain Jared-authored."))));
+  if (kind === 'weekly') {
+    const st = globalStats();
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Weekly review', 'Projects advanced and stalled', 'Completed work, captures, blockers, costs, and next-week priorities.'), /*#__PURE__*/React.createElement(Grid, {
+      min: 180,
+      gap: 3
+    }, /*#__PURE__*/React.createElement(KpiStat, {
+      label: "Done this week",
+      value: String(st.week)
+    }), /*#__PURE__*/React.createElement(KpiStat, {
+      label: "Blocked",
+      value: String(st.blocked)
+    }), /*#__PURE__*/React.createElement(KpiStat, {
+      label: "Captures",
+      value: String(state.intake?.length || 0)
+    }), /*#__PURE__*/React.createElement(KpiStat, {
+      label: "Open",
+      value: String(st.open)
+    })));
+  }
+  if (kind === 'preflight') {
+    const checks = ['Scope is claimed or no project files are being edited', 'Generated outputs were rebuilt from source', 'Dashboard/mobile-sensitive flows were smoke-tested', 'Screenshots are real and inspected', 'Tracking files are current'];
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Preflight', 'Wrap and ship checklist', 'Quality gates before publishing, wrapping, archiving, or handing off work.'), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(List, null, checks.map((c, i) => /*#__PURE__*/React.createElement(ListItem, {
+      key: c,
+      leading: /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, i + 1),
+      title: c,
+      description: "Verify before declaring done.",
+      trailing: /*#__PURE__*/React.createElement(Badge, {
+        tone: "info"
+      }, "check")
+    })))));
+  }
+  if (kind === 'briefings') {
+    const top = actionItems()[0];
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Briefings', 'Daily and project briefs', 'Concise summaries for day start, weekly review, project prep, cost review, and creative work.'), /*#__PURE__*/React.createElement(Card, {
+      eyebrow: "Daily brief",
+      title: top ? `${projectTitle(top.p)}: ${displayText(top.text, 120)}` : 'No urgent brief today'
+    }, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, "Use the focus queue when you want the agent-ready prompt; use capture when a thought is not ready to classify.")));
+  }
+  if (kind === 'board') {
+    const categories = boardPersonas();
+    const total = categories.reduce((a, c) => a + c.personas.length, 0);
+    return /*#__PURE__*/React.createElement("div", {
+      style: pagePad
+    }, header('Board of Advisors', categories.length ? `${total} personas on the bench` : 'Loading persona pool', 'A review draws tailored seats from here based on what is being reviewed.', /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      onClick: openSuggestProfile
+    }, "Suggest a profile")), categories.length ? /*#__PURE__*/React.createElement(Stack, {
+      gap: 4
+    }, categories.map(c => /*#__PURE__*/React.createElement(Card, {
+      key: c.name,
+      title: c.name,
+      action: /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, c.personas.length)
+    }, /*#__PURE__*/React.createElement(Grid, {
+      min: 260,
+      gap: 3
+    }, c.personas.map(persona => /*#__PURE__*/React.createElement(Card, {
+      key: persona.id,
+      interactive: true,
+      onClick: () => openBoardPersona(persona.id),
+      eyebrow: persona.id,
+      title: persona.title
+    }, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, displayText(persona.mandate, 180)))))))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "Persona pool loading",
+      description: "Refresh if the board does not appear."
+    }));
+  }
+  if (kind === 'instructions') return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, header('Instructions', 'Setup and operating guides', 'Human-followed Workbench playbooks.'), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(List, null, GUIDES.map(([title, path]) => /*#__PURE__*/React.createElement(ListItem, {
+    key: path,
+    title: title,
+    description: path,
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: "info"
+    }, "Open"),
+    onClick: () => openGuide(path)
+  })))));
+  const latest = state.latestBuild?.version,
+    builtAt = state.latestBuild?.builtAt,
+    pubAt = state.mobileSync?.updated;
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
-  }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement("div", {
-    id: "legacyReactView",
-    dangerouslySetInnerHTML: {
-      __html: fn()
+  }, header('About', 'Workbench Dashboard', 'A repo-backed personal operations console for projects, knowledge, sessions, machine health, capture, and usage.'), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    title: "Versions"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [["This copy", 'v' + WB_VERSION], ["Latest build", latest ? 'v' + latest : 'unknown'], ["Built", builtAt ? shortAge(builtAt) : 'unknown'], ["Mobile", state.mobileVersion ? 'v' + state.mobileVersion : 'unknown'], ["Published", pubAt ? shortAge(pubAt) : 'unknown']]
+  }), /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    onClick: async () => {
+      state.mobileVersion = await fetchMobileVersion();
+      forceRender();
     }
-  }));
+  }, "Re-check mobile version")), /*#__PURE__*/React.createElement(Card, {
+    title: "Tracked"
+  }, /*#__PURE__*/React.createElement(List, null, /*#__PURE__*/React.createElement(ListItem, {
+    title: "Project files and task counts"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "Live session beacons"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "Machine health snapshots"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "Claude/Cursor credit snapshots"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "CCR route usage estimates"
+  }))), /*#__PURE__*/React.createElement(Card, {
+    title: "Not tracked"
+  }, /*#__PURE__*/React.createElement(List, null, /*#__PURE__*/React.createElement(ListItem, {
+    title: "No app database"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "No hidden server state"
+  }), /*#__PURE__*/React.createElement(ListItem, {
+    title: "Per-project costs are estimates, not billing-grade figures"
+  })))));
 }
 function Content() {
   if (state.view === 'overview') return /*#__PURE__*/React.createElement(TodayView, null);
@@ -15958,9 +16629,7 @@ function Content() {
   if (state.view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
   if (state.view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
   if (state.view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
-  if (state.view === 'models') return /*#__PURE__*/React.createElement(UsageView, {
-    modelsOnly: true
-  });
+  if (state.view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
   if (state.view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
   return /*#__PURE__*/React.createElement(SimpleView, {
     kind: state.view
@@ -15987,7 +16656,7 @@ function MobileShell() {
         name: "search",
         size: 18
       }),
-      onClick: openPalette
+      onClick: openPaletteActual
     }), /*#__PURE__*/React.createElement(IconButton, {
       label: "Reload",
       icon: /*#__PURE__*/React.createElement(Icon, {
@@ -16019,7 +16688,7 @@ function MobileShell() {
     key: id,
     variant: viewName() === id ? 'subtle' : 'ghost',
     size: "sm",
-    onClick: () => id === 'more' ? openMore() : setView(id),
+    onClick: () => id === 'more' ? openMoreActual() : setView(id),
     style: {
       flexDirection: 'column',
       gap: 2,
@@ -16048,15 +16717,15 @@ function DesktopShell() {
         gap: 2
       }, /*#__PURE__*/React.createElement(Button, {
         fullWidth: true,
-        onClick: openCapture
+        onClick: openCaptureActual
       }, "Quick capture"), /*#__PURE__*/React.createElement(Button, {
         fullWidth: true,
         variant: "secondary",
-        onClick: openPalette
+        onClick: openPaletteActual
       }, "Command palette"), /*#__PURE__*/React.createElement(Button, {
         fullWidth: true,
         variant: "ghost",
-        onClick: () => state.backend === 'github' ? doReload() : document.getElementById('pullBtn') && document.getElementById('pullBtn').click()
+        onClick: refreshData
       }, state.backend === 'github' ? 'Refresh data' : 'Pull latest'), /*#__PURE__*/React.createElement(Button, {
         fullWidth: true,
         variant: "ghost",
@@ -16072,21 +16741,280 @@ function DesktopShell() {
       right: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
-        onClick: doReload
+        onClick: refreshData
       }, "Reload"), /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
-        onClick: () => state.backend === 'github' ? openGithubConnect() : connectFolder(true)
+        onClick: reconnectSource
       }, "Reconnect"))
     })
   }, /*#__PURE__*/React.createElement(Content, null));
+}
+function OverlayHost() {
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const [moreOpen, setMoreOpen] = React.useState(false);
+  const [captureOpen, setCaptureOpen] = React.useState(false);
+  const [statusRow, setStatusRow] = React.useState(null);
+  const [sessionDetail, setSessionDetail] = React.useState(null);
+  React.useEffect(() => {
+    window.__WBOpenPalette = () => setPaletteOpen(true);
+    window.__WBOpenMore = () => setMoreOpen(true);
+    window.__WBOpenCapture = () => setCaptureOpen(true);
+    window.__WBOpenStatusMenu = row => setStatusRow(row);
+    window.__WBOpenSession = session => setSessionDetail(session);
+    return () => {
+      delete window.__WBOpenPalette;
+      delete window.__WBOpenMore;
+      delete window.__WBOpenCapture;
+      delete window.__WBOpenStatusMenu;
+      delete window.__WBOpenSession;
+    };
+  }, []);
+  const commands = paletteItems().map(item => ({
+    title: item.t,
+    subtitle: item.s,
+    icon: /*#__PURE__*/React.createElement(Icon, {
+      name: item.s === 'Project' ? 'folder' : item.s === 'Action' ? 'settings' : item.s === 'Skill' ? 'star' : 'file',
+      size: 16
+    }),
+    onRun: item.run
+  }));
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(CommandPalette, {
+    commands: commands,
+    open: paletteOpen,
+    onOpenChange: setPaletteOpen,
+    placeholder: "Jump to project, note, skill, or action…"
+  }), /*#__PURE__*/React.createElement(MoreDrawer, {
+    open: moreOpen,
+    onClose: () => setMoreOpen(false)
+  }), /*#__PURE__*/React.createElement(CaptureDialog, {
+    open: captureOpen,
+    onClose: () => setCaptureOpen(false)
+  }), /*#__PURE__*/React.createElement(StatusDialog, {
+    row: statusRow,
+    onClose: () => setStatusRow(null)
+  }), /*#__PURE__*/React.createElement(SessionDialog, {
+    session: sessionDetail,
+    onClose: () => setSessionDetail(null)
+  }));
+}
+function MoreDrawer({
+  open,
+  onClose
+}) {
+  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
+  return /*#__PURE__*/React.createElement(Drawer, {
+    open: open,
+    onClose: onClose,
+    side: "right",
+    eyebrow: "Workbench",
+    title: "More",
+    width: 390
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 5
+  }, groups.map(([title, items]) => /*#__PURE__*/React.createElement(Stack, {
+    key: title,
+    gap: 2
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 11,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      letterSpacing: 'var(--tracking-eyebrow)',
+      textTransform: 'uppercase'
+    }
+  }, title), /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, items.map(([id, label, icon]) => /*#__PURE__*/React.createElement(ListItem, {
+    key: id,
+    leading: /*#__PURE__*/React.createElement(Icon, {
+      name: icon,
+      size: 17
+    }),
+    title: label,
+    trailing: /*#__PURE__*/React.createElement(Icon, {
+      name: "chevronRight",
+      size: 15
+    }),
+    onClick: () => {
+      onClose();
+      setTimeout(() => setView(id), 220);
+    }
+  }))))), /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    onClick: () => copyText('Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.')
+  }, "Copy triage prompt")));
+}
+function CaptureDialog({
+  open,
+  onClose
+}) {
+  const [type, setType] = React.useState('idea');
+  const [dest, setDest] = React.useState(() => state.projects[0]?.dirName || '');
+  const [text, setText] = React.useState('');
+  const [files, setFiles] = React.useState([]);
+  const [saving, setSaving] = React.useState(false);
+  React.useEffect(() => {
+    if (open) {
+      setType('idea');
+      setDest(state.projects[0]?.dirName || '');
+      setText('');
+      setFiles([]);
+      setSaving(false);
+    }
+  }, [open]);
+  const project = state.projects.find(p => p.dirName === dest) || state.projects[0];
+  const isTask = ['task', 'idea'].includes(type);
+  const save = async () => {
+    if (!text.trim() && !files.length) return toast('Say it, type it, or attach it first.', 'warning');
+    setSaving(true);
+    try {
+      await captureCore(type, dest, text.trim() || 'Attachment capture', files);
+      onClose();
+      const destination = type === 'note' ? 'notes inbox' : type === 'kb' ? 'knowledge base' : type === 'project' ? 'new project seed' : `${projectTitle(project)} · ${type === 'idea' ? 'Ideas' : 'Tasks'}`;
+      toast(`Capture saved to ${destination}.`, 'success');
+      render();
+    } catch (e) {
+      setSaving(false);
+      toast(e.message || 'Capture failed — nothing was lost.', 'danger');
+    }
+  };
+  return /*#__PURE__*/React.createElement(Dialog, {
+    open: open,
+    onClose: onClose,
+    eyebrow: "Workbench",
+    title: "Quick capture",
+    width: 620,
+    footer: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      onClick: onClose
+    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
+      loading: saving,
+      onClick: save
+    }, "Save capture"))
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Tabs, {
+    value: type,
+    onChange: setType,
+    tabs: [['idea', 'Idea'], ['task', 'Task'], ['note', 'Loose note'], ['kb', 'Knowledge note'], ['project', 'New project']].map(([value, label]) => ({
+      value,
+      label
+    }))
+  }), isTask && /*#__PURE__*/React.createElement(Select, {
+    label: "Destination",
+    value: dest,
+    onChange: e => setDest(e.target.value),
+    options: state.projects.map(p => ({
+      value: p.dirName,
+      label: `${p.section} / ${projectTitle(p)}`
+    }))
+  }), /*#__PURE__*/React.createElement(Field, {
+    label: "Text"
+  }, /*#__PURE__*/React.createElement(Textarea, {
+    value: text,
+    onChange: setText,
+    placeholder: "Capture…",
+    maxHeight: 220
+  })), isTask && /*#__PURE__*/React.createElement(Field, {
+    label: "Attachments"
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    multiple: true,
+    onChange: e => setFiles([...e.target.files].map(f => ({
+      name: f.name,
+      blob: f
+    })))
+  }), files.length ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, files.map(f => f.name).join(' · ')) : null)));
+}
+function StatusDialog({
+  row,
+  onClose
+}) {
+  if (!row) return null;
+  const options = [['todo', 'To do', 'Ready, but not started.'], ['doing', 'Doing', 'In progress now.'], ['blocked', 'Blocked', 'Needs a decision, dependency, or real-world input.'], ['done', 'Done', 'Mark complete today.'], ['skipped', 'Skip', 'No longer worth doing, but keep the record.'], ['cancelled', 'Cancel', 'Abandoned or superseded.'], ['idea', 'Idea', 'Keep as a possible future direction.']];
+  const choose = status => {
+    onClose();
+    if (status !== row.it.status) setTaskStatus(row, status);
+  };
+  return /*#__PURE__*/React.createElement(Dialog, {
+    open: !!row,
+    onClose: onClose,
+    eyebrow: "Task status",
+    title: "Set status",
+    width: 520
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, displayText(row.it.text, 160)), /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, options.map(([status, label, desc]) => /*#__PURE__*/React.createElement(ListItem, {
+    key: status,
+    leading: statusDotNode(status),
+    title: label,
+    description: desc,
+    trailing: row.it.status === status ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "accent"
+    }, "current") : null,
+    onClick: () => choose(status)
+  })))));
+}
+function SessionDialog({
+  session,
+  onClose
+}) {
+  if (!session) return null;
+  const machine = machineName(session.machine || session.host || session.hostname || session.machineId || 'Unknown');
+  const files = sessionFiles(session);
+  const started = fmtFullStamp(session.started);
+  const ended = session.ended ? fmtFullStamp(session.ended) : 'still running';
+  const cost = sessionCost(session);
+  return /*#__PURE__*/React.createElement(Dialog, {
+    open: !!session,
+    onClose: onClose,
+    eyebrow: "Session detail",
+    title: sessionHeadline(session),
+    width: 760
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, session.summary && /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Summary"
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, session.summary)), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    title: "Identity"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [["Session", session.sessionFull || session.session || 'Unknown'], ["Machine", machine], ["Project(s)", sessionProjectsText(session)], ["Folder", session.cwd || 'Unknown']]
+  })), /*#__PURE__*/React.createElement(Card, {
+    title: "Usage"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [["Backend", backendLane(session)], ["Editor", normalizeEditor(session)], ["Harness", normalizeHarness(session.harness || session.ide)], ["Model", normalizeModel(session.model)], ["Tokens", fmtTokens(session.totalTokens || 0)], ["Cost", cost == null ? 'untracked' : fmtCostMaybe(cost)], ["Requests", session.requests || 0]]
+  })), /*#__PURE__*/React.createElement(Card, {
+    title: "Timing"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [["Started", started], ["Ended", ended], ["Length", isIncompleteSession(session) ? 'incomplete' : fmtDuration(durationMs(session))], ["Waiting", fmtDuration(session.waitingMs || 0)], ["Active", fmtDuration(session.activeMs || 0)]]
+  })), /*#__PURE__*/React.createElement(Card, {
+    title: "Files changed"
+  }, /*#__PURE__*/React.createElement(List, null, files.length ? files.slice(0, 30).map(f => /*#__PURE__*/React.createElement(ListItem, {
+    key: f,
+    title: f
+  })) : /*#__PURE__*/React.createElement(ListItem, {
+    title: "No changed files recorded",
+    description: "Older sessions and read-only sessions may not include file lists."
+  }))))));
 }
 function App() {
   const mobile = useViewport();
   React.useEffect(() => {
     setTimeout(() => fillImages(document.getElementById('app')), 0);
   });
-  return mobile ? /*#__PURE__*/React.createElement(MobileShell, null) : /*#__PURE__*/React.createElement(DesktopShell, null);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, mobile ? /*#__PURE__*/React.createElement(MobileShell, null) : /*#__PURE__*/React.createElement(DesktopShell, null), /*#__PURE__*/React.createElement(OverlayHost, null));
 }
 window.__WBReactRender = function () {
   const app = document.getElementById('app');
@@ -18193,6 +19121,7 @@ window.__WBReactRender = function () {
     setTimeout(kill, 220);
   }
   function openCapture() {
+    if (window.__WBOpenCapture) return window.__WBOpenCapture();
     if (isMobile()) return openCaptureWizard();
     modal(
       "Quick capture",
@@ -18494,6 +19423,11 @@ window.__WBReactRender = function () {
         ...(state.skillCatalog?.custom || []),
         ...(state.skillCatalog?.store || []),
       ].map((s) => ({ t: s.name, s: "Skill", run: () => openSkill(s.slug) })),
+      { t: "Usage", s: "View", run: () => go("usage") },
+      { t: "Sessions", s: "View", run: () => go("sessions") },
+      { t: "Machines & sync", s: "View", run: () => go("machines") },
+      { t: "Follow-ups", s: "View", run: () => go("followups") },
+      { t: "Knowledge base", s: "View", run: () => go("knowledge") },
       { t: "Board of Advisors", s: "View", run: () => go("board") },
       ...boardPersonas().map((p) => ({
         t: p.title,
@@ -18506,12 +19440,8 @@ window.__WBReactRender = function () {
       ...(state.backend === "github"
         ? [{ t: "Refresh data", s: "Action", run: doReload }]
         : [
-            { t: "Pull latest", s: "Action", run: () => $("#pullBtn").click() },
-            {
-              t: "Commit and push",
-              s: "Action",
-              run: () => $("#syncBtn").click(),
-            },
+            { t: "Pull latest", s: "Action", run: async () => { try { await helperPost("/pull"); toast("Pulled latest.", "success"); doReload(); } catch (e) { toast(e.message, "danger"); } } },
+            { t: "Commit and push", s: "Action", run: async () => { try { await helperPost("/sync"); toast("Synced.", "success"); pingHelper(); } catch (e) { toast(e.message, "danger"); } } },
           ]),
       { t: "Reset view (clear cached data)", s: "Action", run: doReset },
       { t: "Quick capture", s: "Action", run: openCapture },
@@ -18526,6 +19456,7 @@ window.__WBReactRender = function () {
     ];
   }
   function openPalette() {
+    if (window.__WBOpenPalette) return window.__WBOpenPalette();
     let q = "";
     let active = 0;
     let items = [];
@@ -18585,10 +19516,11 @@ window.__WBReactRender = function () {
     if (!state.boardPool) ensureBoardPool().then(refresh);
   }
   function openMore() {
+    if (window.__WBOpenMore) return window.__WBOpenMore();
     const groups = [
       ["Work", [["followups", "Follow-ups"]]],
       ["Memory", [["knowledge", "Knowledge base"], ["ideas", "Ideas"], ["artifacts", "Artifacts"], ["inventory", "Inventory"], ["skills", "Skills"], ["creative", "Creative studio"]]],
-      ["Systems", [["usage", "Usage metrics"], ["models", "Models & costs"], ["machines", "Machines & sync"]]],
+      ["Systems", [["usage", "Usage"], ["sessions", "Sessions"], ["machines", "Machines & sync"]]],
       ["Review", [["briefings", "Briefings"], ["weekly", "Weekly review"], ["preflight", "Preflight"], ["board", "Board of Advisors"], ["instructions", "Instructions"], ["about", "About"]]],
     ];
     modal(
