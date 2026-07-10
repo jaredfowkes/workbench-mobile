@@ -12550,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.41";
+  const WB_VERSION = "2026-07-09.42";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15430,22 +15430,24 @@ function TopStatusStrip({
     return /*#__PURE__*/React.createElement("button", {
       type: "button",
       onClick: () => openUsageDetail(key),
+      title: label + ' usage',
       style: {
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 8,
-        minHeight: mobile ? 38 : 34,
+        gap: 7,
+        minHeight: mobile ? 36 : 32,
         border: 'none',
         background: 'transparent',
         color: 'var(--text-strong)',
-        padding: '2px 4px',
+        padding: '2px 3px',
         borderRadius: 'var(--radius-sm)',
         cursor: 'pointer',
-        fontFamily: 'var(--font-sans)'
+        fontFamily: 'var(--font-sans)',
+        flex: '0 0 auto'
       }
     }, /*#__PURE__*/React.createElement(Donut, {
       value: (p || 0) / 100,
-      size: mobile ? 28 : 26,
+      size: mobile ? 26 : 24,
       thickness: 4,
       color: color,
       label: p == null ? '—' : p + '%'
@@ -15453,12 +15455,12 @@ function TopStatusStrip({
       style: {
         display: 'grid',
         gap: 0,
-        lineHeight: 1.05,
+        lineHeight: 1.02,
         textAlign: 'left'
       }
     }, /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 10.5,
+        fontSize: 10,
         color: 'var(--text-muted)',
         textTransform: 'uppercase',
         letterSpacing: 'var(--tracking-eyebrow)',
@@ -15466,7 +15468,7 @@ function TopStatusStrip({
       }
     }, label), /*#__PURE__*/React.createElement("span", {
       style: {
-        fontSize: 12.5,
+        fontSize: 12,
         fontWeight: 700,
         whiteSpace: 'nowrap'
       }
@@ -15477,30 +15479,45 @@ function TopStatusStrip({
   const worstItems = items.filter(i => i.state === 'bad' || i.state === 'warn' || i.state === 'unknown');
   const primary = downMachine ? {
     state: 'bad',
-    label: downMachine.name + ' down'
+    label: 'Machine',
+    value: downMachine.name + ' down'
   } : worstItems[0];
   const tone = primary ? primary.state === 'bad' ? 'unfavorable' : 'warning' : 'favorable';
-  const message = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
+  const fullMessage = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
+  const shortMessage = primary ? String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync ·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), 34) : 'All clear';
+  const sourceLabel = (state.backend === 'github' ? 'GitHub' : 'Local') + ' · v' + String(WB_VERSION).replace(/^\d{4}-\d{2}-\d{2}\./, '');
   return /*#__PURE__*/React.createElement(Cluster, {
     gap: mobile ? 2 : 3,
     style: {
       flexWrap: 'nowrap',
       minWidth: 0,
       overflow: 'hidden',
-      alignItems: 'center'
+      alignItems: 'center',
+      width: '100%'
     }
-  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement(TraceStamp, {
-    owner: state.backend === 'github' ? 'GitHub' : 'Local folder',
-    action: "connected",
-    when: 'v' + WB_VERSION
-  }), /*#__PURE__*/React.createElement("button", {
+  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement("span", {
+    title: (state.backend === 'github' ? 'Connected via GitHub backend' : 'Connected to local folder') + ' · v' + WB_VERSION,
+    style: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 6,
+      flex: '0 0 auto',
+      color: 'var(--text-secondary)',
+      fontSize: 12.5,
+      whiteSpace: 'nowrap'
+    }
+  }, /*#__PURE__*/React.createElement(StatusDot, {
+    state: "ok"
+  }), sourceLabel), /*#__PURE__*/React.createElement("button", {
     type: "button",
+    title: fullMessage,
     onClick: () => primary ? setView('machines') : null,
     style: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: 7,
       minWidth: 0,
+      maxWidth: mobile ? 220 : 420,
       border: 'none',
       background: 'transparent',
       padding: '4px 6px',
@@ -15523,7 +15540,7 @@ function TopStatusStrip({
       color: primary ? 'var(--text-strong)' : 'var(--text-secondary)',
       fontWeight: primary ? 650 : 500
     }
-  }, message)));
+  }, shortMessage)));
 }
 function PageHeader({
   eyebrow,
