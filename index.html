@@ -12550,7 +12550,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   <script>
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-09.42";
+  const WB_VERSION = "2026-07-09.43";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15392,41 +15392,40 @@ function navItems() {
   }];
 }
 function ProviderRail() {
-  const mobile = useViewport();
-  if (!mobile) return null;
-  const items = syncItems();
-  const downMachine = machineStatusRows().find(r => r.state === 'down');
-  const worst = items.find(i => i.state === 'bad') || items.find(i => i.state !== 'ok');
-  const tone = downMachine || worst && worst.state === 'bad' ? 'unfavorable' : worst ? 'warning' : 'favorable';
-  const text = downMachine ? downMachine.name + ' down' : worst ? worst.label === 'Sync status' && String(worst.value).includes('unsynced') ? 'Safe to read; ' + worst.value + ' changes need push' : worst.label + ': ' + worst.value : 'System steady';
-  const compact = !['today', 'usage', 'sessions', 'machines'].includes(viewName());
-  if (compact) return /*#__PURE__*/React.createElement(Button, {
-    variant: "secondary",
-    size: "sm",
-    onClick: () => setView('machines'),
-    style: {
-      width: '100%',
-      justifyContent: 'flex-start',
-      marginBottom: 14
-    }
-  }, /*#__PURE__*/React.createElement(Badge, {
-    tone: tone
-  }, tone === 'favorable' ? 'OK' : tone === 'warning' ? 'Watch' : 'Down'), /*#__PURE__*/React.createElement("span", {
-    style: {
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap'
-    }
-  }, displayText(text, 58)));
-  return /*#__PURE__*/React.createElement(TopStatusStrip, {
-    mobile: true
-  });
+  return null;
 }
 function TopStatusStrip({
   mobile = false
 }) {
   const usageChip = (key, label, u, color) => {
     const p = pct(u);
+    if (mobile) {
+      return /*#__PURE__*/React.createElement("button", {
+        type: "button",
+        onClick: () => openUsageDetail(key),
+        title: label + ' usage' + (p == null ? '' : ': ' + p + '%'),
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 36,
+          border: 'none',
+          background: 'transparent',
+          color: 'var(--text-strong)',
+          padding: '2px',
+          borderRadius: 'var(--radius-sm)',
+          cursor: 'pointer',
+          fontFamily: 'var(--font-sans)',
+          flex: '0 0 auto'
+        }
+      }, /*#__PURE__*/React.createElement(Donut, {
+        value: (p || 0) / 100,
+        size: 28,
+        thickness: 4,
+        color: color,
+        label: p == null ? '—' : p + '%'
+      }));
+    }
     return /*#__PURE__*/React.createElement("button", {
       type: "button",
       onClick: () => openUsageDetail(key),
@@ -15435,7 +15434,7 @@ function TopStatusStrip({
         display: 'inline-flex',
         alignItems: 'center',
         gap: 7,
-        minHeight: mobile ? 36 : 32,
+        minHeight: 32,
         border: 'none',
         background: 'transparent',
         color: 'var(--text-strong)',
@@ -15447,7 +15446,7 @@ function TopStatusStrip({
       }
     }, /*#__PURE__*/React.createElement(Donut, {
       value: (p || 0) / 100,
-      size: mobile ? 26 : 24,
+      size: 24,
       thickness: 4,
       color: color,
       label: p == null ? '—' : p + '%'
@@ -15484,47 +15483,35 @@ function TopStatusStrip({
   } : worstItems[0];
   const tone = primary ? primary.state === 'bad' ? 'unfavorable' : 'warning' : 'favorable';
   const fullMessage = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
-  const shortMessage = primary ? String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync ·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), 34) : 'All clear';
-  const sourceLabel = (state.backend === 'github' ? 'GitHub' : 'Local') + ' · v' + String(WB_VERSION).replace(/^\d{4}-\d{2}-\d{2}\./, '');
+  const shortMessage = primary ? String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync ·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), mobile ? 22 : 34) : 'All clear';
   return /*#__PURE__*/React.createElement(Cluster, {
-    gap: mobile ? 2 : 3,
+    gap: mobile ? 1 : 3,
     style: {
       flexWrap: 'nowrap',
       minWidth: 0,
       overflow: 'hidden',
       alignItems: 'center',
-      width: '100%'
+      width: '100%',
+      flex: '1 1 auto'
     }
-  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement("span", {
-    title: (state.backend === 'github' ? 'Connected via GitHub backend' : 'Connected to local folder') + ' · v' + WB_VERSION,
-    style: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 6,
-      flex: '0 0 auto',
-      color: 'var(--text-secondary)',
-      fontSize: 12.5,
-      whiteSpace: 'nowrap'
-    }
-  }, /*#__PURE__*/React.createElement(StatusDot, {
-    state: "ok"
-  }), sourceLabel), /*#__PURE__*/React.createElement("button", {
+  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement("button", {
     type: "button",
     title: fullMessage,
     onClick: () => primary ? setView('machines') : null,
     style: {
       display: 'inline-flex',
       alignItems: 'center',
-      gap: 7,
+      gap: 6,
       minWidth: 0,
-      maxWidth: mobile ? 220 : 420,
+      maxWidth: mobile ? 150 : 360,
       border: 'none',
       background: 'transparent',
-      padding: '4px 6px',
+      padding: mobile ? '4px 2px' : '4px 6px',
       borderRadius: 'var(--radius-sm)',
       cursor: primary ? 'pointer' : 'default',
       color: 'var(--text-strong)',
-      fontFamily: 'var(--font-sans)'
+      fontFamily: 'var(--font-sans)',
+      flex: mobile ? '1 1 auto' : '0 1 auto'
     }
   }, primary ? /*#__PURE__*/React.createElement(Badge, {
     tone: tone
@@ -15536,7 +15523,7 @@ function TopStatusStrip({
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap',
-      fontSize: 13,
+      fontSize: mobile ? 12 : 13,
       color: primary ? 'var(--text-strong)' : 'var(--text-secondary)',
       fontWeight: primary ? 650 : 500
     }
@@ -16667,7 +16654,7 @@ function SimpleView({
   }, /*#__PURE__*/React.createElement(Card, {
     title: "Versions"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [["This copy", 'v' + WB_VERSION], ["Latest build", latest ? 'v' + latest : 'unknown'], ["Built", builtAt ? shortAge(builtAt) : 'unknown'], ["Mobile", state.mobileVersion ? 'v' + state.mobileVersion : 'unknown'], ["Published", pubAt ? shortAge(pubAt) : 'unknown']]
+    items: [["This copy", 'v' + WB_VERSION], ["Latest build", latest ? 'v' + latest : 'unknown'], ["Built", builtAt ? shortAge(builtAt) : 'unknown'], ["Mobile", state.mobileVersion ? 'v' + state.mobileVersion : 'unknown'], ["Published", pubAt ? shortAge(pubAt) : 'unknown'], ["Data source", state.backend === 'github' ? 'GitHub API' : 'Local folder'], ["Connection", state.connected ? 'connected' : 'not connected']]
   }), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
     onClick: async () => {
@@ -16719,13 +16706,22 @@ function MobileShell() {
       paddingBottom: 74
     }
   }, /*#__PURE__*/React.createElement(TopBar, {
-    left: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 2
-    }, /*#__PURE__*/React.createElement(Mark, null), /*#__PURE__*/React.createElement("strong", null, "Workbench")),
+    left: /*#__PURE__*/React.createElement("div", {
+      style: {
+        minWidth: 0,
+        flex: '1 1 auto'
+      }
+    }, /*#__PURE__*/React.createElement(TopStatusStrip, {
+      mobile: true
+    })),
     right: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 1
+      gap: 1,
+      style: {
+        flexWrap: 'nowrap',
+        flex: '0 0 auto'
+      }
     }, /*#__PURE__*/React.createElement(IconButton, {
-      label: "Command palette",
+      label: "Search",
       icon: /*#__PURE__*/React.createElement(Icon, {
         name: "search",
         size: 18
@@ -16742,7 +16738,8 @@ function MobileShell() {
     style: {
       position: 'fixed',
       left: 0,
-      right: 0
+      right: 0,
+      padding: '0 10px'
     }
   }), /*#__PURE__*/React.createElement(Content, null), /*#__PURE__*/React.createElement("div", {
     style: {
@@ -16807,8 +16804,19 @@ function DesktopShell() {
       }, "Toggle theme"))
     }),
     topbar: /*#__PURE__*/React.createElement(TopBar, {
-      left: /*#__PURE__*/React.createElement(TopStatusStrip, null),
-      right: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
+      left: /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 0,
+          flex: '1 1 auto',
+          maxWidth: 'min(980px, calc(100vw - 560px))'
+        }
+      }, /*#__PURE__*/React.createElement(TopStatusStrip, null)),
+      right: /*#__PURE__*/React.createElement(Cluster, {
+        style: {
+          flexWrap: 'nowrap',
+          flex: '0 0 auto'
+        }
+      }, /*#__PURE__*/React.createElement(Button, {
         variant: "ghost",
         size: "sm",
         onClick: refreshData
