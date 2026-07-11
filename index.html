@@ -14225,7 +14225,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.22";
+  const WB_VERSION = "2026-07-11.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14939,7 +14939,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     liveActionPollBusy = true;
     try {
       await ghGetTree(forceTree);
-      await loadLiveActions();
+      await loadLiveActions({ fresh: forceTree });
       if (state.connected) render();
       syncLiveActionPollTimer();
     } finally {
@@ -14981,10 +14981,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       }
     }
   }
-  async function loadLiveActions() {
+  async function loadLiveActions(opts = {}) {
+    const fresh = !!opts.fresh;
     const rowsById = new Map();
     await walkWorkbenchLiveActionPaths(async (path) => {
-      const raw = await readPath(path);
+      let raw = null;
+      if (state.backend === "github" && fresh) {
+        raw = (await ghGetFile(path, { fresh: true }))?.text ?? null;
+      } else {
+        raw = await readPath(path);
+      }
       if (!raw) return;
       const parsed = DataHealth.parseJsonDocument(
         raw,
@@ -15001,8 +15007,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       const id = action.action_id || path.split("/").pop()?.replace(/\.json$/, "");
       if (!id) return;
       const prev = rowsById.get(id) || {};
-      const fromResults = path.includes("/results/");
-      rowsById.set(id, fromResults ? { ...prev, ...action } : { ...action, ...prev });
+      rowsById.set(id, {
+        ...prev,
+        ...action,
+        status: mergeLiveActionStatus(action.status, prev.status),
+        requested_at: Math.max(
+          Number(prev.requested_at || 0),
+          Number(action.requested_at || 0),
+        ) || action.requested_at || prev.requested_at,
+      });
     });
     state.liveActionRows = [...rowsById.values()].sort(
       (a, b) => Number(b.requested_at || 0) - Number(a.requested_at || 0),
