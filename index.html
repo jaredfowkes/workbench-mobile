@@ -1082,24 +1082,49 @@ html.wb-booting #app .mobile-tabs {
   visibility: hidden;
 }
 .wb-boot-card {
-  width: min(360px, 100%);
-  padding: 28px 24px 22px;
+  width: min(320px, calc(100% - 32px));
+  padding: 32px 28px 26px;
   border-radius: var(--r-lg);
   border: 1px solid var(--border-subtle);
   background: var(--surface, var(--canvas));
   box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  display: grid;
-  gap: 12px;
-  justify-items: center;
+  gap: 14px;
 }
-.wb-boot-spinner {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  border: 3px solid var(--border-strong);
-  border-top-color: var(--brand);
-  animation: spin 0.85s linear infinite;
+@property --wb-boot-p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 12;
+}
+.wb-boot-donut {
+  --p: var(--wb-boot-p, 12);
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  -webkit-mask: radial-gradient(circle, transparent 21px, #000 22px);
+  mask: radial-gradient(circle, transparent 21px, #000 22px);
+  animation: wb-boot-donut-idle 2.4s var(--ease, ease) infinite;
+}
+@keyframes wb-boot-donut-idle {
+  0% {
+    --wb-boot-p: 10;
+    transform: rotate(0deg);
+  }
+  50% {
+    --wb-boot-p: 68;
+  }
+  100% {
+    --wb-boot-p: 92;
+    transform: rotate(360deg);
+  }
+}
+.wb-boot-overlay.wb-boot-progress .wb-boot-donut {
+  animation: none;
+  transform: none;
 }
 .wb-boot-wordmark {
   font-family: var(--font-display);
@@ -1107,12 +1132,21 @@ html.wb-booting #app .mobile-tabs {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
+  line-height: 1.2;
 }
 .wb-boot-status {
   font-size: 13px;
   line-height: 1.45;
   color: var(--text-2);
   min-height: 1.45em;
+  max-width: 26ch;
+}
+.wb-boot-overlay[aria-busy="true"],
+.wb-boot-overlay[aria-busy="true"] * {
+  color: inherit;
+}
+.wb-boot-overlay::after {
+  display: none !important;
 }
 :focus-visible {
   outline: 2px solid var(--focus);
@@ -2889,14 +2923,14 @@ button.metric-card:hover {
 }
 .btn.loading,
 .iconbtn.loading,
-[aria-busy="true"] {
+[aria-busy="true"]:not(.wb-boot-overlay):not(.wb-boot-donut) {
   position: relative;
   color: transparent !important;
   pointer-events: none;
 }
 .btn.loading::after,
 .iconbtn.loading::after,
-[aria-busy="true"]::after {
+[aria-busy="true"]:not(.wb-boot-overlay):not(.wb-boot-donut)::after {
   content: "";
   position: absolute;
   width: 14px;
@@ -3459,9 +3493,9 @@ button.metric-card:hover {
   </style>
 </head>
 <body>
-  <div id="wbBootOverlay" class="wb-boot-overlay" role="status" aria-live="polite" aria-busy="true">
+  <div id="wbBootOverlay" class="wb-boot-overlay" role="status" aria-live="polite">
     <div class="wb-boot-card">
-      <span class="wb-boot-spinner" aria-hidden="true"></span>
+      <span class="donut wb-boot-donut" id="wbBootDonut" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12" aria-label="Loading dashboard"></span>
       <div class="wb-boot-wordmark">Workbench</div>
       <div class="wb-boot-status" id="wbBootStatus">Starting…</div>
     </div>
@@ -3554,6 +3588,11 @@ button.metric-card:hover {
         if (app) app.classList.remove("hidden");
         var status = document.getElementById("wbBootStatus");
         if (status) status.textContent = "Connecting to GitHub…";
+        var donut = document.getElementById("wbBootDonut");
+        if (donut) {
+          donut.style.setProperty("--wb-boot-p", "12");
+          donut.style.setProperty("--p", "12");
+        }
       }
     } catch (e) {}
   })();
@@ -14350,7 +14389,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.26";
+  const WB_VERSION = "2026-07-11.27";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15974,6 +16013,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           state.projects.push(p);
           updateBootProgress(
             `Loaded ${state.projects.length} of ${tasks.length} projects…`,
+            22 + Math.round((state.projects.length / Math.max(tasks.length, 1)) * 68),
           );
         });
 
@@ -17840,31 +17880,45 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     ).join("");
     return `<section class="page"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">Connecting to GitHub. ${chip}</p></div></div><div class="metric-grid">${skTiles}</div>${status}<div class="grid cols-2" style="margin-top:14px">${skCards}</div></section>`;
   }
-  function setBootMessage(text) {
+  function setBootProgress(pct) {
+    const n = Math.max(0, Math.min(100, Number(pct) || 0));
+    const donut = $("#wbBootDonut");
+    const overlay = $("#wbBootOverlay");
+    if (overlay && n > 0) overlay.classList.add("wb-boot-progress");
+    if (donut) {
+      donut.style.setProperty("--wb-boot-p", String(n));
+      donut.style.setProperty("--p", String(n));
+      donut.setAttribute("aria-valuenow", String(Math.round(n)));
+      donut.setAttribute("aria-busy", n >= 100 ? "false" : "true");
+    }
+  }
+  function setBootMessage(text, pct) {
     const msg = String(text || "").trim();
     if (!msg) return;
     const boot = $("#wbBootStatus");
     if (boot) boot.textContent = msg;
+    if (pct != null) setBootProgress(pct);
   }
   function dismissBootOverlay() {
+    setBootProgress(100);
     document.documentElement.classList.remove("wb-booting", "wb-autoconnect");
     const overlay = $("#wbBootOverlay");
     if (!overlay) return;
-    overlay.setAttribute("aria-busy", "false");
+    overlay.removeAttribute("aria-busy");
     overlay.classList.add("wb-boot-overlay--done");
     window.setTimeout(() => overlay.remove(), 320);
   }
   window.__WBDismissBoot = dismissBootOverlay;
   function showBoot(progress) {
     document.documentElement.classList.add("wb-autoconnect", "wb-booting");
-    setBootMessage(progress || "Connecting to GitHub…");
+    setBootMessage(progress || "Connecting to GitHub…", 12);
     const view = $("#view");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
     if (view) view.innerHTML = bootScreenHTML(progress);
   }
-  function updateBootProgress(text) {
-    setBootMessage(text);
+  function updateBootProgress(text, pct) {
+    setBootMessage(text, pct);
     const el = $("#bootStatus");
     if (el) el.textContent = text;
   }
@@ -24318,7 +24372,9 @@ window.__WBReactRender = function () {
     // Paint cached/skeleton content immediately so the tree + content fetches
     // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
+    setBootProgress(18);
     await ghGetTree(!!opts.forceTree);
+    setBootProgress(24);
     await scan();
   }
   function updateShellForBackend() {
