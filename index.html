@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light" data-lob="custom" style="--accent-hero:#3D4A41">
+<html lang="en" data-theme="light" data-lob="custom" class="wb-booting" style="--accent-hero:#3D4A41">
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com http://127.0.0.1:7787 https://*.supabase.co; img-src 'self' data: blob:; frame-src blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
@@ -1067,11 +1067,8 @@ code {
   visibility: hidden;
   pointer-events: none;
 }
-html:not(.wb-autoconnect.wb-booting) .wb-boot-overlay {
+html:not(.wb-booting) .wb-boot-overlay {
   display: none;
-}
-html.wb-autoconnect.wb-booting #landing {
-  display: none !important;
 }
 html.wb-booting #app {
   pointer-events: none;
@@ -1082,49 +1079,24 @@ html.wb-booting #app .mobile-tabs {
   visibility: hidden;
 }
 .wb-boot-card {
-  width: min(320px, calc(100% - 32px));
-  padding: 32px 28px 26px;
+  width: min(360px, 100%);
+  padding: 28px 24px 22px;
   border-radius: var(--r-lg);
   border: 1px solid var(--border-subtle);
   background: var(--surface, var(--canvas));
   box-shadow: var(--shadow-md);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   text-align: center;
-  gap: 14px;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
 }
-@property --wb-boot-p {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 12;
-}
-.wb-boot-donut {
-  --p: var(--wb-boot-p, 12);
-  width: 56px;
-  height: 56px;
-  flex: 0 0 56px;
-  -webkit-mask: radial-gradient(circle, transparent 21px, #000 22px);
-  mask: radial-gradient(circle, transparent 21px, #000 22px);
-  animation: wb-boot-donut-idle 2.4s var(--ease, ease) infinite;
-}
-@keyframes wb-boot-donut-idle {
-  0% {
-    --wb-boot-p: 10;
-    transform: rotate(0deg);
-  }
-  50% {
-    --wb-boot-p: 68;
-  }
-  100% {
-    --wb-boot-p: 92;
-    transform: rotate(360deg);
-  }
-}
-.wb-boot-overlay.wb-boot-progress .wb-boot-donut {
-  animation: none;
-  transform: none;
+.wb-boot-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--border-strong);
+  border-top-color: var(--brand);
+  animation: spin 0.85s linear infinite;
 }
 .wb-boot-wordmark {
   font-family: var(--font-display);
@@ -1132,21 +1104,12 @@ html.wb-booting #app .mobile-tabs {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text);
-  line-height: 1.2;
 }
 .wb-boot-status {
   font-size: 13px;
   line-height: 1.45;
   color: var(--text-2);
   min-height: 1.45em;
-  max-width: 26ch;
-}
-.wb-boot-overlay[aria-busy="true"],
-.wb-boot-overlay[aria-busy="true"] * {
-  color: inherit;
-}
-.wb-boot-overlay::after {
-  display: none !important;
 }
 :focus-visible {
   outline: 2px solid var(--focus);
@@ -2923,14 +2886,14 @@ button.metric-card:hover {
 }
 .btn.loading,
 .iconbtn.loading,
-[aria-busy="true"]:not(.wb-boot-overlay):not(.wb-boot-donut) {
+[aria-busy="true"] {
   position: relative;
   color: transparent !important;
   pointer-events: none;
 }
 .btn.loading::after,
 .iconbtn.loading::after,
-[aria-busy="true"]:not(.wb-boot-overlay):not(.wb-boot-donut)::after {
+[aria-busy="true"]::after {
   content: "";
   position: absolute;
   width: 14px;
@@ -3493,13 +3456,30 @@ button.metric-card:hover {
   </style>
 </head>
 <body>
-  <div id="wbBootOverlay" class="wb-boot-overlay" role="status" aria-live="polite">
+  <div id="wbBootOverlay" class="wb-boot-overlay" role="status" aria-live="polite" aria-busy="true">
     <div class="wb-boot-card">
-      <span class="donut wb-boot-donut" id="wbBootDonut" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12" aria-label="Loading dashboard"></span>
+      <span class="wb-boot-spinner" aria-hidden="true"></span>
       <div class="wb-boot-wordmark">Workbench</div>
       <div class="wb-boot-status" id="wbBootStatus">Starting…</div>
     </div>
   </div>
+  <script>
+  (function () {
+    try {
+      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
+      var tok = localStorage.getItem("workbench-gh-token");
+      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
+        document.documentElement.classList.add("wb-autoconnect");
+        var landing = document.getElementById("landing");
+        var app = document.getElementById("app");
+        if (landing) landing.classList.add("hidden");
+        if (app) app.classList.remove("hidden");
+        var status = document.getElementById("wbBootStatus");
+        if (status) status.textContent = "Connecting to GitHub…";
+      }
+    } catch (e) {}
+  })();
+  </script>
   <section id="landing" class="modal-scrim">
     <div class="modal-card" role="dialog" aria-labelledby="landingTitle">
       <div class="brand" style="margin-bottom:18px"><span class="wordmark">Workbench</span></div>
@@ -3575,28 +3555,6 @@ button.metric-card:hover {
     </nav>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script>
-  (function () {
-    try {
-      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
-      var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
-        document.documentElement.classList.add("wb-autoconnect", "wb-booting");
-        var landing = document.getElementById("landing");
-        var app = document.getElementById("app");
-        if (landing) landing.classList.add("hidden");
-        if (app) app.classList.remove("hidden");
-        var status = document.getElementById("wbBootStatus");
-        if (status) status.textContent = "Connecting to GitHub…";
-        var donut = document.getElementById("wbBootDonut");
-        if (donut) {
-          donut.style.setProperty("--wb-boot-p", "12");
-          donut.style.setProperty("--p", "12");
-        }
-      }
-    } catch (e) {}
-  })();
-  </script>
   <script>
 /**
  * @license React
@@ -13911,11 +13869,38 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return clone(record);
     }
 
+    async function syncRemoteStatus(actionId, remoteStatus, patch = {}) {
+      await ensureLoaded();
+      const record = snapshot.records.find((r) => r.actionId === actionId);
+      if (!record) return null;
+      const status = String(remoteStatus || "").toLowerCase();
+      const terminal = new Set(["done", "failed", "expired"]);
+      if (!terminal.has(status)) return clone(record);
+      const nextState = status === "done" ? "submitted" : "failed";
+      Object.assign(
+        record,
+        transitionRecord(
+          record,
+          nextState,
+          {
+            remoteStatus: status,
+            lastError:
+              patch.lastError ||
+              (status === "failed" ? String(patch.error || record.lastError || "Action failed on target machine.") : null),
+          },
+          { now },
+        ),
+      );
+      await persist();
+      return clone(record);
+    }
+
     return {
       enqueue,
       list,
       drain,
       retry,
+      syncRemoteStatus,
       summary: async () => summary(await list()),
       _resetForTests: async () => {
         loaded = false;
@@ -14389,7 +14374,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.27";
+  const WB_VERSION = "2026-07-11.25";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15063,7 +15048,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         action_id: id,
         machine_id: rec.machineId || existing.machine_id,
         kind: rec.kind || existing.kind,
-        status: mergeLiveActionStatus(existing.status, rec.state),
+        status: mergeLiveActionStatus(existing.status, rec.remoteStatus || rec.state),
         outboxState: rec.state,
         requested_at: existing.requested_at || rec.createdAt,
         lastError: rec.lastError || existing.error_code || null,
@@ -15183,6 +15168,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         state.liveActionRows = [...rowsById.values()].sort(
           (a, b) => Number(b.requested_at || 0) - Number(a.requested_at || 0),
         );
+        await reconcileActionOutboxFromRemote(state.liveActionRows);
         return state.liveActionRows;
       } catch (err) {
         setDataHealth(sourceKey, {
@@ -15230,7 +15216,35 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     state.liveActionRows = [...rowsById.values()].sort(
       (a, b) => Number(b.requested_at || 0) - Number(a.requested_at || 0),
     );
+    await reconcileActionOutboxFromRemote(state.liveActionRows);
     return state.liveActionRows;
+  }
+  async function reconcileActionOutboxFromRemote(rows) {
+    if (!rows?.length) return;
+    let outbox;
+    try {
+      outbox = await ensureActionOutbox();
+    } catch {
+      return;
+    }
+    const terminal = new Set(["done", "failed", "expired"]);
+    let changed = false;
+    for (const row of rows) {
+      const status = String(row.status || "").toLowerCase();
+      if (!terminal.has(status)) continue;
+      const actionId = row.action_id || row.actionId;
+      if (!actionId) continue;
+      const rec = (state.actionOutboxRecords || []).find((r) => r.actionId === actionId);
+      if (!rec) continue;
+      if (rec.remoteStatus === status && (status !== "failed" || rec.lastError)) continue;
+      await outbox.syncRemoteStatus(actionId, status, {
+        error: row.error_code || row.result?.message || row.result?.error_code,
+      });
+      changed = true;
+    }
+    if (changed) {
+      updateActionOutboxState(await outbox.list(), await outbox.summary());
+    }
   }
   function todoSummaryText(counts) {
     if (!counts) return "";
@@ -16013,7 +16027,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           state.projects.push(p);
           updateBootProgress(
             `Loaded ${state.projects.length} of ${tasks.length} projects…`,
-            22 + Math.round((state.projects.length / Math.max(tasks.length, 1)) * 68),
           );
         });
 
@@ -17718,32 +17731,19 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     }
   }
   function mobileState() {
-    const repoSrc = state.mobileSourceVersion || WB_VERSION;
-    const pages = state.mobileVersion;
-    const copy = WB_VERSION;
-    const pubAt = state.mobileSync?.updated;
-    const pubStale = !pubAt || Date.now() - pubAt > 48 * 3600 * 1000;
-    if (pages && copy !== pages) {
-      return { cls: "warn", text: `reload for v${pages}` };
-    }
-    if (pages && copy === pages) {
-      if (pages !== repoSrc) {
-        return {
-          cls: "ok",
-          text: pubStale ? `current · repo main v${repoSrc}` : `current · repo main v${repoSrc}`,
-        };
-      }
-      if (pubStale) {
+    const src = state.mobileSourceVersion || WB_VERSION,
+      mob = state.mobileVersion,
+      pubAt = state.mobileSync?.updated,
+      pubStale = !pubAt || Date.now() - pubAt > 48 * 3600 * 1000;
+    if (mob && mob === src) {
+      if (pubStale)
         return {
           cls: "warn",
           text: pubAt ? "mobile current, publish stale" : "mobile current, publish unknown",
         };
-      }
       return { cls: "ok", text: "mobile current" };
     }
-    if (pages && pages !== repoSrc) {
-      return { cls: "warn", text: `Pages v${pages} · repo v${repoSrc}` };
-    }
+    if (mob && mob !== src) return { cls: "warn", text: `mobile stale ${mob}` };
     return { cls: "warn", text: "mobile unknown" };
   }
 
@@ -17880,45 +17880,30 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     ).join("");
     return `<section class="page"><div class="hero"><div><div class="kicker">Workbench overview</div><h1>${greeting()}, Jared.</h1><p class="lede">Connecting to GitHub. ${chip}</p></div></div><div class="metric-grid">${skTiles}</div>${status}<div class="grid cols-2" style="margin-top:14px">${skCards}</div></section>`;
   }
-  function setBootProgress(pct) {
-    const n = Math.max(0, Math.min(100, Number(pct) || 0));
-    const donut = $("#wbBootDonut");
-    const overlay = $("#wbBootOverlay");
-    if (overlay && n > 0) overlay.classList.add("wb-boot-progress");
-    if (donut) {
-      donut.style.setProperty("--wb-boot-p", String(n));
-      donut.style.setProperty("--p", String(n));
-      donut.setAttribute("aria-valuenow", String(Math.round(n)));
-      donut.setAttribute("aria-busy", n >= 100 ? "false" : "true");
-    }
-  }
-  function setBootMessage(text, pct) {
+  function setBootMessage(text) {
     const msg = String(text || "").trim();
     if (!msg) return;
     const boot = $("#wbBootStatus");
     if (boot) boot.textContent = msg;
-    if (pct != null) setBootProgress(pct);
   }
   function dismissBootOverlay() {
-    setBootProgress(100);
-    document.documentElement.classList.remove("wb-booting", "wb-autoconnect");
+    document.documentElement.classList.remove("wb-booting");
     const overlay = $("#wbBootOverlay");
     if (!overlay) return;
-    overlay.removeAttribute("aria-busy");
+    overlay.setAttribute("aria-busy", "false");
     overlay.classList.add("wb-boot-overlay--done");
     window.setTimeout(() => overlay.remove(), 320);
   }
   window.__WBDismissBoot = dismissBootOverlay;
   function showBoot(progress) {
-    document.documentElement.classList.add("wb-autoconnect", "wb-booting");
-    setBootMessage(progress || "Connecting to GitHub…", 12);
+    setBootMessage(progress || "Connecting to GitHub…");
     const view = $("#view");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
     if (view) view.innerHTML = bootScreenHTML(progress);
   }
-  function updateBootProgress(text, pct) {
-    setBootMessage(text, pct);
+  function updateBootProgress(text) {
+    setBootMessage(text);
     const el = $("#bootStatus");
     if (el) el.textContent = text;
   }
@@ -23173,25 +23158,14 @@ window.__WBReactRender = function () {
     const pagesVersion = state.mobileVersion;
     const pubAt = state.mobileSync?.updated;
     const sync = state.mobileSync || {};
-    let syncMessage = sync.message || sync.error || null;
-    if (
-      sync.state === "blocked" &&
-      pagesVersion &&
-      WB_VERSION === pagesVersion &&
-      syncMessage &&
-      /uncommitted/i.test(syncMessage)
-    ) {
-      syncMessage =
-        "Mac auto-publish paused (dashboard.html uncommitted). This copy already matches live Pages.";
-    }
     return {
       repoVersion,
       pagesVersion,
       publishedAt: pubAt,
       statusText: m.text,
       statusClass: m.cls,
-      syncStatus: sync.status || sync.state || null,
-      syncMessage,
+      syncStatus: sync.status || null,
+      syncMessage: sync.message || sync.error || null,
       pagesUrl: "https://jaredfowkes.github.io/workbench-mobile/",
       aligned: !!(pagesVersion && pagesVersion === repoVersion),
     };
@@ -24372,9 +24346,7 @@ window.__WBReactRender = function () {
     // Paint cached/skeleton content immediately so the tree + content fetches
     // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
-    setBootProgress(18);
     await ghGetTree(!!opts.forceTree);
-    setBootProgress(24);
     await scan();
   }
   function updateShellForBackend() {
