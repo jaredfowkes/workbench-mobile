@@ -14374,7 +14374,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.25";
+  const WB_VERSION = "2026-07-11.26";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15182,7 +15182,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     }
     await walkWorkbenchLiveActionPaths(async (path) => {
       let raw = null;
-      if (state.backend === "github" && fresh) {
+      if (state.backend === "github") {
         raw = (await ghGetFile(path, { fresh: true }))?.text ?? null;
       } else {
         raw = await readPath(path);
