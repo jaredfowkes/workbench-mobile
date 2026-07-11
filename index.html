@@ -14225,7 +14225,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.21";
+  const WB_VERSION = "2026-07-11.22";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14874,6 +14874,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     if (s === "running" || s === "submitting") return "accent";
     return "warning";
   }
+  function mergeLiveActionStatus(gitStatus, outboxState) {
+    const terminal = new Set(["done", "failed", "expired"]);
+    const git = String(gitStatus || "").toLowerCase();
+    const outbox = String(outboxState || "").toLowerCase();
+    if (terminal.has(git)) return gitStatus;
+    if (terminal.has(outbox)) return outboxState;
+    if (git) return gitStatus;
+    if (outbox === "submitted") return "queued";
+    return outboxState || gitStatus || "queued";
+  }
   function mergedLiveActionRows(limit = 12) {
     const byId = new Map();
     for (const row of state.liveActionRows || []) {
@@ -14889,7 +14899,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         action_id: id,
         machine_id: rec.machineId || existing.machine_id,
         kind: rec.kind || existing.kind,
-        status: existing.status || (rec.state === "submitted" ? "queued" : rec.state),
+        status: mergeLiveActionStatus(existing.status, rec.state),
         outboxState: rec.state,
         requested_at: existing.requested_at || rec.createdAt,
         lastError: rec.lastError || existing.error_code || null,
