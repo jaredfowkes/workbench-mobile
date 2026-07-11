@@ -2636,20 +2636,46 @@ button.metric-card:hover {
   inset: 0;
   background: rgba(15, 15, 15, 0.55);
   z-index: 50;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 24px;
   animation: backdrop-in 120ms var(--ease);
 }
 .modal-card {
   width: min(840px, 100%);
-  max-height: min(86vh, 900px);
-  overflow: auto;
-  padding: 24px;
+  max-height: min(86vh, calc(100dvh - 48px));
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   box-shadow: var(--shadow-md);
   border: 0;
-  scrollbar-gutter: stable;
   animation: modal-in 120ms var(--ease);
+}
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 24px 24px;
+  scrollbar-gutter: stable;
+}
+.modal-foot {
+  display: none;
+}
+.modal-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-strong);
+  margin: 8px auto 2px;
+  flex: none;
+}
+.modal-close-full {
+  width: 100%;
 }
 .modal-wide {
   width: min(1120px, 100%);
@@ -2658,8 +2684,10 @@ button.metric-card:hover {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
   align-items: flex-start;
+  flex: none;
+  padding: 24px 24px 14px;
 }
 .modal-head p {
   margin: 4px 0 0;
@@ -3181,24 +3209,32 @@ button.metric-card:hover {
     flex: 1 1 auto;
   }
   .modal-scrim {
-    align-items: end;
+    align-items: flex-end;
     padding: 0;
   }
   .modal-card {
     width: 100%;
-    max-height: calc(100dvh - env(safe-area-inset-top) - 18px);
+    max-height: min(92dvh, calc(100dvh - env(safe-area-inset-top)));
     border-radius: var(--r-xl) var(--r-xl) 0 0;
-    padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px);
     margin-top: auto;
+  }
+  .modal-body {
+    padding: 0 18px 16px;
     scroll-padding-top: 92px;
   }
+  .modal-foot {
+    display: block;
+    flex: none;
+    padding: 12px 18px calc(env(safe-area-inset-bottom) + 12px);
+    border-top: 1px solid var(--border-subtle);
+    background: var(--raised);
+  }
   .modal-head {
-    position: sticky;
-    top: -18px;
+    position: relative;
     background: var(--raised);
     z-index: 2;
-    margin: -18px -18px 14px;
-    padding: 18px 18px 10px;
+    margin: 0;
+    padding: max(10px, env(safe-area-inset-top)) 18px 10px;
     border-bottom: 1px solid var(--border-subtle);
   }
   .modal-head h2 {
@@ -3208,7 +3244,7 @@ button.metric-card:hover {
   }
   .modal-head .iconbtn {
     position: absolute;
-    top: 14px;
+    top: max(10px, env(safe-area-inset-top));
     right: 14px;
   }
   .iconbtn {
@@ -7012,7 +7048,20 @@ function ConfirmDialog({
 Object.assign(window.__DS,{ConfirmDialog});
 })();
 ;(function(){
-/** Centered modal dialog with scrim. Editorial header, body, footer actions. */
+function useIsMobile(breakpoint = 900) {
+  const query = `(max-width: ${breakpoint}px)`;
+  const [mobile, setMobile] = React.useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  React.useEffect(() => {
+    const mq = window.matchMedia(query);
+    const sync = () => setMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [query]);
+  return mobile;
+}
+
+/** Centered modal dialog with scrim. Editorial header, scrollable body, footer actions. */
 function Dialog({
   open,
   onClose,
@@ -7023,13 +7072,19 @@ function Dialog({
   width = 480
 }) {
   const titleId = React.useId();
+  const mobile = useIsMobile();
   React.useEffect(() => {
     if (!open) return;
     const onKey = e => {
       if (e.key === 'Escape') onClose && onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open, onClose]);
   if (!open) return null;
   return /*#__PURE__*/React.createElement("div", {
@@ -7041,9 +7096,9 @@ function Dialog({
       backdropFilter: 'blur(5px) saturate(1.06)',
       WebkitBackdropFilter: 'blur(5px) saturate(1.06)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: mobile ? 'flex-end' : 'center',
       justifyContent: 'center',
-      padding: 24,
+      padding: mobile ? 0 : 24,
       zIndex: 1000,
       animation: 'km-fade var(--dur-enter) var(--ease-out)'
     }
@@ -7054,17 +7109,42 @@ function Dialog({
     "aria-labelledby": title ? titleId : undefined,
     style: {
       width: '100%',
-      maxWidth: width,
+      maxWidth: mobile ? 'none' : width,
+      maxHeight: mobile ? 'min(92dvh, calc(100dvh - env(safe-area-inset-top)))' : 'min(88dvh, calc(100dvh - 48px))',
       background: 'var(--surface-card)',
-      borderRadius: 'var(--radius-lg)',
+      borderRadius: mobile ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-lg)',
       boxShadow: 'var(--shadow-pop)',
       fontFamily: 'var(--font-sans)',
       overflow: 'hidden',
-      animation: 'km-pop var(--dur-panel) var(--ease-spring)'
+      display: 'flex',
+      flexDirection: 'column',
+      animation: 'km-pop var(--dur-panel) var(--ease-spring)',
+      marginTop: mobile ? 'auto' : 0
+    }
+  }, mobile && /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      width: 40,
+      height: 4,
+      borderRadius: 999,
+      background: 'var(--border-strong)',
+      margin: '8px auto 2px',
+      flex: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 'none',
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+      padding: mobile ? '10px 18px 0' : '20px 24px 0',
+      paddingTop: mobile ? 'max(10px, env(safe-area-inset-top))' : undefined
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '20px 24px 0'
+      minWidth: 0,
+      flex: 1
     }
   }, eyebrow && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -7080,27 +7160,53 @@ function Dialog({
     style: {
       margin: 0,
       fontFamily: 'var(--font-sans)',
-      fontSize: 'var(--fs-title-2)',
+      fontSize: mobile ? 22 : 'var(--fs-title-2)',
       fontWeight: 600,
       letterSpacing: '-0.01em',
       color: 'var(--text-strong)',
       lineHeight: 'var(--lh-title-2)'
     }
-  }, title)), /*#__PURE__*/React.createElement("div", {
+  }, title)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Close",
+    onClick: onClose,
     style: {
-      padding: '14px 24px 20px',
+      width: mobile ? 44 : 32,
+      height: mobile ? 44 : 32,
+      flex: 'none',
+      border: 'none',
+      background: 'var(--surface-sunken)',
+      borderRadius: 'var(--radius-sm)',
+      cursor: 'pointer',
+      color: 'var(--text-secondary)',
+      fontSize: mobile ? 24 : 18,
+      lineHeight: 1,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, "×")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: '1 1 auto',
+      minHeight: 0,
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      overscrollBehavior: 'contain',
+      padding: mobile ? '12px 18px 16px' : '14px 24px 20px',
       fontSize: 14,
       lineHeight: 1.55,
       color: 'var(--text-body)'
     }
   }, children), footer && /*#__PURE__*/React.createElement("div", {
     style: {
+      flex: 'none',
       display: 'flex',
       justifyContent: 'flex-end',
       gap: 10,
-      padding: '14px 24px',
+      padding: mobile ? '12px 18px calc(env(safe-area-inset-bottom) + 12px)' : '14px 24px',
       borderTop: '1px solid var(--border-subtle)',
-      background: 'var(--surface-sunken)'
+      background: 'var(--surface-sunken)',
+      flexWrap: 'wrap'
     }
   }, footer)));
 }
@@ -14225,7 +14331,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-10.27";
+  const WB_VERSION = "2026-07-11.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21023,7 +21129,8 @@ function SessionDialog({
     footer: /*#__PURE__*/React.createElement(Cluster, {
       gap: 2,
       style: {
-        flexWrap: 'wrap'
+        flexWrap: 'wrap',
+        width: '100%'
       }
     }, /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
@@ -21041,7 +21148,14 @@ function SessionDialog({
       variant: "ghost",
       size: "sm",
       onClick: () => runAction('dismiss')
-    }, "Dismiss"))
+    }, "Dismiss"), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: onClose,
+      style: {
+        marginLeft: 'auto'
+      }
+    }, "Close"))
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 4
   }, session.summary && /*#__PURE__*/React.createElement(Card, {
@@ -22087,6 +22201,11 @@ window.__WBReactRender = function () {
         (b.onclick = () => {
           const r = (state._recentSessions || [])[+b.dataset.sessionIdx];
           if (!r) return;
+          if (window.__WBOpenSession) {
+            closeModal();
+            window.__WBOpenSession(r);
+            return;
+          }
           modal(sessionTitle(r), sessionDetailHTML(r), "wide");
         }),
     );
@@ -23768,11 +23887,12 @@ window.__WBReactRender = function () {
       .replace(/`([^`]+)`/g, "<code>$1</code>")
       .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
       .replace(/_([^_]+)_/g, "<em>$1</em>")
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, href) =>
-        /^(https?:|mailto:|#|\/|\.)/i.test(href.trim())
-          ? `<a href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`
-          : label,
-      );
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, label, href) => {
+        const target = String(href || "").trim();
+        if (!/^(https?:|mailto:|#|\/|\.)/i.test(target)) return label;
+        const safeHref = esc(target).replace(/&amp;/g, "&");
+        return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      });
   }
   function openEditor(e = null) {
     const isNew = !e;
@@ -23875,11 +23995,17 @@ window.__WBReactRender = function () {
     closeModal();
     const d = document.createElement("div");
     d.className = "modal-scrim dyn";
-    d.innerHTML = `<div class="modal-card ${wide === "wide" ? "modal-wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="modal-head"><div><div class="kicker">Workbench detail</div><h2>${esc(title)}</h2></div><button class="iconbtn" data-close aria-label="Close">×</button></div>${body}</div>`;
+    const handle = isMobile() ? '<div class="modal-sheet-handle" aria-hidden="true"></div>' : "";
+    const mobileClose = isMobile()
+      ? '<div class="modal-foot"><button type="button" class="btn secondary modal-close-full" data-close>Close</button></div>'
+      : "";
+    d.innerHTML = `<div class="modal-card ${wide === "wide" ? "modal-wide" : ""}" role="dialog" aria-modal="true" aria-label="${esc(title)}">${handle}<div class="modal-head"><div><div class="kicker">Workbench detail</div><h2>${esc(title)}</h2></div><button type="button" class="iconbtn" data-close aria-label="Close">×</button></div><div class="modal-body">${body}</div>${mobileClose}</div>`;
     d.addEventListener("click", (e) => {
       if (e.target === d) closeModal();
     });
-    d.querySelector("[data-close]").onclick = closeModal;
+    d.querySelectorAll("[data-close]").forEach((btn) => {
+      btn.onclick = closeModal;
+    });
     document.body.appendChild(d);
     d.querySelector("button,input,textarea,select,a")?.focus();
   }
