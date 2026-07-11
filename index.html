@@ -14225,7 +14225,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.20";
+  const WB_VERSION = "2026-07-11.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14263,6 +14263,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   const GH_TOKEN_KEY = "workbench-gh-token";
   const GH_TREE_KEY = "workbench-gh-tree-cache";
   const GH_TREE_TTL = 10 * 60 * 1000;
+  const LIVE_ACTION_POLL_MS = 30 * 1000;
+  let liveActionPollTimer = null;
+  let liveActionPollBusy = false;
   const BRAND_ASSETS = {
     anthropic: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQ4IiBoZWlnaHQ9IjI0OCIgdmlld0JveD0iMCAwIDI0OCAyNDgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik01Mi40Mjg1IDE2Mi44NzNMOTguNzg0NCAxMzYuODc5TDk5LjU0ODUgMTM0LjYwMkw5OC43ODQ0IDEzMy4zMzRIOTYuNDkyMUw4OC43MjM3IDEzMi44NjJMNjIuMjM0NiAxMzIuMTUzTDM5LjMxMTMgMTMxLjIwN0wxNy4wMjQ5IDEzMC4wMjZMMTEuNDIxNCAxMjguODQ0TDYuMiAxMjEuODczTDYuNzA5NCAxMTguNDQ3TDExLjQyMTQgMTE1LjI1N0wxOC4xNzEgMTE1Ljg0N0wzMy4wNzExIDExNi45MTFMNTUuNDg1IDExOC40NDdMNzEuNjU4NiAxMTkuMzkyTDk1LjcyOCAxMjEuODczSDk5LjU0ODVMMTAwLjA1OCAxMjAuMzM3TDk4Ljc4NDQgMTE5LjM5Mkw5Ny43NjU2IDExOC40NDdMNzQuNTg3NyAxMDIuNzMyTDQ5LjQ5OTUgODYuMTkwNUwzNi4zODIzIDc2LjYyTDI5LjM3NzkgNzEuNzc1N0wyNS44MTIxIDY3LjI4NThMMjQuMjgzOSA1Ny4zNjA4TDMwLjY1MTUgNTAuMjcxNkwzOS4zMTEzIDUwLjg2MjNMNDEuNDc2MyA1MS40NTMxTDUwLjI2MzYgNTguMTg3OUw2OC45ODQyIDcyLjcyMDlMOTMuNDM1NyA5MC42ODA0TDk3LjAwMTUgOTMuNjM0M0w5OC40Mzc0IDkyLjY2NTJMOTguNjU3MSA5MS45ODAxTDk3LjAwMTUgODkuMjYyNUw4My43NTcgNjUuMjc3Mkw2OS42MjEgNDAuODE5Mkw2My4yNTM0IDMwLjY1NzlMNjEuNTk3OCAyNC42MzJDNjAuOTU2NSAyMi4xMDMyIDYwLjU3OSAyMC4wMTExIDYwLjU3OSAxNy40MjQ2TDY3LjgzODEgNy40OTk2NUw3MS45MTMzIDYuMTk5OTVMODEuNzE5MyA3LjQ5OTY1TDg1Ljc5NDYgMTEuMDQ0M0w5MS45MDc0IDI0Ljk4NjVMMTAxLjcxNCA0Ni44NDUxTDExNi45OTYgNzYuNjJMMTIxLjQ1MyA4NS40ODE2TDEyMy44NzMgOTMuNjM0M0wxMjQuNzY0IDk2LjExNTVIMTI2LjI5MlY5NC42OTc2TDEyNy41NjYgNzcuOTE5N0wxMjkuODU4IDU3LjM2MDhMMTMyLjE1IDMwLjg5NDJMMTMyLjkxNSAyMy40NTA1TDEzNi42MDggMTQuNDcwOEwxNDMuOTk0IDkuNjI2NDNMMTQ5LjcyNSAxMi4zNDRMMTU0LjQzNyAxOS4wNzg4TDE1My44IDIzLjQ1MDVMMTUwLjk5OCA0MS42NDYzTDE0NS41MjIgNzAuMTIxNUwxNDEuOTU3IDg5LjI2MjVIMTQzLjk5NEwxNDYuNDE0IDg2Ljc4MTNMMTU2LjA5MyA3NC4wMjA2TDE3Mi4yNjYgNTMuNjk4TDE3OS4zOTggNDUuNjYzNUwxODcuODAzIDM2LjgwMkwxOTMuMTUyIDMyLjU0ODRIMjAzLjM0TDIxMC43MjYgNDMuNjU0OUwyMDcuNDE1IDU1LjExNTlMMTk2Ljk3MiA2OC4zNDkyTDE4OC4zMTIgNzkuNTczOUwxNzUuODk2IDk2LjIwOTVMMTY4LjE5MSAxMDkuNTg1TDE2OC44ODIgMTEwLjY4OUwxNzAuNzM4IDExMC41M0wxOTguNzU1IDEwNC41MDRMMjEzLjkxIDEwMS43ODdMMjMxLjk5NCA5OC43MTQ5TDI0MC4xNDQgMTAyLjQ5NkwyNDEuMDM2IDEwNi4zOTVMMjM3Ljg1MiAxMTQuMzExTDIxOC40OTUgMTE5LjAzN0wxOTUuODI2IDEyMy42NDVMMTYyLjA3IDEzMS41OTJMMTYxLjY5NiAxMzEuODkzTDE2Mi4xMzcgMTMyLjU0N0wxNzcuMzYgMTMzLjkyNUwxODMuODU1IDEzNC4yNzlIMTk5Ljc3NEwyMjkuNDQ3IDEzNi41MjRMMjM3LjIxNSAxNDEuNjA1TDI0MS44IDE0Ny44NjdMMjQxLjAzNiAxNTIuNzExTDIyOS4wNjUgMTU4LjczN0wyMTMuMDE5IDE1NC45NTZMMTc1LjQ1IDE0NS45NzdMMTYyLjU4NyAxNDIuNzg3SDE2MC44MDVWMTQzLjg1TDE3MS41MDIgMTU0LjM2NkwxOTEuMjQyIDE3Mi4wODlMMjE1LjgyIDE5NS4wMTFMMjE3LjA5NCAyMDAuNjgyTDIxMy45MSAyMDUuMTcyTDIxMC41OTkgMjA0LjY5OUwxODguOTQ5IDE4OC4zOTRMMTgwLjU0NCAxODEuMDY5TDE2MS42OTYgMTY1LjExOEgxNjAuNDIyVjE2Ni43NzJMMTY0Ljc1MiAxNzMuMTUyTDE4Ny44MDMgMjA3Ljc3MUwxODguOTQ5IDIxOC40MDVMMTg3LjI5NCAyMjEuODMyTDE4MS4zMDggMjIzLjk1OUwxNzQuODEzIDIyMi43NzdMMTYxLjE4NyAyMDMuNzU0TDE0Ny4zMDUgMTgyLjQ4NkwxMzYuMDk4IDE2My4zNDVMMTM0Ljc0NSAxNjQuMkwxMjguMDc1IDIzNS40MkwxMjUuMDE5IDIzOS4wODJMMTE3Ljg4NyAyNDEuOEwxMTEuOTAyIDIzNy4zMUwxMDguNzE4IDIyOS45ODRMMTExLjkwMiAyMTUuNDUyTDExNS43MjIgMTk2LjU0N0wxMTguNzc5IDE4MS41NDFMMTIxLjU4IDE2Mi44NzNMMTIzLjI5MSAxNTYuNjM2TDEyMy4xNCAxNTYuMjE5TDEyMS43NzMgMTU2LjQ0OUwxMDcuNjk5IDE3NS43NTJMODYuMzA0IDIwNC42OTlMNjkuMzY2MyAyMjIuNzc3TDY1LjI5MSAyMjQuNDMxTDU4LjI4NjcgMjIwLjc2OEw1OC45MjM1IDIxNC4yN0w2Mi44NzEzIDIwOC40OEw4Ni4zMDQgMTc4LjcwNUwxMDAuNDQgMTYwLjE1NUwxMDkuNTUxIDE0OS41MDdMMTA5LjQ2MiAxNDcuOTY3TDEwOC45NTkgMTQ3LjkyNEw0Ni42OTc3IDE4OC41MTJMMzUuNjE4MiAxODkuOTNMMzAuNzc4OCAxODUuNDRMMzEuNDE1NiAxNzguMTE1TDMzLjcwNzkgMTc1Ljc1Mkw1Mi40Mjg1IDE2Mi44NzNaIiBmaWxsPSIjRDk3NzU3Ii8+Cjwvc3ZnPgo=",
     cursor: "data:image/svg+xml;base64,PHN2ZyBmaWxsPSJjdXJyZW50Q29sb3IiIGZpbGwtcnVsZT0iZXZlbm9kZCIgaGVpZ2h0PSIxZW0iIHN0eWxlPSJmbGV4Om5vbmU7bGluZS1oZWlnaHQ6MSIgdmlld0JveD0iMCAwIDI0IDI0IiB3aWR0aD0iMWVtIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0aXRsZT5DdXJzb3I8L3RpdGxlPjxwYXRoIGQ9Ik0yMi4xMDYgNS42OEwxMi41LjEzNWEuOTk4Ljk5OCAwIDAwLS45OTggMEwxLjg5MyA1LjY4YS44NC44NCAwIDAwLS40MTkuNzI2djExLjE4NmMwIC4zLjE2LjU3Ny40Mi43MjdsOS42MDcgNS41NDdhLjk5OS45OTkgMCAwMC45OTggMGw5LjYwOC01LjU0N2EuODQuODQgMCAwMC40Mi0uNzI3VjYuNDA3YS44NC44NCAwIDAwLS40Mi0uNzI2em0tLjYwMyAxLjE3NkwxMi4yMjggMjIuOTJjLS4wNjMuMTA4LS4yMjguMDY0LS4yMjgtLjA2MVYxMi4zNGEuNTkuNTkgMCAwMC0uMjk1LS41MWwtOS4xMS01LjI2Yy0uMTA3LS4wNjItLjA2My0uMjI4LjA2Mi0uMjI4aDE4LjU1Yy4yNjQgMCAuNDI4LjI4Ni4yOTYuNTE0eiI+PC9wYXRoPjwvc3ZnPg==",
@@ -14899,6 +14902,39 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           Number(a.requested_at || a.completed_at || 0),
       )
       .slice(0, Math.max(0, limit));
+  }
+  function liveActionsNeedPoll() {
+    const pendingOutbox =
+      Number(state.actionOutboxSummary?.pending || 0) +
+      Number(state.actionOutboxSummary?.submitting || 0);
+    if (pendingOutbox > 0) return true;
+    return (state.liveActionRows || []).some((row) => {
+      const status = String(row.status || row.outboxState || "").toLowerCase();
+      return status === "queued" || status === "running" || status === "submitting";
+    });
+  }
+  function syncLiveActionPollTimer() {
+    if (liveActionPollTimer) {
+      clearInterval(liveActionPollTimer);
+      liveActionPollTimer = null;
+    }
+    if (state.backend !== "github" || !state.connected) return;
+    if (!liveActionsNeedPoll()) return;
+    liveActionPollTimer = setInterval(() => {
+      refreshLiveActionsFromGit(true).catch(() => null);
+    }, LIVE_ACTION_POLL_MS);
+  }
+  async function refreshLiveActionsFromGit(forceTree = false) {
+    if (liveActionPollBusy || state.backend !== "github" || !state.connected) return;
+    liveActionPollBusy = true;
+    try {
+      await ghGetTree(forceTree);
+      await loadLiveActions();
+      if (state.connected) render();
+      syncLiveActionPollTimer();
+    } finally {
+      liveActionPollBusy = false;
+    }
   }
   async function walkWorkbenchLiveActionPaths(onPath) {
     const re = /^tools\/workbench-live\/(requests|results)\/[^/]+\/[^/]+\.json$/;
@@ -16215,6 +16251,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     if (state.backend !== "github") await ensureSkillCatalog();
     render();
     renderStatusRail();
+    syncLiveActionPollTimer();
   }
   async function loadJson(path, meta = {}) {
     const source = meta.source || dataHealthSourceKey("json.load", path);
@@ -22823,6 +22860,7 @@ window.__WBReactRender = function () {
       await drainActionOutbox({ limit: 1 });
     }
     await loadLiveActions();
+    syncLiveActionPollTimer();
     if (state.connected) render();
     return record;
   }
@@ -24131,6 +24169,11 @@ window.__WBReactRender = function () {
     $("#paletteBtn")?.addEventListener("click", openPalette);
     $("#mobilePalette")?.addEventListener("click", openPalette);
     $("#mobileReload")?.addEventListener("click", doReload);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && liveActionsNeedPoll()) {
+        refreshLiveActionsFromGit(true).catch(() => null);
+      }
+    });
     $("#mobileCapture")?.addEventListener("click", openCapture);
     $("#syncBtn").onclick = async () => {
       if (state.backend === "github")
