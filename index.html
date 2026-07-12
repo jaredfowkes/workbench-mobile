@@ -7103,7 +7103,20 @@ function ConfirmDialog({
 Object.assign(window.__DS,{ConfirmDialog});
 })();
 ;(function(){
-/** Centered modal dialog with scrim. Editorial header, body, footer actions. */
+function useIsMobile(breakpoint = 900) {
+  const query = `(max-width: ${breakpoint}px)`;
+  const [mobile, setMobile] = React.useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches);
+  React.useEffect(() => {
+    const mq = window.matchMedia(query);
+    const sync = () => setMobile(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [query]);
+  return mobile;
+}
+
+/** Centered modal dialog with scrim. Editorial header, scrollable body, footer actions. */
 function Dialog({
   open,
   onClose,
@@ -7114,13 +7127,19 @@ function Dialog({
   width = 480
 }) {
   const titleId = React.useId();
+  const mobile = useIsMobile();
   React.useEffect(() => {
     if (!open) return;
     const onKey = e => {
       if (e.key === 'Escape') onClose && onClose();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
   }, [open, onClose]);
   if (!open) return null;
   return /*#__PURE__*/React.createElement("div", {
@@ -7132,9 +7151,9 @@ function Dialog({
       backdropFilter: 'blur(5px) saturate(1.06)',
       WebkitBackdropFilter: 'blur(5px) saturate(1.06)',
       display: 'flex',
-      alignItems: 'center',
+      alignItems: mobile ? 'flex-end' : 'center',
       justifyContent: 'center',
-      padding: 24,
+      padding: mobile ? 0 : 24,
       zIndex: 1000,
       animation: 'km-fade var(--dur-enter) var(--ease-out)'
     }
@@ -7145,17 +7164,42 @@ function Dialog({
     "aria-labelledby": title ? titleId : undefined,
     style: {
       width: '100%',
-      maxWidth: width,
+      maxWidth: mobile ? 'none' : width,
+      maxHeight: mobile ? 'min(92dvh, calc(100dvh - env(safe-area-inset-top)))' : 'min(88dvh, calc(100dvh - 48px))',
       background: 'var(--surface-card)',
-      borderRadius: 'var(--radius-lg)',
+      borderRadius: mobile ? 'var(--radius-xl) var(--radius-xl) 0 0' : 'var(--radius-lg)',
       boxShadow: 'var(--shadow-pop)',
       fontFamily: 'var(--font-sans)',
       overflow: 'hidden',
-      animation: 'km-pop var(--dur-panel) var(--ease-spring)'
+      display: 'flex',
+      flexDirection: 'column',
+      animation: 'km-pop var(--dur-panel) var(--ease-spring)',
+      marginTop: mobile ? 'auto' : 0
+    }
+  }, mobile && /*#__PURE__*/React.createElement("div", {
+    "aria-hidden": true,
+    style: {
+      width: 40,
+      height: 4,
+      borderRadius: 999,
+      background: 'var(--border-strong)',
+      margin: '8px auto 2px',
+      flex: 'none'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 'none',
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+      padding: mobile ? '10px 18px 0' : '20px 24px 0',
+      paddingTop: mobile ? 'max(10px, env(safe-area-inset-top))' : undefined
     }
   }, /*#__PURE__*/React.createElement("div", {
     style: {
-      padding: '20px 24px 0'
+      minWidth: 0,
+      flex: 1
     }
   }, eyebrow && /*#__PURE__*/React.createElement("div", {
     style: {
@@ -7171,27 +7215,53 @@ function Dialog({
     style: {
       margin: 0,
       fontFamily: 'var(--font-sans)',
-      fontSize: 'var(--fs-title-2)',
+      fontSize: mobile ? 22 : 'var(--fs-title-2)',
       fontWeight: 600,
       letterSpacing: '-0.01em',
       color: 'var(--text-strong)',
       lineHeight: 'var(--lh-title-2)'
     }
-  }, title)), /*#__PURE__*/React.createElement("div", {
+  }, title)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-label": "Close",
+    onClick: onClose,
     style: {
-      padding: '14px 24px 20px',
+      width: mobile ? 44 : 32,
+      height: mobile ? 44 : 32,
+      flex: 'none',
+      border: 'none',
+      background: 'var(--surface-sunken)',
+      borderRadius: 'var(--radius-sm)',
+      cursor: 'pointer',
+      color: 'var(--text-secondary)',
+      fontSize: mobile ? 24 : 18,
+      lineHeight: 1,
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }
+  }, "×")), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: '1 1 auto',
+      minHeight: 0,
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
+      overscrollBehavior: 'contain',
+      padding: mobile ? '12px 18px 16px' : '14px 24px 20px',
       fontSize: 14,
       lineHeight: 1.55,
       color: 'var(--text-body)'
     }
   }, children), footer && /*#__PURE__*/React.createElement("div", {
     style: {
+      flex: 'none',
       display: 'flex',
       justifyContent: 'flex-end',
       gap: 10,
-      padding: '14px 24px',
+      padding: mobile ? '12px 18px calc(env(safe-area-inset-bottom) + 12px)' : '14px 24px',
       borderTop: '1px solid var(--border-subtle)',
-      background: 'var(--surface-sunken)'
+      background: 'var(--surface-sunken)',
+      flexWrap: 'wrap'
     }
   }, footer)));
 }
@@ -14378,7 +14448,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.30";
+  const WB_VERSION = "2026-07-11.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -20234,7 +20304,28 @@ function MachinesView() {
   }))) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No live sessions",
     description: "Active beacons will appear here with attention sorting and todo snapshots when available."
-  }))), /*#__PURE__*/React.createElement(Card, {
+  }))), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    title: "Machines"
+  }, /*#__PURE__*/React.createElement(List, null, machineStatusRows().map(r => /*#__PURE__*/React.createElement(ListItem, {
+    key: r.key,
+    title: r.name,
+    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' · longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' · helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' · Live ' + (r.liveDataSource || 'Git fallback') : ''),
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: r.state === 'active' ? 'favorable' : r.state === 'idle' ? 'warning' : 'unfavorable'
+    }, r.state)
+  })))), /*#__PURE__*/React.createElement(Card, {
+    title: "Sync"
+  }, /*#__PURE__*/React.createElement(List, null, syncItems().map(i => /*#__PURE__*/React.createElement(ListItem, {
+    key: i.label,
+    title: i.label,
+    description: i.value,
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: i.state === 'ok' ? 'favorable' : i.state === 'bad' ? 'unfavorable' : 'warning'
+    }, i.state)
+  }))))), /*#__PURE__*/React.createElement(Card, {
     title: "Action queue",
     action: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
@@ -20291,28 +20382,7 @@ function MachinesView() {
   }))) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No recent actions",
     description: "Request a refresh to verify the local action queue end-to-end."
-  }))), /*#__PURE__*/React.createElement(Grid, {
-    cols: 2,
-    gap: 4
-  }, /*#__PURE__*/React.createElement(Card, {
-    title: "Machines"
-  }, /*#__PURE__*/React.createElement(List, null, machineStatusRows().map(r => /*#__PURE__*/React.createElement(ListItem, {
-    key: r.key,
-    title: r.name,
-    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' · longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' · helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' · Live ' + (r.liveDataSource || 'Git fallback') : ''),
-    trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: r.state === 'active' ? 'favorable' : r.state === 'idle' ? 'warning' : 'unfavorable'
-    }, r.state)
-  })))), /*#__PURE__*/React.createElement(Card, {
-    title: "Sync"
-  }, /*#__PURE__*/React.createElement(List, null, syncItems().map(i => /*#__PURE__*/React.createElement(ListItem, {
-    key: i.label,
-    title: i.label,
-    description: i.value,
-    trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: i.state === 'ok' ? 'favorable' : i.state === 'bad' ? 'unfavorable' : 'warning'
-    }, i.state)
-  }))))), /*#__PURE__*/React.createElement(Card, {
+  }))), /*#__PURE__*/React.createElement(Card, {
     title: "Structured data health",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: warning ? 'warning' : 'favorable'
