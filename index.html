@@ -14452,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.32";
+  const WB_VERSION = "2026-07-11.33";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15004,6 +15004,19 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   function loadJsonValue(value, key, defaults = {}) {
     if (value == null) {
+      if (defaults.optional) {
+        setDataHealth(key, {
+          source: key,
+          label: defaults.label || dataHealthLabelFromPath(defaults.path || key),
+          path: defaults.path || "",
+          status: "ok",
+          message:
+            defaults.missingMessage ||
+            "Optional source not present; using defaults.",
+          coverage: { expected: 0, ok: 0 },
+        });
+        return defaults.defaultValue ?? null;
+      }
       setDataHealth(key, {
         source: key,
         label: defaults.label || dataHealthLabelFromPath(defaults.path || key),
@@ -16573,6 +16586,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           label: "Dashboard state",
           path: "tools/dashboard-state.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
+          optional: true,
+          defaultValue: { snoozed: {} },
+          missingMessage: "No snooze map yet; using empty defaults.",
         });
         state.dashboardState = dashboardState || state.dashboardState;
       }),
