@@ -14452,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.33";
+  const WB_VERSION = "2026-07-11.34";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15666,17 +15666,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     ghTreeShas = {};
     for (const b of blobs) ghTreeShas[b.path] = b.sha;
     ghTreeCacheAt = Date.now();
-    localStorage.setItem(
-      GH_TREE_KEY,
-      JSON.stringify({
-        owner: cfg.owner,
-        repo: cfg.repo,
-        branch: cfg.branch,
-        at: ghTreeCacheAt,
-        tree,
-        shas: ghTreeShas,
-      }),
-    );
+    try {
+      localStorage.setItem(
+        GH_TREE_KEY,
+        JSON.stringify({
+          owner: cfg.owner,
+          repo: cfg.repo,
+          branch: cfg.branch,
+          at: ghTreeCacheAt,
+          tree,
+          shas: ghTreeShas,
+        }),
+      );
+    } catch {
+      // QuotaExceeded or private-mode limits must not abort a successful tree fetch.
+      localStorage.removeItem(GH_TREE_KEY);
+    }
     return tree;
   }
   // Keep the cached tree warm across our own writes instead of nuking it (which
@@ -16419,6 +16424,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     );
     await Promise.allSettled(state.projects.map(enrichProject));
     state.connected = true;
+    clearAutoconnectShell();
     updateShellForBackend();
     $("#landing").classList.add("hidden");
     $("#app").classList.remove("hidden");
@@ -18058,6 +18064,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const boot = $("#wbBootStatus");
     if (boot) boot.textContent = msg;
   }
+  function clearAutoconnectShell() {
+    document.documentElement.classList.remove("wb-autoconnect");
+  }
   function dismissBootOverlay() {
     document.documentElement.classList.remove("wb-booting");
     const overlay = $("#wbBootOverlay");
@@ -18073,6 +18082,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     $("#app")?.classList.remove("hidden");
     const view = $("#view");
     if (view) view.innerHTML = "";
+  }
+  function showBootFailure(msg) {
+    dismissBootOverlay();
+    clearAutoconnectShell();
+    const app = $("#app");
+    if (app) {
+      app.classList.remove("hidden");
+      app.innerHTML = `<section class="page" style="padding:32px 24px 72px;max-width:520px;margin:0 auto"><div class="card"><h2 style="margin:0 0 10px">Could not load Workbench</h2><p class="muted" style="margin:0 0 16px">${esc(msg || "GitHub connect failed.")}</p><div class="action-tools" style="flex-wrap:wrap"><button type="button" class="btn primary" id="wbBootRetry">Try again</button><button type="button" class="btn" id="wbBootReconnect">Reconnect GitHub</button><button type="button" class="btn tertiary" id="wbBootReset">Clear cached tree</button></div></section>`;
+      $("#wbBootRetry")?.addEventListener("click", () => {
+        sessionStorage.setItem("wb-force-tree", "1");
+        location.reload();
+      });
+      $("#wbBootReconnect")?.addEventListener("click", () => openGithubConnect());
+      $("#wbBootReset")?.addEventListener("click", () => doReset());
+    }
+    $("#landing")?.classList.add("hidden");
   }
   function updateBootProgress(text) {
     setBootMessage(text);
@@ -18855,11 +18880,18 @@ function sessionRowsFiltered() {
   if (!q) return rows;
   return rows.filter(r => [sessionHeadline(r), r.approvedTitle, r.initialPromptTitle, r.latestPrompt, r.summary, r.titleSource, r.session_uid, r.session_short, r.summary, r.machine, backendLane(r), normalizeModel(r.model), normalizeEditor(r), normalizeHarness(r.harness || r.ide), sessionProjectsText(r), sessionFiles(r).join(' '), r.cwd, r.session, r.sessionFull].join(' ').toLowerCase().includes(q));
 }
+function isMobileSiteHost() {
+  try {
+    return /(^|\.)jaredfowkes\.github\.io$/i.test(location.hostname) && /\/workbench-mobile\/?/i.test(location.pathname);
+  } catch {
+    return false;
+  }
+}
 function useViewport() {
-  const [mobile, setMobile] = React.useState(() => matchMedia('(max-width: 900px)').matches);
+  const [mobile, setMobile] = React.useState(() => isMobileSiteHost() || matchMedia('(max-width: 900px)').matches);
   React.useEffect(() => {
     const mq = matchMedia('(max-width: 900px)');
-    const fn = () => setMobile(mq.matches);
+    const fn = () => setMobile(isMobileSiteHost() || mq.matches);
     mq.addEventListener ? mq.addEventListener('change', fn) : mq.addListener(fn);
     return () => mq.removeEventListener ? mq.removeEventListener('change', fn) : mq.removeListener(fn);
   }, []);
@@ -21569,6 +21601,13 @@ window.__WBReactRender = function () {
 };
   }
 
+  function renderReactDashboard() {
+    installActualControlsRenderer();
+    if (!window.__WBReactRender) {
+      throw new Error("Dashboard UI bundle did not load.");
+    }
+    window.__WBReactRender();
+  }
   function render() {
     if (!state.connected) return;
     render._lastView = state.view;
@@ -21579,20 +21618,27 @@ window.__WBReactRender = function () {
         requestAnimationFrame(() => dismissBootOverlay());
       });
     };
+    const failRender = (e) => {
+      showBootFailure(
+        e?.message ||
+          "The dashboard UI failed to render. Clear cached tree or reconnect GitHub.",
+      );
+    };
     if (window.__DS && window.__DS.Button) {
-      installActualControlsRenderer();
-      window.__WBReactRender && window.__WBReactRender();
-      finishBoot();
+      try {
+        renderReactDashboard();
+        finishBoot();
+      } catch (e) {
+        failRender(e);
+      }
       return;
     }
     (window.WBDashboardDS?.load?.() || Promise.reject(new Error("KnowsMore controls failed to load")))
       .then(() => {
-        installActualControlsRenderer();
-        window.__WBReactRender && window.__WBReactRender();
+        renderReactDashboard();
       })
       .catch((e) => {
-        const app = $("#app");
-        if (app) app.innerHTML = `<div style="padding:32px;font-family:system-ui;color:#8D4128">KnowsMore control runtime failed: ${esc(e.message || e)}</div>`;
+        failRender(e);
       })
       .finally(finishBoot);
   }
@@ -24553,6 +24599,7 @@ window.__WBReactRender = function () {
     // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
     await ghGetTree(!!opts.forceTree);
+    updateBootProgress("Loading projects…");
     await scan();
   }
   function updateShellForBackend() {
@@ -24580,18 +24627,26 @@ window.__WBReactRender = function () {
     } catch (e) {
       if (e.status === 401 || e.status === 403) {
         ghDisconnect();
+        clearAutoconnectShell();
         showLanding("Saved GitHub token was rejected. Reconnect below.");
         return;
       }
       if (attempt >= 4) {
-        showLanding("Could not reach GitHub. Check connection or reconnect.");
+        showBootFailure(
+          e?.message ||
+            "Could not reach GitHub after several tries. Reconnect or clear the cached tree.",
+        );
         return;
       }
+      setBootMessage(
+        `Retrying GitHub connect (${attempt}/3)… ${displayText(e?.message || "network error", 72)}`,
+      );
       setTimeout(() => autoGithub(cfg, attempt + 1), attempt * 1200);
     }
   }
   function showLanding(msg) {
     dismissBootOverlay();
+    clearAutoconnectShell();
     msg ||=
       "Choose the workbench folder itself — /Users/jaredfowkes/Documents/GitHub/workbench — not a project or files subfolder.";
     $("#landing").classList.remove("hidden");
