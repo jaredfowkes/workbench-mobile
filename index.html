@@ -14452,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.34";
+  const WB_VERSION = "2026-07-12.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14619,6 +14619,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     mobileSourceVersion: null,
     mobileSync: null,
     ccrUsage: null,
+    azureBilling: null,
     efficiencyTipsFile: null,
     modelPricing: null,
     helperUp: false,
@@ -16552,6 +16553,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
         if (next) state.ccrUsage = next;
+      }),
+      loadJson("tools/azure-billing.json", {
+        source: "hydrate.azure-billing",
+        label: "Azure billing snapshot",
+      }).then((v) => {
+        const next = loadJsonValue(v, "hydrate.azure-billing", {
+          label: "Azure billing snapshot",
+          path: "tools/azure-billing.json",
+          staleAfterMs: 24 * 60 * 60 * 1000,
+        });
+        if (next) state.azureBilling = next;
       }),
       loadJson("tools/efficiency-tips.json", {
         source: "hydrate.efficiency-tips",
@@ -20018,6 +20030,27 @@ function UsageEfficiencyPanel({
     style: muted
   }, "No data-backed efficiency warnings right now."));
 }
+function AzureFoundryPanel() {
+  const b = state.azureBilling;
+  if (!b || b.error || b.spend == null) return null;
+  const rows = usageRows(state.sessionMetrics && state.sessionMetrics.sessions || []);
+  const est = (state.usageWindow || 'month') === 'month' ? ccrEstimatedSpend(rows) || null : null;
+  const actual = Number(b.spend);
+  let compare = '';
+  if (est != null && est > 0) {
+    const delta = est - actual;
+    compare = Math.abs(delta) >= 0.5 ? ` · estimates ${fmtCostMaybe(est)} (${delta > 0 ? 'over' : 'under'} by ${fmtCostMaybe(Math.abs(delta))})` : ` · estimates ${fmtCostMaybe(est)}`;
+  }
+  const period = azureBillingPeriodLabel();
+  const byModel = b.byModel && typeof b.byModel === 'object' ? b.byModel : null;
+  const modelBits = byModel ? Object.entries(byModel).sort((a, c) => Number(c[1]?.spend || 0) - Number(a[1]?.spend || 0)).slice(0, 4).map(([label, v]) => `${label} ${fmtCostMaybe(v?.spend)}`).join(' · ') : '';
+  return /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Azure Foundry monthly spend (actual)",
+    title: fmtCostMaybe(actual)
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, ageLabel(b.updated), period ? ` · ${period}` : '', compare, modelBits ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), modelBits) : null));
+}
 function UsageView() {
   const allRows = (state.sessionMetrics && state.sessionMetrics.sessions || []).filter(Boolean);
   const rows = usageRows(allRows);
@@ -20086,7 +20119,7 @@ function UsageView() {
     laneClass: "cursor"
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` · resets ${state.cursorUsage.resetLabel}` : '')), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
+  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` · resets ${state.cursorUsage.resetLabel}` : '')), /*#__PURE__*/React.createElement(AzureFoundryPanel, null), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Local lane savings",
     title: fmtCostMaybe(savedLocal)
   }, /*#__PURE__*/React.createElement("p", {
@@ -20097,7 +20130,7 @@ function UsageView() {
     title: "What this means"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. CCR (gpt-5.5 / gpt-5.3-codex) sessions are estimated from model pricing when no router billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show green savings (estimated avoided cloud spend).", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
+  }, "Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management when az login is configured; CCR (gpt-5.5 / gpt-5.3-codex) session rows remain token-based estimates from model-pricing.json. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. On-device local sessions run at $0; their tokens count toward volume and show green savings (estimated avoided cloud spend).", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(UsageMixCard, {
@@ -22493,7 +22526,7 @@ window.__WBReactRender = function () {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. CCR (gpt-5.5 / gpt-5.3-codex) sessions are estimated from model pricing when no router billing total is saved. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management when <code>az login</code> is configured; CCR (gpt-5.5 / gpt-5.3-codex) session rows remain token-based estimates from <code>model-pricing.json</code>. The selected time frame applies to session-based boxes. Token counts come from session records or the one-time historical backfill. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span> (estimated avoided cloud spend).${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(normalizeModel(r.model))}</span><span data-label="Tokens">${esc(fmtTokens(r.totalTokens || 0))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -22622,6 +22655,44 @@ window.__WBReactRender = function () {
         }),
     );
   }
+  function azureBillingPeriodLabel() {
+    const b = state.azureBilling;
+    if (!b?.periodStart || !b?.periodEnd) return null;
+    return `${b.periodStart} → ${b.periodEnd}`;
+  }
+  function ccrEstimatedSpend(rows) {
+    const ccr = rows.filter(
+      (r) => !isLocalRow(r) && normalizeBackend(r.backend) === "CCR",
+    );
+    return costSum(ccr) || 0;
+  }
+  function azureFoundryBillingCard() {
+    const b = state.azureBilling;
+    if (!b || b.error || b.spend == null) return "";
+    const est =
+      (state.usageWindow || "month") === "month"
+        ? ccrEstimatedSpend(currentUsageRows())
+        : null;
+    const actual = Number(b.spend);
+    let compare = "";
+    if (est != null && est > 0) {
+      const delta = est - actual;
+      compare =
+        Math.abs(delta) >= 0.5
+          ? ` · estimates ${fmtCostMaybe(est)} (${delta > 0 ? "over" : "under"} by ${fmtCostMaybe(Math.abs(delta))})`
+          : ` · estimates ${fmtCostMaybe(est)}`;
+    }
+    const period = azureBillingPeriodLabel();
+    const byModel = b.byModel && typeof b.byModel === "object" ? b.byModel : null;
+    const modelBits = byModel
+      ? Object.entries(byModel)
+          .sort((a, c) => Number(c[1]?.spend || 0) - Number(a[1]?.spend || 0))
+          .slice(0, 4)
+          .map(([label, v]) => `${label} ${fmtCostMaybe(v?.spend)}`)
+          .join(" · ")
+      : "";
+    return `<div class="usage-card"><div class="tiny">Azure Foundry monthly spend (actual)</div><div class="usage-big">${fmtCostMaybe(actual)}</div><p class="muted">${esc(ageLabel(b.updated))}${period ? ` · ${esc(period)}` : ""}${compare}${modelBits ? `<br>${esc(modelBits)}` : ""}</p></div>`;
+  }
   function laneCompareRows(rows) {
     const anthropic = rows.filter(
       (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
@@ -22738,6 +22809,24 @@ window.__WBReactRender = function () {
         .slice()
         .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0))[0];
       top.snapshotNote = `router-log snapshot: ${fmtCostMaybe(snapCost)} (${fmtTokens(snapInput + snapOutput)} tokens) across CCR models since the scraper last reset - a different source, not filtered by time frame`;
+    }
+    if (
+      state.azureBilling?.spend != null &&
+      !state.azureBilling?.error &&
+      (state.usageWindow || "month") === "month" &&
+      ccrRows.length
+    ) {
+      const est = ccrRows.reduce((a, r) => a + Number(r.cost || 0), 0);
+      const actual = Number(state.azureBilling.spend);
+      const delta = est - actual;
+      const period = azureBillingPeriodLabel();
+      const top = ccrRows
+        .slice()
+        .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0))[0];
+      const azureNote = `Azure Cost Management (actual): ${fmtCostMaybe(actual)}${period ? ` (${period})` : ""} — CCR session costs above are estimates (${fmtCostMaybe(est)}${Math.abs(delta) >= 0.5 ? `, ${delta > 0 ? "over" : "under"} by ${fmtCostMaybe(Math.abs(delta))}` : ""})`;
+      top.snapshotNote = top.snapshotNote
+        ? `${top.snapshotNote} ${azureNote}`
+        : azureNote;
     }
     const cursorRow = mk("Cursor", cursor);
     if (state.cursorUsage?.spend != null) {
