@@ -1054,9 +1054,11 @@ code {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
   background: var(--canvas);
   transition: opacity 280ms var(--ease), visibility 280ms var(--ease);
 }
@@ -2889,14 +2891,16 @@ button.metric-card:hover {
 }
 .btn.loading,
 .iconbtn.loading,
-[aria-busy="true"] {
+.btn[aria-busy="true"],
+.iconbtn[aria-busy="true"] {
   position: relative;
   color: transparent !important;
   pointer-events: none;
 }
 .btn.loading::after,
 .iconbtn.loading::after,
-[aria-busy="true"]::after {
+.btn[aria-busy="true"]::after,
+.iconbtn[aria-busy="true"]::after {
   content: "";
   position: absolute;
   width: 14px;
@@ -14448,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.31";
+  const WB_VERSION = "2026-07-11.32";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
