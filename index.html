@@ -1057,9 +1057,7 @@ code {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: color-mix(in srgb, var(--canvas) 88%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  background: var(--canvas);
   transition: opacity 280ms var(--ease), visibility 280ms var(--ease);
 }
 .wb-boot-overlay.wb-boot-overlay--done {
@@ -1070,12 +1068,17 @@ code {
 html:not(.wb-booting) .wb-boot-overlay {
   display: none;
 }
+html.wb-booting #landing,
+html.wb-autoconnect #landing {
+  display: none !important;
+}
 html.wb-booting #app {
   pointer-events: none;
 }
 html.wb-booting #app .shell,
 html.wb-booting #app .mobile-top,
-html.wb-booting #app .mobile-tabs {
+html.wb-booting #app .mobile-tabs,
+html.wb-booting #view {
   visibility: hidden;
 }
 .wb-boot-card {
@@ -3463,23 +3466,6 @@ button.metric-card:hover {
       <div class="wb-boot-status" id="wbBootStatus">Starting…</div>
     </div>
   </div>
-  <script>
-  (function () {
-    try {
-      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
-      var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
-        document.documentElement.classList.add("wb-autoconnect");
-        var landing = document.getElementById("landing");
-        var app = document.getElementById("app");
-        if (landing) landing.classList.add("hidden");
-        if (app) app.classList.remove("hidden");
-        var status = document.getElementById("wbBootStatus");
-        if (status) status.textContent = "Connecting to GitHub…";
-      }
-    } catch (e) {}
-  })();
-  </script>
   <section id="landing" class="modal-scrim">
     <div class="modal-card" role="dialog" aria-labelledby="landingTitle">
       <div class="brand" style="margin-bottom:18px"><span class="wordmark">Workbench</span></div>
@@ -3535,6 +3521,7 @@ button.metric-card:hover {
         <div class="side-actions">
           <button class="btn primary" id="captureBtn">Quick capture</button>
           <button class="btn" id="paletteBtn">Command palette</button>
+          <button class="btn" id="refreshBtn">Refresh</button>
           <button class="btn" id="pullBtn">Pull latest</button>
           <button class="btn" id="syncBtn">Commit & push</button>
           <button class="btn" id="reconnectBtn">Reconnect</button>
@@ -3554,6 +3541,23 @@ button.metric-card:hover {
       <button data-view="more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>More</button>
     </nav>
   </div>
+  <script>
+  (function () {
+    try {
+      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
+      var tok = localStorage.getItem("workbench-gh-token");
+      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
+        document.documentElement.classList.add("wb-autoconnect");
+        var landing = document.getElementById("landing");
+        var app = document.getElementById("app");
+        if (landing) landing.classList.add("hidden");
+        if (app) app.classList.remove("hidden");
+        var status = document.getElementById("wbBootStatus");
+        if (status) status.textContent = "Connecting to GitHub…";
+      }
+    } catch (e) {}
+  })();
+  </script>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
   <script>
 /**
@@ -14374,7 +14378,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-11.26";
+  const WB_VERSION = "2026-07-11.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14987,6 +14991,82 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       todoSnapshot: live.todoSnapshot || session.todoSnapshot,
     };
   }
+  function workbenchLiveSessionSources() {
+    const source = state.workbenchLive?.source;
+    return (
+      source === "supabase-live" ||
+      source === "supabase-stale" ||
+      source === "local-live" ||
+      source === "local-live-stale"
+    );
+  }
+  function sessionRowFromWorkbenchLive(live) {
+    if (!live || typeof live !== "object") return null;
+    const uid = live.session_uid || live.sessionFull || live.session;
+    if (!uid) return null;
+    const prompt =
+      live.latestPrompt ||
+      live.approvedTitle ||
+      live.initialPromptTitle ||
+      live.prompt ||
+      "";
+    const updated = Number(live.updated || live.liveObservedAt || 0);
+    return {
+      session_uid: live.session_uid || uid,
+      session: live.session_short || live.session || uid,
+      sessionFull: live.session_full || live.sessionFull || uid,
+      status: live.status || "running",
+      liveState: live.liveState,
+      attentionLevel: live.attentionLevel,
+      attentionRank:
+        live.attentionRank ??
+        ATTENTION_RANK[live.attentionLevel] ??
+        99,
+      approvedTitle: live.approvedTitle,
+      initialPromptTitle: live.initialPromptTitle,
+      latestPrompt: live.latestPrompt,
+      prompt,
+      machine: live.machine || live.machine_id,
+      machine_id: live.machine_id || live.machine,
+      cwd: live.cwd,
+      ide: live.ide,
+      editor: live.editor,
+      backend: live.backend,
+      model: live.model,
+      updated,
+      started: live.started || updated,
+      promptStart: live.promptStart || live.started || updated,
+      todoCounts: live.todoCounts,
+      activeTodo: live.activeTodo,
+      todoSnapshot: live.todoSnapshot,
+      _liveSource: true,
+    };
+  }
+  function allSessionRows() {
+    const byUid = new Map();
+    for (const session of state.sessions || []) {
+      const uid = session.session_uid || session.sessionFull || session.session;
+      if (!uid) continue;
+      byUid.set(uid, session);
+    }
+    if (workbenchLiveSessionSources()) {
+      const liveRows =
+        state.workbenchLive?.sessions ||
+        state.workbenchLive?.status?.liveSessions ||
+        state.workbenchLive?.status?.sessionList ||
+        [];
+      for (const live of liveRows) {
+        const row = sessionRowFromWorkbenchLive(live);
+        if (!row) continue;
+        const uid = row.session_uid || row.sessionFull || row.session;
+        const prev = byUid.get(uid);
+        if (!prev || Number(row.updated || 0) >= Number(prev.updated || 0)) {
+          byUid.set(uid, prev ? { ...prev, ...row } : row);
+        }
+      }
+    }
+    return [...byUid.values()];
+  }
   function workbenchLiveDataSourceLabel() {
     const live = state.workbenchLive;
     if (!live || live.source === "git-fallback") {
@@ -15275,6 +15355,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           source: bundle.stale ? "supabase-stale" : "supabase-live",
           status,
           byUid: workbenchLiveByUidMap(status),
+          sessions: bundle.sessions || status.liveSessions || [],
           loadedAt: bundle.loadedAt,
           machines: bundle.machines || [],
         };
@@ -15369,6 +15450,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         source: stale ? "local-live-stale" : "local-live",
         status,
         byUid: workbenchLiveByUidMap(status),
+        sessions: status.liveSessions || status.sessionList || [],
         loadedAt: Date.now(),
       };
       setDataHealth(sourceKey, {
@@ -17897,10 +17979,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   window.__WBDismissBoot = dismissBootOverlay;
   function showBoot(progress) {
     setBootMessage(progress || "Connecting to GitHub…");
-    const view = $("#view");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
-    if (view) view.innerHTML = bootScreenHTML(progress);
+    const view = $("#view");
+    if (view) view.innerHTML = "";
   }
   function updateBootProgress(text) {
     setBootMessage(text);
@@ -21509,7 +21591,7 @@ window.__WBReactRender = function () {
       const fresh = ageLabel(u?.updated);
       return `<button type="button" class="rail-chip provider-chip" data-usage-provider="${key}" aria-label="Open ${esc(label)} usage details"><span class="rail-chip-ring">${donut(p, cls)}</span><span class="rail-chip-copy"><span class="rail-chip-label">${esc(label)}</span><span class="rail-chip-value">${p == null ? "no data" : p + "%"}</span></span><span class="rail-chip-note">${esc(fresh)}</span></button>`;
     };
-    return `<div class="operating-rail" role="group" aria-label="Workbench operating status">${providerChip("anthropic", "Anthropic", state.usage, "anthropic")}${providerChip("cursor", "Cursor", state.cursorUsage, "cursor")}<button type="button" class="rail-chip system-chip ${systemCls}" data-system-detail aria-label="Open Machines and Sync"><span>${statusDot(systemCls)}</span><span class="rail-chip-copy"><span class="rail-chip-label">System</span><span class="rail-chip-value">${esc(displayText(systemText, 42))}</span></span><span class="rail-chip-note">machines & sync</span></button></div>`;
+    return `<div class="operating-rail" role="group" aria-label="Workbench operating status"><button type="button" class="rail-chip refresh-chip" id="dashboardRefreshBtn" aria-label="Refresh dashboard data"><span class="rail-chip-copy"><span class="rail-chip-label">Refresh</span><span class="rail-chip-value">↻</span></span></button>${providerChip("anthropic", "Anthropic", state.usage, "anthropic")}${providerChip("cursor", "Cursor", state.cursorUsage, "cursor")}<button type="button" class="rail-chip system-chip ${systemCls}" data-system-detail aria-label="Open Machines and Sync"><span>${statusDot(systemCls)}</span><span class="rail-chip-copy"><span class="rail-chip-label">System</span><span class="rail-chip-value">${esc(displayText(systemText, 42))}</span></span><span class="rail-chip-note">machines & sync</span></button></div>`;
   }
   function renderStatusRail() {
     if (!state.connected) return;
@@ -21528,6 +21610,9 @@ window.__WBReactRender = function () {
     }
     $$('[data-usage-provider]').forEach((b) => (b.onclick = () => openUsageDetail(b.dataset.usageProvider)));
     $$('[data-system-detail]').forEach((b) => (b.onclick = () => go("machines")));
+    $("#dashboardRefreshBtn")?.addEventListener("click", () => {
+      refreshDashboardData().catch((e) => toast(e?.message || String(e), "danger"));
+    });
     applyMotion(rail);
     if (ms) applyMotion(ms);
   }
@@ -21553,7 +21638,7 @@ window.__WBReactRender = function () {
     return ts && Date.now() - ts > SESSION_ORPHAN_MS;
   }
   function activeSessions() {
-    const rows = (state.sessions || [])
+    const rows = allSessionRows()
       .filter((s) => (s.status || "running") !== "idle")
       .filter((s) => !isOrphanSession(s))
       .map((s) => (s._stale === undefined ? { ...s, _stale: isStaleSession(s) } : s))
@@ -21796,7 +21881,9 @@ window.__WBReactRender = function () {
     );
     $("#syncPull")?.addEventListener("click", () => $("#pullBtn").click());
     $("#syncPush")?.addEventListener("click", () => $("#syncBtn").click());
-    $("#syncReload")?.addEventListener("click", doReload);
+    $("#syncReload")?.addEventListener("click", () => {
+      refreshDashboardData().catch((e) => toast(e?.message || String(e), "danger"));
+    });
     $("#syncReset")?.addEventListener("click", doReset);
   }
   function money(n) {
@@ -24280,6 +24367,35 @@ window.__WBReactRender = function () {
     sessionStorage.setItem("wb-force-tree", "1");
     location.replace(location.pathname + "?_r=" + Date.now() + location.hash);
   }
+  async function refreshDashboardData() {
+    if (!state.connected) {
+      doReload();
+      return;
+    }
+    const buttons = ["#refreshBtn", "#dashboardRefreshBtn", "#mobileReload", "#pullBtn"].map(
+      (sel) => $(sel),
+    );
+    buttons.forEach((btn) => btn && setLoading(btn, true, "Refreshing…"));
+    try {
+      if (state.backend === "github") {
+        ghShaCache.clear();
+        await ghGetTree(true);
+        await refreshLiveActions(true);
+      } else {
+        try {
+          await helperPost("/pull");
+        } catch {
+          /* helper optional */
+        }
+      }
+      await hydrate();
+      render();
+      renderStatusRail();
+      toast("Dashboard refreshed.", "success");
+    } finally {
+      buttons.forEach((btn) => btn && setLoading(btn, false));
+    }
+  }
   // Manual website reset (wor-mr7mag8r): drop the cached repo tree and boot
   // snapshot, then hard-reload so the app rebuilds from a clean fetch. Keeps
   // the saved GitHub credentials so it doesn't sign the phone out.
@@ -24356,8 +24472,10 @@ window.__WBReactRender = function () {
     const gh = state.backend === "github";
     const pull = $("#pullBtn"),
       sync = $("#syncBtn"),
-      rec = $("#reconnectBtn");
+      rec = $("#reconnectBtn"),
+      refresh = $("#refreshBtn");
     if (pull) pull.textContent = gh ? "Refresh data" : "Pull latest";
+    if (refresh) refresh.textContent = "Refresh";
     if (sync) sync.classList.toggle("hidden", gh);
     if (rec) rec.textContent = gh ? "Reconnect GitHub" : "Reconnect";
   }
@@ -24440,7 +24558,12 @@ window.__WBReactRender = function () {
     };
     $("#paletteBtn")?.addEventListener("click", openPalette);
     $("#mobilePalette")?.addEventListener("click", openPalette);
-    $("#mobileReload")?.addEventListener("click", doReload);
+    $("#mobileReload")?.addEventListener("click", () => {
+      refreshDashboardData().catch((e) => toast(e?.message || String(e), "danger"));
+    });
+    $("#refreshBtn")?.addEventListener("click", () => {
+      refreshDashboardData().catch((e) => toast(e?.message || String(e), "danger"));
+    });
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && liveActionsNeedPoll()) {
         refreshLiveActions(true).catch(() => null);
@@ -24459,7 +24582,11 @@ window.__WBReactRender = function () {
       }
     };
     $("#pullBtn").onclick = async () => {
-      if (state.backend === "github") return doReload();
+      if (state.backend === "github") {
+        return refreshDashboardData().catch((e) =>
+          toast(e?.message || String(e), "danger"),
+        );
+      }
       try {
         await helperPost("/pull");
         toast("Pulled latest.", "success");
@@ -24529,9 +24656,9 @@ window.__WBReactRender = function () {
         },
       })),
       ...(state.backend === "github"
-        ? [{ t: "Refresh data", s: "Action", run: doReload }]
+        ? [{ t: "Refresh data", s: "Action", run: () => refreshDashboardData() }]
         : [
-            { t: "Pull latest", s: "Action", run: async () => { try { await helperPost("/pull"); toast("Pulled latest.", "success"); doReload(); } catch (e) { toast(e.message, "danger"); } } },
+            { t: "Pull latest", s: "Action", run: async () => { try { await helperPost("/pull"); toast("Pulled latest.", "success"); await refreshDashboardData(); } catch (e) { toast(e.message, "danger"); } } },
             { t: "Commit and push", s: "Action", run: async () => { try { await helperPost("/sync"); toast("Synced.", "success"); pingHelper(); } catch (e) { toast(e.message, "danger"); } } },
           ]),
       { t: "Reset view (clear cached data)", s: "Action", run: doReset },
