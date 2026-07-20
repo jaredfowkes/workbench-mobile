@@ -14452,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-13.23";
+  const WB_VERSION = "2026-07-19.26";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14620,6 +14620,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     mobileSync: null,
     ccrUsage: null,
     azureBilling: null,
+    azureCostCalibration: null,
     efficiencyTipsFile: null,
     modelPricing: null,
     helperUp: false,
@@ -16583,6 +16584,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         });
         if (next) state.azureBilling = next;
       }),
+      loadJson("tools/azure-cost-calibration.json", {
+        source: "hydrate.azure-cost-calibration",
+        label: "Azure cost calibration",
+      }).then((v) => {
+        const next = loadJsonValue(v, "hydrate.azure-cost-calibration", {
+          label: "Azure cost calibration",
+          path: "tools/azure-cost-calibration.json",
+          staleAfterMs: 24 * 60 * 60 * 1000,
+        });
+        if (next) state.azureCostCalibration = next;
+      }),
       loadJson("tools/efficiency-tips.json", {
         source: "hydrate.efficiency-tips",
         label: "Efficiency tips",
@@ -17468,7 +17480,18 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       const hay = `${r.cwd || ""} ${(r.projects || []).join(" ")}`.toLowerCase();
       return hay.includes(p.dirName.toLowerCase()) || hay.includes(String(p.data.project || "").toLowerCase());
     });
-    return { rows, cost: costSum(rows), tokens: tokenSum(rows, "totalTokens"), sessions: rows.length };
+    const names = new Set([p.dirName, p.data.project].filter(Boolean).map((name) => String(name).toLowerCase()));
+    const refined = (state.azureCostCalibration?.projects || []).find((item) => names.has(String(item?.project || "").toLowerCase()));
+    const nonCcr = rows.filter((row) => normalizeBackend(row.backend) !== "CCR");
+    const nonCcrCost = costSum(nonCcr);
+    return {
+      rows,
+      cost: refined?.cost != null
+        ? Number(refined.cost) + Number(nonCcrCost || 0)
+        : costSum(rows),
+      tokens: rows.reduce((sum, row) => sum + cacheInclusiveTokens(row), 0),
+      sessions: new Set(rows.map(workEpisodeIdentity)).size,
+    };
   }
   function projectRelatedKB(p) {
     const key = String(p.data.project || p.dirName || "").toLowerCase();
@@ -19736,7 +19759,7 @@ function ProjectRoomView() {
   }, /*#__PURE__*/React.createElement(KpiStat, {
     label: "Estimated cost",
     value: fmtCostMaybe(cost.cost),
-    delta: cost.sessions + ' sessions',
+    delta: cost.sessions + ' work episode' + (cost.sessions === 1 ? '' : 's'),
     deltaTone: "neutral"
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
@@ -19863,7 +19886,7 @@ function UsageMixCard({
     title: title
   }, rows.length ? rows.map(r => {
     const share = totalTokens ? Math.round(r.tokens / totalTokens * 100) : totalMs ? Math.round(r.ms / totalMs * 100) : 0;
-    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} sessions · ${fmtDuration(r.ms)}`;
+    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} work episodes · ${fmtDuration(r.ms)}`;
     const extra = r.cost ? `${base} · ${fmtCostMaybe(r.cost)}` : base;
     return /*#__PURE__*/React.createElement("div", {
       className: "mix-row",
@@ -19911,7 +19934,7 @@ function UsageLaneTable({
       label: r.label
     }), /*#__PURE__*/React.createElement("span", {
       className: "session-summary"
-    }, r.sessions || 0, " unique session", r.sessions === 1 ? '' : 's')), /*#__PURE__*/React.createElement("span", {
+    }, r.sessions || 0, " work episode", r.sessions === 1 ? '' : 's')), /*#__PURE__*/React.createElement("span", {
       "data-label": "Tokens"
     }, r.tokens == null ? '—' : fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
       "data-label": "Cache"
@@ -19976,10 +19999,10 @@ function UsageWindowPicker() {
   }];
   return /*#__PURE__*/React.createElement(Card, {
     title: "Time frame",
-    eyebrow: "Session metrics"
+    eyebrow: "Usage metrics"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Applies to model traffic, project attribution, sessions, and efficiency panels below."), /*#__PURE__*/React.createElement(SegmentedControl, {
+  }, "Applies to model traffic, project attribution, work episodes, technical sessions, and efficiency panels below."), /*#__PURE__*/React.createElement(SegmentedControl, {
     value: state.usageWindow || 'month',
     onChange: v => {
       state.usageWindow = v;
@@ -20054,30 +20077,23 @@ function UsageEfficiencyPanel({
 function AzureFoundryPanel() {
   const b = state.azureBilling;
   if (!b || b.error || b.spend == null) return null;
-  const rows = usageRows(state.sessionMetrics && state.sessionMetrics.sessions || []);
-  const est = (state.usageWindow || 'month') === 'month' ? ccrEstimatedSpend(rows) || null : null;
-  const actual = Number(b.spend);
-  let compare = '';
-  if (est != null && est > 0) {
-    const delta = est - actual;
-    compare = Math.abs(delta) >= 0.5 ? ` · estimates ${fmtCostMaybe(est)} (${delta > 0 ? 'over' : 'under'} by ${fmtCostMaybe(Math.abs(delta))})` : ` · estimates ${fmtCostMaybe(est)}`;
-  }
-  const period = azureBillingPeriodLabel();
-  const byModel = b.byModel && typeof b.byModel === 'object' ? b.byModel : null;
-  const modelBits = byModel ? Object.entries(byModel).sort((a, c) => Number(c[1]?.spend || 0) - Number(a[1]?.spend || 0)).slice(0, 4).map(([label, v]) => `${label} ${fmtCostMaybe(v?.spend)}`).join(' · ') : '';
+  const c = state.azureCostCalibration;
+  const posted = c?.actualSpend != null ? Number(c.actualSpend) : Number(b.spend);
+  const pending = c?.pendingSpend != null ? Number(c.pendingSpend) : null;
+  const projected = c?.projectedSpend != null ? Number(c.projectedSpend) : posted;
   return /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Azure Foundry monthly spend (actual)",
-    title: fmtCostMaybe(actual)
+    eyebrow: "Azure Foundry projected monthly spend",
+    title: fmtCostMaybe(projected)
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ageLabel(b.updated), period ? ` · ${period}` : '', compare, modelBits ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("br", null), modelBits) : null));
+  }, fmtCostMaybe(posted), " posted · ", pending == null ? 'pending estimate unavailable' : `${fmtCostMaybe(pending)} pending estimate`, " · ", c?.settledThrough ? `posted through ${c.settledThrough}` : 'settlement pending', Number(c?.unallocatedActual || 0) > 0 ? ` · ${fmtCostMaybe(c.unallocatedActual)} unallocated` : '', " · ", c?.confidence || 'baseline', " confidence · ", ageLabel(c?.updated || b.updated)));
 }
 function AzureModelReconciliationPanel() {
   const reconciliation = azureModelReconciliation();
   if (!reconciliation) return null;
   return /*#__PURE__*/React.createElement(Card, {
-    title: "Azure actual vs estimated by model",
-    eyebrow: "Aggregate month-to-date",
+    title: "Azure billing by model",
+    eyebrow: "Posted month-to-date",
     style: {
       gridColumn: '1 / -1'
     }
@@ -20085,7 +20101,7 @@ function AzureModelReconciliationPanel() {
     gap: 3
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Actual billing stays at model/month level and is never assigned to sessions. Estimates use cache-inclusive session tokens", reconciliation.pricingVersion ? ` with pricing ${reconciliation.pricingVersion}` : '', "."), /*#__PURE__*/React.createElement("div", {
+  }, "Posted billing remains authoritative at model/month level. Session and project costs are refined separately from the settled actual total, with unmatched spend retained as unallocated."), /*#__PURE__*/React.createElement("div", {
     className: "usage-table"
   }, /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row head"
@@ -20205,7 +20221,7 @@ function UsageView() {
   })), tab === 'projects' && /*#__PURE__*/React.createElement(UsageProjectPanel, {
     rows: rows
   }), tab === 'sessions' && /*#__PURE__*/React.createElement(Card, {
-    title: `Recent sessions · ${usageWindowLabel()}`,
+    title: `Recent technical sessions · ${usageWindowLabel()}`,
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
@@ -22342,6 +22358,9 @@ window.__WBReactRender = function () {
       ? `${machine}:${session}`
       : `${machine}:${Number(r.started || r.ended || 0)}:${r.cwd || ""}:${r.model || ""}`;
   }
+  function workEpisodeIdentity(r) {
+    return String(r?.workEpisodeId || sessionIdentity(r));
+  }
   function uniqueSessionRows(rows) {
     const byId = new Map();
     for (const r of rows || []) {
@@ -22384,12 +22403,14 @@ window.__WBReactRender = function () {
       const cur = map.get(key) || {
         label: key,
         count: 0,
+        episodeIds: new Set(),
         ms: 0,
         tokens: 0,
         cost: 0,
         requests: 0,
       };
-      cur.count++;
+      cur.episodeIds.add(workEpisodeIdentity(r));
+      cur.count = cur.episodeIds.size;
       cur.ms += durationMs(r);
       cur.tokens += cacheInclusiveTokens(r);
       cur.cost += Number(sessionCost(r) || 0);
@@ -22422,7 +22443,7 @@ window.__WBReactRender = function () {
           cost: 0,
           requests: 0,
         };
-        cur.sessionIds.add(sessionIdentity(r));
+        cur.sessionIds.add(workEpisodeIdentity(r));
         cur.count = cur.sessionIds.size;
         cur.tokens += Number(entry.tokens || 0);
         cur.cost += Number(entry.cost || 0);
@@ -22597,9 +22618,18 @@ window.__WBReactRender = function () {
     const c = priceTokens(r.model, r, asOfMs, r.backend);
     return c == null ? null : Math.round(c * 10000) / 10000;
   }
+  function calibratedSessionCost(r) {
+    const identity = sessionIdentity(r);
+    return (state.azureCostCalibration?.sessions || []).find(
+      (item) => item?.sessionIdentity === identity && item.cost != null,
+    ) || null;
+  }
   function sessionCost(r) {
     if (!hasTelemetry(r)) return null;
     if (isLocalRow(r)) return 0; // on-device: free, don't charge to a paid lane
+    const calibrated = calibratedSessionCost(r);
+    if (normalizeBackend(r.backend) === "CCR" && calibrated)
+      return Number(calibrated.cost);
     const est = estimateSessionCost(r);
     if (normalizeBackend(r.backend) === "CCR" && est != null) return est;
     const saved = Number(r.cost);
@@ -22617,8 +22647,10 @@ window.__WBReactRender = function () {
     }
     const c = sessionCost(r);
     if (c == null) return '<span class="muted">untracked</span>';
-    const est =
-      r.costSource === "actual-billing" ? "" : " est.";
+    const source = calibratedSessionCost(r)?.costSource || r.costSource;
+    const est = source === "actual-billing" || source === "azure-actual-refined"
+      ? " refined"
+      : " est.";
     return `${esc(fmtCostMaybe(c))}${est}`;
   }
   function attributionMeta(r) {
@@ -22780,7 +22812,7 @@ window.__WBReactRender = function () {
       spend,
       workbench,
       outside,
-      sessions: wbRows.length,
+      sessions: new Set(wbRows.map(workEpisodeIdentity)).size,
       wbPct: Math.round((Math.min(workbench, spend) / spend) * 100),
       outPct: Math.round((outside / spend) * 100),
       overAttributed: workbench > spend,
@@ -22969,29 +23001,15 @@ window.__WBReactRender = function () {
   function azureFoundryBillingCard() {
     const b = state.azureBilling;
     if (!b || b.error || b.spend == null) return "";
-    const est =
-      (state.usageWindow || "month") === "month"
-        ? ccrEstimatedSpend(currentUsageRows())
-        : null;
-    const actual = Number(b.spend);
-    let compare = "";
-    if (est != null && est > 0) {
-      const delta = est - actual;
-      compare =
-        Math.abs(delta) >= 0.5
-          ? ` · estimates ${fmtCostMaybe(est)} (${delta > 0 ? "over" : "under"} by ${fmtCostMaybe(Math.abs(delta))})`
-          : ` · estimates ${fmtCostMaybe(est)}`;
-    }
-    const period = azureBillingPeriodLabel();
-    const byModel = b.byModel && typeof b.byModel === "object" ? b.byModel : null;
-    const modelBits = byModel
-      ? Object.entries(byModel)
-          .sort((a, c) => Number(c[1]?.spend || 0) - Number(a[1]?.spend || 0))
-          .slice(0, 4)
-          .map(([label, v]) => `${label} ${fmtCostMaybe(v?.spend)}`)
-          .join(" · ")
+    const c = state.azureCostCalibration;
+    const posted = c?.actualSpend != null ? Number(c.actualSpend) : Number(b.spend);
+    const pending = c?.pendingSpend != null ? Number(c.pendingSpend) : null;
+    const projected = c?.projectedSpend != null ? Number(c.projectedSpend) : posted;
+    const cutoff = c?.settledThrough ? `posted through ${c.settledThrough}` : "settlement pending";
+    const allocation = c?.unallocatedActual > 0
+      ? ` · ${fmtCostMaybe(c.unallocatedActual)} unallocated`
       : "";
-    return `<div class="usage-card"><div class="tiny">Azure Foundry monthly spend (actual)</div><div class="usage-big">${fmtCostMaybe(actual)}</div><p class="muted">${esc(ageLabel(b.updated))}${period ? ` · ${esc(period)}` : ""}${compare}${modelBits ? `<br>${esc(modelBits)}` : ""}</p></div>`;
+    return `<div class="usage-card"><div class="tiny">Azure Foundry projected monthly spend</div><div class="usage-big">${fmtCostMaybe(projected)}</div><p class="muted">${fmtCostMaybe(posted)} posted · ${pending == null ? "pending estimate unavailable" : `${fmtCostMaybe(pending)} pending estimate`} · ${esc(cutoff)}${allocation} · ${esc(c?.confidence || "baseline")} confidence · ${esc(ageLabel(c?.updated || b.updated))}</p></div>`;
   }
   function azureModelReconciliation() {
     const billing = state.azureBilling;
@@ -23084,9 +23102,10 @@ window.__WBReactRender = function () {
           r.attributionLevel === "ccr-log-approx" ||
           r.attributionConfidence === "ccr-log-approx",
       ),
-      sessions: new Set(rs.map(sessionIdentity)).size,
-      // Sessions with no telemetry at all - the lane's token sums are
-      // starved by these, so flag coverage instead of implying real $0s.
+      sessions: new Set(rs.map(workEpisodeIdentity)).size,
+      technicalSessions: new Set(rs.map(sessionIdentity)).size,
+      // Technical sessions with no telemetry at all starve the lane's token
+      // sums, so flag coverage instead of implying real $0s.
       untracked: rs.filter((r) => !hasTelemetry(r)).length,
       ...extra,
     });
@@ -23118,6 +23137,7 @@ window.__WBReactRender = function () {
           cost: 0,
           hasCost: false,
           sessionIds: new Set(),
+          technicalSessionIds: new Set(),
           untrackedIds: new Set(),
           unpricedIds: new Set(),
           approx: false,
@@ -23129,7 +23149,8 @@ window.__WBReactRender = function () {
     };
     for (const r of ccr) {
       const asOfMs = Number(r.started || r.ended || 0) || Date.now();
-      const sessionId = sessionIdentity(r);
+      const sessionId = workEpisodeIdentity(r);
+      const technicalSessionId = sessionIdentity(r);
       const approx =
         r.tokenSource === "ccr-log-approx" ||
         r.attributionLevel === "ccr-log-approx" ||
@@ -23157,7 +23178,8 @@ window.__WBReactRender = function () {
             lane.unpricedIds.add(sessionId);
           }
           lane.sessionIds.add(sessionId);
-          if (!hasTelemetry(m)) lane.untrackedIds.add(sessionId);
+          lane.technicalSessionIds.add(technicalSessionId);
+          if (!hasTelemetry(m)) lane.untrackedIds.add(technicalSessionId);
           if (approx) lane.approx = true;
         }
       } else {
@@ -23177,7 +23199,8 @@ window.__WBReactRender = function () {
           lane.unpricedIds.add(sessionId);
         }
         lane.sessionIds.add(sessionId);
-        if (!hasTelemetry(r)) lane.untrackedIds.add(sessionId);
+        lane.technicalSessionIds.add(technicalSessionId);
+        if (!hasTelemetry(r)) lane.untrackedIds.add(technicalSessionId);
         if (approx) lane.approx = true;
       }
     }
@@ -23194,6 +23217,7 @@ window.__WBReactRender = function () {
           : null,
       approx: l.approx,
       sessions: l.sessionIds.size,
+      technicalSessions: l.technicalSessionIds.size,
       untracked: l.untrackedIds.size,
       unpriced: l.unpricedIds.size,
       estimated: true,
@@ -23231,11 +23255,11 @@ window.__WBReactRender = function () {
     const bits = [];
     if (r.estimated) bits.push("Cost is estimated from recorded tokens and the configured model price.");
     if (r.sessions != null)
-      bits.push(`${r.sessions} unique session${r.sessions === 1 ? "" : "s"} contributed to this lane.`);
+      bits.push(`${r.sessions} work episode${r.sessions === 1 ? "" : "s"} contributed to this lane.`);
     if (r.approx)
       bits.push("At least one contributing session uses approximate attribution.");
-    if (r.untracked) bits.push(`${r.untracked}/${r.sessions} sessions in this lane are still missing telemetry.`);
-    if (r.unpriced) bits.push(`${r.unpriced}/${r.sessions} sessions include tokens without a configured model price, so no partial cost is shown.`);
+    if (r.untracked) bits.push(`${r.untracked}/${r.technicalSessions || r.sessions} technical sessions in this lane are still missing telemetry.`);
+    if (r.unpriced) bits.push(`${r.unpriced}/${r.technicalSessions || r.sessions} technical sessions include tokens without a configured model price, so no partial cost is shown.`);
     if (r.snapshotNote) bits.push(r.snapshotNote);
     return bits.join(" ");
   }
@@ -23283,7 +23307,7 @@ window.__WBReactRender = function () {
     if (r.label === "Local" && r.savingsAmount) {
       costText = `<span class="cost-savings">${esc(fmtCostMaybe(r.savingsAmount))}</span>`;
     }
-    return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}<span class="session-summary">${r.sessions || 0} unique session${r.sessions === 1 ? "" : "s"}</span></span><span data-label="Tokens">${r.tokens == null ? "—" : fmtTokens(r.tokens)}</span><span data-label="Cache">${r.cache == null ? "—" : fmtTokens(r.cache)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
+    return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}<span class="session-summary">${r.sessions || 0} work episode${r.sessions === 1 ? "" : "s"}</span></span><span data-label="Tokens">${r.tokens == null ? "—" : fmtTokens(r.tokens)}</span><span data-label="Cache">${r.cache == null ? "—" : fmtTokens(r.cache)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
