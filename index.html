@@ -14452,7 +14452,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-19.26";
+  const WB_VERSION = "2026-07-22.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14623,6 +14623,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     azureCostCalibration: null,
     efficiencyTipsFile: null,
     modelPricing: null,
+    modelFleet: null,
     helperUp: false,
     usageWindow: "month",
     helperStatus: null,
@@ -16613,6 +16614,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           label: "Model pricing",
           path: "tools/model-pricing.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
+        });
+      }),
+      loadJson("tools/model-fleet.json", {
+        source: "hydrate.model-fleet",
+        label: "Azure model fleet",
+      }).then((v) => {
+        state.modelFleet = loadJsonValue(v, "hydrate.model-fleet", {
+          label: "Azure model fleet",
+          path: "tools/model-fleet.json",
+          staleAfterMs: 30 * 24 * 60 * 60 * 1000,
         });
       }),
       loadJson("tools/machine-aliases.json", {
@@ -22291,6 +22302,8 @@ window.__WBReactRender = function () {
     if (
       [
         "GPT-5.3-codex",
+        "GPT-5.1-Codex-Mini",
+        "GPT-5.4-Nano",
         "GPT-5.5",
         "GPT-5.6-Sol",
         "GPT-5.6-Terra",
@@ -22330,6 +22343,14 @@ window.__WBReactRender = function () {
       return "GPT-5.6-Terra";
     if (v.includes("gpt-5.6-sol") || (v.includes("sol") && v.includes("gpt")))
       return "GPT-5.6-Sol";
+    if (v.includes("gpt-5.4-nano") || (v.includes("nano") && v.includes("gpt")))
+      return "GPT-5.4-Nano";
+    if (
+      v.includes("gpt-5.1-codex-mini") ||
+      v.includes("codex-mini") ||
+      v.includes("codexmini")
+    )
+      return "GPT-5.1-Codex-Mini";
     if (v.includes("gpt-5.3") || v.includes("codex")) return "GPT-5.3-codex";
     if (v.includes("gpt-5.5")) return "GPT-5.5";
     if (v.includes("opus")) return "Opus";
@@ -22526,6 +22547,14 @@ window.__WBReactRender = function () {
     if (key.includes("opus")) return models["claude-opus-4-8-thinking-high"];
     if (key.includes("sonnet")) return models["claude-sonnet-5"];
     if (key.includes("haiku")) return models["claude-haiku-4-5"];
+    if (key.includes("gpt-5.4-nano") || key.includes("nano"))
+      return models["gpt-5.4-nano"];
+    if (
+      key.includes("gpt-5.1-codex-mini") ||
+      key.includes("codex-mini") ||
+      key.includes("codexmini")
+    )
+      return models["gpt-5.1-codex-mini"];
     if (key.includes("gpt-5.3") || key.includes("codex"))
       return models["gpt-5.3-codex"];
     if (key.includes("luna")) return models["gpt-5.6-luna"];
@@ -22825,6 +22854,17 @@ window.__WBReactRender = function () {
       `<div class="mix-row"><div><div class="mix-label">${esc(label)}</div><div class="mix-sub">${esc(sub)}</div></div><span class="creditbar ${kind}"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></span><span class="credit-amt">${esc(fmtCostMaybe(amt))}</span></div>`;
     return `<div class="usage-card"><div class="tiny">Claude spend attribution · billing month</div><div class="usage-big">${esc(fmtCostMaybe(a.spend))} billed</div>${row("In workbench", a.workbench, a.wbPct, "anthropic", `${a.sessions} hooked session${a.sessions === 1 ? "" : "s"} · estimated from tokens`)}${row("Outside workbench", a.outside, a.outPct, "", "Excel add-in, claude.ai, other tools + estimate drift")}<p class="muted">Billed total is the real Claude monthly spend and already covers usage from outside workbench. The in-workbench slice is estimated from hooked-session tokens${a.overAttributed ? "; it currently exceeds the billed total, so outside reads $0 (estimate drift)" : ""}, so the outside slice is approximate.</p></div>`;
   }
+  function modelFleetCard() {
+    const deployments = state.modelFleet?.deployments || [];
+    if (!deployments.length) return "";
+    const rows = deployments
+      .map(
+        (item) =>
+          `<div class="refined-row"><span><span class="refined-title">${esc(normalizeModel(item.modelName || item.deploymentName))}</span><span class="refined-sub">v${esc(item.modelVersion)} · ${esc(item.sku)} · ${Number(item.capacity || 0).toLocaleString()}k TPM · pinned</span></span><span class="chip">${esc(String(item.lifecycle || "unknown").replace("deployed-", ""))}</span></div>`,
+      )
+      .join("");
+    return `<div class="usage-card"><h3>Azure model fleet</h3><div class="refined-list">${rows}</div><p class="muted">Deploy-proven candidates stay in shadow until compatibility, quality, latency, and cost gates pass.</p></div>`;
+  }
   function usageDetailBody() {
     const allRows = (state.sessionMetrics?.sessions || []).filter(Boolean),
       rows = usageRows(allRows);
@@ -22839,7 +22879,7 @@ window.__WBReactRender = function () {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
