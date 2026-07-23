@@ -3449,6 +3449,36 @@ button.metric-card:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ============ 13. Models benchmark page ============ */
+.models-scatter-wrap {
+  display: grid;
+  gap: 12px;
+}
+.models-scatter {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface-card)), var(--surface-card));
+}
+.models-scatter-point.is-active circle:last-child {
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+.models-link {
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+.models-link:hover strong {
+  color: var(--accent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -14452,7 +14482,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-22.20";
+  const WB_VERSION = "2026-07-23.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14624,6 +14654,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     efficiencyTipsFile: null,
     modelPricing: null,
     modelFleet: null,
+    modelBenchmarks: null,
+    modelsLane: "all",
+    modelsMachine: "all",
+    modelsSelected: null,
     helperUp: false,
     usageWindow: "month",
     helperStatus: null,
@@ -16624,6 +16658,19 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           label: "Azure model fleet",
           path: "tools/model-fleet.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
+        });
+      }),
+      loadJson("tools/model-benchmarks.json", {
+        source: "hydrate.model-benchmarks",
+        label: "Model benchmarks",
+      }).then((v) => {
+        state.modelBenchmarks = loadJsonValue(v, "hydrate.model-benchmarks", {
+          models: [],
+          runs: [],
+          machines: {},
+          label: "Model benchmarks",
+          path: "tools/model-benchmarks.json",
+          staleAfterMs: 7 * 24 * 60 * 60 * 1000,
         });
       }),
       loadJson("tools/machine-aliases.json", {
@@ -19044,6 +19091,10 @@ function navItems() {
       label: 'Usage',
       active: state.view === 'usage'
     }, {
+      id: 'models',
+      label: 'Models',
+      active: state.view === 'models'
+    }, {
       id: 'sessions',
       label: 'Sessions',
       active: state.view === 'sessions'
@@ -20585,6 +20636,448 @@ function MachinesView() {
     description: "Data-health sources appear here after hydration runs."
   })))));
 }
+function ModelsView() {
+  const mobile = useViewport();
+  const bench = state.modelBenchmarks || {};
+  const catalog = bench.models || [];
+  const runs = bench.runs || [];
+  const machinesMeta = bench.machines || {};
+  const lane = state.modelsLane || 'all';
+  const machineFilter = state.modelsMachine || 'all';
+  const familyColors = {
+    Qwen: 'var(--dv-1)',
+    'OpenAI OSS': 'var(--dv-2)',
+    DeepSeek: 'var(--dv-3)',
+    Mistral: 'var(--dv-4)',
+    NVIDIA: 'var(--dv-5)',
+    GLM: 'var(--dv-6)',
+    Anthropic: 'var(--accent)',
+    Other: 'var(--text-muted)'
+  };
+  const machineLabel = id => machinesMeta[id] && machinesMeta[id].displayName || machineName(id) || id;
+  const filtered = catalog.filter(m => {
+    if (lane !== 'all' && m.lane !== lane) return false;
+    if (machineFilter !== 'all' && !(m.machines || []).includes(machineFilter)) return false;
+    if (lane === 'all' && m.lane === 'azure' && !(m.runCount > 0)) return false;
+    return m.runCount > 0 || m.lane === 'azure';
+  });
+  const benchmarked = filtered.filter(m => m.runCount > 0);
+  const scatterRows = benchmarked.filter(m => m.agenticPassRate != null && m.avgWallS != null);
+  const toolRows = benchmarked.filter(m => m.toolReliability != null).slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0)).slice(0, 10);
+  const agenticRows = benchmarked.filter(m => m.agenticPassRate != null).slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0)).slice(0, 10);
+  const throughputRows = benchmarked.filter(m => m.avgTps != null).slice().sort((a, b) => (b.avgTps || 0) - (a.avgTps || 0)).slice(0, 8);
+  const machineOptions = [['all', 'All machines'], ...Object.keys(machinesMeta).sort().map(id => [id, machineLabel(id)])];
+  const bestAgentic = benchmarked.slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0))[0];
+  const bestTools = benchmarked.slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0))[0];
+  const bestScore = benchmarked.slice().sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))[0];
+  const usageModels = groupModelMetrics(currentUsageRows()).slice(0, 8);
+  const selected = state.modelsSelected ? catalog.find(m => m.id === state.modelsSelected) : null;
+  const pickModel = id => {
+    state.modelsSelected = state.modelsSelected === id ? null : id;
+    forceRender();
+  };
+  function ScatterPlot({
+    rows,
+    width = 640,
+    height = 280
+  }) {
+    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No agentic benchmarks yet",
+      description: "Run the oMLX or Ollama bake-off harnesses to populate this chart."
+    });
+    const pad = {
+      t: 16,
+      r: 20,
+      b: 36,
+      l: 44
+    };
+    const innerW = width - pad.l - pad.r;
+    const innerH = height - pad.t - pad.b;
+    const maxWall = Math.max(...rows.map(r => r.avgWallS || 0), 1);
+    const x = v => pad.l + Math.min(v, maxWall) / maxWall * innerW;
+    const y = v => pad.t + innerH - Math.max(0, Math.min(1, v)) * innerH;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-scatter-wrap"
+    }, /*#__PURE__*/React.createElement("svg", {
+      className: "models-scatter",
+      viewBox: `0 0 ${width} ${height}`,
+      role: "img",
+      "aria-label": "Agentic pass rate versus average wall time"
+    }, [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
+      key: 'y' + t,
+      x1: pad.l,
+      x2: width - pad.r,
+      y1: y(t),
+      y2: y(t),
+      stroke: "var(--border-subtle)",
+      strokeDasharray: "4 4"
+    })), [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
+      key: 'x' + t,
+      x1: x(maxWall * t),
+      x2: x(maxWall * t),
+      y1: pad.t,
+      y2: height - pad.b,
+      stroke: "var(--border-subtle)",
+      strokeDasharray: "4 4"
+    })), /*#__PURE__*/React.createElement("text", {
+      x: pad.l,
+      y: height - 8,
+      fill: "var(--text-muted)",
+      fontSize: "11"
+    }, "Avg wall time (s) → slower"), /*#__PURE__*/React.createElement("text", {
+      x: 8,
+      y: pad.t + 8,
+      fill: "var(--text-muted)",
+      fontSize: "11",
+      transform: `rotate(-90 12 ${pad.t + innerH / 2})`
+    }, "Agentic pass rate"), rows.map(row => {
+      const cx = x(row.avgWallS);
+      const cy = y(row.agenticPassRate);
+      const active = state.modelsSelected === row.id;
+      const r = 6 + Math.min(10, (row.avgTps || 0) / 8);
+      return /*#__PURE__*/React.createElement("g", {
+        key: row.id,
+        className: 'models-scatter-point' + (active ? ' is-active' : ''),
+        onClick: () => pickModel(row.id),
+        style: {
+          cursor: 'pointer'
+        }
+      }, /*#__PURE__*/React.createElement("circle", {
+        cx: cx,
+        cy: cy,
+        r: r + 4,
+        fill: familyColors[row.family] || familyColors.Other,
+        opacity: active ? 0.22 : 0.12
+      }), /*#__PURE__*/React.createElement("circle", {
+        cx: cx,
+        cy: cy,
+        r: r,
+        fill: familyColors[row.family] || familyColors.Other,
+        stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
+        strokeWidth: active ? 2 : 1.5
+      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic · ' + row.avgWallS + 's avg · ' + (row.avgTps || '—') + ' tok/s'));
+    })), /*#__PURE__*/React.createElement(Legend, {
+      items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
+        label,
+        color
+      }))
+    }));
+  }
+  const tableRows = benchmarked.map(m => ({
+    ...m,
+    machineNames: (m.machines || []).map(machineLabel).join(', '),
+    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : '—',
+    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : '—',
+    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—'
+  }));
+  const columns = [{
+    key: 'id',
+    header: 'Model',
+    wrap: true,
+    render: (v, r) => /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "models-link",
+      onClick: () => pickModel(r.id)
+    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 42)))
+  }, {
+    key: 'family',
+    header: 'Family',
+    render: v => /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, v)
+  }, {
+    key: 'lane',
+    header: 'Lane',
+    render: v => /*#__PURE__*/React.createElement(Badge, {
+      tone: v === 'azure' ? 'info' : 'accent'
+    }, v)
+  }, {
+    key: 'machineNames',
+    header: 'Machine(s)',
+    wrap: true
+  }, {
+    key: 'score',
+    header: 'Score',
+    align: 'right',
+    numeric: true
+  }, {
+    key: 'agenticPct',
+    header: 'Agentic',
+    align: 'right',
+    numeric: true
+  }, {
+    key: 'toolPct',
+    header: 'Tools',
+    align: 'right',
+    numeric: true
+  }, {
+    key: 'avgTps',
+    header: 'Tok/s',
+    align: 'right',
+    numeric: true,
+    render: v => v != null ? v.toFixed(1) : '—'
+  }, {
+    key: 'avgWallS',
+    header: 'Wall (s)',
+    align: 'right',
+    numeric: true,
+    render: v => v != null ? v.toFixed(1) : '—'
+  }, {
+    key: 'context64kOk',
+    header: '64K ctx',
+    align: 'center',
+    render: v => v == null ? '—' : v ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, "OK") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "warning"
+    }, "No")
+  }];
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
+    eyebrow: "Models",
+    title: "Benchmarked models across machines",
+    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards — grounded in your own test runs.",
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: () => setView('usage')
+    }, "Usage detail")
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement(SegmentedControl, {
+    value: lane,
+    onChange: v => {
+      state.modelsLane = v;
+      forceRender();
+    },
+    options: [{
+      value: 'all',
+      label: 'All lanes'
+    }, {
+      value: 'omlx',
+      label: 'oMLX'
+    }, {
+      value: 'ollama',
+      label: 'Ollama'
+    }, {
+      value: 'azure',
+      label: 'Azure fleet'
+    }]
+  }), /*#__PURE__*/React.createElement(Select, {
+    value: machineFilter,
+    onChange: v => {
+      state.modelsMachine = v;
+      forceRender();
+    },
+    options: machineOptions.map(([value, label]) => ({
+      value,
+      label
+    })),
+    "aria-label": "Filter by machine"
+  })), /*#__PURE__*/React.createElement(Grid, {
+    min: 160,
+    gap: 3
+  }, /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Benchmarked models",
+    value: String(benchmarked.length),
+    deltaNote: bench.updatedIso ? 'Updated ' + shortAge(bench.updated) : 'rollup pending'
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best composite",
+    value: bestScore ? displayText(bestScore.id, 18) : '—',
+    deltaNote: bestScore && bestScore.compositeScore != null ? 'Score ' + bestScore.compositeScore.toFixed(1) : 'Run bake-offs'
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best agentic",
+    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
+    deltaNote: bestAgentic ? displayText(bestAgentic.id, 24) : ''
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best tools",
+    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
+    deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Test runs",
+    value: String(runs.length),
+    deltaNote: "Tool + agentic harnesses"
+  })), /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Agentic frontier",
+    title: "Pass rate vs speed",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, scatterRows.length, " models")
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Bubble size tracks output tok/s. Upper-left is ideal: high pass rate, lower wall time. Click a point to inspect runs."), /*#__PURE__*/React.createElement(ScatterPlot, {
+    rows: scatterRows,
+    width: mobile ? 360 : 640,
+    height: mobile ? 240 : 280
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Throughput",
+    title: "Output tokens per second"
+  }, throughputRows.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(BarChart, {
+    data: throughputRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: m.avgTps,
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "From headless Claude Code agentic bake-offs on throwaway repos.")) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No throughput data",
+    description: "Agentic bake-off runs populate this chart."
+  }))), /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Tool reliability",
+    title: "Structured tool_use pass rate"
+  }, toolRows.length ? /*#__PURE__*/React.createElement(BarChart, {
+    data: toolRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: Math.round((m.toolReliability || 0) * 100),
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No tool benchmarks",
+    description: "Run omlx_bakeoff.py to score tool calling."
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Agentic tasks",
+    title: "Objective test pass rate"
+  }, agenticRows.length ? /*#__PURE__*/React.createElement(BarChart, {
+    data: agenticRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: Math.round((m.agenticPassRate || 0) * 100),
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No agentic benchmarks",
+    description: "Run omlx_agentic_bakeoff.py on each machine."
+  }))), selected && /*#__PURE__*/React.createElement(Card, {
+    title: selected.id,
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => pickModel(selected.id)
+    }, "Close")
+  }, /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 3,
+    gap: 3
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail']]
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: 'var(--tracking-eyebrow)'
+    }
+  }, "Runs"), /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
+    key: run.runId + run.kind,
+    title: run.runId + ' · ' + run.kind,
+    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
+    trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, "winner") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, run.kind)
+  })))), /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: 'var(--tracking-eyebrow)'
+    }
+  }, "Live traffic (", usageWindowLabel(), ")"), usageModels.filter(u => String(u.label || '').toLowerCase().includes(String(selected.id).split('-')[0].toLowerCase())).length ? /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Matching sessions",
+    rows: usageModels.filter(u => String(u.label || '').toLowerCase().includes(String(selected.id).split('-')[0].toLowerCase())),
+    totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
+  }) : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "No close session-traffic match this window. Cloud attribution lives under Usage → Models.")))), /*#__PURE__*/React.createElement(Card, {
+    title: "Benchmark catalog",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, tableRows.length, " rows")
+  }, tableRows.length ? /*#__PURE__*/React.createElement(DataTable, {
+    rows: tableRows,
+    columns: columns,
+    compact: true,
+    getRowKey: r => r.id,
+    onRowClick: r => pickModel(r.id)
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No benchmark rows",
+    description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Run history",
+    title: "Harness executions"
+  }, runs.length ? /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, runs.slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
+    key: run.id,
+    title: run.id,
+    description: (run.date || 'unknown date') + ' · ' + machineLabel(run.machine) + ' · ' + run.lane + ' · ' + Object.keys(run.models || {}).length + ' models',
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: run.kind === 'agentic' ? 'accent' : 'info'
+    }, run.kind)
+  }))) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No runs recorded",
+    description: "Results land under tools/local-fallback/*/results/."
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Live cloud mix",
+    title: "Session traffic this window",
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => {
+        state.usageTab = 'models';
+        setView('usage');
+      }
+    }, "Open Usage")
+  }, /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 3,
+    gap: 3
+  }, /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Model mix",
+    rows: usageModels,
+    totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
+  }), /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Backend share",
+    rows: groupMetrics(currentUsageRows(), r => backendLane(r)).slice(0, 6),
+    totalMs: currentUsageRows().reduce((a, r) => a + durationMs(r), 0)
+  }), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Azure fleet",
+    title: `${(state.modelFleet?.deployments || []).length} deployments`
+  }, /*#__PURE__*/React.createElement(List, null, (state.modelFleet?.deployments || []).slice(0, 6).map(d => /*#__PURE__*/React.createElement(ListItem, {
+    key: d.deploymentName,
+    title: d.modelName || d.deploymentName,
+    description: d.lifecycle || 'unknown',
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, d.verified || '—')
+  }))))))));
+}
 function SimpleView({
   kind
 }) {
@@ -21033,6 +21526,7 @@ function Content() {
   if (state.view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
   if (state.view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
   if (state.view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
+  if (state.view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
   if (state.view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
   if (state.view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
   return /*#__PURE__*/React.createElement(SimpleView, {
@@ -21302,7 +21796,7 @@ function MoreDrawer({
   open,
   onClose
 }) {
-  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
+  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['models', 'Models', 'star'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
   return /*#__PURE__*/React.createElement(Drawer, {
     open: open,
     onClose: onClose,
@@ -25345,6 +25839,7 @@ window.__WBReactRender = function () {
         ...(state.skillCatalog?.store || []),
       ].map((s) => ({ t: s.name, s: "Skill", run: () => openSkill(s.slug) })),
       { t: "Usage", s: "View", run: () => go("usage") },
+      { t: "Models", s: "View", run: () => go("models") },
       { t: "Sessions", s: "View", run: () => go("sessions") },
       { t: "Machines & sync", s: "View", run: () => go("machines") },
       { t: "Follow-ups", s: "View", run: () => go("followups") },
