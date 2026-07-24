@@ -14583,7 +14583,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.34";
+  const WB_VERSION = "2026-07-23.35";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -20889,15 +20889,6 @@ function buildMachineCompare(allEntries, machineA, machineB) {
     onlyA,
     onlyB
   };
-}
-function winnerBadge(side, winner) {
-  if (winner === 'tie') return /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, "tie");
-  if (winner === side) return /*#__PURE__*/React.createElement(Badge, {
-    tone: "favorable"
-  }, "better");
-  return null;
 }
 function modelBenchmarkEntries(bench, lane, machine, query) {
   const entries = deriveBenchmarkEntries(bench || {});
