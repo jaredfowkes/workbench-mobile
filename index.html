@@ -3619,6 +3619,39 @@ button.metric-card:hover {
 .models-leaderboard tbody tr.is-active {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
+.models-task-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+.models-task-chip {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+  background: var(--surface-card);
+}
+.models-task-chip strong {
+  font-size: 13px;
+  color: var(--text-strong);
+}
+.models-task-chip span {
+  color: var(--text-muted);
+}
+.models-task-chip.is-favorable {
+  border-color: color-mix(in srgb, var(--positive, #448361) 35%, var(--border-subtle));
+  background: color-mix(in srgb, var(--positive, #448361) 8%, var(--surface-card));
+}
+.models-task-chip.is-warning {
+  border-color: color-mix(in srgb, var(--warning, #d97706) 35%, var(--border-subtle));
+  background: color-mix(in srgb, var(--warning, #d97706) 8%, var(--surface-card));
+}
+.models-task-chip.is-unfavorable {
+  border-color: color-mix(in srgb, var(--negative, #e03e3e) 35%, var(--border-subtle));
+  background: color-mix(in srgb, var(--negative, #e03e3e) 8%, var(--surface-card));
+}
 .models-highlight-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -14672,7 +14705,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.36";
+  const WB_VERSION = "2026-07-23.37";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21016,8 +21049,8 @@ function ModelsView() {
   };
   const machineLabel = id => machinesMeta[id] && machinesMeta[id].displayName || machineName(id) || id;
   const entries = modelBenchmarkEntries(bench, lane, machineFilter, search);
-  const benchmarked = entries.filter(e => entryQualityPct(e) != null || e.compositeScore != null);
-  const scatterRows = benchmarked.filter(e => entryQualityPct(e) != null && entryPriceMetric(e, scatterAxis) != null);
+  const benchmarked = entries.filter(e => entryBenchScore(e) != null);
+  const scatterRows = benchmarked.filter(e => entryBenchScore(e) != null && entryPriceMetric(e, scatterAxis) != null);
   const frontierRows = paretoQualityFrontier(scatterRows, scatterAxis);
   const machineOptions = [['all', 'All machines'], ...Object.keys(machinesMeta).sort().map(id => [id, machineLabel(id)])];
   const selectedKey = state.modelsSelected || null;
@@ -21060,14 +21093,31 @@ function ModelsView() {
   const avgTpsRatio = compare.paired.filter(r => r.tpsRatio).length ? compare.paired.reduce((s, r) => s + r.tpsRatio, 0) / compare.paired.filter(r => r.tpsRatio).length : null;
   const labelA = machineLabel(compareA);
   const labelB = machineLabel(compareB);
-  function entryQualityPct(entry) {
-    if (entry.qualityPct != null) return entry.qualityPct;
-    if (entry.agenticPassRate != null) return Math.round(entry.agenticPassRate * 1000) / 10;
-    if (entry.toolReliability != null && entry.qualityPassed != null && entry.qualityTotal) {
-      return Math.round((entry.toolReliability * 0.35 + entry.qualityPassed / entry.qualityTotal * 0.65) * 1000) / 10;
-    }
+  function entryBenchScore(entry) {
+    if (entry.benchScore != null) return entry.benchScore;
     if (entry.compositeScore != null) return entry.compositeScore;
+    if (entry.qualityPct != null) return entry.qualityPct;
     return null;
+  }
+  function entryAgenticPct(entry) {
+    if (entry.agenticPct != null) return entry.agenticPct;
+    if (entry.agenticPassRate != null) return Math.round(entry.agenticPassRate * 1000) / 10;
+    return null;
+  }
+  function entryRubricPct(entry) {
+    if (entry.rubricPct != null) return entry.rubricPct;
+    if (entry.qualityPassed != null && entry.qualityTotal) {
+      return Math.round(entry.qualityPassed / entry.qualityTotal * 1000) / 10;
+    }
+    return null;
+  }
+  function entryToolPct(entry) {
+    if (entry.toolPct != null) return entry.toolPct;
+    if (entry.toolReliability != null) return Math.round(entry.toolReliability * 1000) / 10;
+    return null;
+  }
+  function entryQualityPct(entry) {
+    return entryBenchScore(entry);
   }
   function entryPriceMetric(entry, axis) {
     if (axis === 'turns') return entry.avgTurns;
@@ -21078,35 +21128,39 @@ function ModelsView() {
     return axis === 'wall' || axis === 'turns';
   }
   function metricValue(m, key) {
-    if (key === 'quality') return entryQualityPct(m);
+    if (key === 'quality') return entryBenchScore(m);
+    if (key === 'agentic') return entryAgenticPct(m);
+    if (key === 'rubric') return entryRubricPct(m);
     if (key === 'composite') return m.compositeScore;
     if (key === 'speed') return m.avgWallS;
     if (key === 'throughput') return m.avgTps;
-    if (key === 'tools') return m.toolReliability != null ? m.toolReliability * 100 : null;
+    if (key === 'tools') return entryToolPct(m);
     if (key === 'value') return m.valueIndex;
-    return entryQualityPct(m);
+    return entryBenchScore(m);
   }
   function metricTitle(key) {
     return {
-      quality: 'Pass rate',
+      quality: 'Bench score',
+      agentic: 'Pass@1',
+      rubric: 'Rubric',
       composite: 'Composite score',
       speed: 'Wall time',
       throughput: 'Output tok/s',
-      tools: 'Tool pass rate',
+      tools: 'Tools',
       value: 'Value index'
     }[key] || key;
   }
   function metricDisplay(m, key) {
     const v = metricValue(m, key);
     if (v == null) return '—';
-    if (key === 'quality' || key === 'tools') return Math.round(v) + '%';
+    if (key === 'quality' || key === 'agentic' || key === 'rubric' || key === 'tools') return Math.round(v) + '%';
     if (key === 'speed') return v.toFixed(1) + 's';
     if (key === 'throughput') return v.toFixed(1);
     if (key === 'value') return v.toFixed(1);
     return v.toFixed(1);
   }
   function paretoQualityFrontier(rows, axis) {
-    const pts = rows.filter(r => entryQualityPct(r) != null && entryPriceMetric(r, axis) != null).slice().sort((a, b) => {
+    const pts = rows.filter(r => entryBenchScore(r) != null && entryPriceMetric(r, axis) != null).slice().sort((a, b) => {
       const av = entryPriceMetric(a, axis);
       const bv = entryPriceMetric(b, axis);
       return priceAxisInverted(axis) ? av - bv : bv - av;
@@ -21114,7 +21168,7 @@ function ModelsView() {
     const out = [];
     let best = -Infinity;
     for (const row of pts) {
-      const q = entryQualityPct(row);
+      const q = entryBenchScore(row);
       if (q > best) {
         out.push(row);
         best = q;
@@ -21165,15 +21219,15 @@ function ModelsView() {
     const xVals = rows.map(r => entryPriceMetric(r, scatterAxis) || 0);
     const maxX = Math.max(...xVals, 1);
     const minX = Math.min(...xVals, 0);
-    const qVals = rows.map(r => entryQualityPct(r) || 0);
-    const maxQ = Math.max(...qVals, 100);
-    const minQ = Math.min(...qVals, 0);
+    const qVals = rows.map(r => entryBenchScore(r) || 0);
+    const maxQ = Math.min(100, Math.max(...qVals, 1) + 4);
+    const minQ = Math.max(0, Math.min(...qVals) - 4);
     const x = v => pad.l + (inverted ? maxX - v : v - minX) / (maxX - minX || 1) * innerW;
     const y = score => pad.t + innerH - (score - minQ) / (maxQ - minQ || 1) * innerH;
     const frontierIds = new Set(frontierRows.map(r => r.entryKey || r.id));
     const frontierPoints = frontierRows.map(r => ({
       x: x(entryPriceMetric(r, scatterAxis)),
-      y: y(entryQualityPct(r))
+      y: y(entryBenchScore(r))
     }));
     const frontierPath = frontierPoints.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
     const familyGroups = {};
@@ -21215,7 +21269,7 @@ function ModelsView() {
       strokeDasharray: "4 5"
     })), Object.values(familyGroups).filter(g => g.length >= 2).map(group => {
       const sorted = group.slice().sort((a, b) => entryPriceMetric(a, scatterAxis) - entryPriceMetric(b, scatterAxis));
-      const path = sorted.map((r, i) => `${i ? 'L' : 'M'}${x(entryPriceMetric(r, scatterAxis)).toFixed(1)},${y(entryQualityPct(r)).toFixed(1)}`).join(' ');
+      const path = sorted.map((r, i) => `${i ? 'L' : 'M'}${x(entryPriceMetric(r, scatterAxis)).toFixed(1)},${y(entryBenchScore(r)).toFixed(1)}`).join(' ');
       return /*#__PURE__*/React.createElement("path", {
         key: group[0].family + group[0].machine,
         d: path,
@@ -21247,9 +21301,9 @@ function ModelsView() {
       fill: "var(--text-muted)",
       fontSize: "11",
       transform: `rotate(-90 12 ${pad.t + innerH / 2})`
-    }, "Pass rate (%)"), rows.map(row => {
+    }, "Bench score"), rows.map(row => {
       const px = entryPriceMetric(row, scatterAxis);
-      const q = entryQualityPct(row);
+      const q = entryBenchScore(row);
       const cx = x(px);
       const cy = y(q);
       const key = row.entryKey || row.id;
@@ -21282,7 +21336,7 @@ function ModelsView() {
         x: cx + 8,
         y: cy + 4,
         fontSize: "10"
-      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ': ' + Math.round(q) + '% pass · ' + (scatterAxis === 'wall' && row.avgWallS != null ? row.avgWallS.toFixed(1) + 's wall' : scatterAxis === 'turns' && row.avgTurns != null ? row.avgTurns.toFixed(1) + ' turns' : row.avgTps != null ? row.avgTps.toFixed(1) + ' tok/s' : '—') + (onFrontier ? ' · frontier' : '')));
+      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ': bench ' + q.toFixed(1) + ' · Pass@1 ' + (entryAgenticPct(row) != null ? Math.round(entryAgenticPct(row)) + '%' : '—') + ' · rubric ' + (entryRubricPct(row) != null ? Math.round(entryRubricPct(row)) + '%' : '—') + ' · ' + (scatterAxis === 'wall' && row.avgWallS != null ? row.avgWallS.toFixed(1) + 's wall' : scatterAxis === 'turns' && row.avgTurns != null ? row.avgTurns.toFixed(1) + ' turns' : row.avgTps != null ? row.avgTps.toFixed(1) + ' tok/s' : '—') + (onFrontier ? ' · frontier' : '')));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -21297,24 +21351,30 @@ function ModelsView() {
       title: "No benchmark rows",
       description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
     });
-    const maxQ = Math.max(...rows.map(r => entryQualityPct(r) || 0), 1);
+    const maxQ = Math.max(...rows.map(r => entryBenchScore(r) || 0), 1);
     return /*#__PURE__*/React.createElement("div", {
       className: "models-leaderboard-wrap"
     }, /*#__PURE__*/React.createElement("table", {
       className: "models-leaderboard"
     }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Model"), !mobile && /*#__PURE__*/React.createElement("th", {
       className: "models-leaderboard-chart-col"
-    }, "Pass rate"), /*#__PURE__*/React.createElement("th", {
+    }, "Bench score"), /*#__PURE__*/React.createElement("th", {
       className: "numeric"
-    }, "Quality"), /*#__PURE__*/React.createElement("th", {
+    }, "Score"), /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Pass@1"), !mobile && /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Rubric"), !mobile && /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Tools"), /*#__PURE__*/React.createElement("th", {
       className: "numeric"
     }, "Wall"), /*#__PURE__*/React.createElement("th", {
       className: "numeric"
     }, "Tok/s"), /*#__PURE__*/React.createElement("th", {
       className: "numeric"
     }, "Turns"))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => {
-      const q = entryQualityPct(r);
-      const barW = q != null ? q / maxQ * 100 : 0;
+      const score = entryBenchScore(r);
+      const barW = score != null ? score / maxQ * 100 : 0;
       const key = r.entryKey || r.id + '::' + r.machine;
       const active = state.modelsSelected === key;
       return /*#__PURE__*/React.createElement("tr", {
@@ -21341,7 +21401,13 @@ function ModelsView() {
         }
       }))), /*#__PURE__*/React.createElement("td", {
         className: "numeric"
-      }, q != null ? Math.round(q) + '%' : '—'), /*#__PURE__*/React.createElement("td", {
+      }, score != null ? score.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, entryAgenticPct(r) != null ? Math.round(entryAgenticPct(r)) + '%' : '—'), !mobile && /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, entryRubricPct(r) != null ? Math.round(entryRubricPct(r)) + '%' : '—'), !mobile && /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, entryToolPct(r) != null ? Math.round(entryToolPct(r)) + '%' : '—'), /*#__PURE__*/React.createElement("td", {
         className: "numeric"
       }, r.avgWallS != null ? r.avgWallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", {
         className: "numeric"
@@ -21350,13 +21416,28 @@ function ModelsView() {
       }, r.avgTurns != null ? r.avgTurns.toFixed(1) : '—'));
     }))));
   }
+  function AgenticTaskGrid({
+    tasks
+  }) {
+    if (!tasks || !tasks.length) return null;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-task-grid"
+    }, tasks.map(task => {
+      const tone = task.passed ? 'favorable' : task.verifyPassed ? 'warning' : 'unfavorable';
+      const label = task.passed ? 'pass' : task.verifyPassed ? 'verify only' : task.timedOut ? 'timeout' : 'fail';
+      return /*#__PURE__*/React.createElement("div", {
+        key: task.task,
+        className: 'models-task-chip is-' + tone
+      }, /*#__PURE__*/React.createElement("strong", null, task.task), /*#__PURE__*/React.createElement("span", null, label, task.wallS != null ? ' · ' + task.wallS.toFixed(1) + 's' : '', task.turns != null ? ' · ' + task.turns + ' turns' : ''));
+    }));
+  }
   const tableRows = rankRows(benchmarked, rankMetric);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
     title: "Local model benchmark lab",
-    lede: "Real bake-off pass rates versus wall time — for free local models, time is the price axis. Compare hosts, models, and efficiency frontiers from oMLX and Ollama harness runs.",
+    lede: "Bench score blends agentic Pass@1, design-doc rubric, and tool reliability — then plots it against wall time (the price for free local runs).",
     action: /*#__PURE__*/React.createElement(Cluster, {
       gap: 2
     }, /*#__PURE__*/React.createElement(Badge, {
@@ -21449,7 +21530,7 @@ function ModelsView() {
     }, scatterRows.length, " plotted"))
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "DeepSWE-style efficiency chart: pass rate on the Y axis; X is wall time by default (local runs cost $0 — time is the price). Top-right is best. Dashed line is the quality frontier; colored lines connect variants on the same host."), /*#__PURE__*/React.createElement(EfficiencyScatter, {
+  }, "Y axis is bench score (50% agentic Pass@1 + 15% rubric + 35% tools), not raw pass rate alone — so models that ace agentic but fail tools/rubric still separate. X axis is wall time by default; top-right is best."), /*#__PURE__*/React.createElement(EfficiencyScatter, {
     rows: scatterRows,
     width: mobile ? 360 : 760,
     height: mobile ? 280 : 360
@@ -21468,7 +21549,10 @@ function ModelsView() {
       } : {},
       tabs: [{
         value: 'quality',
-        label: 'Pass rate'
+        label: 'Bench score'
+      }, {
+        value: 'agentic',
+        label: 'Pass@1'
       }, {
         value: 'speed',
         label: 'Wall time'
@@ -21476,8 +21560,8 @@ function ModelsView() {
         value: 'throughput',
         label: 'Tok/s'
       }, {
-        value: 'composite',
-        label: 'Composite'
+        value: 'rubric',
+        label: 'Rubric'
       }, {
         value: 'tools',
         label: 'Tools'
@@ -21487,9 +21571,9 @@ function ModelsView() {
     gap: 3
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "One row per model × machine from the latest agentic + tool bake-offs. Quality is agentic pass rate when present; otherwise tool quality. Bars show relative pass rate; columns show the time price."), rankMetric === 'tools' && tableRows.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
+  }, "One row per model × machine. Score column is the blended bench metric; Pass@1, Rubric, and Tools show what drove it. Click a row for per-task agentic breakdown."), rankMetric === 'tools' && tableRows.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
     variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Pass rate or Wall time to separate them.")), /*#__PURE__*/React.createElement(LeaderboardTable, {
+  }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Bench score or Rubric to separate them.")), /*#__PURE__*/React.createElement(LeaderboardTable, {
     rows: tableRows
   }))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Machine showdown",
@@ -21653,10 +21737,20 @@ function ModelsView() {
     cols: mobile ? 1 : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Pass rate', entryQualityPct(selected) != null ? Math.round(entryQualityPct(selected)) + '%' : '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Bench score', entryBenchScore(selected) != null ? entryBenchScore(selected).toFixed(1) : '—'], ['Pass@1', entryAgenticPct(selected) != null ? Math.round(entryAgenticPct(selected)) + '%' + (selected.agenticPassed != null ? ' (' + selected.agenticPassed + '/' + selected.agenticTotal + ')' : '') : '—'], ['Rubric', entryRubricPct(selected) != null ? Math.round(entryRubricPct(selected)) + '%' + (selected.qualityPassed != null ? ' (' + selected.qualityPassed + '/' + selected.qualityTotal + ')' : '') : '—'], ['Tools', entryToolPct(selected) != null ? Math.round(entryToolPct(selected)) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
-  }, /*#__PURE__*/React.createElement("div", {
+  }, selected.agenticTasks && selected.agenticTasks.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: 'var(--tracking-eyebrow)'
+    }
+  }, "Agentic tasks"), /*#__PURE__*/React.createElement(AgenticTaskGrid, {
+    tasks: selected.agenticTasks
+  })) : null, /*#__PURE__*/React.createElement("div", {
     style: {
       fontSize: 12,
       fontWeight: 700,
