@@ -3481,6 +3481,10 @@ button.metric-card:hover {
   stroke: var(--text-strong);
   stroke-width: 2;
 }
+.models-scatter-label {
+  fill: var(--text-secondary);
+  pointer-events: none;
+}
 .models-quadrant-label {
   font-size: 10px;
   font-weight: 600;
@@ -3529,6 +3533,91 @@ button.metric-card:hover {
 }
 .models-hbar-row.is-active .models-hbar-label {
   color: var(--accent);
+}
+.models-leaderboard-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.models-leaderboard {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.models-leaderboard th,
+.models-leaderboard td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+.models-leaderboard th {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--border-subtle) 35%, transparent);
+  text-align: left;
+}
+.models-leaderboard th.numeric,
+.models-leaderboard td.numeric {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.models-leaderboard-chart-col {
+  width: min(36vw, 320px);
+}
+.models-leaderboard-model {
+  min-width: 220px;
+}
+.models-leaderboard-rank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-subtle) 55%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+.models-leaderboard-name {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  vertical-align: middle;
+}
+.models-leaderboard-host {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.models-leaderboard-bar-cell {
+  width: min(36vw, 320px);
+}
+.models-leaderboard-bar-track {
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  overflow: hidden;
+}
+.models-leaderboard-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  min-width: 4px;
+}
+.models-leaderboard tbody tr {
+  cursor: pointer;
+}
+.models-leaderboard tbody tr:hover {
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+.models-leaderboard tbody tr.is-active {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .models-highlight-grid {
   display: grid;
@@ -14583,7 +14672,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.35";
+  const WB_VERSION = "2026-07-23.36";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -20911,8 +21000,8 @@ function ModelsView() {
   const machinesMeta = bench.machines || {};
   const lane = state.modelsLane || 'all';
   const machineFilter = state.modelsMachine || 'all';
-  const rankMetric = state.modelsRankMetric || 'composite';
-  const scatterAxis = state.modelsScatterAxis || 'speed';
+  const rankMetric = state.modelsRankMetric || 'quality';
+  const scatterAxis = state.modelsScatterAxis || 'wall';
   const search = state.modelsSearch || '';
   const familyColors = {
     Qwen: 'var(--dv-1)',
@@ -20927,9 +21016,9 @@ function ModelsView() {
   };
   const machineLabel = id => machinesMeta[id] && machinesMeta[id].displayName || machineName(id) || id;
   const entries = modelBenchmarkEntries(bench, lane, machineFilter, search);
-  const benchmarked = entries.filter(e => e.compositeScore != null);
-  const scatterRows = benchmarked.filter(e => scatterAxis === 'value' ? e.valueIndex != null : e.compositeScore != null && e.avgWallS != null);
-  const frontierRows = paretoFrontier(scatterRows, scatterAxis);
+  const benchmarked = entries.filter(e => entryQualityPct(e) != null || e.compositeScore != null);
+  const scatterRows = benchmarked.filter(e => entryQualityPct(e) != null && entryPriceMetric(e, scatterAxis) != null);
+  const frontierRows = paretoQualityFrontier(scatterRows, scatterAxis);
   const machineOptions = [['all', 'All machines'], ...Object.keys(machinesMeta).sort().map(id => [id, machineLabel(id)])];
   const selectedKey = state.modelsSelected || null;
   const selected = selectedKey ? entries.find(e => e.entryKey === selectedKey || e.id === selectedKey && !entries.some(x => x.entryKey === selectedKey)) : null;
@@ -20971,16 +21060,35 @@ function ModelsView() {
   const avgTpsRatio = compare.paired.filter(r => r.tpsRatio).length ? compare.paired.reduce((s, r) => s + r.tpsRatio, 0) / compare.paired.filter(r => r.tpsRatio).length : null;
   const labelA = machineLabel(compareA);
   const labelB = machineLabel(compareB);
+  function entryQualityPct(entry) {
+    if (entry.qualityPct != null) return entry.qualityPct;
+    if (entry.agenticPassRate != null) return Math.round(entry.agenticPassRate * 1000) / 10;
+    if (entry.toolReliability != null && entry.qualityPassed != null && entry.qualityTotal) {
+      return Math.round((entry.toolReliability * 0.35 + entry.qualityPassed / entry.qualityTotal * 0.65) * 1000) / 10;
+    }
+    if (entry.compositeScore != null) return entry.compositeScore;
+    return null;
+  }
+  function entryPriceMetric(entry, axis) {
+    if (axis === 'turns') return entry.avgTurns;
+    if (axis === 'throughput') return entry.avgTps;
+    return entry.avgWallS;
+  }
+  function priceAxisInverted(axis) {
+    return axis === 'wall' || axis === 'turns';
+  }
   function metricValue(m, key) {
+    if (key === 'quality') return entryQualityPct(m);
     if (key === 'composite') return m.compositeScore;
     if (key === 'speed') return m.avgWallS;
     if (key === 'throughput') return m.avgTps;
     if (key === 'tools') return m.toolReliability != null ? m.toolReliability * 100 : null;
     if (key === 'value') return m.valueIndex;
-    return m.compositeScore;
+    return entryQualityPct(m);
   }
   function metricTitle(key) {
     return {
+      quality: 'Pass rate',
       composite: 'Composite score',
       speed: 'Wall time',
       throughput: 'Output tok/s',
@@ -20991,24 +21099,25 @@ function ModelsView() {
   function metricDisplay(m, key) {
     const v = metricValue(m, key);
     if (v == null) return '—';
+    if (key === 'quality' || key === 'tools') return Math.round(v) + '%';
     if (key === 'speed') return v.toFixed(1) + 's';
     if (key === 'throughput') return v.toFixed(1);
-    if (key === 'tools') return Math.round(v) + '%';
     if (key === 'value') return v.toFixed(1);
     return v.toFixed(1);
   }
-  function paretoFrontier(rows, axis) {
-    const pts = rows.filter(r => r.compositeScore != null).slice().sort((a, b) => {
-      const ax = axis === 'value' ? a.valueIndex || 0 : a.avgWallS || 0;
-      const bx = axis === 'value' ? b.valueIndex || 0 : b.avgWallS || 0;
-      return ax - bx;
+  function paretoQualityFrontier(rows, axis) {
+    const pts = rows.filter(r => entryQualityPct(r) != null && entryPriceMetric(r, axis) != null).slice().sort((a, b) => {
+      const av = entryPriceMetric(a, axis);
+      const bv = entryPriceMetric(b, axis);
+      return priceAxisInverted(axis) ? av - bv : bv - av;
     });
     const out = [];
     let best = -Infinity;
     for (const row of pts) {
-      if (row.compositeScore > best) {
+      const q = entryQualityPct(row);
+      if (q > best) {
         out.push(row);
-        best = row.compositeScore;
+        best = q;
       }
     }
     return out;
@@ -21018,21 +21127,7 @@ function ModelsView() {
     if (key === 'speed') usable.sort((a, b) => metricValue(a, key) - metricValue(b, key));else usable.sort((a, b) => metricValue(b, key) - metricValue(a, key));
     return usable;
   }
-  function deltaBadge(m) {
-    if (m.wallDeltaPct == null && m.tpsDeltaPct == null) return null;
-    const parts = [];
-    if (m.wallDeltaPct != null) parts.push((m.wallDeltaPct > 0 ? '+' : '') + m.wallDeltaPct.toFixed(0) + '% wall');
-    if (m.tpsDeltaPct != null) parts.push((m.tpsDeltaPct > 0 ? '+' : '') + m.tpsDeltaPct.toFixed(0) + '% tok/s');
-    const tone = (m.wallDeltaPct || 0) >= 0 || (m.tpsDeltaPct || 0) >= 0 ? 'favorable' : 'warning';
-    return /*#__PURE__*/React.createElement(Badge, {
-      tone: tone
-    }, parts.join(' · '));
-  }
-  const ranked = rankRows(benchmarked, rankMetric);
   const scopedMachine = machineFilter !== 'all' ? machineFilter : null;
-  const bestComposite = rankRows(benchmarked, 'composite')[0];
-  const bestSpeed = rankRows(benchmarked, 'speed')[0];
-  const bestValue = rankRows(benchmarked, 'value')[0];
   const machineHosts = Object.keys(machinesMeta).sort();
   const opsRows = machineHosts.map(id => {
     const meta = machinesMeta[id] || {};
@@ -21046,99 +21141,122 @@ function ModelsView() {
       lastAt: meta.lastBenchmarkAt
     };
   });
-  function FrontierScatter({
+  function EfficiencyScatter({
     rows,
     width = 720,
-    height = 320
+    height = 360
   }) {
     if (!rows.length) {
-      const desc = benchLoadFailed ? 'Could not load tools/model-benchmarks.json. Reload the dashboard or run python3 tools/build-model-benchmarks.py, then refresh data.' : usingLegacyCatalog ? 'Benchmark catalog loaded without v2 entries — showing derived rows. Run python3 tools/build-dashboard.py to refresh the embedded snapshot.' : 'Run oMLX or Ollama bake-offs, then rebuild with python3 tools/build-model-benchmarks.py.';
+      const desc = benchLoadFailed ? 'Could not load tools/model-benchmarks.json. Reload the dashboard or run python3 tools/build-model-benchmarks.py, then refresh data.' : usingLegacyCatalog ? 'Benchmark catalog loaded without v2 entries — showing derived rows. Run python3 tools/build-dashboard.py to refresh the embedded snapshot.' : scatterAxis === 'wall' ? 'Run agentic bake-offs to populate pass rate and wall time.' : 'No rows with both quality and ' + (scatterAxis === 'turns' ? 'turn counts' : 'throughput') + ' yet.';
       return /*#__PURE__*/React.createElement(EmptyState, {
         title: "No benchmarked models yet",
         description: desc
       });
     }
     const pad = {
-      t: 22,
-      r: 24,
-      b: 42,
+      t: 28,
+      r: 84,
+      b: 48,
       l: 52
     };
     const innerW = width - pad.l - pad.r;
     const innerH = height - pad.t - pad.b;
-    const useValue = scatterAxis === 'value';
-    const xVals = rows.map(r => (useValue ? r.valueIndex : r.avgWallS) || 0);
-    const maxX = Math.max(...xVals, useValue ? 1 : 1);
+    const inverted = priceAxisInverted(scatterAxis);
+    const xVals = rows.map(r => entryPriceMetric(r, scatterAxis) || 0);
+    const maxX = Math.max(...xVals, 1);
     const minX = Math.min(...xVals, 0);
-    const maxScore = Math.max(...rows.map(r => r.compositeScore || 0), 100);
-    const minScore = Math.min(...rows.map(r => r.compositeScore || 0), 0);
-    const x = v => pad.l + (v - minX) / (maxX - minX || 1) * innerW;
-    const y = score => pad.t + innerH - (score - minScore) / (maxScore - minScore || 1) * innerH;
+    const qVals = rows.map(r => entryQualityPct(r) || 0);
+    const maxQ = Math.max(...qVals, 100);
+    const minQ = Math.min(...qVals, 0);
+    const x = v => pad.l + (inverted ? maxX - v : v - minX) / (maxX - minX || 1) * innerW;
+    const y = score => pad.t + innerH - (score - minQ) / (maxQ - minQ || 1) * innerH;
     const frontierIds = new Set(frontierRows.map(r => r.entryKey || r.id));
     const frontierPoints = frontierRows.map(r => ({
-      x: x(useValue ? r.valueIndex : r.avgWallS),
-      y: y(r.compositeScore)
+      x: x(entryPriceMetric(r, scatterAxis)),
+      y: y(entryQualityPct(r))
     }));
     const frontierPath = frontierPoints.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const familyGroups = {};
+    for (const row of rows) {
+      const gk = row.family + '::' + row.machine;
+      (familyGroups[gk] = familyGroups[gk] || []).push(row);
+    }
+    const axisLabel = scatterAxis === 'wall' ? 'Avg wall time (s)' : scatterAxis === 'turns' ? 'Avg agent turns' : 'Output tok/s';
+    const axisHint = inverted ? scatterAxis === 'wall' ? ' slower ← · faster →' : ' more turns ← · fewer →' : ' slower ← · faster →';
     return /*#__PURE__*/React.createElement("div", {
       className: "models-scatter-wrap"
     }, /*#__PURE__*/React.createElement("svg", {
       className: "models-scatter",
       viewBox: `0 0 ${width} ${height}`,
       role: "img",
-      "aria-label": useValue ? 'Composite score versus value index' : 'Composite score versus average wall time'
+      "aria-label": 'Pass rate versus ' + axisLabel
     }, /*#__PURE__*/React.createElement("rect", {
       x: pad.l,
       y: pad.t,
       width: innerW,
       height: innerH,
-      fill: "color-mix(in srgb, var(--accent) 5%, transparent)",
+      fill: "color-mix(in srgb, var(--accent) 4%, transparent)",
       rx: "8"
     }), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'y' + t,
       x1: pad.l,
       x2: width - pad.r,
-      y1: y(minScore + (maxScore - minScore) * t),
-      y2: y(minScore + (maxScore - minScore) * t),
+      y1: y(minQ + (maxQ - minQ) * t),
+      y2: y(minQ + (maxQ - minQ) * t),
       stroke: "var(--border-subtle)",
       strokeDasharray: "4 5"
     })), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'x' + t,
-      x1: x(minX + (maxX - minX) * t),
-      x2: x(minX + (maxX - minX) * t),
+      x1: x(inverted ? maxX - (maxX - minX) * t : minX + (maxX - minX) * t),
+      x2: x(inverted ? maxX - (maxX - minX) * t : minX + (maxX - minX) * t),
       y1: pad.t,
       y2: height - pad.b,
       stroke: "var(--border-subtle)",
       strokeDasharray: "4 5"
-    })), frontierPoints.length > 1 && /*#__PURE__*/React.createElement("path", {
+    })), Object.values(familyGroups).filter(g => g.length >= 2).map(group => {
+      const sorted = group.slice().sort((a, b) => entryPriceMetric(a, scatterAxis) - entryPriceMetric(b, scatterAxis));
+      const path = sorted.map((r, i) => `${i ? 'L' : 'M'}${x(entryPriceMetric(r, scatterAxis)).toFixed(1)},${y(entryQualityPct(r)).toFixed(1)}`).join(' ');
+      return /*#__PURE__*/React.createElement("path", {
+        key: group[0].family + group[0].machine,
+        d: path,
+        fill: "none",
+        stroke: familyColors[group[0].family] || familyColors.Other,
+        strokeWidth: "1.25",
+        opacity: "0.45"
+      });
+    }), frontierPoints.length > 1 && /*#__PURE__*/React.createElement("path", {
       d: frontierPath,
       fill: "none",
       stroke: "var(--text-strong)",
       strokeWidth: "1.5",
       strokeDasharray: "5 4",
-      opacity: "0.55"
+      opacity: "0.7"
     }), /*#__PURE__*/React.createElement("text", {
       className: "models-quadrant-label",
-      x: pad.l + 8,
-      y: pad.t + 14
-    }, useValue ? 'High score · high value →' : 'High score · fast ←'), /*#__PURE__*/React.createElement("text", {
+      x: width - pad.r - 4,
+      y: pad.t + 12,
+      textAnchor: "end"
+    }, "most efficient ↗"), /*#__PURE__*/React.createElement("text", {
       x: pad.l,
-      y: height - 10,
+      y: height - 12,
       fill: "var(--text-muted)",
       fontSize: "11"
-    }, useValue ? 'Value index (score ÷ $' + cloudRef.toFixed(2) + ' cloud ref) →' : 'Avg wall time (s) → slower'), /*#__PURE__*/React.createElement("text", {
-      x: 10,
-      y: pad.t + 12,
+    }, axisLabel + axisHint), /*#__PURE__*/React.createElement("text", {
+      x: 12,
+      y: pad.t + 10,
       fill: "var(--text-muted)",
       fontSize: "11",
       transform: `rotate(-90 12 ${pad.t + innerH / 2})`
-    }, "Composite score"), rows.map(row => {
-      const cx = x(useValue ? row.valueIndex : row.avgWallS);
-      const cy = y(row.compositeScore);
+    }, "Pass rate (%)"), rows.map(row => {
+      const px = entryPriceMetric(row, scatterAxis);
+      const q = entryQualityPct(row);
+      const cx = x(px);
+      const cy = y(q);
       const key = row.entryKey || row.id;
       const active = state.modelsSelected === key;
       const onFrontier = frontierIds.has(key);
-      const r = 5 + Math.min(12, (row.avgTps || 0) / 6);
+      const r = 5;
+      const short = displayText(row.id, mobile ? 14 : 18);
       return /*#__PURE__*/React.createElement("g", {
         key: key,
         className: 'models-scatter-point' + (active ? ' is-active' : '') + (onFrontier ? ' is-frontier' : ''),
@@ -21149,9 +21267,9 @@ function ModelsView() {
       }, /*#__PURE__*/React.createElement("circle", {
         cx: cx,
         cy: cy,
-        r: r + 5,
+        r: r + 4,
         fill: familyColors[row.family] || familyColors.Other,
-        opacity: active ? 0.2 : 0.1
+        opacity: active ? 0.22 : 0.12
       }), /*#__PURE__*/React.createElement("circle", {
         cx: cx,
         cy: cy,
@@ -21159,7 +21277,12 @@ function ModelsView() {
         fill: familyColors[row.family] || familyColors.Other,
         stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
         strokeWidth: active ? 2 : 1.5
-      }), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ': score ' + row.compositeScore.toFixed(1) + ' · ' + (row.avgWallS != null ? row.avgWallS.toFixed(1) + 's' : '—') + ' · ' + (row.avgTps || '—') + ' tok/s' + (row.cloudAvoidedUsd ? ' · ~$' + row.cloudAvoidedUsd.toFixed(2) + ' avoided' : '') + (onFrontier ? ' · frontier' : '')));
+      }), !mobile && /*#__PURE__*/React.createElement("text", {
+        className: "models-scatter-label",
+        x: cx + 8,
+        y: cy + 4,
+        fontSize: "10"
+      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ': ' + Math.round(q) + '% pass · ' + (scatterAxis === 'wall' && row.avgWallS != null ? row.avgWallS.toFixed(1) + 's wall' : scatterAxis === 'turns' && row.avgTurns != null ? row.avgTurns.toFixed(1) + ' turns' : row.avgTps != null ? row.avgTps.toFixed(1) + ' tok/s' : '—') + (onFrontier ? ' · frontier' : '')));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -21167,116 +21290,80 @@ function ModelsView() {
       }))
     }));
   }
-  const tableRows = rankRows(benchmarked, rankMetric).map((m, i) => ({
-    ...m,
-    rank: i + 1,
-    machineName: machineLabel(m.machine),
-    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—',
-    metric: metricDisplay(m, rankMetric),
-    lastTested: m.lastTestedAt || '—',
-    avoided: m.cloudAvoidedUsd != null ? '$' + m.cloudAvoidedUsd.toFixed(2) : '—',
-    delta: deltaBadge(m)
-  }));
-  const columns = mobile ? [{
-    key: 'rank',
-    header: '#',
-    align: 'right',
-    numeric: true,
-    width: 36
-  }, {
-    key: 'id',
-    header: 'Model',
-    wrap: true,
-    render: (v, r) => /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: "models-link",
-      onClick: () => pickEntry(r)
-    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 28)))
-  }, {
-    key: 'machineName',
-    header: 'Machine',
-    render: v => /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, displayText(v, 16))
-  }, {
-    key: 'metric',
-    header: metricTitle(rankMetric),
-    align: 'right',
-    numeric: true
-  }, {
-    key: 'lastTested',
-    header: 'Last',
-    align: 'right',
-    numeric: true
-  }] : [{
-    key: 'rank',
-    header: '#',
-    align: 'right',
-    numeric: true,
-    width: 44
-  }, {
-    key: 'id',
-    header: 'Model',
-    wrap: true,
-    render: (v, r) => /*#__PURE__*/React.createElement("button", {
-      type: "button",
-      className: "models-link",
-      onClick: () => pickEntry(r)
-    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 40)))
-  }, {
-    key: 'machineName',
-    header: 'Machine',
-    render: v => /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, v)
-  }, {
-    key: 'metric',
-    header: metricTitle(rankMetric),
-    align: 'right',
-    numeric: true
-  }, {
-    key: 'score',
-    header: 'Composite',
-    align: 'right',
-    numeric: true
-  }, {
-    key: 'avgWallS',
-    header: 'Wall (s)',
-    align: 'right',
-    numeric: true,
-    render: v => v != null ? v.toFixed(1) : '—'
-  }, {
-    key: 'avgTps',
-    header: 'Tok/s',
-    align: 'right',
-    numeric: true,
-    render: v => v != null ? v.toFixed(1) : '—'
-  }, {
-    key: 'avoided',
-    header: 'Cloud ref',
-    align: 'right',
-    numeric: true
-  }, {
-    key: 'lastTested',
-    header: 'Last run',
-    align: 'right',
-    numeric: true
-  }, {
-    key: 'delta',
-    header: 'Δ vs prior',
-    render: v => v || '—'
-  }];
+  function LeaderboardTable({
+    rows
+  }) {
+    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No benchmark rows",
+      description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
+    });
+    const maxQ = Math.max(...rows.map(r => entryQualityPct(r) || 0), 1);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-leaderboard-wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "models-leaderboard"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Model"), !mobile && /*#__PURE__*/React.createElement("th", {
+      className: "models-leaderboard-chart-col"
+    }, "Pass rate"), /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Quality"), /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Wall"), /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Tok/s"), /*#__PURE__*/React.createElement("th", {
+      className: "numeric"
+    }, "Turns"))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => {
+      const q = entryQualityPct(r);
+      const barW = q != null ? q / maxQ * 100 : 0;
+      const key = r.entryKey || r.id + '::' + r.machine;
+      const active = state.modelsSelected === key;
+      return /*#__PURE__*/React.createElement("tr", {
+        key: key,
+        className: active ? 'is-active' : '',
+        onClick: () => pickEntry(r)
+      }, /*#__PURE__*/React.createElement("td", {
+        className: "models-leaderboard-model"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "models-leaderboard-rank"
+      }, i + 1), /*#__PURE__*/React.createElement("span", {
+        className: "models-leaderboard-name"
+      }, /*#__PURE__*/React.createElement("strong", null, displayText(r.id, mobile ? 28 : 44)), /*#__PURE__*/React.createElement("span", {
+        className: "models-leaderboard-host"
+      }, displayText(machineLabel(r.machine), mobile ? 14 : 22)))), !mobile && /*#__PURE__*/React.createElement("td", {
+        className: "models-leaderboard-bar-cell"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "models-leaderboard-bar-track"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "models-leaderboard-bar-fill",
+        style: {
+          width: barW + '%',
+          background: familyColors[r.family] || familyColors.Other
+        }
+      }))), /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, q != null ? Math.round(q) + '%' : '—'), /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, r.avgWallS != null ? r.avgWallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, r.avgTps != null ? r.avgTps.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
+        className: "numeric"
+      }, r.avgTurns != null ? r.avgTurns.toFixed(1) : '—'));
+    }))));
+  }
+  const tableRows = rankRows(benchmarked, rankMetric);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
     title: "Local model benchmark lab",
-    lede: "Track what ran on which machine, how scores moved over time, and where local runs beat cloud reference cost.",
+    lede: "Real bake-off pass rates versus wall time — for free local models, time is the price axis. Compare hosts, models, and efficiency frontiers from oMLX and Ollama harness runs.",
     action: /*#__PURE__*/React.createElement(Cluster, {
       gap: 2
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, "Updated ", updatedLabel), /*#__PURE__*/React.createElement(Button, {
+    }, "Updated ", updatedLabel), /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, benchmarked.length, " entries"), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: () => setView('usage')
@@ -21287,7 +21374,124 @@ function ModelsView() {
     variant: "warn"
   }, /*#__PURE__*/React.createElement("span", null, "Model benchmark data did not load — scatter and leaderboard will stay empty until tools/model-benchmarks.json is readable. Try Reload or Reconnect.")), usingLegacyCatalog && !benchLoadFailed && /*#__PURE__*/React.createElement(Banner, {
     variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "Using legacy catalog rows — rebuild the dashboard to pick up per-machine v2 entries and trend deltas.")), /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement("span", null, "Using legacy catalog rows — rebuild the dashboard to pick up per-machine v2 entries and trend deltas.")), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap',
+      justifyContent: 'space-between'
+    }
+  }, /*#__PURE__*/React.createElement(SegmentedControl, {
+    value: lane,
+    onChange: v => {
+      state.modelsLane = v;
+      forceRender();
+    },
+    options: [{
+      value: 'all',
+      label: 'All lanes'
+    }, {
+      value: 'omlx',
+      label: 'oMLX'
+    }, {
+      value: 'ollama',
+      label: 'Ollama'
+    }, {
+      value: 'azure',
+      label: 'Azure fleet'
+    }]
+  }), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement(Select, {
+    value: machineFilter,
+    onChange: v => {
+      state.modelsMachine = v;
+      forceRender();
+    },
+    options: machineOptions.map(([value, label]) => ({
+      value,
+      label
+    })),
+    "aria-label": "Filter by machine"
+  }), /*#__PURE__*/React.createElement(SearchField, {
+    value: search,
+    onChange: v => {
+      state.modelsSearch = v;
+      forceRender();
+    },
+    placeholder: "Search models…",
+    count: benchmarked.length
+  }))), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Efficiency",
+    title: "Quality vs time",
+    action: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 2
+    }, /*#__PURE__*/React.createElement(SegmentedControl, {
+      value: scatterAxis,
+      onChange: v => {
+        state.modelsScatterAxis = v;
+        forceRender();
+      },
+      options: [{
+        value: 'wall',
+        label: 'Wall time'
+      }, {
+        value: 'turns',
+        label: 'Turns'
+      }, {
+        value: 'throughput',
+        label: 'Tok/s'
+      }]
+    }), /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, scatterRows.length, " plotted"))
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "DeepSWE-style efficiency chart: pass rate on the Y axis; X is wall time by default (local runs cost $0 — time is the price). Top-right is best. Dashed line is the quality frontier; colored lines connect variants on the same host."), /*#__PURE__*/React.createElement(EfficiencyScatter, {
+    rows: scatterRows,
+    width: mobile ? 360 : 760,
+    height: mobile ? 280 : 360
+  })), /*#__PURE__*/React.createElement(Card, {
+    title: "Leaderboard",
+    action: /*#__PURE__*/React.createElement(Tabs, {
+      value: rankMetric,
+      onChange: v => {
+        state.modelsRankMetric = v;
+        forceRender();
+      },
+      style: mobile ? {
+        overflowX: 'auto',
+        flexWrap: 'nowrap',
+        WebkitOverflowScrolling: 'touch'
+      } : {},
+      tabs: [{
+        value: 'quality',
+        label: 'Pass rate'
+      }, {
+        value: 'speed',
+        label: 'Wall time'
+      }, {
+        value: 'throughput',
+        label: 'Tok/s'
+      }, {
+        value: 'composite',
+        label: 'Composite'
+      }, {
+        value: 'tools',
+        label: 'Tools'
+      }]
+    })
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "One row per model × machine from the latest agentic + tool bake-offs. Quality is agentic pass rate when present; otherwise tool quality. Bars show relative pass rate; columns show the time price."), rankMetric === 'tools' && tableRows.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
+    variant: "info"
+  }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Pass rate or Wall time to separate them.")), /*#__PURE__*/React.createElement(LeaderboardTable, {
+    rows: tableRows
+  }))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Machine showdown",
     title: labelA + ' vs ' + labelB,
     action: /*#__PURE__*/React.createElement(Badge, {
@@ -21438,145 +21642,7 @@ function ModelsView() {
       state.modelsMachine = row.id;
       forceRender();
     }
-  }, scopedMachine === row.id ? 'Showing this machine' : 'Filter to this machine'))))), /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      flexWrap: 'wrap',
-      justifyContent: 'space-between'
-    }
-  }, /*#__PURE__*/React.createElement(SegmentedControl, {
-    value: lane,
-    onChange: v => {
-      state.modelsLane = v;
-      forceRender();
-    },
-    options: [{
-      value: 'all',
-      label: 'All lanes'
-    }, {
-      value: 'omlx',
-      label: 'oMLX'
-    }, {
-      value: 'ollama',
-      label: 'Ollama'
-    }, {
-      value: 'azure',
-      label: 'Azure fleet'
-    }]
-  }), /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement(Select, {
-    value: machineFilter,
-    onChange: v => {
-      state.modelsMachine = v;
-      forceRender();
-    },
-    options: machineOptions.map(([value, label]) => ({
-      value,
-      label
-    })),
-    "aria-label": "Filter by machine"
-  }), /*#__PURE__*/React.createElement(SearchField, {
-    value: search,
-    onChange: v => {
-      state.modelsSearch = v;
-      forceRender();
-    },
-    placeholder: "Search models…",
-    count: benchmarked.length
-  }))), /*#__PURE__*/React.createElement("div", {
-    className: "models-highlight-grid"
-  }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Best composite",
-    title: bestComposite ? displayText(bestComposite.id, mobile ? 20 : 28) : '—'
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, bestComposite ? machineLabel(bestComposite.machine) + ' · ' + bestComposite.compositeScore.toFixed(1) + ' · ' + (bestComposite.avgWallS != null ? bestComposite.avgWallS.toFixed(1) + 's' : '—') : 'Run bake-offs to populate scores.')), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Fastest wall time",
-    title: bestSpeed ? displayText(bestSpeed.id, mobile ? 20 : 28) : '—'
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, bestSpeed ? machineLabel(bestSpeed.machine) + ' · ' + metricDisplay(bestSpeed, 'speed') + ' · composite ' + (bestSpeed.compositeScore != null ? bestSpeed.compositeScore.toFixed(1) : '—') : 'No agentic timing yet.')), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Best value",
-    title: bestValue ? displayText(bestValue.id, mobile ? 20 : 28) : '—'
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, bestValue ? machineLabel(bestValue.machine) + ' · index ' + (bestValue.valueIndex != null ? bestValue.valueIndex.toFixed(1) : '—') + ' · ~$' + (bestValue.cloudAvoidedUsd || cloudRef).toFixed(2) + ' cloud ref avoided' : 'Need composite score on a local run.'))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: scatterAxis === 'value' ? 'Value vs quality' : 'Score vs speed',
-    title: scatterAxis === 'value' ? 'Composite vs value index' : 'Composite index vs wall time',
-    action: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 1
-    }, /*#__PURE__*/React.createElement(SegmentedControl, {
-      value: scatterAxis,
-      onChange: v => {
-        state.modelsScatterAxis = v;
-        forceRender();
-      },
-      options: [{
-        value: 'speed',
-        label: 'Speed'
-      }, {
-        value: 'value',
-        label: 'Value'
-      }]
-    }), /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, scatterRows.length, " entries"))
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, scatterAxis === 'value' ? 'BenchLM-style view: higher value index means more composite score per dollar of cloud reference cost ($' + cloudRef.toFixed(2) + ' per comparable agentic run). Local runs cost $0; avoided cost is the reference savings.' : 'Each dot is one model on one machine. Up is better quality, left is faster. Bubble size tracks output tok/s; dashed line is the efficiency frontier.'), /*#__PURE__*/React.createElement(FrontierScatter, {
-    rows: scatterRows,
-    width: mobile ? 360 : 720,
-    height: mobile ? 260 : 320
-  })), /*#__PURE__*/React.createElement(Card, {
-    title: "Leaderboard",
-    action: /*#__PURE__*/React.createElement(Tabs, {
-      value: rankMetric,
-      onChange: v => {
-        state.modelsRankMetric = v;
-        forceRender();
-      },
-      style: mobile ? {
-        overflowX: 'auto',
-        flexWrap: 'nowrap',
-        WebkitOverflowScrolling: 'touch'
-      } : {},
-      tabs: [{
-        value: 'composite',
-        label: 'Composite'
-      }, {
-        value: 'speed',
-        label: 'Speed'
-      }, {
-        value: 'throughput',
-        label: 'Throughput'
-      }, {
-        value: 'value',
-        label: 'Value'
-      }, {
-        value: 'tools',
-        label: 'Tools'
-      }]
-    })
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 3
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "One row per model × machine. Metrics use the latest tool + agentic runs on that host — not cross-machine bests. Δ compares the latest agentic run to the prior run on the same machine."), rankMetric === 'tools' && ranked.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
-    variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Speed, Value, or Throughput to separate them.")), tableRows.length ? /*#__PURE__*/React.createElement(DataTable, {
-    rows: tableRows,
-    columns: columns,
-    compact: true,
-    getRowKey: r => r.entryKey || r.id + '::' + r.machine,
-    onRowClick: r => pickEntry(r)
-  }) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No benchmark rows",
-    description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
-  }))), selected && /*#__PURE__*/React.createElement(Card, {
+  }, scopedMachine === row.id ? 'Showing this machine' : 'Filter to this machine'))))), selected && /*#__PURE__*/React.createElement(Card, {
     title: selected.id + ' · ' + machineLabel(selected.machine),
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
@@ -21587,7 +21653,7 @@ function ModelsView() {
     cols: mobile ? 1 : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Value index', selected.valueIndex != null ? selected.valueIndex.toFixed(1) : '—'], ['Cloud ref avoided', selected.cloudAvoidedUsd != null ? '$' + selected.cloudAvoidedUsd.toFixed(2) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Pass rate', entryQualityPct(selected) != null ? Math.round(entryQualityPct(selected)) + '%' : '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("div", {
