@@ -3532,7 +3532,7 @@ button.metric-card:hover {
     try {
       var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
       var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
+      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
@@ -14434,7 +14434,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.29";
+  const WB_VERSION = "2026-07-23.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18172,8 +18172,30 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     window.setTimeout(() => overlay.remove(), 320);
   }
   window.__WBDismissBoot = dismissBootOverlay;
+  function ensureBootOverlay(message) {
+    const msg = String(message || "Connecting to GitHub…").trim() || "Connecting to GitHub…";
+    document.documentElement.classList.add("wb-booting");
+    let overlay = $("#wbBootOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "wbBootOverlay";
+      overlay.className = "wb-boot-overlay";
+      overlay.setAttribute("role", "status");
+      overlay.setAttribute("aria-live", "polite");
+      overlay.setAttribute("aria-busy", "true");
+      overlay.innerHTML = `<div class="wb-boot-card"><span class="wb-boot-spinner" aria-hidden="true"></span><div class="wb-boot-wordmark">Workbench</div><div class="wb-boot-status" id="wbBootStatus">${esc(msg)}</div></div>`;
+      document.body.prepend(overlay);
+      return;
+    }
+    overlay.classList.remove("wb-boot-overlay--done");
+    overlay.style.display = "";
+    overlay.style.opacity = "";
+    overlay.style.visibility = "";
+    overlay.setAttribute("aria-busy", "true");
+    setBootMessage(msg);
+  }
   function showBoot(progress) {
-    setBootMessage(progress || "Connecting to GitHub…");
+    ensureBootOverlay(progress || "Connecting to GitHub…");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
     const view = $("#view");
@@ -25659,12 +25681,25 @@ window.__WBReactRender = function () {
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
-    // Paint cached/skeleton content immediately so the tree + content fetches
-    // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
-    await ghGetTree(!!opts.forceTree);
-    updateBootProgress("Loading projects…");
-    await scan();
+    try {
+      await ghGetTree(!!opts.forceTree);
+      updateBootProgress("Loading projects…");
+      await scan();
+    } catch (e) {
+      if (!state.connected) {
+        showLanding(
+          e?.message || "GitHub connect failed. Reconnect below.",
+        );
+      }
+      throw e;
+    }
+  }
+  function ghConnectRetryable(error) {
+    const status = error?.status;
+    if (status === 401 || status === 403 || status === 404) return false;
+    if (status && status < 500 && status !== 429) return false;
+    return true;
   }
   function updateShellForBackend() {
     // The helper-backed git actions are meaningless on the GitHub backend:
@@ -25702,7 +25737,7 @@ window.__WBReactRender = function () {
         );
         return;
       }
-      if (attempt >= 4) {
+      if (!ghConnectRetryable(e) || attempt >= 4) {
         showBootFailure(
           e?.message ||
             "Could not reach GitHub after several tries. Reconnect or clear the cached tree.",
@@ -25730,7 +25765,6 @@ window.__WBReactRender = function () {
     }
   }
   function openGithubConnect() {
-    dismissBootOverlay();
     const cfg = ghConfig() || {
       owner: "jaredfowkes",
       repo: "workbench",
@@ -25766,11 +25800,6 @@ window.__WBReactRender = function () {
         await connectGithub(nextCfg, { forceTree: true });
       } catch (e) {
         toast(e?.message || "GitHub connect failed.", "danger");
-        if (!state.connected) {
-          showLanding(
-            e?.message || "GitHub connect failed. Reconnect below.",
-          );
-        }
       }
     };
   }
@@ -25996,8 +26025,9 @@ window.__WBReactRender = function () {
       connectFolder();
     } else if (location.protocol === "file:" && savedRoot) {
       await connectFolder(false);
-    } else if (cfg && location.protocol.startsWith("http")) autoGithub(cfg);
-    else showLanding();
+    } else if (cfg && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
+      autoGithub(cfg);
+    } else showLanding();
   })();
 })();
 
