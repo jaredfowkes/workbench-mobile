@@ -14548,7 +14548,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.32";
+  const WB_VERSION = "2026-07-23.33";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16772,10 +16772,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           models: [],
           runs: [],
           machines: {},
+          entries: [],
           label: "Model benchmarks",
           path: "tools/model-benchmarks.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
-        });
+        }) || { models: [], runs: [], machines: {}, entries: [] };
       }),
       loadJson("tools/machine-aliases.json", {
         source: "hydrate.machine-aliases",
@@ -20753,13 +20754,69 @@ function MachinesView() {
     description: "Data-health sources appear here after hydration runs."
   })))));
 }
+function deriveBenchmarkEntries(bench) {
+  if (Array.isArray(bench?.entries) && bench.entries.length) return bench.entries;
+  const cloudRef = bench?.cloudRefCostUsd || 1.5;
+  const out = [];
+  for (const model of bench?.models || []) {
+    if (!(model.runCount > 0) && model.compositeScore == null) continue;
+    if (model.byMachine && Object.keys(model.byMachine).length) {
+      for (const [machine, slice] of Object.entries(model.byMachine)) {
+        out.push({
+          entryKey: `${model.id}::${machine}`,
+          id: model.id,
+          machine,
+          family: model.family,
+          lane: model.lane,
+          runs: (model.runs || []).filter(r => r.machine === machine),
+          valueIndex: slice.valueIndex != null ? slice.valueIndex : slice.compositeScore != null ? slice.compositeScore / cloudRef : null,
+          cloudAvoidedUsd: slice.cloudAvoidedUsd != null ? slice.cloudAvoidedUsd : cloudRef,
+          cloudRefCostUsd: 0,
+          ...slice
+        });
+      }
+      continue;
+    }
+    const groups = {};
+    for (const run of model.runs || []) {
+      const machine = run.machine || model.machines && model.machines[0] || 'unknown';
+      (groups[machine] = groups[machine] || []).push(run);
+    }
+    const machines = Object.keys(groups).length ? Object.keys(groups) : model.machines || ['unknown'];
+    for (const machine of machines) {
+      const runs = groups[machine] || model.runs || [];
+      const score = model.compositeScore;
+      out.push({
+        entryKey: `${model.id}::${machine}`,
+        id: model.id,
+        machine,
+        family: model.family,
+        lane: model.lane,
+        compositeScore: score,
+        avgWallS: model.avgWallS,
+        avgTps: model.avgTps,
+        toolReliability: model.toolReliability,
+        agenticPassRate: model.agenticPassRate,
+        agenticPassed: model.agenticPassed,
+        agenticTotal: model.agenticTotal,
+        lastTestedAt: model.lastTestedAt,
+        runCount: runs.length || model.runCount || 0,
+        runs,
+        valueIndex: score != null ? Math.round(score / cloudRef * 10) / 10 : null,
+        cloudAvoidedUsd: cloudRef,
+        cloudRefCostUsd: 0
+      });
+    }
+  }
+  return out;
+}
 function modelBenchmarkEntries(bench, lane, machine, query) {
-  const entries = bench && bench.entries || [];
+  const entries = deriveBenchmarkEntries(bench || {});
   const q = String(query || '').trim().toLowerCase();
   return entries.filter(e => {
     if (lane !== 'all' && e.lane !== lane) return false;
     if (machine !== 'all' && e.machine !== machine) return false;
-    if ((e.runCount || 0) <= 0) return false;
+    if ((e.runCount || 0) <= 0 && e.compositeScore == null) return false;
     if (q && !`${e.id} ${e.machine} ${e.family}`.toLowerCase().includes(q)) return false;
     return true;
   });
@@ -20767,6 +20824,9 @@ function modelBenchmarkEntries(bench, lane, machine, query) {
 function ModelsView() {
   const mobile = useViewport();
   const bench = state.modelBenchmarks || {};
+  const benchHealth = (state.dataHealth?.rows || []).find(r => r.source === 'hydrate.model-benchmarks' || r.path === 'tools/model-benchmarks.json');
+  const benchLoadFailed = state.modelBenchmarks == null || ['missing', 'unreachable', 'malformed'].includes(benchHealth?.status);
+  const usingLegacyCatalog = !(bench.entries && bench.entries.length) && (bench.models || []).some(m => m.runCount > 0);
   const runs = bench.runs || [];
   const machinesMeta = bench.machines || {};
   const lane = state.modelsLane || 'all';
@@ -20881,10 +20941,13 @@ function ModelsView() {
     width = 720,
     height = 320
   }) {
-    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No benchmarked models yet",
-      description: "Run oMLX or Ollama bake-offs, then rebuild with python3 tools/build-model-benchmarks.py."
-    });
+    if (!rows.length) {
+      const desc = benchLoadFailed ? 'Could not load tools/model-benchmarks.json. Reload the dashboard or run python3 tools/build-model-benchmarks.py, then refresh data.' : usingLegacyCatalog ? 'Benchmark catalog loaded without v2 entries — showing derived rows. Run python3 tools/build-dashboard.py to refresh the embedded snapshot.' : 'Run oMLX or Ollama bake-offs, then rebuild with python3 tools/build-model-benchmarks.py.';
+      return /*#__PURE__*/React.createElement(EmptyState, {
+        title: "No benchmarked models yet",
+        description: desc
+      });
+    }
     const pad = {
       t: 22,
       r: 24,
@@ -21110,7 +21173,11 @@ function ModelsView() {
     }, "Usage detail"))
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 4
-  }, /*#__PURE__*/React.createElement(Card, {
+  }, benchLoadFailed && /*#__PURE__*/React.createElement(Banner, {
+    variant: "warn"
+  }, /*#__PURE__*/React.createElement("span", null, "Model benchmark data did not load — scatter and leaderboard will stay empty until tools/model-benchmarks.json is readable. Try Reload or Reconnect.")), usingLegacyCatalog && !benchLoadFailed && /*#__PURE__*/React.createElement(Banner, {
+    variant: "info"
+  }, /*#__PURE__*/React.createElement("span", null, "Using legacy catalog rows — rebuild the dashboard to pick up per-machine v2 entries and trend deltas.")), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Model ops",
     title: scopedMachine ? machineLabel(scopedMachine) : 'All machines',
     action: /*#__PURE__*/React.createElement(Badge, {
