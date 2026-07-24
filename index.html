@@ -860,6 +860,15 @@
   --blue: #337ea9;
   --yellow: #cb912f;
 
+  /* Data-viz ramp (model families, charts) */
+  --dv-1: #9065b0;
+  --dv-2: #337ea9;
+  --dv-3: #448361;
+  --dv-4: #d9730d;
+  --dv-5: #9065b0;
+  --dv-6: #6b6a66;
+  --dv-7: #cb912f;
+
   /* Legacy status tokens re-valued */
   --status-success-soft: rgba(68, 131, 97, 0.12);
   --status-success-solid: #448361;
@@ -3079,9 +3088,9 @@ button.metric-card:hover {
 }
 .editorial-card h2 {
   font-size: clamp(24px, 3.8vw, 46px);
-  line-height: 1.12;
+  line-height: 1.08;
   letter-spacing: -0.035em;
-  max-width: min(100%, 34ch);
+  max-width: 18ch;
 }
 .reading-card {
   min-height: 260px;
@@ -3461,10 +3470,82 @@ button.metric-card:hover {
   display: block;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface-card)), var(--surface-card));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 42%),
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface-card)), var(--surface-card));
 }
 .models-scatter-point.is-active circle:last-child {
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 35%, transparent));
+}
+.models-scatter-point.is-frontier circle:last-child {
+  stroke: var(--text-strong);
+  stroke-width: 2;
+}
+.models-quadrant-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  fill: color-mix(in srgb, var(--accent) 72%, var(--text-muted));
+}
+.models-hbar-list {
+  display: grid;
+  gap: 10px;
+}
+.models-hbar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.models-hbar-label {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.models-hbar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border-subtle) 70%, transparent);
+  overflow: hidden;
+}
+.models-hbar-fill {
+  height: 100%;
+  border-radius: inherit;
+  min-width: 4px;
+  transition: width 280ms var(--ease);
+}
+.models-hbar-value {
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  min-width: 52px;
+  text-align: right;
+}
+.models-hbar-row.is-active .models-hbar-label {
+  color: var(--accent);
+}
+.models-highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .models-highlight-grid {
+    grid-template-columns: 1fr;
+  }
+  .models-hbar-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .models-hbar-value {
+    text-align: left;
+  }
 }
 .models-link {
   border: none;
@@ -3532,7 +3613,7 @@ button.metric-card:hover {
     try {
       var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
       var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
+      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
@@ -14434,7 +14515,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.31";
+  const WB_VERSION = "2026-07-23.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18172,30 +18253,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     window.setTimeout(() => overlay.remove(), 320);
   }
   window.__WBDismissBoot = dismissBootOverlay;
-  function ensureBootOverlay(message) {
-    const msg = String(message || "Connecting to GitHub…").trim() || "Connecting to GitHub…";
-    document.documentElement.classList.add("wb-booting");
-    let overlay = $("#wbBootOverlay");
-    if (!overlay) {
-      overlay = document.createElement("div");
-      overlay.id = "wbBootOverlay";
-      overlay.className = "wb-boot-overlay";
-      overlay.setAttribute("role", "status");
-      overlay.setAttribute("aria-live", "polite");
-      overlay.setAttribute("aria-busy", "true");
-      overlay.innerHTML = `<div class="wb-boot-card"><span class="wb-boot-spinner" aria-hidden="true"></span><div class="wb-boot-wordmark">Workbench</div><div class="wb-boot-status" id="wbBootStatus">${esc(msg)}</div></div>`;
-      document.body.prepend(overlay);
-      return;
-    }
-    overlay.classList.remove("wb-boot-overlay--done");
-    overlay.style.display = "";
-    overlay.style.opacity = "";
-    overlay.style.visibility = "";
-    overlay.setAttribute("aria-busy", "true");
-    setBootMessage(msg);
-  }
   function showBoot(progress) {
-    ensureBootOverlay(progress || "Connecting to GitHub…");
+    setBootMessage(progress || "Connecting to GitHub…");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
     const view = $("#view");
@@ -19445,11 +19504,10 @@ function TodayView() {
   state._acts = acts;
   const top = acts[0];
   const second = acts.find(a => top && actionKey(a) !== actionKey(top));
-  const insight = top ? `The cleanest next move is ${projectTitle(top.p)}: ${displayText(top.text, 130)}` : 'Everything is quiet enough for review, cleanup, or a new capture.';
-  const note = st.blocked ? `${st.blocked} blocker${st.blocked === 1 ? '' : 's'} should be cleared before adding more work.` : st.doing ? `${st.doing} item${st.doing === 1 ? '' : 's'} already in flight; finish before widening the queue.` : `${st.open} open items remain across the workbench, with ${st.week} completed this week.`;
+  const insight = top ? 'The cleanest next move is ' + projectTitle(top.p) + ': ' + displayText(top.text, mobile ? 110 : 150) : 'Everything is quiet enough for review, cleanup, or a new capture.';
+  const note = st.blocked ? st.blocked + ' blocker' + (st.blocked === 1 ? '' : 's') + ' should be cleared before adding more work.' : st.doing ? st.doing + ' item' + (st.doing === 1 ? '' : 's') + ' already in flight; finish before widening the queue.' : st.open + ' open items remain across the workbench, with ' + st.week + ' completed this week.';
   return /*#__PURE__*/React.createElement("div", {
-    style: pagePad,
-    className: "today-page"
+    style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Today",
     title: greeting() + ', Jared.',
@@ -19462,29 +19520,47 @@ function TodayView() {
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: mobile ? 5 : 6
   }, /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
-    className: "today-grid"
-  }, /*#__PURE__*/React.createElement("article", {
-    className: "card editorial-card"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "kicker"
-  }, "Operating note"), /*#__PURE__*/React.createElement("h2", null, insight), /*#__PURE__*/React.createElement("p", {
-    className: "muted"
-  }, note), /*#__PURE__*/React.createElement("div", {
-    className: "trace-row"
+    style: {
+      display: 'grid',
+      gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1.35fr) minmax(320px, .65fr)',
+      gap: mobile ? 18 : 28,
+      alignItems: 'start'
+    }
+  }, /*#__PURE__*/React.createElement("section", {
+    style: {
+      padding: mobile ? '8px 2px 12px' : '28px 8px 36px',
+      minHeight: mobile ? 'auto' : 280,
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      gap: mobile ? 16 : 22
+    }
+  }, /*#__PURE__*/React.createElement("h2", {
+    style: {
+      ...titleStyle,
+      fontSize: mobile ? 'clamp(36px, 13vw, 58px)' : 'clamp(42px, 5.2vw, 76px)',
+      lineHeight: mobile ? 0.98 : 0.96,
+      letterSpacing: '-0.055em',
+      maxWidth: mobile ? '9.5ch' : '13ch'
+    }
+  }, insight), /*#__PURE__*/React.createElement("p", {
+    style: {
+      ...muted,
+      fontSize: mobile ? 16 : 17,
+      maxWidth: mobile ? '30ch' : '44ch',
+      margin: 0
+    }
+  }, note), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
   }, st.open, " open"), /*#__PURE__*/React.createElement(Badge, {
     tone: "info"
   }, st.doing, " in flight"), /*#__PURE__*/React.createElement(Badge, {
     tone: st.blocked ? 'unfavorable' : 'favorable'
-  }, st.blocked ? `${st.blocked} blocked` : 'No blockers'), /*#__PURE__*/React.createElement(Badge, {
+  }, st.blocked ? st.blocked + ' blocked' : 'No blockers'), /*#__PURE__*/React.createElement(Badge, {
     tone: "accent"
-  }, st.week, " done this week")), top && /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement(Button, {
+  }, st.week, " done this week")), top && /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
     onClick: () => openProject(top.p)
   }, "Open project"), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
@@ -19492,22 +19568,23 @@ function TodayView() {
   }, "Copy agent prompt"), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => openSnoozeOptions(top)
-  }, "Snooze"))), /*#__PURE__*/React.createElement("aside", {
-    className: "card reading-card"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "kicker"
-  }, "Today's read"), /*#__PURE__*/React.createElement("h3", null, second ? projectTitle(second.p) : 'Workbench'), /*#__PURE__*/React.createElement("p", {
-    className: "muted"
-  }, second ? displayText(second.text, 220) : 'Review recent activity or capture the next idea without forcing a decision yet.'), second ? /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => openProject(second.p)
-  }, "Read project room") : /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => setView('projects')
-  }, "Browse projects"))), /*#__PURE__*/React.createElement("div", {
-    className: "grid cols-2 below-fold"
+  }, "Snooze"))), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Today's read",
+    title: second ? projectTitle(second.p) : 'Workbench',
+    action: second ? /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => openProject(second.p)
+    }, "Read") : /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => setView('projects')
+    }, "Browse")
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, second ? displayText(second.text, 220) : 'Review recent activity or capture the next idea without forcing a decision yet.'))), /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? undefined : 2,
+    gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
     title: "Recent activity"
   }, /*#__PURE__*/React.createElement(List, null, recentActivity().slice(0, 5).map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
@@ -20646,6 +20723,7 @@ function ModelsView() {
   const machinesMeta = bench.machines || {};
   const lane = state.modelsLane || 'all';
   const machineFilter = state.modelsMachine || 'all';
+  const rankMetric = state.modelsRankMetric || 'composite';
   const familyColors = {
     Qwen: 'var(--dv-1)',
     'OpenAI OSS': 'var(--dv-2)',
@@ -20653,6 +20731,7 @@ function ModelsView() {
     Mistral: 'var(--dv-4)',
     NVIDIA: 'var(--dv-5)',
     GLM: 'var(--dv-6)',
+    Gemma: 'var(--dv-7)',
     Anthropic: 'var(--accent)',
     Other: 'var(--text-muted)'
   };
@@ -20664,82 +20743,159 @@ function ModelsView() {
     return m.runCount > 0 || m.lane === 'azure';
   });
   const benchmarked = filtered.filter(m => m.runCount > 0);
-  const scatterRows = benchmarked.filter(m => m.agenticPassRate != null && m.avgWallS != null);
-  const toolRows = benchmarked.filter(m => m.toolReliability != null).slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0)).slice(0, 10);
-  const agenticRows = benchmarked.filter(m => m.agenticPassRate != null).slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0)).slice(0, 10);
-  const throughputRows = benchmarked.filter(m => m.avgTps != null).slice().sort((a, b) => (b.avgTps || 0) - (a.avgTps || 0)).slice(0, 8);
+  const scatterRows = benchmarked.filter(m => m.compositeScore != null && m.avgWallS != null);
+  const frontierRows = paretoFrontier(scatterRows);
   const machineOptions = [['all', 'All machines'], ...Object.keys(machinesMeta).sort().map(id => [id, machineLabel(id)])];
-  const bestAgentic = benchmarked.slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0))[0];
-  const bestTools = benchmarked.slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0))[0];
-  const bestScore = benchmarked.slice().sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))[0];
   const usageModels = groupModelMetrics(currentUsageRows()).slice(0, 8);
   const selected = state.modelsSelected ? catalog.find(m => m.id === state.modelsSelected) : null;
   const pickModel = id => {
     state.modelsSelected = state.modelsSelected === id ? null : id;
     forceRender();
   };
-  function ScatterPlot({
+  function metricValue(m, key) {
+    if (key === 'composite') return m.compositeScore;
+    if (key === 'speed') return m.avgWallS;
+    if (key === 'throughput') return m.avgTps;
+    if (key === 'tools') return m.toolReliability != null ? m.toolReliability * 100 : null;
+    return m.compositeScore;
+  }
+  function metricTitle(key) {
+    return {
+      composite: 'Composite score',
+      speed: 'Wall time',
+      throughput: 'Output tok/s',
+      tools: 'Tool pass rate'
+    }[key] || key;
+  }
+  function metricDisplay(m, key) {
+    const v = metricValue(m, key);
+    if (v == null) return '—';
+    if (key === 'speed') return v.toFixed(1) + 's';
+    if (key === 'throughput') return v.toFixed(1);
+    if (key === 'tools') return Math.round(v) + '%';
+    return v.toFixed(1);
+  }
+  function paretoFrontier(rows) {
+    const pts = rows.filter(r => r.compositeScore != null && r.avgWallS != null).slice().sort((a, b) => a.avgWallS - b.avgWallS);
+    const out = [];
+    let best = -Infinity;
+    for (const row of pts) {
+      if (row.compositeScore > best) {
+        out.push(row);
+        best = row.compositeScore;
+      }
+    }
+    return out;
+  }
+  function rankRows(rows, key) {
+    const usable = rows.filter(m => metricValue(m, key) != null);
+    if (key === 'speed') usable.sort((a, b) => metricValue(a, key) - metricValue(b, key));else usable.sort((a, b) => metricValue(b, key) - metricValue(a, key));
+    return usable;
+  }
+  function barFillPct(m, key, min, max) {
+    const v = metricValue(m, key);
+    if (v == null) return 0;
+    if (key === 'speed') return max === min ? 100 : (max - v) / (max - min) * 100;
+    return max ? v / max * 100 : 0;
+  }
+  const ranked = rankRows(benchmarked, rankMetric).slice(0, 12);
+  const rankValues = ranked.map(m => metricValue(m, rankMetric)).filter(v => v != null);
+  const rankMin = rankValues.length ? Math.min(...rankValues) : 0;
+  const rankMax = rankValues.length ? Math.max(...rankValues) : 1;
+  const bestComposite = rankRows(benchmarked, 'composite')[0];
+  const bestSpeed = rankRows(benchmarked, 'speed')[0];
+  const bestThroughput = rankRows(benchmarked, 'throughput')[0];
+  const frontierLeader = frontierRows.length ? frontierRows[frontierRows.length - 1] : bestComposite;
+  function FrontierScatter({
     rows,
-    width = 640,
-    height = 280
+    width = 720,
+    height = 320
   }) {
     if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No agentic benchmarks yet",
-      description: "Run the oMLX or Ollama bake-off harnesses to populate this chart."
+      title: "No benchmarked models yet",
+      description: "Run oMLX or Ollama bake-offs, then rebuild with python3 tools/build-model-benchmarks.py."
     });
     const pad = {
-      t: 16,
-      r: 20,
-      b: 36,
-      l: 44
+      t: 22,
+      r: 24,
+      b: 42,
+      l: 52
     };
     const innerW = width - pad.l - pad.r;
     const innerH = height - pad.t - pad.b;
     const maxWall = Math.max(...rows.map(r => r.avgWallS || 0), 1);
-    const x = v => pad.l + Math.min(v, maxWall) / maxWall * innerW;
-    const y = v => pad.t + innerH - Math.max(0, Math.min(1, v)) * innerH;
+    const minWall = Math.min(...rows.map(r => r.avgWallS || 0), 0);
+    const maxScore = Math.max(...rows.map(r => r.compositeScore || 0), 100);
+    const minScore = Math.min(...rows.map(r => r.compositeScore || 0), 0);
+    const x = wall => pad.l + (wall - minWall) / (maxWall - minWall || 1) * innerW;
+    const y = score => pad.t + innerH - (score - minScore) / (maxScore - minScore || 1) * innerH;
+    const frontierIds = new Set(frontierRows.map(r => r.id));
+    const frontierPoints = frontierRows.map(r => ({
+      x: x(r.avgWallS),
+      y: y(r.compositeScore)
+    }));
+    const frontierPath = frontierPoints.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
     return /*#__PURE__*/React.createElement("div", {
       className: "models-scatter-wrap"
     }, /*#__PURE__*/React.createElement("svg", {
       className: "models-scatter",
       viewBox: `0 0 ${width} ${height}`,
       role: "img",
-      "aria-label": "Agentic pass rate versus average wall time"
-    }, [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
+      "aria-label": "Composite score versus average wall time"
+    }, /*#__PURE__*/React.createElement("rect", {
+      x: pad.l,
+      y: pad.t,
+      width: innerW,
+      height: innerH,
+      fill: "color-mix(in srgb, var(--accent) 5%, transparent)",
+      rx: "8"
+    }), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'y' + t,
       x1: pad.l,
       x2: width - pad.r,
-      y1: y(t),
-      y2: y(t),
+      y1: y(minScore + (maxScore - minScore) * t),
+      y2: y(minScore + (maxScore - minScore) * t),
       stroke: "var(--border-subtle)",
-      strokeDasharray: "4 4"
-    })), [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
+      strokeDasharray: "4 5"
+    })), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'x' + t,
-      x1: x(maxWall * t),
-      x2: x(maxWall * t),
+      x1: x(minWall + (maxWall - minWall) * t),
+      x2: x(minWall + (maxWall - minWall) * t),
       y1: pad.t,
       y2: height - pad.b,
       stroke: "var(--border-subtle)",
-      strokeDasharray: "4 4"
-    })), /*#__PURE__*/React.createElement("text", {
+      strokeDasharray: "4 5"
+    })), frontierPoints.length > 1 && /*#__PURE__*/React.createElement("path", {
+      d: frontierPath,
+      fill: "none",
+      stroke: "var(--text-strong)",
+      strokeWidth: "1.5",
+      strokeDasharray: "5 4",
+      opacity: "0.55"
+    }), /*#__PURE__*/React.createElement("text", {
+      className: "models-quadrant-label",
+      x: pad.l + 8,
+      y: pad.t + 14
+    }, "High score · fast ←"), /*#__PURE__*/React.createElement("text", {
       x: pad.l,
-      y: height - 8,
+      y: height - 10,
       fill: "var(--text-muted)",
       fontSize: "11"
     }, "Avg wall time (s) → slower"), /*#__PURE__*/React.createElement("text", {
-      x: 8,
-      y: pad.t + 8,
+      x: 10,
+      y: pad.t + 12,
       fill: "var(--text-muted)",
       fontSize: "11",
       transform: `rotate(-90 12 ${pad.t + innerH / 2})`
-    }, "Agentic pass rate"), rows.map(row => {
+    }, "Composite score"), rows.map(row => {
       const cx = x(row.avgWallS);
-      const cy = y(row.agenticPassRate);
+      const cy = y(row.compositeScore);
       const active = state.modelsSelected === row.id;
-      const r = 6 + Math.min(10, (row.avgTps || 0) / 8);
+      const onFrontier = frontierIds.has(row.id);
+      const r = 5 + Math.min(12, (row.avgTps || 0) / 6);
       return /*#__PURE__*/React.createElement("g", {
         key: row.id,
-        className: 'models-scatter-point' + (active ? ' is-active' : ''),
+        className: 'models-scatter-point' + (active ? ' is-active' : '') + (onFrontier ? ' is-frontier' : ''),
         onClick: () => pickModel(row.id),
         style: {
           cursor: 'pointer'
@@ -20747,9 +20903,9 @@ function ModelsView() {
       }, /*#__PURE__*/React.createElement("circle", {
         cx: cx,
         cy: cy,
-        r: r + 4,
+        r: r + 5,
         fill: familyColors[row.family] || familyColors.Other,
-        opacity: active ? 0.22 : 0.12
+        opacity: active ? 0.2 : 0.1
       }), /*#__PURE__*/React.createElement("circle", {
         cx: cx,
         cy: cy,
@@ -20757,7 +20913,7 @@ function ModelsView() {
         fill: familyColors[row.family] || familyColors.Other,
         stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
         strokeWidth: active ? 2 : 1.5
-      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic · ' + row.avgWallS + 's avg · ' + (row.avgTps || '—') + ' tok/s'));
+      }), /*#__PURE__*/React.createElement("title", null, row.id + ': score ' + row.compositeScore.toFixed(1) + ' · ' + row.avgWallS.toFixed(1) + 's · ' + (row.avgTps || '—') + ' tok/s' + (onFrontier ? ' · frontier' : '')));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -20765,14 +20921,62 @@ function ModelsView() {
       }))
     }));
   }
-  const tableRows = benchmarked.map(m => ({
+  function RankedBarList({
+    rows,
+    metric
+  }) {
+    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
+      title: 'No ' + metricTitle(metric).toLowerCase() + ' data',
+      description: "Try another metric or run more bake-offs."
+    });
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-hbar-list"
+    }, rows.map((m, i) => {
+      const active = state.modelsSelected === m.id;
+      return /*#__PURE__*/React.createElement("button", {
+        key: m.id,
+        type: "button",
+        className: 'models-hbar-row' + (active ? ' is-active' : ''),
+        onClick: () => pickModel(m.id),
+        style: {
+          border: 'none',
+          background: 'transparent',
+          padding: 0,
+          cursor: 'pointer',
+          textAlign: 'left'
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "models-hbar-label",
+        title: m.id
+      }, "#", i + 1, " ", m.id), /*#__PURE__*/React.createElement("span", {
+        className: "models-hbar-track"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "models-hbar-fill",
+        style: {
+          width: barFillPct(m, metric, rankMin, rankMax) + '%',
+          background: familyColors[m.family] || familyColors.Other
+        }
+      })), /*#__PURE__*/React.createElement("span", {
+        className: "models-hbar-value"
+      }, metricDisplay(m, metric)));
+    }));
+  }
+  const tableRows = rankRows(benchmarked, rankMetric).map((m, i) => ({
     ...m,
+    rank: i + 1,
     machineNames: (m.machines || []).map(machineLabel).join(', '),
     toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : '—',
     agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : '—',
-    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—'
+    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—',
+    metric: metricDisplay(m, rankMetric)
   }));
   const columns = [{
+    key: 'rank',
+    header: '#',
+    align: 'right',
+    numeric: true,
+    width: 44
+  }, {
     key: 'id',
     header: 'Model',
     wrap: true,
@@ -20780,7 +20984,7 @@ function ModelsView() {
       type: "button",
       className: "models-link",
       onClick: () => pickModel(r.id)
-    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 42)))
+    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 48)))
   }, {
     key: 'family',
     header: 'Family',
@@ -20788,18 +20992,13 @@ function ModelsView() {
       tone: "neutral"
     }, v)
   }, {
-    key: 'lane',
-    header: 'Lane',
-    render: v => /*#__PURE__*/React.createElement(Badge, {
-      tone: v === 'azure' ? 'info' : 'accent'
-    }, v)
-  }, {
-    key: 'machineNames',
-    header: 'Machine(s)',
-    wrap: true
+    key: 'metric',
+    header: metricTitle(rankMetric),
+    align: 'right',
+    numeric: true
   }, {
     key: 'score',
-    header: 'Score',
+    header: 'Composite',
     align: 'right',
     numeric: true
   }, {
@@ -20825,21 +21024,18 @@ function ModelsView() {
     numeric: true,
     render: v => v != null ? v.toFixed(1) : '—'
   }, {
-    key: 'context64kOk',
-    header: '64K ctx',
-    align: 'center',
-    render: v => v == null ? '—' : v ? /*#__PURE__*/React.createElement(Badge, {
-      tone: "favorable"
-    }, "OK") : /*#__PURE__*/React.createElement(Badge, {
-      tone: "warning"
-    }, "No")
+    key: 'lane',
+    header: 'Lane',
+    render: v => /*#__PURE__*/React.createElement(Badge, {
+      tone: v === 'azure' ? 'info' : 'accent'
+    }, v)
   }];
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
-    title: "Benchmarked models across machines",
-    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards — grounded in your own test runs.",
+    title: "Local model leaderboard",
+    lede: "Your oMLX and Ollama bake-offs, ranked like a public benchmark page — composite score, speed, throughput, and tool reliability from real harness runs on your machines.",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -20883,92 +21079,81 @@ function ModelsView() {
       label
     })),
     "aria-label": "Filter by machine"
-  })), /*#__PURE__*/React.createElement(Grid, {
-    min: 160,
-    gap: 3
-  }, /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Benchmarked models",
-    value: String(benchmarked.length),
-    deltaNote: bench.updatedIso ? 'Updated ' + shortAge(bench.updated) : 'rollup pending'
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Best composite",
-    value: bestScore ? displayText(bestScore.id, 18) : '—',
-    deltaNote: bestScore && bestScore.compositeScore != null ? 'Score ' + bestScore.compositeScore.toFixed(1) : 'Run bake-offs'
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Best agentic",
-    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
-    deltaNote: bestAgentic ? displayText(bestAgentic.id, 24) : ''
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Best tools",
-    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
-    deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Test runs",
-    value: String(runs.length),
-    deltaNote: "Tool + agentic harnesses"
-  })), /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? 1 : 2,
-    gap: 4
+  })), /*#__PURE__*/React.createElement("div", {
+    className: "models-highlight-grid"
   }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Agentic frontier",
-    title: "Pass rate vs speed",
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, scatterRows.length, " models")
+    eyebrow: "Best overall",
+    title: bestComposite ? displayText(bestComposite.id, mobile ? 22 : 32) : '—'
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Bubble size tracks output tok/s. Upper-left is ideal: high pass rate, lower wall time. Click a point to inspect runs."), /*#__PURE__*/React.createElement(ScatterPlot, {
-    rows: scatterRows,
-    width: mobile ? 360 : 640,
-    height: mobile ? 240 : 280
-  })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Throughput",
-    title: "Output tokens per second"
-  }, throughputRows.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(BarChart, {
-    data: throughputRows.map(m => ({
-      label: displayText(m.id, 12),
-      value: m.avgTps,
-      color: familyColors[m.family] || familyColors.Other
-    })),
-    showValues: true,
-    height: mobile ? 160 : 200
-  }), /*#__PURE__*/React.createElement("p", {
+  }, bestComposite ? 'Composite ' + bestComposite.compositeScore.toFixed(1) + ' · ' + bestComposite.avgWallS.toFixed(1) + 's · ' + (bestComposite.avgTps || '—') + ' tok/s' : 'Run bake-offs to populate scores.')), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Fastest run",
+    title: bestSpeed ? displayText(bestSpeed.id, mobile ? 22 : 32) : '—'
+  }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "From headless Claude Code agentic bake-offs on throwaway repos.")) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No throughput data",
-    description: "Agentic bake-off runs populate this chart."
-  }))), /*#__PURE__*/React.createElement(Grid, {
+  }, bestSpeed ? metricDisplay(bestSpeed, 'speed') + ' avg wall · composite ' + (bestSpeed.compositeScore != null ? bestSpeed.compositeScore.toFixed(1) : '—') : 'No agentic timing yet.')), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Efficiency frontier",
+    title: frontierLeader ? displayText(frontierLeader.id, mobile ? 22 : 32) : '—'
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, frontierLeader ? 'Best score at the fastest end of the Pareto frontier — the local models nothing else beats on both speed and quality.' : 'Need models with both score and wall time.'))), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Score vs speed",
+    title: "Composite index vs wall time",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, scatterRows.length, " models · ", frontierRows.length, " frontier")
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Each dot is a model from your harness runs. Up is better quality, left is faster. Bubble size tracks output tok/s; dashed line is the efficiency frontier (no other model is both faster and higher-scoring)."), /*#__PURE__*/React.createElement(FrontierScatter, {
+    rows: scatterRows,
+    width: mobile ? 360 : 720,
+    height: mobile ? 260 : 320
+  })), /*#__PURE__*/React.createElement(Card, {
+    title: "Rank models by",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, ranked.length, " shown")
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Tabs, {
+    value: rankMetric,
+    onChange: v => {
+      state.modelsRankMetric = v;
+      forceRender();
+    },
+    style: mobile ? {
+      overflowX: 'auto',
+      flexWrap: 'nowrap',
+      WebkitOverflowScrolling: 'touch'
+    } : {},
+    tabs: [{
+      value: 'composite',
+      label: 'Composite'
+    }, {
+      value: 'speed',
+      label: 'Speed'
+    }, {
+      value: 'throughput',
+      label: 'Throughput'
+    }, {
+      value: 'tools',
+      label: 'Tool calling'
+    }]
+  }), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
     gap: 4
-  }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Tool reliability",
-    title: "Structured tool_use pass rate"
-  }, toolRows.length ? /*#__PURE__*/React.createElement(BarChart, {
-    data: toolRows.map(m => ({
-      label: displayText(m.id, 12),
-      value: Math.round((m.toolReliability || 0) * 100),
-      color: familyColors[m.family] || familyColors.Other
-    })),
-    showValues: true,
-    height: mobile ? 160 : 200
-  }) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No tool benchmarks",
-    description: "Run omlx_bakeoff.py to score tool calling."
-  })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Agentic tasks",
-    title: "Objective test pass rate"
-  }, agenticRows.length ? /*#__PURE__*/React.createElement(BarChart, {
-    data: agenticRows.map(m => ({
-      label: displayText(m.id, 12),
-      value: Math.round((m.agenticPassRate || 0) * 100),
-      color: familyColors[m.family] || familyColors.Other
-    })),
-    showValues: true,
-    height: mobile ? 160 : 200
-  }) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No agentic benchmarks",
-    description: "Run omlx_agentic_bakeoff.py on each machine."
-  }))), selected && /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement(RankedBarList, {
+    rows: ranked,
+    metric: rankMetric
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Composite blends tool reliability (35%), quality probes (15%), and agentic pass rate (50%). Speed ranks lower average wall time from agentic bake-offs. Throughput uses output tok/s. Tool calling uses structured tool_use pass rate."), rankMetric === 'tools' && ranked.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
+    variant: "info"
+  }, /*#__PURE__*/React.createElement("span", null, "Every ranked model scored 100% on tools — use Speed or Throughput to separate them.")), rankMetric !== 'tools' && rankMetric !== 'composite' && ranked.length > 1 && metricValue(ranked[0], rankMetric) === metricValue(ranked[1], rankMetric) && /*#__PURE__*/React.createElement(Banner, {
+    variant: "info"
+  }, /*#__PURE__*/React.createElement("span", null, "Top models tie on this metric — check composite score or wall time for tie-breakers.")))))), selected && /*#__PURE__*/React.createElement(Card, {
     title: selected.id,
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
@@ -21018,7 +21203,7 @@ function ModelsView() {
   }) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No close session-traffic match this window. Cloud attribution lives under Usage → Models.")))), /*#__PURE__*/React.createElement(Card, {
-    title: "Benchmark catalog",
+    title: "Leaderboard",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
     }, tableRows.length, " rows")
@@ -21031,12 +21216,15 @@ function ModelsView() {
   }) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No benchmark rows",
     description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
-  })), /*#__PURE__*/React.createElement(Card, {
+  })), /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 2,
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Run history",
     title: "Harness executions"
   }, runs.length ? /*#__PURE__*/React.createElement(List, {
     bordered: true
-  }, runs.slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
+  }, runs.slice().reverse().slice(0, 16).map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.id,
     title: run.id,
     description: (run.date || 'unknown date') + ' · ' + machineLabel(run.machine) + ' · ' + run.lane + ' · ' + Object.keys(run.models || {}).length + ' models',
@@ -21058,16 +21246,12 @@ function ModelsView() {
       }
     }, "Open Usage")
   }, /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? 1 : 3,
+    cols: 1,
     gap: 3
   }, /*#__PURE__*/React.createElement(UsageMixCard, {
     title: "Model mix",
     rows: usageModels,
     totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
-  }), /*#__PURE__*/React.createElement(UsageMixCard, {
-    title: "Backend share",
-    rows: groupMetrics(currentUsageRows(), r => backendLane(r)).slice(0, 6),
-    totalMs: currentUsageRows().reduce((a, r) => a + durationMs(r), 0)
   }), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Azure fleet",
     title: `${(state.modelFleet?.deployments || []).length} deployments`
@@ -21078,7 +21262,7 @@ function ModelsView() {
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
     }, d.verified || '—')
-  }))))))));
+  })))))))));
 }
 function SimpleView({
   kind
@@ -22281,11 +22465,11 @@ window.__WBReactRender = function () {
     (window.WBDashboardDS?.load?.() || Promise.reject(new Error("KnowsMore controls failed to load")))
       .then(() => {
         renderReactDashboard();
-        finishBoot();
       })
       .catch((e) => {
         failRender(e);
-      });
+      })
+      .finally(finishBoot);
   }
 
   function setupNavIndicator() {
@@ -25663,25 +25847,12 @@ window.__WBReactRender = function () {
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
+    // Paint cached/skeleton content immediately so the tree + content fetches
+    // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
-    try {
-      await ghGetTree(!!opts.forceTree);
-      updateBootProgress("Loading projects…");
-      await scan();
-    } catch (e) {
-      if (!state.connected) {
-        showLanding(
-          e?.message || "GitHub connect failed. Reconnect below.",
-        );
-      }
-      throw e;
-    }
-  }
-  function ghConnectRetryable(error) {
-    const status = error?.status;
-    if (status === 401 || status === 403 || status === 404) return false;
-    if (status && status < 500 && status !== 429) return false;
-    return true;
+    await ghGetTree(!!opts.forceTree);
+    updateBootProgress("Loading projects…");
+    await scan();
   }
   function updateShellForBackend() {
     // The helper-backed git actions are meaningless on the GitHub backend:
@@ -25719,7 +25890,7 @@ window.__WBReactRender = function () {
         );
         return;
       }
-      if (!ghConnectRetryable(e) || attempt >= 4) {
+      if (attempt >= 4) {
         showBootFailure(
           e?.message ||
             "Could not reach GitHub after several tries. Reconnect or clear the cached tree.",
@@ -25747,6 +25918,7 @@ window.__WBReactRender = function () {
     }
   }
   function openGithubConnect() {
+    dismissBootOverlay();
     const cfg = ghConfig() || {
       owner: "jaredfowkes",
       repo: "workbench",
@@ -25782,6 +25954,11 @@ window.__WBReactRender = function () {
         await connectGithub(nextCfg, { forceTree: true });
       } catch (e) {
         toast(e?.message || "GitHub connect failed.", "danger");
+        if (!state.connected) {
+          showLanding(
+            e?.message || "GitHub connect failed. Reconnect below.",
+          );
+        }
       }
     };
   }
@@ -26007,9 +26184,8 @@ window.__WBReactRender = function () {
       connectFolder();
     } else if (location.protocol === "file:" && savedRoot) {
       await connectFolder(false);
-    } else if (cfg && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
-      autoGithub(cfg);
-    } else showLanding();
+    } else if (cfg && location.protocol.startsWith("http")) autoGithub(cfg);
+    else showLanding();
   })();
 })();
 
