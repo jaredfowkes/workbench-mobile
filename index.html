@@ -3691,6 +3691,25 @@ button.metric-card:hover {
   border-radius: var(--radius-md);
   background: var(--surface-card);
 }
+.models-context-size-wrap {
+  display: grid;
+  gap: 4px;
+}
+.models-context-size-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+.models-context-size-point:hover circle {
+  opacity: 1;
+  stroke-width: 3;
+}
+.models-context-size-label {
+  pointer-events: none;
+}
 .models-heatmap-wrap {
   overflow-x: auto;
   border: 1px solid var(--border-subtle);
@@ -14805,7 +14824,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-24.23";
+  const WB_VERSION = "2026-07-24.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21667,6 +21686,137 @@ function ModelsView() {
       }
     }, "Bar height = context load succeeded; dark cap = recall probe passed at that ceiling."));
   }
+  function ContextVsSizeChart({
+    rows,
+    familyColors,
+    width = 760,
+    height = 320,
+    onPick
+  }) {
+    const plotted = (rows || []).filter(r => r.maxCtxOk != null && (r.estGb != null || r.paramB != null));
+    if (!plotted.length) return /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, "No models with both context probes and size metadata yet — run tool bake-offs and rebuild benchmarks.");
+    const pad = {
+      t: 20,
+      r: 24,
+      b: 48,
+      l: 56
+    };
+    const innerW = width - pad.l - pad.r;
+    const innerH = height - pad.t - pad.b;
+    const sizeOf = r => r.estGb != null ? r.estGb : (r.paramB || 0) * 0.65;
+    const xVals = plotted.map(sizeOf);
+    const yVals = plotted.map(r => r.maxCtxOk / 1000);
+    const minX = Math.min(...xVals) * 0.85;
+    const maxX = Math.max(...xVals) * 1.1;
+    const minY = 0;
+    const maxY = Math.max(...yVals) * 1.12;
+    const x = v => pad.l + (v - minX) / Math.max(maxX - minX, 1) * innerW;
+    const y = v => pad.t + innerH - (v - minY) / Math.max(maxY - minY, 1) * innerH;
+    const benchVals = plotted.map(r => entryBenchScore(r)).filter(v => v != null);
+    const minBench = benchVals.length ? Math.min(...benchVals) : 0;
+    const maxBench = benchVals.length ? Math.max(...benchVals) : 100;
+    const radius = r => {
+      const q = entryBenchScore(r);
+      if (q == null) return 7;
+      const t = maxBench > minBench ? (q - minBench) / (maxBench - minBench) : 0.5;
+      return 6 + t * 10;
+    };
+    const fmtCtx = tok => tok >= 1000 ? Math.round(tok / 1000) + 'k' : String(tok);
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-context-size-wrap"
+    }, /*#__PURE__*/React.createElement("svg", {
+      className: "models-context-size-chart",
+      viewBox: `0 0 ${width} ${height}`,
+      role: "img",
+      "aria-label": "Context ceiling versus model VRAM footprint"
+    }, [0.25, 0.5, 0.75, 1].map(t => {
+      const gy = pad.t + innerH * (1 - t);
+      const label = Math.round(minY + (maxY - minY) * t);
+      return /*#__PURE__*/React.createElement("g", {
+        key: t
+      }, /*#__PURE__*/React.createElement("line", {
+        x1: pad.l,
+        x2: width - pad.r,
+        y1: gy,
+        y2: gy,
+        stroke: "var(--border-subtle)",
+        strokeDasharray: "3 4"
+      }), /*#__PURE__*/React.createElement("text", {
+        x: pad.l - 8,
+        y: gy + 4,
+        textAnchor: "end",
+        fontSize: "10",
+        fill: "var(--text-muted)"
+      }, label, "k"));
+    }), [0, 0.25, 0.5, 0.75, 1].map(t => {
+      const gx = pad.l + innerW * t;
+      const label = Math.round(minX + (maxX - minX) * t);
+      return /*#__PURE__*/React.createElement("g", {
+        key: 'x' + t
+      }, /*#__PURE__*/React.createElement("line", {
+        x1: gx,
+        x2: gx,
+        y1: pad.t,
+        y2: pad.t + innerH,
+        stroke: "var(--border-subtle)",
+        strokeDasharray: "3 4",
+        opacity: t ? 0.45 : 0
+      }), /*#__PURE__*/React.createElement("text", {
+        x: gx,
+        y: height - 16,
+        textAnchor: "middle",
+        fontSize: "10",
+        fill: "var(--text-muted)"
+      }, label, " GB"));
+    }), plotted.map(row => {
+      const cx = x(sizeOf(row));
+      const cy = y(row.maxCtxOk / 1000);
+      const color = familyColors[row.family] || familyColors.Other;
+      const short = displayText(row.id, 18);
+      const sizeLabel = row.estGb != null ? row.estGb + ' GB est' : row.paramB ? row.paramB + 'B params' : '—';
+      return /*#__PURE__*/React.createElement("g", {
+        key: row.entryKey || row.id,
+        className: "models-context-size-point",
+        onClick: () => onPick && onPick(row),
+        style: {
+          cursor: onPick ? 'pointer' : 'default'
+        }
+      }, /*#__PURE__*/React.createElement("circle", {
+        cx: cx,
+        cy: cy,
+        r: radius(row),
+        fill: color,
+        opacity: 0.72,
+        stroke: "var(--surface-card)",
+        strokeWidth: "2"
+      }), /*#__PURE__*/React.createElement("text", {
+        className: "models-context-size-label",
+        x: cx + radius(row) + 4,
+        y: cy + 4,
+        fontSize: "10",
+        fill: "var(--text-muted)"
+      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ' · max ctx ' + fmtCtx(row.maxCtxOk) + ' · ' + sizeLabel + (entryBenchScore(row) != null ? ' · bench ' + entryBenchScore(row).toFixed(1) : '')));
+    }), /*#__PURE__*/React.createElement("text", {
+      x: width / 2,
+      y: height - 4,
+      textAnchor: "middle",
+      fontSize: "11",
+      fill: "var(--text-muted)"
+    }, "Est. VRAM footprint (GB) → larger models use more weights, leaving less for KV cache"), /*#__PURE__*/React.createElement("text", {
+      transform: `translate(14 ${pad.t + innerH / 2}) rotate(-90)`,
+      textAnchor: "middle",
+      fontSize: "11",
+      fill: "var(--text-muted)"
+    }, "Max context load ok (k tokens) ↑")), /*#__PURE__*/React.createElement("p", {
+      style: {
+        ...muted,
+        fontSize: 12,
+        margin: '8px 0 0'
+      }
+    }, "Bubble size = bench score. Upper-left is the sweet spot: small footprint, high context headroom. Large MoE/dense models may score higher on rubric but need more VRAM per token of context."));
+  }
   function AgenticHeatmap({
     tasks
   }) {
@@ -21710,7 +21860,7 @@ function ModelsView() {
     const rows = picks.map(key => allEntries.find(e => e.entryKey === key)).filter(Boolean);
     if (!rows.length) return null;
     const taskNames = [...new Set(rows.flatMap(e => (e.agenticTasks || []).map(t => t.task)))].sort();
-    const metricRows = [['Bench score', e => entryBenchScore(e), v => v != null ? v.toFixed(1) : '—', false], ['Pass@1', e => entryAgenticPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Rubric', e => entryRubricPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Tools', e => entryToolPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Wall', e => e.avgWallS, v => v != null ? v.toFixed(1) + 's' : '—', true], ['Tok/s', e => e.avgTps, v => v != null ? v.toFixed(1) : '—', false], ['Turns', e => e.avgTurns, v => v != null ? v.toFixed(1) : '—', true]];
+    const metricRows = [['Bench score', e => entryBenchScore(e), v => v != null ? v.toFixed(1) : '—', false], ['Pass@1', e => entryAgenticPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Rubric', e => entryRubricPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Tools', e => entryToolPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Wall', e => e.avgWallS, v => v != null ? v.toFixed(1) + 's' : '—', true], ['Tok/s', e => e.avgTps, v => v != null ? v.toFixed(1) : '—', false], ['Turns', e => e.avgTurns, v => v != null ? v.toFixed(1) : '—', true], ['Max ctx', e => e.maxCtxOk, v => v != null ? v >= 1000 ? Math.round(v / 1000) + 'k' : String(v) : '—', false], ['Est VRAM', e => e.estGb, v => v != null ? v + ' GB' : '—', true]];
     const bestIdx = (vals, lowerBetter) => {
       const usable = vals.map((v, i) => ({
         v,
@@ -21917,6 +22067,20 @@ function ModelsView() {
     rows: scatterRows,
     width: mobile ? 360 : 760,
     height: mobile ? 280 : 360
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Memory tradeoff",
+    title: "Context vs model size",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, entries.filter(e => e.maxCtxOk != null && (e.estGb != null || e.paramB != null)).length, " plotted")
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Smaller quant models leave more unified memory for KV cache — so a 12B @ 8 GB may load longer contexts than a 26B @ 15 GB on the same machine. Point size reflects bench score; click a bubble for detail."), /*#__PURE__*/React.createElement(ContextVsSizeChart, {
+    rows: entries,
+    familyColors: familyColors,
+    width: mobile ? 360 : 760,
+    height: mobile ? 260 : 320,
+    onPick: pickEntry
   })), /*#__PURE__*/React.createElement(Card, {
     title: "Leaderboard",
     action: /*#__PURE__*/React.createElement(Tabs, {
