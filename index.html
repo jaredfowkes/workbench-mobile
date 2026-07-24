@@ -14434,7 +14434,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.28";
+  const WB_VERSION = "2026-07-23.29";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15642,6 +15642,34 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     }
     return res;
   }
+  async function ghResolveBranchTreeSha(branch) {
+    const cfg = ghConfig();
+    const ref = String(branch || cfg?.branch || "main").trim() || "main";
+    const res = await ghFetch(`/commits/${encodeURIComponent(ref)}`);
+    if (!res.ok) {
+      const target = `${cfg?.owner || "owner"}/${cfg?.repo || "repo"}`;
+      if (res.status === 404) {
+        throw Object.assign(
+          new Error(
+            `Could not reach ${target} on branch "${ref}". Check owner, repo, and branch, and confirm your token has Contents read access to this private repo.`,
+          ),
+          { status: res.status },
+        );
+      }
+      throw Object.assign(
+        new Error(`Could not resolve branch "${ref}" (${res.status})`),
+        { status: res.status },
+      );
+    }
+    const sha = (await res.json())?.commit?.tree?.sha;
+    if (!sha) {
+      throw Object.assign(
+        new Error(`Could not resolve the Git tree for branch "${ref}".`),
+        { status: 502 },
+      );
+    }
+    return sha;
+  }
   async function ghGetTree(force = false) {
     const cfg = ghConfig();
     if (!cfg?.owner || !cfg?.repo || !cfg?.branch) {
@@ -15663,8 +15691,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         }
       } catch {}
     }
+    const treeSha = await ghResolveBranchTreeSha(cfg.branch);
     const res = await ghFetch(
-      `/git/trees/${encodeURIComponent(cfg.branch)}?recursive=1`,
+      `/git/trees/${encodeURIComponent(treeSha)}?recursive=1`,
     );
     if (!res.ok)
       throw Object.assign(
@@ -25664,6 +25693,13 @@ window.__WBReactRender = function () {
         ghDisconnect();
         clearAutoconnectShell();
         showLanding("Saved GitHub token was rejected. Reconnect below.");
+        return;
+      }
+      if (e.status === 404) {
+        showBootFailure(
+          e?.message ||
+            "GitHub repo or branch not reachable. Check the connect form and token access.",
+        );
         return;
       }
       if (attempt >= 4) {
