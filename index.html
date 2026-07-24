@@ -14434,7 +14434,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.27";
+  const WB_VERSION = "2026-07-23.28";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15644,6 +15644,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   async function ghGetTree(force = false) {
     const cfg = ghConfig();
+    if (!cfg?.owner || !cfg?.repo || !cfg?.branch) {
+      throw new Error("Not connected to GitHub");
+    }
     if (!force) {
       try {
         const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
@@ -25613,7 +25616,17 @@ window.__WBReactRender = function () {
     }
   }
   async function connectGithub(cfg, opts = {}) {
-    if (cfg.pat) ghSaveConfig(cfg);
+    const owner = String(cfg?.owner || "").trim();
+    const repo = String(cfg?.repo || "").trim();
+    const branch = String(cfg?.branch || "main").trim() || "main";
+    const pat = String(cfg?.pat || "").trim() || ghToken();
+    if (!owner || !repo) {
+      throw new Error("Owner and repo are required.");
+    }
+    if (!pat) {
+      throw new Error("GitHub personal access token is required.");
+    }
+    ghSaveConfig({ owner, repo, branch, pat });
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
@@ -25697,21 +25710,31 @@ window.__WBReactRender = function () {
     };
     $("#ghConnect").onclick = async () => {
       const btn = $("#ghConnect");
+      const nextCfg = {
+        owner: $("#ghOwner").value.trim(),
+        repo: $("#ghRepo").value.trim(),
+        branch: $("#ghBranch").value.trim() || "main",
+        pat: $("#ghPat").value.trim() || ghToken(),
+      };
+      if (!nextCfg.owner || !nextCfg.repo) {
+        toast("Owner and repo are required.", "danger");
+        return;
+      }
+      if (!nextCfg.pat) {
+        toast("GitHub personal access token is required.", "danger");
+        return;
+      }
       setLoading(btn, true, "Checking…");
       try {
-        await connectGithub(
-          {
-            owner: $("#ghOwner").value.trim(),
-            repo: $("#ghRepo").value.trim(),
-            branch: $("#ghBranch").value.trim() || "main",
-            pat: $("#ghPat").value.trim() || ghToken(),
-          },
-          { forceTree: true },
-        );
         closeModal();
+        await connectGithub(nextCfg, { forceTree: true });
       } catch (e) {
-        toast(e.message);
-        setLoading(btn, false);
+        toast(e?.message || "GitHub connect failed.", "danger");
+        if (!state.connected) {
+          showLanding(
+            e?.message || "GitHub connect failed. Reconnect below.",
+          );
+        }
       }
     };
   }
