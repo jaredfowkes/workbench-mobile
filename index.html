@@ -3502,7 +3502,10 @@ button.metric-card:hover {
   </div>
   <section id="landing" class="modal-scrim">
     <div class="modal-card" role="dialog" aria-labelledby="landingTitle">
-      <div class="brand" style="margin-bottom:18px"><span class="wordmark">Workbench</span></div>
+      <div class="modal-head" style="margin-bottom:0">
+        <div class="brand"><span class="wordmark">Workbench</span></div>
+        <button class="iconbtn" type="button" id="landingClose" aria-label="Close" title="Close">×</button>
+      </div>
       <h1 id="landingTitle">Connect the workbench</h1>
       <p class="lede" id="landingNote">Choose a local folder on desktop, or connect GitHub on iPhone.</p>
       <div class="grid cols-2" style="margin-top:20px">
@@ -3520,61 +3523,10 @@ button.metric-card:hover {
     </div>
   </section>
 
-  <div id="app" class="hidden">
-    <header class="mobile-top">
-      <span class="mark mark-sm" aria-label="Workbench"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-      <div id="mobileSummary"></div>
-      <button class="iconbtn" id="mobilePalette" aria-label="Command palette">⌘</button>
-      <button class="iconbtn" id="mobileReload" aria-label="Reload">↻</button>
-    </header>
-    <div class="shell">
-      <aside class="sidebar">
-        <div class="brand"><span class="mark mark-sm" aria-hidden="true"><svg viewBox="0 0 24 24" width="15" height="15"><path d="M4.5 7l3.4 10L12 9.5l4.1 7.5L19.5 7" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="wordmark">Workbench</span></div>
-        <nav class="nav" aria-label="Primary">
-          <div class="nav-group-title">Work</div>
-          <button data-view="overview"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h16"/></svg>Today</button>
-          <button data-view="focus"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 12h10M9 17h6"/></svg>Focus queue</button>
-          <button data-view="projects"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
-          <button data-view="intake"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Intake</button>
-          <button data-view="followups"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/><path d="m17 16 2 2 3-4"/></svg>Follow-ups</button>
-          <div class="nav-group-title">Memory</div>
-          <button data-view="knowledge"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H19"/></svg>Knowledge base</button>
-          <button data-view="ideas"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4"/><path d="M8 14a6 6 0 1 1 8 0c-.9.7-1.2 1.5-1.2 2H9.2c0-.5-.3-1.3-1.2-2z"/></svg>Ideas</button>
-          <button data-view="artifacts"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 15l2.5-3 2 2 2.5-4 3 5"/></svg>Artifacts</button>
-          <button data-view="inventory"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 10h16M9 10v9"/></svg>Inventory</button>
-          <button data-view="skills"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l2.1 6.4L20.5 12l-6.4 2.1L12 20.5l-2.1-6.4L3.5 12l6.4-2.1z"/></svg>Skills</button>
-          <button data-view="creative"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7 16l9-9 2 2-9 9H7z"/></svg>Creative studio</button>
-          <div class="nav-group-title">Systems</div>
-          <button data-view="usage"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5M4 19h16"/><path d="M8 16v-5M12 16V8M16 16v-8"/></svg>Usage metrics</button>
-          <button data-view="machines"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="10" rx="2"/><path d="M8 19h8M10 15v4M14 15v4"/></svg>Machines & sync</button>
-          <div class="nav-group-title">Review</div>
-          <button data-view="briefings"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>Briefings</button>
-          <button data-view="weekly"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg>Weekly review</button>
-          <button data-view="preflight"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg>Preflight</button>
-        </nav>
-        <div class="side-actions">
-          <button class="btn primary" id="captureBtn">Quick capture</button>
-          <button class="btn" id="paletteBtn">Command palette</button>
-          <button class="btn" id="refreshBtn">Refresh</button>
-          <button class="btn" id="pullBtn">Pull latest</button>
-          <button class="btn" id="syncBtn">Commit & push</button>
-          <button class="btn" id="reconnectBtn">Reconnect</button>
-          <button class="btn tertiary" id="themeBtn">Toggle theme</button>
-        </div>
-      </aside>
-      <main class="main">
-        <div id="statusRail" class="status-rail"></div>
-        <div id="view"></div>
-      </main>
-    </div>
-    <nav class="mobile-tabs" aria-label="Mobile primary">
-      <button data-view="overview"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16M4 12h10M4 19h16"/></svg>Today</button>
-      <button data-view="focus"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M5 7h14M7 12h10M9 17h6"/></svg>Focus</button>
-      <button data-view="projects"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projects</button>
-      <button data-view="intake"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Intake</button>
-      <button data-view="more"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></svg>More</button>
-    </nav>
-  </div>
+  <!-- React owns the connected shell (DesktopShell / MobileShell). Legacy markup
+       here caused the mobile CSS frame to flash or persist when the React tree
+       failed to mount, and bindShell threw on missing #syncBtn after mount. -->
+  <div id="app" class="hidden"></div>
   <script>
   (function () {
     try {
@@ -14482,7 +14434,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.23";
+  const WB_VERSION = "2026-07-23.25";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15683,6 +15635,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           setTimeout(() => (state._authPrompted = false), 5 * 60 * 1000);
         } else {
           toast("GitHub token expired or revoked — reconnect.", "danger");
+          dismissBootOverlay();
           setTimeout(openGithubConnect, 700);
         }
       }
@@ -18998,13 +18951,26 @@ function isMobileSiteHost() {
     return false;
   }
 }
+function isMobileLayout() {
+  if (isMobileSiteHost()) return true;
+  try {
+    if (window.innerWidth > 900) return false;
+    return matchMedia('(max-width: 900px)').matches;
+  } catch {
+    return false;
+  }
+}
 function useViewport() {
-  const [mobile, setMobile] = React.useState(() => isMobileSiteHost() || matchMedia('(max-width: 900px)').matches);
+  const [mobile, setMobile] = React.useState(() => isMobileLayout());
   React.useEffect(() => {
     const mq = matchMedia('(max-width: 900px)');
-    const fn = () => setMobile(isMobileSiteHost() || mq.matches);
+    const fn = () => setMobile(isMobileLayout());
     mq.addEventListener ? mq.addEventListener('change', fn) : mq.addListener(fn);
-    return () => mq.removeEventListener ? mq.removeEventListener('change', fn) : mq.removeListener(fn);
+    window.addEventListener('resize', fn);
+    return () => {
+      mq.removeEventListener ? mq.removeEventListener('change', fn) : mq.removeListener(fn);
+      window.removeEventListener('resize', fn);
+    };
   }, []);
   return mobile;
 }
@@ -22236,7 +22202,10 @@ function App() {
 window.__WBReactRender = function () {
   const app = document.getElementById('app');
   if (!app) return;
-  if (!window.__WBReactRoot) window.__WBReactRoot = ReactDOM.createRoot(app);
+  if (!window.__WBReactRoot) {
+    app.replaceChildren();
+    window.__WBReactRoot = ReactDOM.createRoot(app);
+  }
   window.__WBReactRoot.render(/*#__PURE__*/React.createElement(App, null));
 };
   }
@@ -25456,6 +25425,7 @@ window.__WBReactRender = function () {
     );
   }
   function modal(title, body, wide = "") {
+    dismissBootOverlay();
     closeModal();
     const d = document.createElement("div");
     d.className = "modal-scrim dyn";
@@ -25463,7 +25433,7 @@ window.__WBReactRender = function () {
     d.addEventListener("click", (e) => {
       if (e.target === d) closeModal();
     });
-    d.querySelector("[data-close]").onclick = closeModal;
+    d.querySelector("[data-close]")?.addEventListener("click", closeModal);
     document.body.appendChild(d);
     d.querySelector("button,input,textarea,select,a")?.focus();
   }
@@ -25711,6 +25681,7 @@ window.__WBReactRender = function () {
     }
   }
   function openGithubConnect() {
+    dismissBootOverlay();
     const cfg = ghConfig() || {
       owner: "jaredfowkes",
       repo: "workbench",
@@ -25744,15 +25715,22 @@ window.__WBReactRender = function () {
       }
     };
   }
+  function hideLanding() {
+    $("#landing")?.classList.add("hidden");
+  }
   function bindShell() {
     setupNavIndicator();
-    $("#pickFolder").onclick = () => connectFolder(true);
-    $("#ghMode").onclick = openGithubConnect;
-    $("#themeBtn").onclick = () => {
+    $("#landingClose")?.addEventListener("click", hideLanding);
+    $("#landing")?.addEventListener("click", (e) => {
+      if (e.target?.id === "landing") hideLanding();
+    });
+    $("#pickFolder")?.addEventListener("click", () => connectFolder(true));
+    $("#ghMode")?.addEventListener("click", openGithubConnect);
+    $("#themeBtn")?.addEventListener("click", () => {
       document.documentElement.dataset.theme =
         document.documentElement.dataset.theme === "dark" ? "light" : "dark";
       localStorage.setItem("wb-theme", document.documentElement.dataset.theme);
-    };
+    });
     $("#paletteBtn")?.addEventListener("click", openPalette);
     $("#mobilePalette")?.addEventListener("click", openPalette);
     $("#mobileReload")?.addEventListener("click", () => {
@@ -25767,7 +25745,7 @@ window.__WBReactRender = function () {
       }
     });
     $("#mobileCapture")?.addEventListener("click", openCapture);
-    $("#syncBtn").onclick = async () => {
+    $("#syncBtn")?.addEventListener("click", async () => {
       if (state.backend === "github")
         return toast("Edits save straight to GitHub — nothing to push.");
       try {
@@ -25777,8 +25755,8 @@ window.__WBReactRender = function () {
       } catch (e) {
         toast(e.message, "danger");
       }
-    };
-    $("#pullBtn").onclick = async () => {
+    });
+    $("#pullBtn")?.addEventListener("click", async () => {
       if (state.backend === "github") {
         return refreshDashboardData().catch((e) =>
           toast(e?.message || String(e), "danger"),
@@ -25791,10 +25769,11 @@ window.__WBReactRender = function () {
       } catch (e) {
         toast(e.message, "danger");
       }
-    };
-    $("#captureBtn").onclick = openCapture;
-    $("#reconnectBtn").onclick = () =>
-      state.backend === "github" ? doReload() : connectFolder(true);
+    });
+    $("#captureBtn")?.addEventListener("click", openCapture);
+    $("#reconnectBtn")?.addEventListener("click", () =>
+      state.backend === "github" ? doReload() : connectFolder(true),
+    );
     $$(".nav button,.mobile-tabs button").forEach(
       (b) =>
         (b.onclick = () => {
@@ -25811,7 +25790,10 @@ window.__WBReactRender = function () {
     });
     document.fonts?.ready?.then(() => updateNavIndicator());
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") closeModal();
+      if (e.key === "Escape") {
+        if ($(".modal-scrim.dyn")) closeModal();
+        else if (!$("#landing")?.classList.contains("hidden")) hideLanding();
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         openPalette();
@@ -25936,7 +25918,7 @@ window.__WBReactRender = function () {
     const groups = [
       ["Work", [["followups", "Follow-ups"]]],
       ["Memory", [["knowledge", "Knowledge base"], ["ideas", "Ideas"], ["artifacts", "Artifacts"], ["inventory", "Inventory"], ["skills", "Skills"], ["creative", "Creative studio"]]],
-      ["Systems", [["usage", "Usage"], ["sessions", "Sessions"], ["machines", "Machines & sync"]]],
+      ["Systems", [["usage", "Usage"], ["models", "Models"], ["sessions", "Sessions"], ["machines", "Machines & sync"]]],
       ["Review", [["briefings", "Briefings"], ["weekly", "Weekly review"], ["preflight", "Preflight"], ["board", "Board of Advisors"], ["instructions", "Instructions"], ["about", "About"]]],
     ];
     modal(
