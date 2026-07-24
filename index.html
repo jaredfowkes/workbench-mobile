@@ -3619,6 +3619,106 @@ button.metric-card:hover {
 .models-leaderboard tbody tr.is-active {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
+.models-leaderboard tbody tr.is-compare {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.models-leaderboard-compare-col {
+  width: 56px;
+  text-align: center;
+}
+.models-matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.models-matrix-cell {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.models-matrix-cell strong {
+  font-size: 13px;
+  color: var(--text-strong);
+  text-transform: capitalize;
+}
+.models-matrix-cell span {
+  color: var(--text-muted);
+}
+.models-matrix-cell.is-favorable {
+  border-color: color-mix(in srgb, var(--positive, #448361) 35%, var(--border-subtle));
+  background: color-mix(in srgb, var(--positive, #448361) 8%, var(--surface-card));
+}
+.models-matrix-cell.is-unfavorable {
+  border-color: color-mix(in srgb, var(--negative, #e03e3e) 35%, var(--border-subtle));
+  background: color-mix(in srgb, var(--negative, #e03e3e) 8%, var(--surface-card));
+}
+.models-rubric-grid {
+  display: grid;
+  gap: 6px;
+}
+.models-rubric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.models-rubric-label {
+  text-transform: capitalize;
+  color: var(--text-strong);
+}
+.models-rubric-row.is-favorable {
+  background: color-mix(in srgb, var(--positive, #448361) 6%, var(--surface-card));
+}
+.models-rubric-row.is-unfavorable {
+  background: color-mix(in srgb, var(--negative, #e03e3e) 6%, var(--surface-card));
+}
+.models-context-wrap {
+  display: grid;
+  gap: 4px;
+}
+.models-context-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+.models-heatmap-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+.models-heatmap {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.models-heatmap th,
+.models-heatmap td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+.models-heatmap th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--border-subtle) 35%, transparent);
+}
+.models-heatmap-pass.is-favorable { color: var(--fav-ink, var(--positive, #448361)); font-weight: 700; }
+.models-heatmap-pass.is-warning { color: var(--warn); font-weight: 700; }
+.models-heatmap-pass.is-unfavorable { color: var(--unfav-ink, var(--negative, #e03e3e)); font-weight: 700; }
 .models-task-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -14705,7 +14805,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.37";
+  const WB_VERSION = "2026-07-24.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14878,10 +14978,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     modelPricing: null,
     modelFleet: null,
     modelBenchmarks: null,
+    modelsLane: "all",
     modelsCompareA: "jareds-macbook-pro",
     modelsCompareB: "macbook-pro",
+    modelsComparePicks: [],
     modelsMachine: "all",
     modelsSelected: null,
+    modelsRankMetric: "quality",
+    modelsScatterAxis: "wall",
+    modelsSearch: "",
     helperUp: false,
     usageWindow: "month",
     helperStatus: null,
@@ -21356,7 +21461,9 @@ function ModelsView() {
       className: "models-leaderboard-wrap"
     }, /*#__PURE__*/React.createElement("table", {
       className: "models-leaderboard"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Model"), !mobile && /*#__PURE__*/React.createElement("th", {
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+      className: "models-leaderboard-compare-col"
+    }, "Compare"), /*#__PURE__*/React.createElement("th", null, "Model"), !mobile && /*#__PURE__*/React.createElement("th", {
       className: "models-leaderboard-chart-col"
     }, "Bench score"), /*#__PURE__*/React.createElement("th", {
       className: "numeric"
@@ -21377,11 +21484,19 @@ function ModelsView() {
       const barW = score != null ? score / maxQ * 100 : 0;
       const key = r.entryKey || r.id + '::' + r.machine;
       const active = state.modelsSelected === key;
+      const inCompare = comparePicks.includes(key);
       return /*#__PURE__*/React.createElement("tr", {
         key: key,
-        className: active ? 'is-active' : '',
+        className: (active ? 'is-active' : '') + (inCompare ? ' is-compare' : ''),
         onClick: () => pickEntry(r)
       }, /*#__PURE__*/React.createElement("td", {
+        className: "models-leaderboard-compare-col"
+      }, /*#__PURE__*/React.createElement(Button, {
+        variant: inCompare ? 'subtle' : 'ghost',
+        size: "sm",
+        onClick: ev => toggleComparePick(r, ev),
+        "aria-pressed": inCompare
+      }, inCompare ? '✓' : '+')), /*#__PURE__*/React.createElement("td", {
         className: "models-leaderboard-model"
       }, /*#__PURE__*/React.createElement("span", {
         className: "models-leaderboard-rank"
@@ -21428,9 +21543,277 @@ function ModelsView() {
       return /*#__PURE__*/React.createElement("div", {
         key: task.task,
         className: 'models-task-chip is-' + tone
-      }, /*#__PURE__*/React.createElement("strong", null, task.task), /*#__PURE__*/React.createElement("span", null, label, task.wallS != null ? ' · ' + task.wallS.toFixed(1) + 's' : '', task.turns != null ? ' · ' + task.turns + ' turns' : ''));
+      }, /*#__PURE__*/React.createElement("strong", null, task.task), /*#__PURE__*/React.createElement("span", null, label, task.wallS != null ? ' · ' + task.wallS.toFixed(1) + 's' : '', task.turns != null ? ' · ' + task.turns + ' turns' : '', task.outputTps != null ? ' · ' + task.outputTps.toFixed(1) + ' tok/s' : ''));
     }));
   }
+  function ToolsMatrix({
+    cases
+  }) {
+    if (!cases || !cases.length) return /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, "No per-tool harness rows in the latest tool run.");
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-matrix-grid"
+    }, cases.map(row => {
+      const tone = row.passed ? 'favorable' : 'unfavorable';
+      const label = String(row.id || '').replace(/_/g, ' ');
+      return /*#__PURE__*/React.createElement("div", {
+        key: row.id,
+        className: 'models-matrix-cell is-' + tone,
+        title: row.stopReason ? row.stopReason + (row.toolUseCount != null ? ' · ' + row.toolUseCount + ' tool call(s)' : '') : undefined
+      }, /*#__PURE__*/React.createElement("strong", null, label), /*#__PURE__*/React.createElement("span", null, row.passed ? 'pass' : 'fail', row.seconds != null ? ' · ' + row.seconds.toFixed(1) + 's' : ''));
+    }));
+  }
+  function QualityRubric({
+    checks
+  }) {
+    if (!checks || !checks.length) return /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, "No rubric checks recorded for the latest tool run.");
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-rubric-grid"
+    }, checks.map(row => /*#__PURE__*/React.createElement("div", {
+      key: row.id,
+      className: 'models-rubric-row is-' + (row.passed ? 'favorable' : 'unfavorable')
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "models-rubric-label"
+    }, String(row.id || '').replace(/_/g, ' ')), /*#__PURE__*/React.createElement(Badge, {
+      tone: row.passed ? 'favorable' : 'unfavorable'
+    }, row.passed ? 'pass' : 'fail'))));
+  }
+  function ContextCeilingChart({
+    rows,
+    width = 420,
+    height = 180
+  }) {
+    if (!rows || !rows.length) return /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, "No context ceiling probes yet.");
+    const pad = {
+      t: 16,
+      r: 12,
+      b: 36,
+      l: 44
+    };
+    const innerW = width - pad.l - pad.r;
+    const innerH = height - pad.t - pad.b;
+    const sorted = rows.slice().sort((a, b) => (a.targetTokens || 0) - (b.targetTokens || 0));
+    const maxTok = Math.max(...sorted.map(r => r.targetTokens || 0), 1);
+    const barW = innerW / sorted.length - 8;
+    const x = i => pad.l + i * (innerW / sorted.length) + 4;
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-context-wrap"
+    }, /*#__PURE__*/React.createElement("svg", {
+      className: "models-context-chart",
+      viewBox: `0 0 ${width} ${height}`,
+      role: "img",
+      "aria-label": "Context ceiling by target tokens"
+    }, [0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
+      key: t,
+      x1: pad.l,
+      x2: width - pad.r,
+      y1: pad.t + innerH * (1 - t),
+      y2: pad.t + innerH * (1 - t),
+      stroke: "var(--border-subtle)",
+      strokeDasharray: "3 4"
+    })), sorted.map((row, i) => {
+      const okH = row.ok ? innerH * 0.72 : innerH * 0.18;
+      const recallH = row.recallOk ? innerH * 0.55 : innerH * 0.12;
+      const bx = x(i);
+      const by = pad.t + innerH - okH;
+      const tone = row.ok && row.recallOk ? 'var(--fav)' : row.ok ? 'var(--warn)' : 'var(--unfav)';
+      const tokLabel = row.targetTokens >= 1000 ? Math.round(row.targetTokens / 1000) + 'k' : String(row.targetTokens);
+      return /*#__PURE__*/React.createElement("g", {
+        key: row.targetTokens || i
+      }, /*#__PURE__*/React.createElement("rect", {
+        x: bx,
+        y: by,
+        width: barW,
+        height: okH,
+        rx: "4",
+        fill: tone,
+        opacity: row.ok ? 0.85 : 0.35
+      }), /*#__PURE__*/React.createElement("rect", {
+        x: bx,
+        y: pad.t + innerH - recallH,
+        width: barW,
+        height: 4,
+        rx: "2",
+        fill: "var(--text-strong)",
+        opacity: row.recallOk ? 0.9 : 0.25
+      }), /*#__PURE__*/React.createElement("text", {
+        x: bx + barW / 2,
+        y: height - 10,
+        textAnchor: "middle",
+        fontSize: "10",
+        fill: "var(--text-muted)"
+      }, tokLabel), /*#__PURE__*/React.createElement("title", null, tokLabel + ' target · ' + (row.ok ? 'ok' : 'fail') + (row.recallOk ? ' · recall ok' : ' · recall fail') + (row.seconds != null ? ' · ' + row.seconds.toFixed(1) + 's' : '') + (row.error ? ' · ' + row.error : '')));
+    }), /*#__PURE__*/React.createElement("text", {
+      x: pad.l,
+      y: height - 10,
+      fill: "var(--text-muted)",
+      fontSize: "10"
+    }, "0"), /*#__PURE__*/React.createElement("text", {
+      x: width - pad.r,
+      y: height - 10,
+      textAnchor: "end",
+      fill: "var(--text-muted)",
+      fontSize: "10"
+    }, Math.round(maxTok / 1000), "k max")), /*#__PURE__*/React.createElement("p", {
+      style: {
+        ...muted,
+        fontSize: 12,
+        margin: '8px 0 0'
+      }
+    }, "Bar height = context load succeeded; dark cap = recall probe passed at that ceiling."));
+  }
+  function AgenticHeatmap({
+    tasks
+  }) {
+    if (!tasks || !tasks.length) return null;
+    const maxWall = Math.max(...tasks.map(t => t.wallS || 0), 1);
+    const maxTps = Math.max(...tasks.map(t => t.outputTps || 0), 1);
+    const cellTone = task => task.passed ? 'favorable' : task.verifyPassed ? 'warning' : 'unfavorable';
+    const heat = (value, max, invert) => {
+      if (value == null) return 'transparent';
+      const ratio = Math.min(1, Math.max(0, value / max));
+      const alpha = invert ? 0.08 + (1 - ratio) * 0.22 : 0.08 + ratio * 0.22;
+      return `color-mix(in srgb, var(--accent) ${Math.round(alpha * 100)}%, transparent)`;
+    };
+    return /*#__PURE__*/React.createElement("div", {
+      className: "models-heatmap-wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "models-heatmap"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Task"), /*#__PURE__*/React.createElement("th", null, "Kind"), /*#__PURE__*/React.createElement("th", null, "Pass"), /*#__PURE__*/React.createElement("th", null, "Wall"), /*#__PURE__*/React.createElement("th", null, "Turns"), /*#__PURE__*/React.createElement("th", null, "Tok/s"))), /*#__PURE__*/React.createElement("tbody", null, tasks.map(task => /*#__PURE__*/React.createElement("tr", {
+      key: task.task
+    }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", null, task.task)), /*#__PURE__*/React.createElement("td", null, task.kind || '—'), /*#__PURE__*/React.createElement("td", {
+      className: 'models-heatmap-pass is-' + cellTone(task)
+    }, task.passed ? 'pass' : task.timedOut ? 'timeout' : 'fail'), /*#__PURE__*/React.createElement("td", {
+      style: {
+        background: heat(task.wallS, maxWall, true)
+      }
+    }, task.wallS != null ? task.wallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", null, task.turns != null ? task.turns : '—'), /*#__PURE__*/React.createElement("td", {
+      style: {
+        background: heat(task.outputTps, maxTps, false)
+      }
+    }, task.outputTps != null ? task.outputTps.toFixed(1) : '—'))))));
+  }
+  function ModelComparePanel({
+    picks,
+    allEntries,
+    mobile
+  }) {
+    if (!picks.length) return /*#__PURE__*/React.createElement(EmptyState, {
+      title: "Pick models to compare",
+      description: "Use Compare on leaderboard rows — up to four model × machine entries side by side."
+    });
+    const rows = picks.map(key => allEntries.find(e => e.entryKey === key)).filter(Boolean);
+    if (!rows.length) return null;
+    const taskNames = [...new Set(rows.flatMap(e => (e.agenticTasks || []).map(t => t.task)))].sort();
+    const metricRows = [['Bench score', e => entryBenchScore(e), v => v != null ? v.toFixed(1) : '—', false], ['Pass@1', e => entryAgenticPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Rubric', e => entryRubricPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Tools', e => entryToolPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Wall', e => e.avgWallS, v => v != null ? v.toFixed(1) + 's' : '—', true], ['Tok/s', e => e.avgTps, v => v != null ? v.toFixed(1) : '—', false], ['Turns', e => e.avgTurns, v => v != null ? v.toFixed(1) : '—', true]];
+    const bestIdx = (vals, lowerBetter) => {
+      const usable = vals.map((v, i) => ({
+        v,
+        i
+      })).filter(x => x.v != null);
+      if (!usable.length) return -1;
+      usable.sort((a, b) => lowerBetter ? a.v - b.v : b.v - a.v);
+      return usable[0].i;
+    };
+    return /*#__PURE__*/React.createElement(Stack, {
+      gap: 4
+    }, /*#__PURE__*/React.createElement(Cluster, {
+      gap: 2,
+      style: {
+        flexWrap: 'wrap'
+      }
+    }, rows.map(e => /*#__PURE__*/React.createElement(Badge, {
+      key: e.entryKey,
+      tone: "accent"
+    }, displayText(e.id, 28), " · ", displayText(machineLabel(e.machine), 16))), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => {
+        state.modelsComparePicks = [];
+        forceRender();
+      }
+    }, "Clear")), /*#__PURE__*/React.createElement("div", {
+      className: "models-compare-table-wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "models-compare-table"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Metric"), rows.map(e => /*#__PURE__*/React.createElement("th", {
+      key: e.entryKey
+    }, displayText(e.id, mobile ? 18 : 24))))), /*#__PURE__*/React.createElement("tbody", null, metricRows.map(([label, getter, fmt, lowerBetter]) => {
+      const vals = rows.map(getter);
+      const win = bestIdx(vals, lowerBetter);
+      return /*#__PURE__*/React.createElement("tr", {
+        key: label
+      }, /*#__PURE__*/React.createElement("td", null, label), vals.map((v, i) => /*#__PURE__*/React.createElement("td", {
+        key: rows[i].entryKey,
+        className: win === i ? 'models-compare-cell is-winner' : ''
+      }, fmt(v))));
+    })))), taskNames.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--text-muted)',
+        textTransform: 'uppercase',
+        letterSpacing: 'var(--tracking-eyebrow)'
+      }
+    }, "Agentic task matrix"), /*#__PURE__*/React.createElement("div", {
+      className: "models-compare-table-wrap"
+    }, /*#__PURE__*/React.createElement("table", {
+      className: "models-compare-table"
+    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Task"), rows.map(e => /*#__PURE__*/React.createElement("th", {
+      key: e.entryKey
+    }, "Pass")), rows.map(e => /*#__PURE__*/React.createElement("th", {
+      key: e.entryKey + '-wall'
+    }, "Wall"))), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null), rows.map(e => /*#__PURE__*/React.createElement("th", {
+      key: e.entryKey + '-h',
+      colSpan: 1,
+      style: {
+        fontSize: 10,
+        fontWeight: 500,
+        textTransform: 'none'
+      }
+    }, displayText(e.id, 14))), rows.map(e => /*#__PURE__*/React.createElement("th", {
+      key: e.entryKey + '-wh',
+      colSpan: 1,
+      style: {
+        fontSize: 10,
+        fontWeight: 500,
+        textTransform: 'none'
+      }
+    }, displayText(e.id, 14))))), /*#__PURE__*/React.createElement("tbody", null, taskNames.map(task => /*#__PURE__*/React.createElement("tr", {
+      key: task
+    }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", null, task)), rows.map(e => {
+      const t = (e.agenticTasks || []).find(x => x.task === task);
+      const tone = t ? t.passed ? 'favorable' : t.verifyPassed ? 'warning' : 'unfavorable' : 'neutral';
+      return /*#__PURE__*/React.createElement("td", {
+        key: e.entryKey + task
+      }, /*#__PURE__*/React.createElement(Badge, {
+        tone: tone
+      }, t ? t.passed ? 'pass' : t.timedOut ? 'timeout' : 'fail' : '—'));
+    }), rows.map(e => {
+      const t = (e.agenticTasks || []).find(x => x.task === task);
+      return /*#__PURE__*/React.createElement("td", {
+        key: e.entryKey + task + 'w'
+      }, t && t.wallS != null ? t.wallS.toFixed(1) + 's' : '—');
+    }))))))) : null);
+  }
+  const comparePicks = Array.isArray(state.modelsComparePicks) ? state.modelsComparePicks : [];
+  const toggleComparePick = (entry, ev) => {
+    if (ev) ev.stopPropagation();
+    const key = entry.entryKey || entry.id;
+    let picks = comparePicks.slice();
+    const idx = picks.indexOf(key);
+    if (idx >= 0) picks.splice(idx, 1);else {
+      if (picks.length >= 4) return toast('Compare holds up to 4 models.', 'warning');
+      picks.push(key);
+    }
+    state.modelsComparePicks = picks;
+    forceRender();
+  };
   const tableRows = rankRows(benchmarked, rankMetric);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
@@ -21576,6 +21959,16 @@ function ModelsView() {
   }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Bench score or Rubric to separate them.")), /*#__PURE__*/React.createElement(LeaderboardTable, {
     rows: tableRows
   }))), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Model compare",
+    title: comparePicks.length ? comparePicks.length + ' model' + (comparePicks.length === 1 ? '' : 's') + ' selected' : 'Side-by-side models',
+    action: comparePicks.length ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "accent"
+    }, comparePicks.length, "/4") : null
+  }, /*#__PURE__*/React.createElement(ModelComparePanel, {
+    picks: comparePicks,
+    allEntries: entries,
+    mobile: mobile
+  })), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Machine showdown",
     title: labelA + ' vs ' + labelB,
     action: /*#__PURE__*/React.createElement(Badge, {
@@ -21726,39 +22119,64 @@ function ModelsView() {
       state.modelsMachine = row.id;
       forceRender();
     }
-  }, scopedMachine === row.id ? 'Showing this machine' : 'Filter to this machine'))))), selected && /*#__PURE__*/React.createElement(Card, {
-    title: selected.id + ' · ' + machineLabel(selected.machine),
-    action: /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => pickEntry(selected)
-    }, "Close")
-  }, /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? 1 : 2,
+  }, scopedMachine === row.id ? 'Showing this machine' : 'Filter to this machine'))))), selected && /*#__PURE__*/React.createElement(Drawer, {
+    open: !!selected,
+    onClose: () => {
+      state.modelsSelected = null;
+      forceRender();
+    },
+    side: "right",
+    width: mobile ? '100%' : 720,
+    eyebrow: "Model drill-down",
+    title: selected.id
+  }, /*#__PURE__*/React.createElement(Stack, {
     gap: 4
-  }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Bench score', entryBenchScore(selected) != null ? entryBenchScore(selected).toFixed(1) : '—'], ['Pass@1', entryAgenticPct(selected) != null ? Math.round(entryAgenticPct(selected)) + '%' + (selected.agenticPassed != null ? ' (' + selected.agenticPassed + '/' + selected.agenticTotal + ')' : '') : '—'], ['Rubric', entryRubricPct(selected) != null ? Math.round(entryRubricPct(selected)) + '%' + (selected.qualityPassed != null ? ' (' + selected.qualityPassed + '/' + selected.qualityTotal + ')' : '') : '—'], ['Tools', entryToolPct(selected) != null ? Math.round(entryToolPct(selected)) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
-  }), /*#__PURE__*/React.createElement(Stack, {
-    gap: 2
-  }, selected.agenticTasks && selected.agenticTasks.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
     style: {
-      fontSize: 12,
-      fontWeight: 700,
-      color: 'var(--text-muted)',
-      textTransform: 'uppercase',
-      letterSpacing: 'var(--tracking-eyebrow)'
+      flexWrap: 'wrap'
     }
-  }, "Agentic tasks"), /*#__PURE__*/React.createElement(AgenticTaskGrid, {
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, machineLabel(selected.machine)), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, selected.family), /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => toggleComparePick(selected)
+  }, comparePicks.includes(selected.entryKey || selected.id) ? 'Remove from compare' : 'Add to compare')), /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [['Host', machineLabel(selected.machine)], ['Family', selected.family], ['Lane', selected.lane], ['Bench score', entryBenchScore(selected) != null ? entryBenchScore(selected).toFixed(1) : '—'], ['Pass@1', entryAgenticPct(selected) != null ? Math.round(entryAgenticPct(selected)) + '%' + (selected.agenticPassed != null ? ' (' + selected.agenticPassed + '/' + selected.agenticTotal + ')' : '') : '—'], ['Rubric', entryRubricPct(selected) != null ? Math.round(entryRubricPct(selected)) + '%' + (selected.qualityPassed != null ? ' (' + selected.qualityPassed + '/' + selected.qualityTotal + ')' : '') : '—'], ['Tools', entryToolPct(selected) != null ? Math.round(entryToolPct(selected)) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
+  }), selected.agenticTasks && selected.agenticTasks.length ? /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Agentic",
+    title: "Task heatmap"
+  }, /*#__PURE__*/React.createElement(AgenticHeatmap, {
     tasks: selected.agenticTasks
-  })) : null, /*#__PURE__*/React.createElement("div", {
+  }), /*#__PURE__*/React.createElement("div", {
     style: {
-      fontSize: 12,
-      fontWeight: 700,
-      color: 'var(--text-muted)',
-      textTransform: 'uppercase',
-      letterSpacing: 'var(--tracking-eyebrow)'
+      marginTop: 12
     }
-  }, "Run history on this machine"), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement(AgenticTaskGrid, {
+    tasks: selected.agenticTasks
+  }))) : null, selected.toolCases && selected.toolCases.length ? /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Tools harness",
+    title: "Tool-call matrix"
+  }, /*#__PURE__*/React.createElement(ToolsMatrix, {
+    cases: selected.toolCases
+  })) : null, selected.qualityChecks && selected.qualityChecks.length ? /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Design doc rubric",
+    title: "Quality checks"
+  }, /*#__PURE__*/React.createElement(QualityRubric, {
+    checks: selected.qualityChecks
+  })) : null, selected.contextRows && selected.contextRows.length ? /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Context ceiling",
+    title: "Long-context probes"
+  }, /*#__PURE__*/React.createElement(ContextCeilingChart, {
+    rows: selected.contextRows,
+    width: mobile ? 340 : 480
+  })) : null, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "History",
+    title: "Run history on this machine"
+  }, /*#__PURE__*/React.createElement("div", {
     className: "models-run-table"
   }, (selected.runs || []).slice().sort((a, b) => runSortKey(b).localeCompare(runSortKey(a))).map(run => /*#__PURE__*/React.createElement("div", {
     key: run.runId + run.kind,
