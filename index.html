@@ -3613,7 +3613,7 @@ button.metric-card:hover {
     try {
       var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
       var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && location.protocol.startsWith("http")) {
+      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol.startsWith("http") || location.protocol === "file:")) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
@@ -14515,7 +14515,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-23.30";
+  const WB_VERSION = "2026-07-23.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14982,6 +14982,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const cfg = ghConfig();
     const tok = ghToken();
     return cfg && tok ? { ...cfg, pat: tok } : null;
+  }
+  function hasSavedGithubCredentials(cfg) {
+    const c = cfg || ghConfig();
+    const tok = String(cfg?.pat || ghToken() || "").trim();
+    return !!(c?.owner && c?.repo && tok);
   }
   function b64FromBytes(bytes) {
     let bin = "";
@@ -15717,7 +15722,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         } else {
           toast("GitHub token expired or revoked — reconnect.", "danger");
           dismissBootOverlay();
-          setTimeout(openGithubConnect, 700);
+          setTimeout(() => openGithubConnect(true), 700);
         }
       }
     }
@@ -25917,13 +25922,20 @@ window.__WBReactRender = function () {
       b.textContent = "Desktop folder picker unavailable here";
     }
   }
-  function openGithubConnect() {
+  function openGithubConnect(forceForm = false) {
     dismissBootOverlay();
     const cfg = ghConfig() || {
       owner: "jaredfowkes",
       repo: "workbench",
       branch: "main",
     };
+    if (!forceForm && hasSavedGithubCredentials(cfg)) {
+      hideLanding();
+      autoGithub({ ...cfg, pat: ghToken() }).catch((e) => {
+        toast(e?.message || "GitHub connect failed.", "danger");
+      });
+      return;
+    }
     modal(
       "Connect via GitHub",
       `<div class="capture-grid"><label class="form-row">Owner<input class="input" id="ghOwner" value="${esc(cfg.owner)}"></label><label class="form-row">Repo<input class="input" id="ghRepo" value="${esc(cfg.repo)}"></label><label class="form-row">Branch<input class="input" id="ghBranch" value="${esc(cfg.branch)}"></label><label class="form-row">Personal access token<input class="input" id="ghPat" type="password" placeholder="${ghToken() ? "Saved token — leave blank to keep" : "github_pat_…"}"></label><p class="muted">Token is stored only on this device in localStorage and IndexedDB. Use a fine-grained token with Contents read/write for this repo.</p><button class="btn primary" id="ghConnect">Connect</button><button class="btn danger" id="ghForget">Forget saved token</button></div>`,
@@ -26184,8 +26196,11 @@ window.__WBReactRender = function () {
       connectFolder();
     } else if (location.protocol === "file:" && savedRoot) {
       await connectFolder(false);
-    } else if (cfg && location.protocol.startsWith("http")) autoGithub(cfg);
-    else showLanding();
+    } else if (hasSavedGithubCredentials(cfg)) {
+      await autoGithub({ ...(cfg || ghConfig()), pat: cfg?.pat || ghToken() });
+    } else {
+      showLanding();
+    }
   })();
 })();
 
