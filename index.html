@@ -860,15 +860,6 @@
   --blue: #337ea9;
   --yellow: #cb912f;
 
-  /* Data-viz ramp (model families, charts) */
-  --dv-1: #9065b0;
-  --dv-2: #337ea9;
-  --dv-3: #448361;
-  --dv-4: #d9730d;
-  --dv-5: #9065b0;
-  --dv-6: #6b6a66;
-  --dv-7: #cb912f;
-
   /* Legacy status tokens re-valued */
   --status-success-soft: rgba(68, 131, 97, 0.12);
   --status-success-solid: #448361;
@@ -3088,9 +3079,9 @@ button.metric-card:hover {
 }
 .editorial-card h2 {
   font-size: clamp(24px, 3.8vw, 46px);
-  line-height: 1.08;
+  line-height: 1.12;
   letter-spacing: -0.035em;
-  max-width: 18ch;
+  max-width: min(100%, 34ch);
 }
 .reading-card {
   min-height: 260px;
@@ -3470,323 +3461,10 @@ button.metric-card:hover {
   display: block;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, transparent) 0%, transparent 42%),
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface-card)), var(--surface-card));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--surface-card)), var(--surface-card));
 }
 .models-scatter-point.is-active circle:last-child {
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 35%, transparent));
-}
-.models-scatter-point.is-frontier circle:last-child {
-  stroke: var(--text-strong);
-  stroke-width: 2;
-}
-.models-scatter-label {
-  fill: var(--text-secondary);
-  pointer-events: none;
-}
-.models-quadrant-label {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  fill: color-mix(in srgb, var(--accent) 72%, var(--text-muted));
-}
-.models-hbar-list {
-  display: grid;
-  gap: 10px;
-}
-.models-hbar-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr) auto;
-  gap: 12px;
-  align-items: center;
-}
-.models-hbar-label {
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-strong);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.models-hbar-track {
-  height: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--border-subtle) 70%, transparent);
-  overflow: hidden;
-}
-.models-hbar-fill {
-  height: 100%;
-  border-radius: inherit;
-  min-width: 4px;
-  transition: width 280ms var(--ease);
-}
-.models-hbar-value {
-  font-size: 12px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-  min-width: 52px;
-  text-align: right;
-}
-.models-hbar-row.is-active .models-hbar-label {
-  color: var(--accent);
-}
-.models-leaderboard-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-.models-leaderboard {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.models-leaderboard th,
-.models-leaderboard td {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-subtle);
-  vertical-align: middle;
-}
-.models-leaderboard th {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--border-subtle) 35%, transparent);
-  text-align: left;
-}
-.models-leaderboard th.numeric,
-.models-leaderboard td.numeric {
-  text-align: right;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-.models-leaderboard-chart-col {
-  width: min(36vw, 320px);
-}
-.models-leaderboard-model {
-  min-width: 220px;
-}
-.models-leaderboard-rank {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  margin-right: 10px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--border-subtle) 55%, transparent);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  vertical-align: middle;
-}
-.models-leaderboard-name {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 2px;
-  vertical-align: middle;
-}
-.models-leaderboard-host {
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-.models-leaderboard-bar-cell {
-  width: min(36vw, 320px);
-}
-.models-leaderboard-bar-track {
-  height: 12px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--border-subtle) 70%, transparent);
-  overflow: hidden;
-}
-.models-leaderboard-bar-fill {
-  height: 100%;
-  border-radius: inherit;
-  min-width: 4px;
-}
-.models-leaderboard tbody tr {
-  cursor: pointer;
-}
-.models-leaderboard tbody tr:hover {
-  background: color-mix(in srgb, var(--accent) 5%, transparent);
-}
-.models-leaderboard tbody tr.is-active {
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
-}
-.models-leaderboard tbody tr.is-compare {
-  box-shadow: inset 3px 0 0 var(--accent);
-}
-.models-leaderboard-compare-col {
-  width: 56px;
-  text-align: center;
-}
-.models-matrix-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-}
-.models-matrix-cell {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-}
-.models-matrix-cell strong {
-  font-size: 13px;
-  color: var(--text-strong);
-  text-transform: capitalize;
-}
-.models-matrix-cell span {
-  color: var(--text-muted);
-}
-.models-matrix-cell.is-favorable {
-  border-color: color-mix(in srgb, var(--positive, #448361) 35%, var(--border-subtle));
-  background: color-mix(in srgb, var(--positive, #448361) 8%, var(--surface-card));
-}
-.models-matrix-cell.is-unfavorable {
-  border-color: color-mix(in srgb, var(--negative, #e03e3e) 35%, var(--border-subtle));
-  background: color-mix(in srgb, var(--negative, #e03e3e) 8%, var(--surface-card));
-}
-.models-rubric-grid {
-  display: grid;
-  gap: 6px;
-}
-.models-rubric-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  font-size: 13px;
-}
-.models-rubric-label {
-  text-transform: capitalize;
-  color: var(--text-strong);
-}
-.models-rubric-row.is-favorable {
-  background: color-mix(in srgb, var(--positive, #448361) 6%, var(--surface-card));
-}
-.models-rubric-row.is-unfavorable {
-  background: color-mix(in srgb, var(--negative, #e03e3e) 6%, var(--surface-card));
-}
-.models-context-wrap {
-  display: grid;
-  gap: 4px;
-}
-.models-context-chart {
-  width: 100%;
-  height: auto;
-  display: block;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-}
-.models-context-size-wrap {
-  display: grid;
-  gap: 4px;
-}
-.models-context-size-chart {
-  width: 100%;
-  height: auto;
-  display: block;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--surface-card);
-}
-.models-context-size-point:hover circle {
-  opacity: 1;
-  stroke-width: 3;
-}
-.models-context-size-label {
-  pointer-events: none;
-}
-.models-heatmap-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-.models-heatmap {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 12px;
-}
-.models-heatmap th,
-.models-heatmap td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: left;
-  white-space: nowrap;
-}
-.models-heatmap th {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--border-subtle) 35%, transparent);
-}
-.models-heatmap-pass.is-favorable { color: var(--fav-ink, var(--positive, #448361)); font-weight: 700; }
-.models-heatmap-pass.is-warning { color: var(--warn); font-weight: 700; }
-.models-heatmap-pass.is-unfavorable { color: var(--unfav-ink, var(--negative, #e03e3e)); font-weight: 700; }
-.models-task-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-}
-.models-task-chip {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  font-size: 12px;
-  background: var(--surface-card);
-}
-.models-task-chip strong {
-  font-size: 13px;
-  color: var(--text-strong);
-}
-.models-task-chip span {
-  color: var(--text-muted);
-}
-.models-task-chip.is-favorable {
-  border-color: color-mix(in srgb, var(--positive, #448361) 35%, var(--border-subtle));
-  background: color-mix(in srgb, var(--positive, #448361) 8%, var(--surface-card));
-}
-.models-task-chip.is-warning {
-  border-color: color-mix(in srgb, var(--warning, #d97706) 35%, var(--border-subtle));
-  background: color-mix(in srgb, var(--warning, #d97706) 8%, var(--surface-card));
-}
-.models-task-chip.is-unfavorable {
-  border-color: color-mix(in srgb, var(--negative, #e03e3e) 35%, var(--border-subtle));
-  background: color-mix(in srgb, var(--negative, #e03e3e) 8%, var(--surface-card));
-}
-.models-highlight-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-}
-@media (max-width: 900px) {
-  .models-highlight-grid {
-    grid-template-columns: 1fr;
-  }
-  .models-hbar-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 6px;
-  }
-  .models-hbar-value {
-    text-align: left;
-  }
 }
 .models-link {
   border: none;
@@ -3799,130 +3477,6 @@ button.metric-card:hover {
 }
 .models-link:hover strong {
   color: var(--accent);
-}
-.models-ops-card {
-  display: grid;
-  gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--surface-card, var(--raised)) 92%, transparent);
-}
-.models-ops-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.models-run-table {
-  display: grid;
-  gap: 8px;
-}
-.models-run-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-}
-.models-compare-table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-}
-.models-compare-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.models-compare-table th,
-.models-compare-table td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: right;
-  white-space: nowrap;
-}
-.models-compare-table th:first-child,
-.models-compare-table td:first-child {
-  text-align: left;
-  white-space: normal;
-  min-width: 180px;
-}
-.models-compare-table thead th {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  background: color-mix(in srgb, var(--border-subtle) 35%, transparent);
-}
-.models-compare-cell.is-winner {
-  background: color-mix(in srgb, var(--positive, #448361) 12%, transparent);
-  font-weight: 700;
-}
-.models-fleet-heatmap td:first-child,
-.models-fleet-heatmap th:first-child {
-  text-align: left;
-  min-width: 160px;
-}
-.models-radar-wrap {
-  display: grid;
-  gap: 8px;
-  justify-items: center;
-}
-.models-radar-chart {
-  width: 100%;
-  max-width: 420px;
-  height: auto;
-}
-.models-artifact-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
-}
-.models-artifact-cell {
-  display: grid;
-  gap: 4px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--surface-card, var(--raised)) 92%, transparent);
-  font-size: 13px;
-}
-.models-artifact-cell strong {
-  font-size: 12px;
-  color: var(--text-muted);
-  text-transform: capitalize;
-}
-.models-good-for,
-.models-avoid-for {
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  font-size: 14px;
-}
-.models-good-for {
-  background: color-mix(in srgb, var(--positive, #448361) 8%, transparent);
-}
-.models-avoid-for {
-  background: color-mix(in srgb, var(--negative, #e03e3e) 8%, transparent);
-}
-.models-good-for strong,
-.models-avoid-for strong {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-@media (max-width: 720px) {
-  .models-run-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3978,7 +3532,7 @@ button.metric-card:hover {
     try {
       var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
       var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol.startsWith("http") || location.protocol === "file:")) {
+      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
@@ -14880,7 +14434,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-24.28";
+  const WB_VERSION = "2026-07-24.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15054,14 +14608,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     modelFleet: null,
     modelBenchmarks: null,
     modelsLane: "all",
-    modelsCompareA: "jareds-macbook-pro",
-    modelsCompareB: "macbook-pro",
-    modelsComparePicks: [],
     modelsMachine: "all",
     modelsSelected: null,
-    modelsRankMetric: "quality",
-    modelsScatterAxis: "wall",
-    modelsSearch: "",
     helperUp: false,
     usageWindow: "month",
     helperStatus: null,
@@ -15353,11 +14901,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const cfg = ghConfig();
     const tok = ghToken();
     return cfg && tok ? { ...cfg, pat: tok } : null;
-  }
-  function hasSavedGithubCredentials(cfg) {
-    const c = cfg || ghConfig();
-    const tok = String(cfg?.pat || ghToken() || "").trim();
-    return !!(c?.owner && c?.repo && tok);
   }
   function b64FromBytes(bytes) {
     let bin = "";
@@ -16093,7 +15636,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         } else {
           toast("GitHub token expired or revoked — reconnect.", "danger");
           dismissBootOverlay();
-          setTimeout(() => openGithubConnect(true), 700);
+          setTimeout(openGithubConnect, 700);
         }
       }
     }
@@ -17110,11 +16653,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           models: [],
           runs: [],
           machines: {},
-          entries: [],
           label: "Model benchmarks",
           path: "tools/model-benchmarks.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
-        }) || { models: [], runs: [], machines: {}, entries: [] };
+        });
       }),
       loadJson("tools/machine-aliases.json", {
         source: "hydrate.machine-aliases",
@@ -18630,8 +18172,30 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     window.setTimeout(() => overlay.remove(), 320);
   }
   window.__WBDismissBoot = dismissBootOverlay;
+  function ensureBootOverlay(message) {
+    const msg = String(message || "Connecting to GitHub…").trim() || "Connecting to GitHub…";
+    document.documentElement.classList.add("wb-booting");
+    let overlay = $("#wbBootOverlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.id = "wbBootOverlay";
+      overlay.className = "wb-boot-overlay";
+      overlay.setAttribute("role", "status");
+      overlay.setAttribute("aria-live", "polite");
+      overlay.setAttribute("aria-busy", "true");
+      overlay.innerHTML = `<div class="wb-boot-card"><span class="wb-boot-spinner" aria-hidden="true"></span><div class="wb-boot-wordmark">Workbench</div><div class="wb-boot-status" id="wbBootStatus">${esc(msg)}</div></div>`;
+      document.body.prepend(overlay);
+      return;
+    }
+    overlay.classList.remove("wb-boot-overlay--done");
+    overlay.style.display = "";
+    overlay.style.opacity = "";
+    overlay.style.visibility = "";
+    overlay.setAttribute("aria-busy", "true");
+    setBootMessage(msg);
+  }
   function showBoot(progress) {
-    setBootMessage(progress || "Connecting to GitHub…");
+    ensureBootOverlay(progress || "Connecting to GitHub…");
     $("#landing")?.classList.add("hidden");
     $("#app")?.classList.remove("hidden");
     const view = $("#view");
@@ -18648,7 +18212,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         sessionStorage.setItem("wb-force-tree", "1");
         location.reload();
       });
-      $("#wbBootReconnect")?.addEventListener("click", () => openGithubConnect(true));
+      $("#wbBootReconnect")?.addEventListener("click", () => openGithubConnect());
       $("#wbBootReset")?.addEventListener("click", () => doReset());
     }
     $("#landing")?.classList.add("hidden");
@@ -19881,10 +19445,11 @@ function TodayView() {
   state._acts = acts;
   const top = acts[0];
   const second = acts.find(a => top && actionKey(a) !== actionKey(top));
-  const insight = top ? 'The cleanest next move is ' + projectTitle(top.p) + ': ' + displayText(top.text, mobile ? 110 : 150) : 'Everything is quiet enough for review, cleanup, or a new capture.';
-  const note = st.blocked ? st.blocked + ' blocker' + (st.blocked === 1 ? '' : 's') + ' should be cleared before adding more work.' : st.doing ? st.doing + ' item' + (st.doing === 1 ? '' : 's') + ' already in flight; finish before widening the queue.' : st.open + ' open items remain across the workbench, with ' + st.week + ' completed this week.';
+  const insight = top ? `The cleanest next move is ${projectTitle(top.p)}: ${displayText(top.text, 130)}` : 'Everything is quiet enough for review, cleanup, or a new capture.';
+  const note = st.blocked ? `${st.blocked} blocker${st.blocked === 1 ? '' : 's'} should be cleared before adding more work.` : st.doing ? `${st.doing} item${st.doing === 1 ? '' : 's'} already in flight; finish before widening the queue.` : `${st.open} open items remain across the workbench, with ${st.week} completed this week.`;
   return /*#__PURE__*/React.createElement("div", {
-    style: pagePad
+    style: pagePad,
+    className: "today-page"
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Today",
     title: greeting() + ', Jared.',
@@ -19897,47 +19462,29 @@ function TodayView() {
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: mobile ? 5 : 6
   }, /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: mobile ? '1fr' : 'minmax(0, 1.35fr) minmax(320px, .65fr)',
-      gap: mobile ? 18 : 28,
-      alignItems: 'start'
-    }
-  }, /*#__PURE__*/React.createElement("section", {
-    style: {
-      padding: mobile ? '8px 2px 12px' : '28px 8px 36px',
-      minHeight: mobile ? 'auto' : 280,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      gap: mobile ? 16 : 22
-    }
-  }, /*#__PURE__*/React.createElement("h2", {
-    style: {
-      ...titleStyle,
-      fontSize: mobile ? 'clamp(36px, 13vw, 58px)' : 'clamp(42px, 5.2vw, 76px)',
-      lineHeight: mobile ? 0.98 : 0.96,
-      letterSpacing: '-0.055em',
-      maxWidth: mobile ? '9.5ch' : '13ch'
-    }
-  }, insight), /*#__PURE__*/React.createElement("p", {
-    style: {
-      ...muted,
-      fontSize: mobile ? 16 : 17,
-      maxWidth: mobile ? '30ch' : '44ch',
-      margin: 0
-    }
-  }, note), /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2
+    className: "today-grid"
+  }, /*#__PURE__*/React.createElement("article", {
+    className: "card editorial-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "kicker"
+  }, "Operating note"), /*#__PURE__*/React.createElement("h2", null, insight), /*#__PURE__*/React.createElement("p", {
+    className: "muted"
+  }, note), /*#__PURE__*/React.createElement("div", {
+    className: "trace-row"
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
   }, st.open, " open"), /*#__PURE__*/React.createElement(Badge, {
     tone: "info"
   }, st.doing, " in flight"), /*#__PURE__*/React.createElement(Badge, {
     tone: st.blocked ? 'unfavorable' : 'favorable'
-  }, st.blocked ? st.blocked + ' blocked' : 'No blockers'), /*#__PURE__*/React.createElement(Badge, {
+  }, st.blocked ? `${st.blocked} blocked` : 'No blockers'), /*#__PURE__*/React.createElement(Badge, {
     tone: "accent"
-  }, st.week, " done this week")), top && /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
+  }, st.week, " done this week")), top && /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
     onClick: () => openProject(top.p)
   }, "Open project"), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
@@ -19945,23 +19492,22 @@ function TodayView() {
   }, "Copy agent prompt"), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => openSnoozeOptions(top)
-  }, "Snooze"))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Today's read",
-    title: second ? projectTitle(second.p) : 'Workbench',
-    action: second ? /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => openProject(second.p)
-    }, "Read") : /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => setView('projects')
-    }, "Browse")
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, second ? displayText(second.text, 220) : 'Review recent activity or capture the next idea without forcing a decision yet.'))), /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? undefined : 2,
-    gap: 4
+  }, "Snooze"))), /*#__PURE__*/React.createElement("aside", {
+    className: "card reading-card"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "kicker"
+  }, "Today's read"), /*#__PURE__*/React.createElement("h3", null, second ? projectTitle(second.p) : 'Workbench'), /*#__PURE__*/React.createElement("p", {
+    className: "muted"
+  }, second ? displayText(second.text, 220) : 'Review recent activity or capture the next idea without forcing a decision yet.'), second ? /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => openProject(second.p)
+  }, "Read project room") : /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => setView('projects')
+  }, "Browse projects"))), /*#__PURE__*/React.createElement("div", {
+    className: "grid cols-2 below-fold"
   }, /*#__PURE__*/React.createElement(Card, {
     title: "Recent activity"
   }, /*#__PURE__*/React.createElement(List, null, recentActivity().slice(0, 5).map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
@@ -21092,130 +20638,14 @@ function MachinesView() {
     description: "Data-health sources appear here after hydration runs."
   })))));
 }
-function deriveBenchmarkEntries(bench) {
-  if (Array.isArray(bench?.entries) && bench.entries.length) return bench.entries;
-  const cloudRef = bench?.cloudRefCostUsd || 1.5;
-  const out = [];
-  for (const model of bench?.models || []) {
-    if (!(model.runCount > 0) && model.compositeScore == null) continue;
-    if (model.byMachine && Object.keys(model.byMachine).length) {
-      for (const [machine, slice] of Object.entries(model.byMachine)) {
-        out.push({
-          entryKey: `${model.id}::${machine}`,
-          id: model.id,
-          machine,
-          family: model.family,
-          lane: model.lane,
-          runs: (model.runs || []).filter(r => r.machine === machine),
-          valueIndex: slice.valueIndex != null ? slice.valueIndex : slice.compositeScore != null ? slice.compositeScore / cloudRef : null,
-          cloudAvoidedUsd: slice.cloudAvoidedUsd != null ? slice.cloudAvoidedUsd : cloudRef,
-          cloudRefCostUsd: 0,
-          ...slice
-        });
-      }
-      continue;
-    }
-    const groups = {};
-    for (const run of model.runs || []) {
-      const machine = run.machine || model.machines && model.machines[0] || 'unknown';
-      (groups[machine] = groups[machine] || []).push(run);
-    }
-    const machines = Object.keys(groups).length ? Object.keys(groups) : model.machines || ['unknown'];
-    for (const machine of machines) {
-      const runs = groups[machine] || model.runs || [];
-      const score = model.compositeScore;
-      out.push({
-        entryKey: `${model.id}::${machine}`,
-        id: model.id,
-        machine,
-        family: model.family,
-        lane: model.lane,
-        compositeScore: score,
-        avgWallS: model.avgWallS,
-        avgTps: model.avgTps,
-        toolReliability: model.toolReliability,
-        agenticPassRate: model.agenticPassRate,
-        agenticPassed: model.agenticPassed,
-        agenticTotal: model.agenticTotal,
-        lastTestedAt: model.lastTestedAt,
-        runCount: runs.length || model.runCount || 0,
-        runs,
-        valueIndex: score != null ? Math.round(score / cloudRef * 10) / 10 : null,
-        cloudAvoidedUsd: cloudRef,
-        cloudRefCostUsd: 0
-      });
-    }
-  }
-  return out;
-}
-function buildMachineCompare(allEntries, machineA, machineB) {
-  const pickWinner = (aVal, bVal, lowerBetter) => {
-    if (aVal == null && bVal == null) return 'tie';
-    if (aVal == null) return 'b';
-    if (bVal == null) return 'a';
-    const diff = lowerBetter ? aVal - bVal : bVal - aVal;
-    if (Math.abs(diff) < (lowerBetter ? 0.5 : 0.5)) return 'tie';
-    return lowerBetter ? aVal < bVal ? 'a' : 'b' : aVal > bVal ? 'a' : 'b';
-  };
-  const byModel = {};
-  for (const e of allEntries) {
-    if (!byModel[e.id]) byModel[e.id] = {};
-    byModel[e.id][e.machine] = e;
-  }
-  const paired = [];
-  const onlyA = [];
-  const onlyB = [];
-  for (const id of Object.keys(byModel).sort()) {
-    const map = byModel[id];
-    const a = map[machineA];
-    const b = map[machineB];
-    if (a && b) {
-      paired.push({
-        id,
-        family: a.family || b.family,
-        a,
-        b,
-        compositeWinner: pickWinner(a.compositeScore, b.compositeScore, false),
-        speedWinner: pickWinner(a.avgWallS, b.avgWallS, true),
-        tpsWinner: pickWinner(a.avgTps, b.avgTps, false),
-        toolsWinner: pickWinner(a.toolReliability, b.toolReliability, false),
-        wallRatio: a.avgWallS && b.avgWallS ? a.avgWallS / b.avgWallS : null,
-        tpsRatio: a.avgTps && b.avgTps ? b.avgTps / a.avgTps : null
-      });
-    } else if (a) onlyA.push(a);else if (b) onlyB.push(b);
-  }
-  onlyA.sort((x, y) => (y.compositeScore || 0) - (x.compositeScore || 0));
-  onlyB.sort((x, y) => (y.compositeScore || 0) - (x.compositeScore || 0));
-  return {
-    paired,
-    onlyA,
-    onlyB
-  };
-}
-function modelBenchmarkEntries(bench, lane, machine, query) {
-  const entries = deriveBenchmarkEntries(bench || {});
-  const q = String(query || '').trim().toLowerCase();
-  return entries.filter(e => {
-    if (lane !== 'all' && e.lane !== lane) return false;
-    if (machine !== 'all' && e.machine !== machine) return false;
-    if ((e.runCount || 0) <= 0 && e.compositeScore == null) return false;
-    if (q && !`${e.id} ${e.machine} ${e.family}`.toLowerCase().includes(q)) return false;
-    return true;
-  });
-}
 function ModelsView() {
   const mobile = useViewport();
   const bench = state.modelBenchmarks || {};
-  const benchHealth = (state.dataHealth?.rows || []).find(r => r.source === 'hydrate.model-benchmarks' || r.path === 'tools/model-benchmarks.json');
-  const benchLoadFailed = state.modelBenchmarks == null || ['missing', 'unreachable', 'malformed'].includes(benchHealth?.status);
-  const usingLegacyCatalog = !(bench.entries && bench.entries.length) && (bench.models || []).some(m => m.runCount > 0);
+  const catalog = bench.models || [];
   const runs = bench.runs || [];
   const machinesMeta = bench.machines || {};
   const lane = state.modelsLane || 'all';
   const machineFilter = state.modelsMachine || 'all';
-  const rankMetric = state.modelsRankMetric || 'quality';
-  const scatterAxis = state.modelsScatterAxis || 'wall';
-  const search = state.modelsSearch || '';
   const familyColors = {
     Qwen: 'var(--dv-1)',
     'OpenAI OSS': 'var(--dv-2)',
@@ -21223,278 +20653,94 @@ function ModelsView() {
     Mistral: 'var(--dv-4)',
     NVIDIA: 'var(--dv-5)',
     GLM: 'var(--dv-6)',
-    Gemma: 'var(--dv-7)',
     Anthropic: 'var(--accent)',
     Other: 'var(--text-muted)'
   };
   const machineLabel = id => machinesMeta[id] && machinesMeta[id].displayName || machineName(id) || id;
-  const entries = modelBenchmarkEntries(bench, lane, machineFilter, search);
-  const benchmarked = entries.filter(e => entryBenchScore(e) != null);
-  const scatterRows = benchmarked.filter(e => entryBenchScore(e) != null && entryPriceMetric(e, scatterAxis) != null);
-  const frontierRows = paretoQualityFrontier(scatterRows, scatterAxis);
+  const filtered = catalog.filter(m => {
+    if (lane !== 'all' && m.lane !== lane) return false;
+    if (machineFilter !== 'all' && !(m.machines || []).includes(machineFilter)) return false;
+    if (lane === 'all' && m.lane === 'azure' && !(m.runCount > 0)) return false;
+    return m.runCount > 0 || m.lane === 'azure';
+  });
+  const benchmarked = filtered.filter(m => m.runCount > 0);
+  const scatterRows = benchmarked.filter(m => m.agenticPassRate != null && m.avgWallS != null);
+  const toolRows = benchmarked.filter(m => m.toolReliability != null).slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0)).slice(0, 10);
+  const agenticRows = benchmarked.filter(m => m.agenticPassRate != null).slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0)).slice(0, 10);
+  const throughputRows = benchmarked.filter(m => m.avgTps != null).slice().sort((a, b) => (b.avgTps || 0) - (a.avgTps || 0)).slice(0, 8);
   const machineOptions = [['all', 'All machines'], ...Object.keys(machinesMeta).sort().map(id => [id, machineLabel(id)])];
-  const selectedKey = state.modelsSelected || null;
-  const selected = selectedKey ? entries.find(e => e.entryKey === selectedKey || e.id === selectedKey && !entries.some(x => x.entryKey === selectedKey)) : null;
-  const pickEntry = entry => {
-    const key = entry.entryKey || entry.id;
-    state.modelsSelected = state.modelsSelected === key ? null : key;
+  const bestAgentic = benchmarked.slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0))[0];
+  const bestTools = benchmarked.slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0))[0];
+  const bestScore = benchmarked.slice().sort((a, b) => (b.compositeScore || 0) - (a.compositeScore || 0))[0];
+  const usageModels = groupModelMetrics(currentUsageRows()).slice(0, 8);
+  const selected = state.modelsSelected ? catalog.find(m => m.id === state.modelsSelected) : null;
+  const pickModel = id => {
+    state.modelsSelected = state.modelsSelected === id ? null : id;
     forceRender();
   };
-  const cloudRef = bench.cloudRefCostUsd || 1.5;
-  const updatedLabel = bench.updatedIso ? shortAge(Date.parse(bench.updatedIso)) : 'unknown';
-  const runSortKey = run => String(run.date || '') + String(run.generatedAt || '');
-  const compareA = state.modelsCompareA || 'jareds-macbook-pro';
-  const compareB = state.modelsCompareB || 'macbook-pro';
-  const allEntries = deriveBenchmarkEntries(bench);
-  const compare = buildMachineCompare(allEntries, compareA, compareB);
-  const compareOptions = Object.keys(machinesMeta).sort().map(id => ({
-    value: id,
-    label: machineLabel(id)
-  }));
-  const countWins = key => {
-    let a = 0;
-    let b = 0;
-    let tie = 0;
-    for (const row of compare.paired) {
-      const w = row[key];
-      if (w === 'a') a += 1;else if (w === 'b') b += 1;else tie += 1;
-    }
-    return {
-      a,
-      b,
-      tie,
-      total: compare.paired.length
-    };
-  };
-  const compositeWins = countWins('compositeWinner');
-  const speedWins = countWins('speedWinner');
-  const tpsWins = countWins('tpsWinner');
-  const avgWallRatio = compare.paired.filter(r => r.wallRatio).length ? compare.paired.reduce((s, r) => s + r.wallRatio, 0) / compare.paired.filter(r => r.wallRatio).length : null;
-  const avgTpsRatio = compare.paired.filter(r => r.tpsRatio).length ? compare.paired.reduce((s, r) => s + r.tpsRatio, 0) / compare.paired.filter(r => r.tpsRatio).length : null;
-  const labelA = machineLabel(compareA);
-  const labelB = machineLabel(compareB);
-  function entryBenchScore(entry) {
-    if (entry.benchScore != null) return entry.benchScore;
-    if (entry.compositeScore != null) return entry.compositeScore;
-    if (entry.qualityPct != null) return entry.qualityPct;
-    return null;
-  }
-  function entryAgenticPct(entry) {
-    if (entry.agenticPct != null) return entry.agenticPct;
-    if (entry.agenticPassRate != null) return Math.round(entry.agenticPassRate * 1000) / 10;
-    return null;
-  }
-  function entryRubricPct(entry) {
-    if (entry.rubricPct != null) return entry.rubricPct;
-    if (entry.qualityPassed != null && entry.qualityTotal) {
-      return Math.round(entry.qualityPassed / entry.qualityTotal * 1000) / 10;
-    }
-    return null;
-  }
-  function entryToolPct(entry) {
-    if (entry.toolPct != null) return entry.toolPct;
-    if (entry.toolReliability != null) return Math.round(entry.toolReliability * 1000) / 10;
-    return null;
-  }
-  function entryQualityPct(entry) {
-    return entryBenchScore(entry);
-  }
-  function entryPriceMetric(entry, axis) {
-    if (axis === 'turns') return entry.avgTurns;
-    if (axis === 'throughput') return entry.avgTps;
-    return entry.avgWallS;
-  }
-  function priceAxisInverted(axis) {
-    return axis === 'wall' || axis === 'turns';
-  }
-  function metricValue(m, key) {
-    if (key === 'quality') return entryBenchScore(m);
-    if (key === 'agentic') return entryAgenticPct(m);
-    if (key === 'rubric') return entryRubricPct(m);
-    if (key === 'composite') return m.compositeScore;
-    if (key === 'speed') return m.avgWallS;
-    if (key === 'throughput') return m.avgTps;
-    if (key === 'tools') return entryToolPct(m);
-    if (key === 'value') return m.valueIndex;
-    return entryBenchScore(m);
-  }
-  function metricTitle(key) {
-    return {
-      quality: 'Bench score',
-      agentic: 'Pass@1',
-      rubric: 'Rubric',
-      composite: 'Composite score',
-      speed: 'Wall time',
-      throughput: 'Output tok/s',
-      tools: 'Tools',
-      value: 'Value index'
-    }[key] || key;
-  }
-  function metricDisplay(m, key) {
-    const v = metricValue(m, key);
-    if (v == null) return '—';
-    if (key === 'quality' || key === 'agentic' || key === 'rubric' || key === 'tools') return Math.round(v) + '%';
-    if (key === 'speed') return v.toFixed(1) + 's';
-    if (key === 'throughput') return v.toFixed(1);
-    if (key === 'value') return v.toFixed(1);
-    return v.toFixed(1);
-  }
-  function paretoQualityFrontier(rows, axis) {
-    const pts = rows.filter(r => entryBenchScore(r) != null && entryPriceMetric(r, axis) != null).slice().sort((a, b) => {
-      const av = entryPriceMetric(a, axis);
-      const bv = entryPriceMetric(b, axis);
-      return priceAxisInverted(axis) ? av - bv : bv - av;
-    });
-    const out = [];
-    let best = -Infinity;
-    for (const row of pts) {
-      const q = entryBenchScore(row);
-      if (q > best) {
-        out.push(row);
-        best = q;
-      }
-    }
-    return out;
-  }
-  function rankRows(rows, key) {
-    const usable = rows.filter(m => metricValue(m, key) != null);
-    if (key === 'speed') usable.sort((a, b) => metricValue(a, key) - metricValue(b, key));else usable.sort((a, b) => metricValue(b, key) - metricValue(a, key));
-    return usable;
-  }
-  const scopedMachine = machineFilter !== 'all' ? machineFilter : null;
-  const machineHosts = Object.keys(machinesMeta).sort();
-  const opsRows = machineHosts.map(id => {
-    const meta = machinesMeta[id] || {};
-    const onHost = (bench.entries || []).filter(e => e.machine === id);
-    return {
-      id,
-      label: machineLabel(id),
-      meta,
-      count: onHost.length,
-      best: rankRows(onHost, 'composite')[0],
-      lastAt: meta.lastBenchmarkAt
-    };
-  });
-  function EfficiencyScatter({
+  function ScatterPlot({
     rows,
-    width = 720,
-    height = 360
+    width = 640,
+    height = 280
   }) {
-    if (!rows.length) {
-      const desc = benchLoadFailed ? 'Could not load tools/model-benchmarks.json. Reload the dashboard or run python3 tools/build-model-benchmarks.py, then refresh data.' : usingLegacyCatalog ? 'Benchmark catalog loaded without v2 entries — showing derived rows. Run python3 tools/build-dashboard.py to refresh the embedded snapshot.' : scatterAxis === 'wall' ? 'Run agentic bake-offs to populate pass rate and wall time.' : 'No rows with both quality and ' + (scatterAxis === 'turns' ? 'turn counts' : 'throughput') + ' yet.';
-      return /*#__PURE__*/React.createElement(EmptyState, {
-        title: "No benchmarked models yet",
-        description: desc
-      });
-    }
+    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No agentic benchmarks yet",
+      description: "Run the oMLX or Ollama bake-off harnesses to populate this chart."
+    });
     const pad = {
-      t: 28,
-      r: 84,
-      b: 48,
-      l: 52
+      t: 16,
+      r: 20,
+      b: 36,
+      l: 44
     };
     const innerW = width - pad.l - pad.r;
     const innerH = height - pad.t - pad.b;
-    const inverted = priceAxisInverted(scatterAxis);
-    const xVals = rows.map(r => entryPriceMetric(r, scatterAxis) || 0);
-    const maxX = Math.max(...xVals, 1);
-    const minX = Math.min(...xVals, 0);
-    const qVals = rows.map(r => entryBenchScore(r) || 0);
-    const maxQ = Math.min(100, Math.max(...qVals, 1) + 4);
-    const minQ = Math.max(0, Math.min(...qVals) - 4);
-    const x = v => pad.l + (inverted ? maxX - v : v - minX) / (maxX - minX || 1) * innerW;
-    const y = score => pad.t + innerH - (score - minQ) / (maxQ - minQ || 1) * innerH;
-    const frontierIds = new Set(frontierRows.map(r => r.entryKey || r.id));
-    const frontierPoints = frontierRows.map(r => ({
-      x: x(entryPriceMetric(r, scatterAxis)),
-      y: y(entryBenchScore(r))
-    }));
-    const frontierPath = frontierPoints.map((p, i) => `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-    const familyGroups = {};
-    for (const row of rows) {
-      const gk = row.family + '::' + row.machine;
-      (familyGroups[gk] = familyGroups[gk] || []).push(row);
-    }
-    const axisLabel = scatterAxis === 'wall' ? 'Avg wall time (s)' : scatterAxis === 'turns' ? 'Avg agent turns' : 'Output tok/s';
-    const axisHint = inverted ? scatterAxis === 'wall' ? ' slower ← · faster →' : ' more turns ← · fewer →' : ' slower ← · faster →';
+    const maxWall = Math.max(...rows.map(r => r.avgWallS || 0), 1);
+    const x = v => pad.l + Math.min(v, maxWall) / maxWall * innerW;
+    const y = v => pad.t + innerH - Math.max(0, Math.min(1, v)) * innerH;
     return /*#__PURE__*/React.createElement("div", {
       className: "models-scatter-wrap"
     }, /*#__PURE__*/React.createElement("svg", {
       className: "models-scatter",
       viewBox: `0 0 ${width} ${height}`,
       role: "img",
-      "aria-label": 'Pass rate versus ' + axisLabel
-    }, /*#__PURE__*/React.createElement("rect", {
-      x: pad.l,
-      y: pad.t,
-      width: innerW,
-      height: innerH,
-      fill: "color-mix(in srgb, var(--accent) 4%, transparent)",
-      rx: "8"
-    }), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
+      "aria-label": "Agentic pass rate versus average wall time"
+    }, [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'y' + t,
       x1: pad.l,
       x2: width - pad.r,
-      y1: y(minQ + (maxQ - minQ) * t),
-      y2: y(minQ + (maxQ - minQ) * t),
+      y1: y(t),
+      y2: y(t),
       stroke: "var(--border-subtle)",
-      strokeDasharray: "4 5"
-    })), [0.25, 0.5, 0.75].map(t => /*#__PURE__*/React.createElement("line", {
+      strokeDasharray: "4 4"
+    })), [0, 0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
       key: 'x' + t,
-      x1: x(inverted ? maxX - (maxX - minX) * t : minX + (maxX - minX) * t),
-      x2: x(inverted ? maxX - (maxX - minX) * t : minX + (maxX - minX) * t),
+      x1: x(maxWall * t),
+      x2: x(maxWall * t),
       y1: pad.t,
       y2: height - pad.b,
       stroke: "var(--border-subtle)",
-      strokeDasharray: "4 5"
-    })), Object.values(familyGroups).filter(g => g.length >= 2).map(group => {
-      const sorted = group.slice().sort((a, b) => entryPriceMetric(a, scatterAxis) - entryPriceMetric(b, scatterAxis));
-      const path = sorted.map((r, i) => `${i ? 'L' : 'M'}${x(entryPriceMetric(r, scatterAxis)).toFixed(1)},${y(entryBenchScore(r)).toFixed(1)}`).join(' ');
-      return /*#__PURE__*/React.createElement("path", {
-        key: group[0].family + group[0].machine,
-        d: path,
-        fill: "none",
-        stroke: familyColors[group[0].family] || familyColors.Other,
-        strokeWidth: "1.25",
-        opacity: "0.45"
-      });
-    }), frontierPoints.length > 1 && /*#__PURE__*/React.createElement("path", {
-      d: frontierPath,
-      fill: "none",
-      stroke: "var(--text-strong)",
-      strokeWidth: "1.5",
-      strokeDasharray: "5 4",
-      opacity: "0.7"
-    }), /*#__PURE__*/React.createElement("text", {
-      className: "models-quadrant-label",
-      x: width - pad.r - 4,
-      y: pad.t + 12,
-      textAnchor: "end"
-    }, "most efficient ↗"), /*#__PURE__*/React.createElement("text", {
+      strokeDasharray: "4 4"
+    })), /*#__PURE__*/React.createElement("text", {
       x: pad.l,
-      y: height - 12,
+      y: height - 8,
       fill: "var(--text-muted)",
       fontSize: "11"
-    }, axisLabel + axisHint), /*#__PURE__*/React.createElement("text", {
-      x: 12,
-      y: pad.t + 10,
+    }, "Avg wall time (s) → slower"), /*#__PURE__*/React.createElement("text", {
+      x: 8,
+      y: pad.t + 8,
       fill: "var(--text-muted)",
       fontSize: "11",
       transform: `rotate(-90 12 ${pad.t + innerH / 2})`
-    }, "Bench score"), rows.map(row => {
-      const px = entryPriceMetric(row, scatterAxis);
-      const q = entryBenchScore(row);
-      const cx = x(px);
-      const cy = y(q);
-      const key = row.entryKey || row.id;
-      const active = state.modelsSelected === key;
-      const onFrontier = frontierIds.has(key);
-      const r = 5;
-      const short = displayText(row.id, mobile ? 14 : 18);
+    }, "Agentic pass rate"), rows.map(row => {
+      const cx = x(row.avgWallS);
+      const cy = y(row.agenticPassRate);
+      const active = state.modelsSelected === row.id;
+      const r = 6 + Math.min(10, (row.avgTps || 0) / 8);
       return /*#__PURE__*/React.createElement("g", {
-        key: key,
-        className: 'models-scatter-point' + (active ? ' is-active' : '') + (onFrontier ? ' is-frontier' : ''),
-        onClick: () => pickEntry(row),
+        key: row.id,
+        className: 'models-scatter-point' + (active ? ' is-active' : ''),
+        onClick: () => pickModel(row.id),
         style: {
           cursor: 'pointer'
         }
@@ -21511,12 +20757,7 @@ function ModelsView() {
         fill: familyColors[row.family] || familyColors.Other,
         stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
         strokeWidth: active ? 2 : 1.5
-      }), !mobile && /*#__PURE__*/React.createElement("text", {
-        className: "models-scatter-label",
-        x: cx + 8,
-        y: cy + 4,
-        fontSize: "10"
-      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ': bench ' + q.toFixed(1) + ' · Pass@1 ' + (entryAgenticPct(row) != null ? Math.round(entryAgenticPct(row)) + '%' : '—') + ' · rubric ' + (entryRubricPct(row) != null ? Math.round(entryRubricPct(row)) + '%' : '—') + ' · ' + (scatterAxis === 'wall' && row.avgWallS != null ? row.avgWallS.toFixed(1) + 's wall' : scatterAxis === 'turns' && row.avgTurns != null ? row.avgTurns.toFixed(1) + ' turns' : row.avgTps != null ? row.avgTps.toFixed(1) + ' tok/s' : '—') + (onFrontier ? ' · frontier' : '')));
+      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic · ' + row.avgWallS + 's avg · ' + (row.avgTps || '—') + ' tok/s'));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -21524,712 +20765,89 @@ function ModelsView() {
       }))
     }));
   }
-  function LeaderboardTable({
-    rows
-  }) {
-    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No benchmark rows",
-      description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
-    });
-    const maxQ = Math.max(...rows.map(r => entryBenchScore(r) || 0), 1);
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-leaderboard-wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "models-leaderboard"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
-      className: "models-leaderboard-compare-col"
-    }, "Compare"), /*#__PURE__*/React.createElement("th", null, "Model"), !mobile && /*#__PURE__*/React.createElement("th", {
-      className: "models-leaderboard-chart-col"
-    }, "Bench score"), /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Score"), /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Pass@1"), !mobile && /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Rubric"), !mobile && /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Tools"), /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Wall"), /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Tok/s"), /*#__PURE__*/React.createElement("th", {
-      className: "numeric"
-    }, "Turns"))), /*#__PURE__*/React.createElement("tbody", null, rows.map((r, i) => {
-      const score = entryBenchScore(r);
-      const barW = score != null ? score / maxQ * 100 : 0;
-      const key = r.entryKey || r.id + '::' + r.machine;
-      const active = state.modelsSelected === key;
-      const inCompare = comparePicks.includes(key);
-      return /*#__PURE__*/React.createElement("tr", {
-        key: key,
-        className: (active ? 'is-active' : '') + (inCompare ? ' is-compare' : ''),
-        onClick: () => pickEntry(r)
-      }, /*#__PURE__*/React.createElement("td", {
-        className: "models-leaderboard-compare-col"
-      }, /*#__PURE__*/React.createElement(Button, {
-        variant: inCompare ? 'subtle' : 'ghost',
-        size: "sm",
-        onClick: ev => toggleComparePick(r, ev),
-        "aria-pressed": inCompare
-      }, inCompare ? '✓' : '+')), /*#__PURE__*/React.createElement("td", {
-        className: "models-leaderboard-model"
-      }, /*#__PURE__*/React.createElement("span", {
-        className: "models-leaderboard-rank"
-      }, i + 1), /*#__PURE__*/React.createElement("span", {
-        className: "models-leaderboard-name"
-      }, /*#__PURE__*/React.createElement("strong", null, displayText(r.id, mobile ? 28 : 44)), /*#__PURE__*/React.createElement("span", {
-        className: "models-leaderboard-host"
-      }, displayText(machineLabel(r.machine), mobile ? 14 : 22)))), !mobile && /*#__PURE__*/React.createElement("td", {
-        className: "models-leaderboard-bar-cell"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "models-leaderboard-bar-track"
-      }, /*#__PURE__*/React.createElement("div", {
-        className: "models-leaderboard-bar-fill",
-        style: {
-          width: barW + '%',
-          background: familyColors[r.family] || familyColors.Other
-        }
-      }))), /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, score != null ? score.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, entryAgenticPct(r) != null ? Math.round(entryAgenticPct(r)) + '%' : '—'), !mobile && /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, entryRubricPct(r) != null ? Math.round(entryRubricPct(r)) + '%' : '—'), !mobile && /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, entryToolPct(r) != null ? Math.round(entryToolPct(r)) + '%' : '—'), /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, r.avgWallS != null ? r.avgWallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, r.avgTps != null ? r.avgTps.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
-        className: "numeric"
-      }, r.avgTurns != null ? r.avgTurns.toFixed(1) : '—'));
-    }))));
-  }
-  function AgenticTaskGrid({
-    tasks
-  }) {
-    if (!tasks || !tasks.length) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-task-grid"
-    }, tasks.map(task => {
-      const tone = task.passed ? 'favorable' : task.verifyPassed ? 'warning' : 'unfavorable';
-      const label = task.passed ? 'pass' : task.verifyPassed ? 'verify only' : task.timedOut ? 'timeout' : 'fail';
-      return /*#__PURE__*/React.createElement("div", {
-        key: task.task,
-        className: 'models-task-chip is-' + tone
-      }, /*#__PURE__*/React.createElement("strong", null, task.task), /*#__PURE__*/React.createElement("span", null, label, task.wallS != null ? ' · ' + task.wallS.toFixed(1) + 's' : '', task.turns != null ? ' · ' + task.turns + ' turns' : '', task.outputTps != null ? ' · ' + task.outputTps.toFixed(1) + ' tok/s' : ''));
-    }));
-  }
-  function ToolsMatrix({
-    cases
-  }) {
-    if (!cases || !cases.length) return /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, "No per-tool harness rows in the latest tool run.");
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-matrix-grid"
-    }, cases.map(row => {
-      const tone = row.passed ? 'favorable' : 'unfavorable';
-      const label = String(row.id || '').replace(/_/g, ' ');
-      return /*#__PURE__*/React.createElement("div", {
-        key: row.id,
-        className: 'models-matrix-cell is-' + tone,
-        title: row.stopReason ? row.stopReason + (row.toolUseCount != null ? ' · ' + row.toolUseCount + ' tool call(s)' : '') : undefined
-      }, /*#__PURE__*/React.createElement("strong", null, label), /*#__PURE__*/React.createElement("span", null, row.passed ? 'pass' : 'fail', row.seconds != null ? ' · ' + row.seconds.toFixed(1) + 's' : ''));
-    }));
-  }
-  function QualityRubric({
-    checks
-  }) {
-    if (!checks || !checks.length) return /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, "No rubric checks recorded for the latest tool run.");
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-rubric-grid"
-    }, checks.map(row => /*#__PURE__*/React.createElement("div", {
-      key: row.id,
-      className: 'models-rubric-row is-' + (row.passed ? 'favorable' : 'unfavorable')
-    }, /*#__PURE__*/React.createElement("span", {
-      className: "models-rubric-label"
-    }, String(row.id || '').replace(/_/g, ' ')), /*#__PURE__*/React.createElement(Badge, {
-      tone: row.passed ? 'favorable' : 'unfavorable'
-    }, row.passed ? 'pass' : 'fail'))));
-  }
-  function ContextCeilingChart({
-    rows,
-    width = 420,
-    height = 180
-  }) {
-    if (!rows || !rows.length) return /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, "No context ceiling probes yet.");
-    const pad = {
-      t: 16,
-      r: 12,
-      b: 36,
-      l: 44
-    };
-    const innerW = width - pad.l - pad.r;
-    const innerH = height - pad.t - pad.b;
-    const sorted = rows.slice().sort((a, b) => (a.targetTokens || 0) - (b.targetTokens || 0));
-    const maxTok = Math.max(...sorted.map(r => r.targetTokens || 0), 1);
-    const barW = innerW / sorted.length - 8;
-    const x = i => pad.l + i * (innerW / sorted.length) + 4;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-context-wrap"
-    }, /*#__PURE__*/React.createElement("svg", {
-      className: "models-context-chart",
-      viewBox: `0 0 ${width} ${height}`,
-      role: "img",
-      "aria-label": "Context ceiling by target tokens"
-    }, [0.25, 0.5, 0.75, 1].map(t => /*#__PURE__*/React.createElement("line", {
-      key: t,
-      x1: pad.l,
-      x2: width - pad.r,
-      y1: pad.t + innerH * (1 - t),
-      y2: pad.t + innerH * (1 - t),
-      stroke: "var(--border-subtle)",
-      strokeDasharray: "3 4"
-    })), sorted.map((row, i) => {
-      const okH = row.ok ? innerH * 0.72 : innerH * 0.18;
-      const recallH = row.recallOk ? innerH * 0.55 : innerH * 0.12;
-      const bx = x(i);
-      const by = pad.t + innerH - okH;
-      const tone = row.ok && row.recallOk ? 'var(--fav)' : row.ok ? 'var(--warn)' : 'var(--unfav)';
-      const tokLabel = row.targetTokens >= 1000 ? Math.round(row.targetTokens / 1000) + 'k' : String(row.targetTokens);
-      return /*#__PURE__*/React.createElement("g", {
-        key: row.targetTokens || i
-      }, /*#__PURE__*/React.createElement("rect", {
-        x: bx,
-        y: by,
-        width: barW,
-        height: okH,
-        rx: "4",
-        fill: tone,
-        opacity: row.ok ? 0.85 : 0.35
-      }), /*#__PURE__*/React.createElement("rect", {
-        x: bx,
-        y: pad.t + innerH - recallH,
-        width: barW,
-        height: 4,
-        rx: "2",
-        fill: "var(--text-strong)",
-        opacity: row.recallOk ? 0.9 : 0.25
-      }), /*#__PURE__*/React.createElement("text", {
-        x: bx + barW / 2,
-        y: height - 10,
-        textAnchor: "middle",
-        fontSize: "10",
-        fill: "var(--text-muted)"
-      }, tokLabel), /*#__PURE__*/React.createElement("title", null, tokLabel + ' target · ' + (row.ok ? 'ok' : 'fail') + (row.recallOk ? ' · recall ok' : ' · recall fail') + (row.seconds != null ? ' · ' + row.seconds.toFixed(1) + 's' : '') + (row.error ? ' · ' + row.error : '')));
-    }), /*#__PURE__*/React.createElement("text", {
-      x: pad.l,
-      y: height - 10,
-      fill: "var(--text-muted)",
-      fontSize: "10"
-    }, "0"), /*#__PURE__*/React.createElement("text", {
-      x: width - pad.r,
-      y: height - 10,
-      textAnchor: "end",
-      fill: "var(--text-muted)",
-      fontSize: "10"
-    }, Math.round(maxTok / 1000), "k max")), /*#__PURE__*/React.createElement("p", {
-      style: {
-        ...muted,
-        fontSize: 12,
-        margin: '8px 0 0'
-      }
-    }, "Bar height = context load succeeded; dark cap = recall probe passed at that ceiling."));
-  }
-  function ContextVsSizeChart({
-    rows,
-    familyColors,
-    width = 760,
-    height = 320,
-    onPick
-  }) {
-    const plotted = (rows || []).filter(r => r.maxCtxOk != null && (r.estGb != null || r.paramB != null));
-    if (!plotted.length) return /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, "No models with both context probes and size metadata yet — run tool bake-offs and rebuild benchmarks.");
-    const pad = {
-      t: 20,
-      r: 24,
-      b: 48,
-      l: 56
-    };
-    const innerW = width - pad.l - pad.r;
-    const innerH = height - pad.t - pad.b;
-    const sizeOf = r => r.estGb != null ? r.estGb : (r.paramB || 0) * 0.65;
-    const xVals = plotted.map(sizeOf);
-    const yVals = plotted.map(r => r.maxCtxOk / 1000);
-    const minX = Math.min(...xVals) * 0.85;
-    const maxX = Math.max(...xVals) * 1.1;
-    const minY = 0;
-    const maxY = Math.max(...yVals) * 1.12;
-    const x = v => pad.l + (v - minX) / Math.max(maxX - minX, 1) * innerW;
-    const y = v => pad.t + innerH - (v - minY) / Math.max(maxY - minY, 1) * innerH;
-    const benchVals = plotted.map(r => entryBenchScore(r)).filter(v => v != null);
-    const minBench = benchVals.length ? Math.min(...benchVals) : 0;
-    const maxBench = benchVals.length ? Math.max(...benchVals) : 100;
-    const radius = r => {
-      const q = entryBenchScore(r);
-      if (q == null) return 7;
-      const t = maxBench > minBench ? (q - minBench) / (maxBench - minBench) : 0.5;
-      return 6 + t * 10;
-    };
-    const fmtCtx = tok => tok >= 1000 ? Math.round(tok / 1000) + 'k' : String(tok);
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-context-size-wrap"
-    }, /*#__PURE__*/React.createElement("svg", {
-      className: "models-context-size-chart",
-      viewBox: `0 0 ${width} ${height}`,
-      role: "img",
-      "aria-label": "Context ceiling versus model VRAM footprint"
-    }, [0.25, 0.5, 0.75, 1].map(t => {
-      const gy = pad.t + innerH * (1 - t);
-      const label = Math.round(minY + (maxY - minY) * t);
-      return /*#__PURE__*/React.createElement("g", {
-        key: t
-      }, /*#__PURE__*/React.createElement("line", {
-        x1: pad.l,
-        x2: width - pad.r,
-        y1: gy,
-        y2: gy,
-        stroke: "var(--border-subtle)",
-        strokeDasharray: "3 4"
-      }), /*#__PURE__*/React.createElement("text", {
-        x: pad.l - 8,
-        y: gy + 4,
-        textAnchor: "end",
-        fontSize: "10",
-        fill: "var(--text-muted)"
-      }, label, "k"));
-    }), [0, 0.25, 0.5, 0.75, 1].map(t => {
-      const gx = pad.l + innerW * t;
-      const label = Math.round(minX + (maxX - minX) * t);
-      return /*#__PURE__*/React.createElement("g", {
-        key: 'x' + t
-      }, /*#__PURE__*/React.createElement("line", {
-        x1: gx,
-        x2: gx,
-        y1: pad.t,
-        y2: pad.t + innerH,
-        stroke: "var(--border-subtle)",
-        strokeDasharray: "3 4",
-        opacity: t ? 0.45 : 0
-      }), /*#__PURE__*/React.createElement("text", {
-        x: gx,
-        y: height - 16,
-        textAnchor: "middle",
-        fontSize: "10",
-        fill: "var(--text-muted)"
-      }, label, " GB"));
-    }), plotted.map(row => {
-      const cx = x(sizeOf(row));
-      const cy = y(row.maxCtxOk / 1000);
-      const color = familyColors[row.family] || familyColors.Other;
-      const short = displayText(row.id, 18);
-      const sizeLabel = row.estGb != null ? row.estGb + ' GB est' : row.paramB ? row.paramB + 'B params' : '—';
-      return /*#__PURE__*/React.createElement("g", {
-        key: row.entryKey || row.id,
-        className: "models-context-size-point",
-        onClick: () => onPick && onPick(row),
-        style: {
-          cursor: onPick ? 'pointer' : 'default'
-        }
-      }, /*#__PURE__*/React.createElement("circle", {
-        cx: cx,
-        cy: cy,
-        r: radius(row),
-        fill: color,
-        opacity: 0.72,
-        stroke: "var(--surface-card)",
-        strokeWidth: "2"
-      }), /*#__PURE__*/React.createElement("text", {
-        className: "models-context-size-label",
-        x: cx + radius(row) + 4,
-        y: cy + 4,
-        fontSize: "10",
-        fill: "var(--text-muted)"
-      }, short), /*#__PURE__*/React.createElement("title", null, row.id + ' · ' + machineLabel(row.machine) + ' · max ctx ' + fmtCtx(row.maxCtxOk) + ' · ' + sizeLabel + (entryBenchScore(row) != null ? ' · bench ' + entryBenchScore(row).toFixed(1) : '')));
-    }), /*#__PURE__*/React.createElement("text", {
-      x: width / 2,
-      y: height - 4,
-      textAnchor: "middle",
-      fontSize: "11",
-      fill: "var(--text-muted)"
-    }, "Est. VRAM footprint (GB) → larger models use more weights, leaving less for KV cache"), /*#__PURE__*/React.createElement("text", {
-      transform: `translate(14 ${pad.t + innerH / 2}) rotate(-90)`,
-      textAnchor: "middle",
-      fontSize: "11",
-      fill: "var(--text-muted)"
-    }, "Max context load ok (k tokens) ↑")), /*#__PURE__*/React.createElement("p", {
-      style: {
-        ...muted,
-        fontSize: 12,
-        margin: '8px 0 0'
-      }
-    }, "Bubble size = bench score. Upper-left is the sweet spot: small footprint, high context headroom. Large MoE/dense models may score higher on rubric but need more VRAM per token of context."));
-  }
-  function AgenticHeatmap({
-    tasks
-  }) {
-    if (!tasks || !tasks.length) return null;
-    const maxWall = Math.max(...tasks.map(t => t.wallS || 0), 1);
-    const maxTps = Math.max(...tasks.map(t => t.outputTps || 0), 1);
-    const cellTone = task => task.passed ? 'favorable' : task.verifyPassed ? 'warning' : 'unfavorable';
-    const heat = (value, max, invert) => {
-      if (value == null) return 'transparent';
-      const ratio = Math.min(1, Math.max(0, value / max));
-      const alpha = invert ? 0.08 + (1 - ratio) * 0.22 : 0.08 + ratio * 0.22;
-      return `color-mix(in srgb, var(--accent) ${Math.round(alpha * 100)}%, transparent)`;
-    };
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-heatmap-wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "models-heatmap"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Task"), /*#__PURE__*/React.createElement("th", null, "Kind"), /*#__PURE__*/React.createElement("th", null, "Pass"), /*#__PURE__*/React.createElement("th", null, "Wall"), /*#__PURE__*/React.createElement("th", null, "Turns"), /*#__PURE__*/React.createElement("th", null, "Tok/s"))), /*#__PURE__*/React.createElement("tbody", null, tasks.map(task => /*#__PURE__*/React.createElement("tr", {
-      key: task.task
-    }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", null, task.task)), /*#__PURE__*/React.createElement("td", null, task.kind || '—'), /*#__PURE__*/React.createElement("td", {
-      className: 'models-heatmap-pass is-' + cellTone(task)
-    }, task.passed ? 'pass' : task.timedOut ? 'timeout' : 'fail'), /*#__PURE__*/React.createElement("td", {
-      style: {
-        background: heat(task.wallS, maxWall, true)
-      }
-    }, task.wallS != null ? task.wallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", null, task.turns != null ? task.turns : '—'), /*#__PURE__*/React.createElement("td", {
-      style: {
-        background: heat(task.outputTps, maxTps, false)
-      }
-    }, task.outputTps != null ? task.outputTps.toFixed(1) : '—'))))));
-  }
-  const PHASE_SCORE_KEYS = [{
+  const tableRows = benchmarked.map(m => ({
+    ...m,
+    machineNames: (m.machines || []).map(machineLabel).join(', '),
+    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : '—',
+    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : '—',
+    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—'
+  }));
+  const columns = [{
+    key: 'id',
+    header: 'Model',
+    wrap: true,
+    render: (v, r) => /*#__PURE__*/React.createElement("button", {
+      type: "button",
+      className: "models-link",
+      onClick: () => pickModel(r.id)
+    }, /*#__PURE__*/React.createElement("strong", null, displayText(v, 42)))
+  }, {
+    key: 'family',
+    header: 'Family',
+    render: v => /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, v)
+  }, {
+    key: 'lane',
+    header: 'Lane',
+    render: v => /*#__PURE__*/React.createElement(Badge, {
+      tone: v === 'azure' ? 'info' : 'accent'
+    }, v)
+  }, {
+    key: 'machineNames',
+    header: 'Machine(s)',
+    wrap: true
+  }, {
+    key: 'score',
+    header: 'Score',
+    align: 'right',
+    numeric: true
+  }, {
     key: 'agenticPct',
-    label: 'Pass@1',
-    fmt: v => v != null ? Math.round(v) + '%' : null
+    header: 'Agentic',
+    align: 'right',
+    numeric: true
   }, {
-    key: 'artifactScore',
-    label: 'Artifact',
-    fmt: v => v != null ? Math.round(v) : null
+    key: 'toolPct',
+    header: 'Tools',
+    align: 'right',
+    numeric: true
   }, {
-    key: 'agencyScore',
-    label: 'Agency',
-    fmt: v => v != null ? Math.round(v) : null
+    key: 'avgTps',
+    header: 'Tok/s',
+    align: 'right',
+    numeric: true,
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
-    key: 'replayScore',
-    label: 'Replay',
-    fmt: v => v != null ? Math.round(v) : null
+    key: 'avgWallS',
+    header: 'Wall (s)',
+    align: 'right',
+    numeric: true,
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
-    key: 'delegationCeiling',
-    label: 'Ceiling',
-    fmt: v => v != null ? String(v) : null
+    key: 'context64kOk',
+    header: '64K ctx',
+    align: 'center',
+    render: v => v == null ? '—' : v ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, "OK") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "warning"
+    }, "No")
   }];
-  function FleetPhaseHeatmap({
-    rows,
-    mobile
-  }) {
-    if (!rows.length) return /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No phase scores yet",
-      description: "Run the integrated mega-suite and rebuild benchmarks."
-    });
-    const cols = PHASE_SCORE_KEYS;
-    const maxByCol = Object.fromEntries(cols.map(c => [c.key, Math.max(...rows.map(r => Number(r[c.key]) || 0), 1)]));
-    const heat = (val, max) => {
-      if (val == null) return 'transparent';
-      const ratio = Math.min(1, Math.max(0, Number(val) / max));
-      return `color-mix(in srgb, var(--accent) ${Math.round(8 + ratio * 28)}%, transparent)`;
-    };
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-heatmap-wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "models-heatmap models-fleet-heatmap"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Model"), cols.map(c => /*#__PURE__*/React.createElement("th", {
-      key: c.key
-    }, c.label)), /*#__PURE__*/React.createElement("th", null, "Bench"))), /*#__PURE__*/React.createElement("tbody", null, rows.map(row => /*#__PURE__*/React.createElement("tr", {
-      key: row.entryKey || row.id
-    }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", null, displayText(row.id, mobile ? 22 : 32)), /*#__PURE__*/React.createElement("div", {
-      className: "models-leaderboard-host"
-    }, displayText(machineLabel(row.machine), 18))), cols.map(c => {
-      const v = row[c.key];
-      const label = c.fmt(v);
-      return /*#__PURE__*/React.createElement("td", {
-        key: c.key,
-        style: {
-          background: heat(v, maxByCol[c.key])
-        },
-        className: label ? 'models-heatmap-pass is-favorable' : ''
-      }, label || '—');
-    }), /*#__PURE__*/React.createElement("td", {
-      className: "numeric"
-    }, entryBenchScore(row) != null ? entryBenchScore(row).toFixed(1) : '—'))))));
-  }
-  function FleetMedianRadar({
-    entries,
-    width = 360,
-    height = 320
-  }) {
-    const usable = entries.filter(e => entryBenchScore(e) != null);
-    if (!usable.length) return /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, "Fleet radar needs at least one scored entry.");
-    const keys = [['agenticPct', 'Pass@1'], ['artifactScore', 'Artifact'], ['agencyScore', 'Agency'], ['replayScore', 'Replay'], ['delegationCeiling', 'Ceiling'], ['compositeScore', 'Bench']];
-    const median = arr => {
-      if (!arr.length) return null;
-      const s = arr.slice().sort((a, b) => a - b);
-      const m = Math.floor(s.length / 2);
-      return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
-    };
-    const med = Object.fromEntries(keys.map(([k]) => [k, median(usable.map(e => Number(e[k])).filter(v => Number.isFinite(v)))]));
-    const best = usable.slice().sort((a, b) => (entryBenchScore(b) || 0) - (entryBenchScore(a) || 0))[0];
-    const cx = width / 2;
-    const cy = height / 2;
-    const r = Math.min(width, height) / 2 - 36;
-    const n = keys.length;
-    const maxFor = key => Math.max(...usable.map(e => Number(e[key]) || 0), Number(med[key]) || 0, key.includes('Pct') || key.includes('Score') ? 100 : 12);
-    const poly = (vals, stroke, fill) => {
-      const pts = keys.map(([key], i) => {
-        const ang = -Math.PI / 2 + 2 * Math.PI * i / n;
-        const scale = maxFor(key) || 1;
-        const v = (Number(vals[key]) || 0) / scale * r;
-        return `${cx + Math.cos(ang) * v},${cy + Math.sin(ang) * v}`;
-      }).join(' ');
-      return /*#__PURE__*/React.createElement("polygon", {
-        points: pts,
-        fill: fill,
-        stroke: stroke,
-        strokeWidth: "1.5"
-      });
-    };
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-radar-wrap"
-    }, /*#__PURE__*/React.createElement("svg", {
-      className: "models-radar-chart",
-      viewBox: `0 0 ${width} ${height}`,
-      role: "img",
-      "aria-label": "Fleet median radar"
-    }, [0.25, 0.5, 0.75, 1].map(t => {
-      const pts = keys.map((_, i) => {
-        const ang = -Math.PI / 2 + 2 * Math.PI * i / n;
-        return `${cx + Math.cos(ang) * r * t},${cy + Math.sin(ang) * r * t}`;
-      }).join(' ');
-      return /*#__PURE__*/React.createElement("polygon", {
-        key: t,
-        points: pts,
-        fill: "none",
-        stroke: "var(--border-subtle)",
-        strokeDasharray: "3 4"
-      });
-    }), keys.map(([key, label], i) => {
-      const ang = -Math.PI / 2 + 2 * Math.PI * i / n;
-      const lx = cx + Math.cos(ang) * (r + 18);
-      const ly = cy + Math.sin(ang) * (r + 18);
-      return /*#__PURE__*/React.createElement("g", {
-        key: key
-      }, /*#__PURE__*/React.createElement("line", {
-        x1: cx,
-        y1: cy,
-        x2: cx + Math.cos(ang) * r,
-        y2: cy + Math.sin(ang) * r,
-        stroke: "var(--border-subtle)"
-      }), /*#__PURE__*/React.createElement("text", {
-        x: lx,
-        y: ly,
-        textAnchor: "middle",
-        fontSize: "10",
-        fill: "var(--text-muted)"
-      }, label));
-    }), poly(med, 'var(--accent)', 'color-mix(in srgb, var(--accent) 14%, transparent)'), best ? poly(best, 'var(--positive)', 'color-mix(in srgb, var(--positive) 12%, transparent)') : null), /*#__PURE__*/React.createElement("p", {
-      style: {
-        ...muted,
-        fontSize: 12,
-        margin: '8px 0 0'
-      }
-    }, "Accent = fleet median · green = top bench", best ? ' (' + displayText(best.id, 24) + ')' : '', "."));
-  }
-  function ArtifactBreakdownGrid({
-    breakdown
-  }) {
-    if (!breakdown || !breakdown.length) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-artifact-grid"
-    }, breakdown.map(row => /*#__PURE__*/React.createElement("div", {
-      key: row.dimension || row.task || row.id,
-      className: "models-artifact-cell"
-    }, /*#__PURE__*/React.createElement("strong", null, row.dimension || row.task || row.id), /*#__PURE__*/React.createElement("span", null, row.score != null ? Math.round(row.score) : row.passed ? 'pass' : row.label || '—'))));
-  }
-  function ReplaySliceGrid({
-    slices
-  }) {
-    if (!slices || !slices.length) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      className: "models-task-grid"
-    }, slices.map(slice => /*#__PURE__*/React.createElement("div", {
-      key: slice.id || slice.slice,
-      className: 'models-task-chip is-' + (slice.passed ? 'favorable' : 'unfavorable')
-    }, /*#__PURE__*/React.createElement("strong", null, slice.id || slice.slice), /*#__PURE__*/React.createElement("span", null, slice.passed ? 'pass' : 'fail', slice.score != null ? ' · ' + Math.round(slice.score) : ''))));
-  }
-  function GoodAvoidPanel({
-    goodFor,
-    avoidFor,
-    narrative
-  }) {
-    if (!goodFor && !avoidFor && !narrative) return null;
-    return /*#__PURE__*/React.createElement(Stack, {
-      gap: 3
-    }, narrative ? /*#__PURE__*/React.createElement("p", {
-      style: muted
-    }, narrative) : null, /*#__PURE__*/React.createElement(Grid, {
-      cols: 1,
-      gap: 3
-    }, goodFor ? /*#__PURE__*/React.createElement("div", {
-      className: "models-good-for"
-    }, /*#__PURE__*/React.createElement("strong", null, "Good for"), /*#__PURE__*/React.createElement("p", null, goodFor)) : null, avoidFor ? /*#__PURE__*/React.createElement("div", {
-      className: "models-avoid-for"
-    }, /*#__PURE__*/React.createElement("strong", null, "Avoid for"), /*#__PURE__*/React.createElement("p", null, avoidFor)) : null));
-  }
-  function ModelComparePanel({
-    picks,
-    allEntries,
-    mobile
-  }) {
-    if (!picks.length) return /*#__PURE__*/React.createElement(EmptyState, {
-      title: "Pick models to compare",
-      description: "Use Compare on leaderboard rows — up to four model × machine entries side by side."
-    });
-    const rows = picks.map(key => allEntries.find(e => e.entryKey === key)).filter(Boolean);
-    if (!rows.length) return null;
-    const taskNames = [...new Set(rows.flatMap(e => (e.agenticTasks || []).map(t => t.task)))].sort();
-    const metricRows = [['Bench score', e => entryBenchScore(e), v => v != null ? v.toFixed(1) : '—', false], ['Pass@1', e => entryAgenticPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Artifact', e => e.artifactScore, v => v != null ? Math.round(v) : '—', false], ['Replay', e => e.replayScore, v => v != null ? Math.round(v) : '—', false], ['Ceiling', e => e.delegationCeiling, v => v != null ? String(v) : '—', false], ['Rubric', e => entryRubricPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Tools', e => entryToolPct(e), v => v != null ? Math.round(v) + '%' : '—', false], ['Wall', e => e.avgWallS, v => v != null ? v.toFixed(1) + 's' : '—', true], ['Tok/s', e => e.avgTps, v => v != null ? v.toFixed(1) : '—', false], ['Turns', e => e.avgTurns, v => v != null ? v.toFixed(1) : '—', true], ['Max ctx', e => e.maxCtxOk, v => v != null ? v >= 1000 ? Math.round(v / 1000) + 'k' : String(v) : '—', false], ['Est VRAM', e => e.estGb, v => v != null ? v + ' GB' : '—', true]];
-    const bestIdx = (vals, lowerBetter) => {
-      const usable = vals.map((v, i) => ({
-        v,
-        i
-      })).filter(x => x.v != null);
-      if (!usable.length) return -1;
-      usable.sort((a, b) => lowerBetter ? a.v - b.v : b.v - a.v);
-      return usable[0].i;
-    };
-    return /*#__PURE__*/React.createElement(Stack, {
-      gap: 4
-    }, /*#__PURE__*/React.createElement(Cluster, {
-      gap: 2,
-      style: {
-        flexWrap: 'wrap'
-      }
-    }, rows.map(e => /*#__PURE__*/React.createElement(Badge, {
-      key: e.entryKey,
-      tone: "accent"
-    }, displayText(e.id, 28), " · ", displayText(machineLabel(e.machine), 16))), /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => {
-        state.modelsComparePicks = [];
-        forceRender();
-      }
-    }, "Clear")), /*#__PURE__*/React.createElement("div", {
-      className: "models-compare-table-wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "models-compare-table"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Metric"), rows.map(e => /*#__PURE__*/React.createElement("th", {
-      key: e.entryKey
-    }, displayText(e.id, mobile ? 18 : 24))))), /*#__PURE__*/React.createElement("tbody", null, metricRows.map(([label, getter, fmt, lowerBetter]) => {
-      const vals = rows.map(getter);
-      const win = bestIdx(vals, lowerBetter);
-      return /*#__PURE__*/React.createElement("tr", {
-        key: label
-      }, /*#__PURE__*/React.createElement("td", null, label), vals.map((v, i) => /*#__PURE__*/React.createElement("td", {
-        key: rows[i].entryKey,
-        className: win === i ? 'models-compare-cell is-winner' : ''
-      }, fmt(v))));
-    })))), taskNames.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: 12,
-        fontWeight: 700,
-        color: 'var(--text-muted)',
-        textTransform: 'uppercase',
-        letterSpacing: 'var(--tracking-eyebrow)'
-      }
-    }, "Agentic task matrix"), /*#__PURE__*/React.createElement("div", {
-      className: "models-compare-table-wrap"
-    }, /*#__PURE__*/React.createElement("table", {
-      className: "models-compare-table"
-    }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Task"), rows.map(e => /*#__PURE__*/React.createElement("th", {
-      key: e.entryKey
-    }, "Pass")), rows.map(e => /*#__PURE__*/React.createElement("th", {
-      key: e.entryKey + '-wall'
-    }, "Wall"))), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null), rows.map(e => /*#__PURE__*/React.createElement("th", {
-      key: e.entryKey + '-h',
-      colSpan: 1,
-      style: {
-        fontSize: 10,
-        fontWeight: 500,
-        textTransform: 'none'
-      }
-    }, displayText(e.id, 14))), rows.map(e => /*#__PURE__*/React.createElement("th", {
-      key: e.entryKey + '-wh',
-      colSpan: 1,
-      style: {
-        fontSize: 10,
-        fontWeight: 500,
-        textTransform: 'none'
-      }
-    }, displayText(e.id, 14))))), /*#__PURE__*/React.createElement("tbody", null, taskNames.map(task => /*#__PURE__*/React.createElement("tr", {
-      key: task
-    }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("strong", null, task)), rows.map(e => {
-      const t = (e.agenticTasks || []).find(x => x.task === task);
-      const tone = t ? t.passed ? 'favorable' : t.verifyPassed ? 'warning' : 'unfavorable' : 'neutral';
-      return /*#__PURE__*/React.createElement("td", {
-        key: e.entryKey + task
-      }, /*#__PURE__*/React.createElement(Badge, {
-        tone: tone
-      }, t ? t.passed ? 'pass' : t.timedOut ? 'timeout' : 'fail' : '—'));
-    }), rows.map(e => {
-      const t = (e.agenticTasks || []).find(x => x.task === task);
-      return /*#__PURE__*/React.createElement("td", {
-        key: e.entryKey + task + 'w'
-      }, t && t.wallS != null ? t.wallS.toFixed(1) + 's' : '—');
-    }))))))) : null);
-  }
-  const comparePicks = Array.isArray(state.modelsComparePicks) ? state.modelsComparePicks : [];
-  const toggleComparePick = (entry, ev) => {
-    if (ev) ev.stopPropagation();
-    const key = entry.entryKey || entry.id;
-    let picks = comparePicks.slice();
-    const idx = picks.indexOf(key);
-    if (idx >= 0) picks.splice(idx, 1);else {
-      if (picks.length >= 4) return toast('Compare holds up to 4 models.', 'warning');
-      picks.push(key);
-    }
-    state.modelsComparePicks = picks;
-    forceRender();
-  };
-  const tableRows = rankRows(benchmarked, rankMetric);
-  const fleetHeatmapRows = rankRows(benchmarked, 'quality').slice(0, mobile ? 10 : 16);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
-    title: "Local model benchmark lab",
-    lede: "Bench score blends agentic Pass@1, design-doc rubric, and tool reliability — then plots it against wall time (the price for free local runs).",
-    action: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 2
-    }, /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, "Updated ", updatedLabel), /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, benchmarked.length, " entries"), /*#__PURE__*/React.createElement(Button, {
+    title: "Benchmarked models across machines",
+    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards — grounded in your own test runs.",
+    action: /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: () => setView('usage')
-    }, "Usage detail"))
+    }, "Usage detail")
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 4
-  }, benchLoadFailed && /*#__PURE__*/React.createElement(Banner, {
-    variant: "warn"
-  }, /*#__PURE__*/React.createElement("span", null, "Model benchmark data did not load — scatter and leaderboard will stay empty until tools/model-benchmarks.json is readable. Try Reload or Reconnect.")), usingLegacyCatalog && !benchLoadFailed && /*#__PURE__*/React.createElement(Banner, {
-    variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "Using legacy catalog rows — rebuild the dashboard to pick up per-machine v2 entries and trend deltas.")), /*#__PURE__*/React.createElement(Cluster, {
+  }, /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap',
@@ -22254,12 +20872,7 @@ function ModelsView() {
       value: 'azure',
       label: 'Azure fleet'
     }]
-  }), /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement(Select, {
+  }), /*#__PURE__*/React.createElement(Select, {
     value: machineFilter,
     onChange: v => {
       state.modelsMachine = v;
@@ -22270,379 +20883,160 @@ function ModelsView() {
       label
     })),
     "aria-label": "Filter by machine"
-  }), /*#__PURE__*/React.createElement(SearchField, {
-    value: search,
-    onChange: v => {
-      state.modelsSearch = v;
-      forceRender();
-    },
-    placeholder: "Search models…",
-    count: benchmarked.length
-  }))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Efficiency",
-    title: "Quality vs time",
-    action: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 2
-    }, /*#__PURE__*/React.createElement(SegmentedControl, {
-      value: scatterAxis,
-      onChange: v => {
-        state.modelsScatterAxis = v;
-        forceRender();
-      },
-      options: [{
-        value: 'wall',
-        label: 'Wall time'
-      }, {
-        value: 'turns',
-        label: 'Turns'
-      }, {
-        value: 'throughput',
-        label: 'Tok/s'
-      }]
-    }), /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, scatterRows.length, " plotted"))
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Y axis is bench score (50% agentic Pass@1 + 15% rubric + 35% tools), not raw pass rate alone — so models that ace agentic but fail tools/rubric still separate. X axis is wall time by default; top-right is best."), /*#__PURE__*/React.createElement(EfficiencyScatter, {
-    rows: scatterRows,
-    width: mobile ? 360 : 760,
-    height: mobile ? 280 : 360
-  })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Memory tradeoff",
-    title: "Context vs model size",
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, entries.filter(e => e.maxCtxOk != null && (e.estGb != null || e.paramB != null)).length, " plotted")
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Smaller quant models leave more unified memory for KV cache — so a 12B @ 8 GB may load longer contexts than a 26B @ 15 GB on the same machine. Point size reflects bench score; click a bubble for detail."), /*#__PURE__*/React.createElement(ContextVsSizeChart, {
-    rows: entries,
-    familyColors: familyColors,
-    width: mobile ? 360 : 760,
-    height: mobile ? 260 : 320,
-    onPick: pickEntry
+  })), /*#__PURE__*/React.createElement(Grid, {
+    min: 160,
+    gap: 3
+  }, /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Benchmarked models",
+    value: String(benchmarked.length),
+    deltaNote: bench.updatedIso ? 'Updated ' + shortAge(bench.updated) : 'rollup pending'
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best composite",
+    value: bestScore ? displayText(bestScore.id, 18) : '—',
+    deltaNote: bestScore && bestScore.compositeScore != null ? 'Score ' + bestScore.compositeScore.toFixed(1) : 'Run bake-offs'
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best agentic",
+    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
+    deltaNote: bestAgentic ? displayText(bestAgentic.id, 24) : ''
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Best tools",
+    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
+    deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Test runs",
+    value: String(runs.length),
+    deltaNote: "Tool + agentic harnesses"
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Mega-suite",
-    title: "Phase score heatmap",
+    eyebrow: "Agentic frontier",
+    title: "Pass rate vs speed",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, fleetHeatmapRows.length, " models")
+    }, scatterRows.length, " models")
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Pass@1, artifact judge, agency, replay, and progressive ceiling — populated as integrated phases complete."), /*#__PURE__*/React.createElement(FleetPhaseHeatmap, {
-    rows: fleetHeatmapRows,
-    mobile: mobile
+  }, "Bubble size tracks output tok/s. Upper-left is ideal: high pass rate, lower wall time. Click a point to inspect runs."), /*#__PURE__*/React.createElement(ScatterPlot, {
+    rows: scatterRows,
+    width: mobile ? 360 : 640,
+    height: mobile ? 240 : 280
   })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Fleet",
-    title: "Median radar",
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, benchmarked.length, " entries")
-  }, /*#__PURE__*/React.createElement("p", {
+    eyebrow: "Throughput",
+    title: "Output tokens per second"
+  }, throughputRows.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(BarChart, {
+    data: throughputRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: m.avgTps,
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Compare each model’s phase scores against fleet median and the current bench leader."), /*#__PURE__*/React.createElement(FleetMedianRadar, {
-    entries: benchmarked,
-    width: mobile ? 320 : 380,
-    height: mobile ? 280 : 320
-  }))), /*#__PURE__*/React.createElement(Card, {
-    title: "Leaderboard",
-    action: /*#__PURE__*/React.createElement(Tabs, {
-      value: rankMetric,
-      onChange: v => {
-        state.modelsRankMetric = v;
-        forceRender();
-      },
-      style: mobile ? {
-        overflowX: 'auto',
-        flexWrap: 'nowrap',
-        WebkitOverflowScrolling: 'touch'
-      } : {},
-      tabs: [{
-        value: 'quality',
-        label: 'Bench score'
-      }, {
-        value: 'agentic',
-        label: 'Pass@1'
-      }, {
-        value: 'speed',
-        label: 'Wall time'
-      }, {
-        value: 'throughput',
-        label: 'Tok/s'
-      }, {
-        value: 'rubric',
-        label: 'Rubric'
-      }, {
-        value: 'tools',
-        label: 'Tools'
-      }]
-    })
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 3
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "One row per model × machine. Score column is the blended bench metric; Pass@1, Rubric, and Tools show what drove it. Click a row for per-task agentic breakdown."), rankMetric === 'tools' && tableRows.every(m => metricValue(m, 'tools') === 100) && /*#__PURE__*/React.createElement(Banner, {
-    variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "Every ranked entry scored 100% on tools — use Bench score or Rubric to separate them.")), /*#__PURE__*/React.createElement(LeaderboardTable, {
-    rows: tableRows
-  }))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Model compare",
-    title: comparePicks.length ? comparePicks.length + ' model' + (comparePicks.length === 1 ? '' : 's') + ' selected' : 'Side-by-side models',
-    action: comparePicks.length ? /*#__PURE__*/React.createElement(Badge, {
-      tone: "accent"
-    }, comparePicks.length, "/4") : null
-  }, /*#__PURE__*/React.createElement(ModelComparePanel, {
-    picks: comparePicks,
-    allEntries: entries,
-    mobile: mobile
-  })), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Machine showdown",
-    title: labelA + ' vs ' + labelB,
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, compare.paired.length, " paired models")
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 4
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Side-by-side scores from the same model on each machine — use this to decide keep vs return. Paired rows only count when the exact model was benchmarked on both hosts."), /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? 1 : 2,
-    gap: 3
-  }, /*#__PURE__*/React.createElement(Select, {
-    value: compareA,
-    onChange: v => {
-      state.modelsCompareA = v;
-      forceRender();
-    },
-    options: compareOptions,
-    "aria-label": "Compare machine A"
-  }), /*#__PURE__*/React.createElement(Select, {
-    value: compareB,
-    onChange: v => {
-      state.modelsCompareB = v;
-      forceRender();
-    },
-    options: compareOptions,
-    "aria-label": "Compare machine B"
-  })), compare.paired.length ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Grid, {
-    cols: mobile ? 2 : 4,
-    gap: 3
-  }, /*#__PURE__*/React.createElement(KpiStat, {
-    label: labelB + ' · composite wins',
-    value: compositeWins.total ? compositeWins.b + '/' + compositeWins.total : '—'
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: labelB + ' · speed wins',
-    value: speedWins.total ? speedWins.b + '/' + speedWins.total : '—'
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: labelB + ' · tok/s wins',
-    value: tpsWins.total ? tpsWins.b + '/' + tpsWins.total : '—'
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Wall-time ratio",
-    value: avgWallRatio ? avgWallRatio.toFixed(1) + '×' : '—'
-  })), /*#__PURE__*/React.createElement(Banner, {
-    variant: compositeWins.b > compositeWins.a ? 'info' : 'neutral'
-  }, /*#__PURE__*/React.createElement("span", null, compare.paired.length < 3 ? 'Only ' + compare.paired.length + ' paired model(s) — run the same bake-off set on both machines before deciding keep vs return.' : labelB + ' leads composite on ' + compositeWins.b + '/' + compare.paired.length + ' paired models' + (avgTpsRatio ? ', ~' + avgTpsRatio.toFixed(1) + '× tok/s' : '') + (avgWallRatio && avgWallRatio > 2 ? ', ~' + avgWallRatio.toFixed(0) + '× faster wall time.' : '.'), " M2 rows include older July bake-offs — re-run key models on both hosts for a fair harness match.")), /*#__PURE__*/React.createElement("div", {
-    className: "models-compare-table-wrap"
-  }, /*#__PURE__*/React.createElement("table", {
-    className: "models-compare-table"
-  }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, "Model"), /*#__PURE__*/React.createElement("th", {
-    colSpan: 3
-  }, displayText(labelA, mobile ? 18 : 28)), /*#__PURE__*/React.createElement("th", {
-    colSpan: 3
-  }, displayText(labelB, mobile ? 18 : 28)), /*#__PURE__*/React.createElement("th", null, "Verdict")), /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null), /*#__PURE__*/React.createElement("th", null, "Score"), /*#__PURE__*/React.createElement("th", null, "Wall"), /*#__PURE__*/React.createElement("th", null, "Tok/s"), /*#__PURE__*/React.createElement("th", null, "Score"), /*#__PURE__*/React.createElement("th", null, "Wall"), /*#__PURE__*/React.createElement("th", null, "Tok/s"), /*#__PURE__*/React.createElement("th", null, "Speed"))), /*#__PURE__*/React.createElement("tbody", null, compare.paired.map(row => /*#__PURE__*/React.createElement("tr", {
-    key: row.id
-  }, /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("button", {
-    type: "button",
-    className: "models-link",
-    onClick: () => pickEntry(row.b)
-  }, /*#__PURE__*/React.createElement("strong", null, displayText(row.id, mobile ? 24 : 36)))), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.compositeWinner === 'a' ? ' is-winner' : '')
-  }, row.a.compositeScore != null ? row.a.compositeScore.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.speedWinner === 'a' ? ' is-winner' : '')
-  }, row.a.avgWallS != null ? row.a.avgWallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.tpsWinner === 'a' ? ' is-winner' : '')
-  }, row.a.avgTps != null ? row.a.avgTps.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.compositeWinner === 'b' ? ' is-winner' : '')
-  }, row.b.compositeScore != null ? row.b.compositeScore.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.speedWinner === 'b' ? ' is-winner' : '')
-  }, row.b.avgWallS != null ? row.b.avgWallS.toFixed(1) + 's' : '—'), /*#__PURE__*/React.createElement("td", {
-    className: 'models-compare-cell' + (row.tpsWinner === 'b' ? ' is-winner' : '')
-  }, row.b.avgTps != null ? row.b.avgTps.toFixed(1) : '—'), /*#__PURE__*/React.createElement("td", null, row.wallRatio ? row.wallRatio.toFixed(1) + '×' : '—', row.speedWinner === 'b' ? ' → ' + labelB.split('(')[0].trim() : row.speedWinner === 'a' ? ' → ' + labelA.split('(')[0].trim() : ''))))))) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No paired models yet",
-    description: 'Run the same model bake-offs on both ' + labelA + ' and ' + labelB + ', then rebuild benchmarks. Until then, use the single-machine lists below as a coverage gap signal.'
-  }), /*#__PURE__*/React.createElement(Grid, {
+  }, "From headless Claude Code agentic bake-offs on throwaway repos.")) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No throughput data",
+    description: "Agentic bake-off runs populate this chart."
+  }))), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: 'Only on ' + displayText(labelA, 20),
-    title: compare.onlyA.length + ' models',
-    action: compare.onlyA.length ? /*#__PURE__*/React.createElement(Button, {
+    eyebrow: "Tool reliability",
+    title: "Structured tool_use pass rate"
+  }, toolRows.length ? /*#__PURE__*/React.createElement(BarChart, {
+    data: toolRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: Math.round((m.toolReliability || 0) * 100),
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No tool benchmarks",
+    description: "Run omlx_bakeoff.py to score tool calling."
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Agentic tasks",
+    title: "Objective test pass rate"
+  }, agenticRows.length ? /*#__PURE__*/React.createElement(BarChart, {
+    data: agenticRows.map(m => ({
+      label: displayText(m.id, 12),
+      value: Math.round((m.agenticPassRate || 0) * 100),
+      color: familyColors[m.family] || familyColors.Other
+    })),
+    showValues: true,
+    height: mobile ? 160 : 200
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No agentic benchmarks",
+    description: "Run omlx_agentic_bakeoff.py on each machine."
+  }))), selected && /*#__PURE__*/React.createElement(Card, {
+    title: selected.id,
+    action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
-      onClick: () => {
-        state.modelsMachine = compareA;
-        forceRender();
-      }
-    }, "Filter") : null
-  }, compare.onlyA.length ? /*#__PURE__*/React.createElement(List, {
-    bordered: true
-  }, compare.onlyA.slice(0, 8).map(e => /*#__PURE__*/React.createElement(ListItem, {
-    key: e.entryKey || e.id,
-    title: displayText(e.id, 40),
-    description: 'Composite ' + (e.compositeScore != null ? e.compositeScore.toFixed(1) : '—') + ' · ' + (e.avgWallS != null ? e.avgWallS.toFixed(1) + 's' : '—') + ' · ' + (e.avgTps != null ? e.avgTps.toFixed(1) + ' tok/s' : '—'),
-    trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, "M2 only"),
-    onClick: () => pickEntry(e)
-  }))) : /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Nothing exclusive to this machine in the catalog.")), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: 'Only on ' + displayText(labelB, 20),
-    title: compare.onlyB.length + ' models',
-    action: compare.onlyB.length ? /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => {
-        state.modelsMachine = compareB;
-        forceRender();
-      }
-    }, "Filter") : null
-  }, compare.onlyB.length ? /*#__PURE__*/React.createElement(List, {
-    bordered: true
-  }, compare.onlyB.slice(0, 8).map(e => /*#__PURE__*/React.createElement(ListItem, {
-    key: e.entryKey || e.id,
-    title: displayText(e.id, 40),
-    description: 'Composite ' + (e.compositeScore != null ? e.compositeScore.toFixed(1) : '—') + ' · ' + (e.avgWallS != null ? e.avgWallS.toFixed(1) + 's' : '—') + ' · ' + (e.avgTps != null ? e.avgTps.toFixed(1) + ' tok/s' : '—'),
-    trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: "accent"
-    }, "M5 only"),
-    onClick: () => pickEntry(e)
-  }))) : /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Nothing exclusive to this machine in the catalog."))))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Model ops",
-    title: scopedMachine ? machineLabel(scopedMachine) : 'All machines',
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, benchmarked.length, " entries")
+      onClick: () => pickModel(selected.id)
+    }, "Close")
   }, /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 3,
     gap: 3
-  }, opsRows.filter(row => !scopedMachine || row.id === scopedMachine).map(row => /*#__PURE__*/React.createElement("div", {
-    key: row.id,
-    className: "models-ops-card"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail']]
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
   }, /*#__PURE__*/React.createElement("div", {
-    className: "models-ops-head"
-  }, /*#__PURE__*/React.createElement("strong", null, row.label), /*#__PURE__*/React.createElement(Badge, {
-    tone: row.count ? 'accent' : 'warning'
-  }, row.count ? row.count + ' tested' : 'No runs')), /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, row.lastAt ? 'Last bake-off ' + row.lastAt : 'Never benchmarked on this host.', row.meta.defaultModel ? ' · Default ' + displayText(row.meta.defaultModel, 24) : ''), row.best ? /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Best here: ", displayText(row.best.id, 28), " · ", row.best.compositeScore != null ? row.best.compositeScore.toFixed(1) : '—', " composite · ", row.best.avgWallS != null ? row.best.avgWallS.toFixed(1) + 's' : '—') : null, /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => {
-      state.modelsMachine = row.id;
-      forceRender();
-    }
-  }, scopedMachine === row.id ? 'Showing this machine' : 'Filter to this machine'))))), selected && /*#__PURE__*/React.createElement(Drawer, {
-    open: !!selected,
-    onClose: () => {
-      state.modelsSelected = null;
-      forceRender();
-    },
-    side: "right",
-    width: mobile ? '100%' : 720,
-    eyebrow: "Model drill-down",
-    title: selected.id
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 4
-  }, /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
     style: {
-      flexWrap: 'wrap'
+      fontSize: 12,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: 'var(--tracking-eyebrow)'
     }
-  }, /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, machineLabel(selected.machine)), /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, selected.family), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => toggleComparePick(selected)
-  }, comparePicks.includes(selected.entryKey || selected.id) ? 'Remove from compare' : 'Add to compare')), /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Host', machineLabel(selected.machine)], ['Family', selected.family], ['Lane', selected.lane], ['Bench score', entryBenchScore(selected) != null ? entryBenchScore(selected).toFixed(1) : '—'], ['Pass@1', entryAgenticPct(selected) != null ? Math.round(entryAgenticPct(selected)) + '%' + (selected.agenticPassed != null ? ' (' + selected.agenticPassed + '/' + selected.agenticTotal + ')' : '') : '—'], ['Rubric', entryRubricPct(selected) != null ? Math.round(entryRubricPct(selected)) + '%' + (selected.qualityPassed != null ? ' (' + selected.qualityPassed + '/' + selected.qualityTotal + ')' : '') : '—'], ['Tools', entryToolPct(selected) != null ? Math.round(entryToolPct(selected)) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['Avg turns', selected.avgTurns != null ? selected.avgTurns.toFixed(1) : '—'], ['Last tested', selected.lastTestedAt || '—'], ['Trend', selected.wallDeltaPct != null || selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? (selected.wallDeltaPct > 0 ? '+' : '') + selected.wallDeltaPct.toFixed(0) + '% wall' : '') + (selected.tpsDeltaPct != null ? (selected.wallDeltaPct != null ? ' · ' : '') + (selected.tpsDeltaPct > 0 ? '+' : '') + selected.tpsDeltaPct.toFixed(0) + '% tok/s' : '') : '—']]
-  }), selected.agenticTasks && selected.agenticTasks.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Agentic",
-    title: "Task heatmap"
-  }, /*#__PURE__*/React.createElement(AgenticHeatmap, {
-    tasks: selected.agenticTasks
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement(AgenticTaskGrid, {
-    tasks: selected.agenticTasks
-  }))) : null, selected.artifactBreakdown && selected.artifactBreakdown.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Artifacts",
-    title: "Dimension breakdown"
-  }, /*#__PURE__*/React.createElement(ArtifactBreakdownGrid, {
-    breakdown: selected.artifactBreakdown
-  })) : null, selected.replaySlices && selected.replaySlices.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Replay",
-    title: "Normal-work slices"
-  }, /*#__PURE__*/React.createElement(ReplaySliceGrid, {
-    slices: selected.replaySlices
-  })) : null, selected.goodFor || selected.avoidFor || selected.judgeNarrative ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Judge",
-    title: "Good for / Avoid for"
-  }, /*#__PURE__*/React.createElement(GoodAvoidPanel, {
-    goodFor: selected.goodFor,
-    avoidFor: selected.avoidFor,
-    narrative: selected.judgeNarrative
-  })) : null, selected.delegationCeiling != null ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Progressive",
-    title: "Delegation ceiling"
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Highest progressive ladder tier passed: ", /*#__PURE__*/React.createElement("strong", null, selected.delegationCeiling))) : null, selected.toolCases && selected.toolCases.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Tools harness",
-    title: "Tool-call matrix"
-  }, /*#__PURE__*/React.createElement(ToolsMatrix, {
-    cases: selected.toolCases
-  })) : null, selected.qualityChecks && selected.qualityChecks.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Design doc rubric",
-    title: "Quality checks"
-  }, /*#__PURE__*/React.createElement(QualityRubric, {
-    checks: selected.qualityChecks
-  })) : null, selected.contextRows && selected.contextRows.length ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Context ceiling",
-    title: "Long-context probes"
-  }, /*#__PURE__*/React.createElement(ContextCeilingChart, {
-    rows: selected.contextRows,
-    width: mobile ? 340 : 480
-  })) : null, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "History",
-    title: "Run history on this machine"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "models-run-table"
-  }, (selected.runs || []).slice().sort((a, b) => runSortKey(b).localeCompare(runSortKey(a))).map(run => /*#__PURE__*/React.createElement("div", {
+  }, "Runs"), /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.runId + run.kind,
-    className: "models-run-row"
-  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, run.date || '—'), " · ", run.kind), /*#__PURE__*/React.createElement("span", null, run.avgWallS != null ? run.avgWallS.toFixed(1) + 's' : run.toolReliability != null ? Math.round(run.toolReliability * 100) + '% tools' : '—', run.avgTps != null ? ' · ' + run.avgTps.toFixed(1) + ' tok/s' : ''), /*#__PURE__*/React.createElement("span", null, run.agenticPassed != null ? run.agenticPassed + '/' + run.agenticTotal : run.toolsPassed != null ? run.toolsPassed + '/' + run.toolsTotal + ' tools' : '—'))))))), /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Run history",
-    title: "Harness executions",
+    title: run.runId + ' · ' + run.kind,
+    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
+    trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, "winner") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, run.kind)
+  })))), /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12,
+      fontWeight: 700,
+      color: 'var(--text-muted)',
+      textTransform: 'uppercase',
+      letterSpacing: 'var(--tracking-eyebrow)'
+    }
+  }, "Live traffic (", usageWindowLabel(), ")"), usageModels.filter(u => String(u.label || '').toLowerCase().includes(String(selected.id).split('-')[0].toLowerCase())).length ? /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Matching sessions",
+    rows: usageModels.filter(u => String(u.label || '').toLowerCase().includes(String(selected.id).split('-')[0].toLowerCase())),
+    totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
+  }) : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "No close session-traffic match this window. Cloud attribution lives under Usage → Models.")))), /*#__PURE__*/React.createElement(Card, {
+    title: "Benchmark catalog",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, runs.length, " sessions")
+    }, tableRows.length, " rows")
+  }, tableRows.length ? /*#__PURE__*/React.createElement(DataTable, {
+    rows: tableRows,
+    columns: columns,
+    compact: true,
+    getRowKey: r => r.id,
+    onRowClick: r => pickModel(r.id)
+  }) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No benchmark rows",
+    description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Run history",
+    title: "Harness executions"
   }, runs.length ? /*#__PURE__*/React.createElement(List, {
     bordered: true
-  }, runs.slice().reverse().slice(0, 20).map(run => /*#__PURE__*/React.createElement(ListItem, {
+  }, runs.slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.id,
     title: run.id,
     description: (run.date || 'unknown date') + ' · ' + machineLabel(run.machine) + ' · ' + run.lane + ' · ' + Object.keys(run.models || {}).length + ' models',
@@ -22652,7 +21046,39 @@ function ModelsView() {
   }))) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No runs recorded",
     description: "Results land under tools/local-fallback/*/results/."
-  }))));
+  })), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Live cloud mix",
+    title: "Session traffic this window",
+    action: /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => {
+        state.usageTab = 'models';
+        setView('usage');
+      }
+    }, "Open Usage")
+  }, /*#__PURE__*/React.createElement(Grid, {
+    cols: mobile ? 1 : 3,
+    gap: 3
+  }, /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Model mix",
+    rows: usageModels,
+    totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
+  }), /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Backend share",
+    rows: groupMetrics(currentUsageRows(), r => backendLane(r)).slice(0, 6),
+    totalMs: currentUsageRows().reduce((a, r) => a + durationMs(r), 0)
+  }), /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Azure fleet",
+    title: `${(state.modelFleet?.deployments || []).length} deployments`
+  }, /*#__PURE__*/React.createElement(List, null, (state.modelFleet?.deployments || []).slice(0, 6).map(d => /*#__PURE__*/React.createElement(ListItem, {
+    key: d.deploymentName,
+    title: d.modelName || d.deploymentName,
+    description: d.lifecycle || 'unknown',
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, d.verified || '—')
+  }))))))));
 }
 function SimpleView({
   kind
@@ -23855,11 +22281,11 @@ window.__WBReactRender = function () {
     (window.WBDashboardDS?.load?.() || Promise.reject(new Error("KnowsMore controls failed to load")))
       .then(() => {
         renderReactDashboard();
+        finishBoot();
       })
       .catch((e) => {
         failRender(e);
-      })
-      .finally(finishBoot);
+      });
   }
 
   function setupNavIndicator() {
@@ -27237,12 +25663,25 @@ window.__WBReactRender = function () {
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
-    // Paint cached/skeleton content immediately so the tree + content fetches
-    // don't happen behind a blank screen.
     showBoot("Fetching repository tree…");
-    await ghGetTree(!!opts.forceTree);
-    updateBootProgress("Loading projects…");
-    await scan();
+    try {
+      await ghGetTree(!!opts.forceTree);
+      updateBootProgress("Loading projects…");
+      await scan();
+    } catch (e) {
+      if (!state.connected) {
+        showLanding(
+          e?.message || "GitHub connect failed. Reconnect below.",
+        );
+      }
+      throw e;
+    }
+  }
+  function ghConnectRetryable(error) {
+    const status = error?.status;
+    if (status === 401 || status === 403 || status === 404) return false;
+    if (status && status < 500 && status !== 429) return false;
+    return true;
   }
   function updateShellForBackend() {
     // The helper-backed git actions are meaningless on the GitHub backend:
@@ -27280,7 +25719,7 @@ window.__WBReactRender = function () {
         );
         return;
       }
-      if (attempt >= 4) {
+      if (!ghConnectRetryable(e) || attempt >= 4) {
         showBootFailure(
           e?.message ||
             "Could not reach GitHub after several tries. Reconnect or clear the cached tree.",
@@ -27307,20 +25746,12 @@ window.__WBReactRender = function () {
       b.textContent = "Desktop folder picker unavailable here";
     }
   }
-  function openGithubConnect(forceForm = false) {
-    dismissBootOverlay();
+  function openGithubConnect() {
     const cfg = ghConfig() || {
       owner: "jaredfowkes",
       repo: "workbench",
       branch: "main",
     };
-    if (!forceForm && hasSavedGithubCredentials(cfg)) {
-      hideLanding();
-      autoGithub({ ...cfg, pat: ghToken() }).catch((e) => {
-        toast(e?.message || "GitHub connect failed.", "danger");
-      });
-      return;
-    }
     modal(
       "Connect via GitHub",
       `<div class="capture-grid"><label class="form-row">Owner<input class="input" id="ghOwner" value="${esc(cfg.owner)}"></label><label class="form-row">Repo<input class="input" id="ghRepo" value="${esc(cfg.repo)}"></label><label class="form-row">Branch<input class="input" id="ghBranch" value="${esc(cfg.branch)}"></label><label class="form-row">Personal access token<input class="input" id="ghPat" type="password" placeholder="${ghToken() ? "Saved token — leave blank to keep" : "github_pat_…"}"></label><p class="muted">Token is stored only on this device in localStorage and IndexedDB. Use a fine-grained token with Contents read/write for this repo.</p><button class="btn primary" id="ghConnect">Connect</button><button class="btn danger" id="ghForget">Forget saved token</button></div>`,
@@ -27351,11 +25782,6 @@ window.__WBReactRender = function () {
         await connectGithub(nextCfg, { forceTree: true });
       } catch (e) {
         toast(e?.message || "GitHub connect failed.", "danger");
-        if (!state.connected) {
-          showLanding(
-            e?.message || "GitHub connect failed. Reconnect below.",
-          );
-        }
       }
     };
   }
@@ -27581,11 +26007,9 @@ window.__WBReactRender = function () {
       connectFolder();
     } else if (location.protocol === "file:" && savedRoot) {
       await connectFolder(false);
-    } else if (hasSavedGithubCredentials(cfg)) {
-      await autoGithub({ ...(cfg || ghConfig()), pat: cfg?.pat || ghToken() });
-    } else {
-      showLanding();
-    }
+    } else if (cfg && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
+      autoGithub(cfg);
+    } else showLanding();
   })();
 })();
 
