@@ -3479,6 +3479,70 @@ button.metric-card:hover {
   color: var(--accent);
 }
 
+/* ============ 14. Routing telemetry panels ============ */
+.work-session-list {
+  display: grid;
+  gap: 8px;
+}
+.work-session-item {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--raised);
+}
+.work-session-item[open] {
+  border-color: var(--border);
+}
+.work-session-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+}
+.work-session-summary::-webkit-details-marker {
+  display: none;
+}
+.work-session-headline {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.work-session-headline .muted {
+  font-size: 12px;
+}
+.work-session-drill {
+  display: grid;
+  gap: 6px;
+  padding: 0 12px 10px;
+  border-top: 1px solid var(--border-subtle);
+}
+.work-session-tech-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.capability-matrix {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+.capability-matrix-row {
+  display: grid;
+  gap: 6px;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+.capability-matrix-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -14434,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-24.30";
+  const WB_VERSION = "2026-07-25.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14604,6 +14668,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     azureBilling: null,
     azureCostCalibration: null,
     efficiencyTipsFile: null,
+    contextEfficiencySummary: null,
+    delegationSummary: null,
+    localAgentCapabilities: null,
     modelPricing: null,
     modelFleet: null,
     modelBenchmarks: null,
@@ -16624,6 +16691,56 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           path: "tools/efficiency-tips.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
         });
+      }),
+      loadJson("tools/context-efficiency-summary.json", {
+        source: "hydrate.context-efficiency-summary",
+        label: "Context efficiency summary",
+      }).then((v) => {
+        state.contextEfficiencySummary = loadJsonValue(
+          v,
+          "hydrate.context-efficiency-summary",
+          {
+            label: "Context efficiency summary",
+            path: "tools/context-efficiency-summary.json",
+            staleAfterMs: 24 * 60 * 60 * 1000,
+            optional: true,
+            missingMessage:
+              "Aggregate context-efficiency summary not built yet.",
+          },
+        );
+      }),
+      loadJson("tools/delegation-summary.json", {
+        source: "hydrate.delegation-summary",
+        label: "Local delegation summary",
+      }).then((v) => {
+        state.delegationSummary = loadJsonValue(
+          v,
+          "hydrate.delegation-summary",
+          {
+            label: "Local delegation summary",
+            path: "tools/delegation-summary.json",
+            staleAfterMs: 24 * 60 * 60 * 1000,
+            optional: true,
+            missingMessage: "Delegation summary not built yet.",
+          },
+        );
+      }),
+      loadJson("tools/local-agent/capabilities.json", {
+        source: "hydrate.local-agent-capabilities",
+        label: "Local agent capabilities",
+      }).then((v) => {
+        state.localAgentCapabilities = loadJsonValue(
+          v,
+          "hydrate.local-agent-capabilities",
+          {
+            label: "Local agent capabilities",
+            path: "tools/local-agent/capabilities.json",
+            staleAfterMs: 7 * 24 * 60 * 60 * 1000,
+            optional: true,
+            missingMessage:
+              "Local-agent capability matrix not published yet.",
+          },
+        );
       }),
       loadJson("tools/model-pricing.json", {
         source: "hydrate.model-pricing",
@@ -20108,9 +20225,38 @@ function UsageEfficiencyPanel({
   allRows
 }) {
   const pack = efficiencyTipsView(allRows);
+  const ctx = contextEfficiencyView();
+  const diag = workSessionsDiagnostics();
   const age = pack.generated ? Math.round((Date.now() - pack.generated) / 3600000) : null;
   const stamp = age == null ? '' : age < 1 ? 'generated <1h ago' : age < 48 ? `generated ${age}h ago` : `generated ${Math.round(age / 24)}d ago`;
-  return /*#__PURE__*/React.createElement(Card, {
+  const ctxStatus = ctx.status === 'ok' ? 'loaded' : ctx.status;
+  return /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    title: "Context efficiency",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: ctxStatus === 'loaded' ? 'favorable' : ctxStatus === 'stale' ? 'warning' : 'neutral'
+    }, ctxStatus)
+  }, ctx.summary ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, ctx.privacy || 'Aggregate-only context trends; no prompts or per-session rows.'), ctx.trends.length ? /*#__PURE__*/React.createElement("div", {
+    className: "ops-list"
+  }, ctx.trends.map(t => /*#__PURE__*/React.createElement("div", {
+    className: "ops-row",
+    key: t.label
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("b", null, t.label)), /*#__PURE__*/React.createElement("span", null, t.value), /*#__PURE__*/React.createElement("span", {
+    className: "prompt-snippet muted"
+  }, t.detail)))) : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "No aggregate trends in the current sample."), Object.keys(ctx.availability || {}).length ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, Object.entries(ctx.availability).map(([k, v]) => `${k}: ${v}`).join(' · ')) : null) : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, ctx.meta?.message || 'Context-efficiency summary unavailable — rebuild telemetry rollups when ready.')), /*#__PURE__*/React.createElement(Card, {
+    title: "Session methodology"
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Work sessions group related technical sessions by work episode. Technical sessions are one hooked beacon each; costs aggregate once per technical identity. Cost states: actual (provider/billing), estimated (model pricing), local-zero (on-device), pending (live without usage), untracked (ended without telemetry).", diag.rollup ? ` Rollup v${diag.version || '?'}: ${diag.rollup.technicalSessions} technical → ${diag.rollup.count} work sessions.` : '', diag.fallback ? ' Showing live-beacon fallback — historical rollup missing.' : '')), /*#__PURE__*/React.createElement(Card, {
     title: "AI-efficiency tips",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "subtle",
@@ -20136,7 +20282,90 @@ function UsageEfficiencyPanel({
     tone: "neutral"
   }, t.metric) : null)))) : /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "No data-backed efficiency warnings right now."));
+  }, "No data-backed efficiency warnings right now.")));
+}
+function LocalDelegationSummaryCard({
+  rows
+}) {
+  const summary = localDelegationSummary(rows);
+  if (!summary.attempts) return null;
+  const rate = summary.acceptanceRate != null ? `${Math.round(summary.acceptanceRate * 100)}%` : '—';
+  return /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Local delegation",
+    title: `${summary.attempts} attempt${summary.attempts === 1 ? '' : 's'}`
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 1,
+    style: {
+      flexWrap: 'wrap',
+      marginBottom: 8
+    }
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: "favorable"
+  }, summary.accepted, " accepted"), /*#__PURE__*/React.createElement(Badge, {
+    tone: "unfavorable"
+  }, summary.failed, " failed"), summary.partial ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "warning"
+  }, summary.partial, " partial") : null, summary.refused ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "warning"
+  }, summary.refused, " refused") : null, summary.pending ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, summary.pending, " pending") : null, /*#__PURE__*/React.createElement(Badge, {
+    tone: "info"
+  }, rate, " acceptance"), summary.avgLatencyMs != null ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, "avg ", fmtDuration(summary.avgLatencyMs)) : null), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, summary.savingsTotal != null ? `${fmtCostMaybe(summary.savingsTotal)} avoided cloud spend from ${summary.savingsCount} accepted attempt${summary.savingsCount === 1 ? '' : 's'} only` : 'No accepted savings in this window — failed/partial attempts never count.', summary.comparators.length ? ` · Comparator: ${summary.comparators.join(', ')}` : '', summary.pricingVersions.length ? ` · Pricing ${summary.pricingVersions.join(', ')}` : '', summary.cloudFallback === 'forbidden' ? ' · Cloud fallback forbidden' : ''));
+}
+function WorkSessionTechnicalRow({
+  r
+}) {
+  return /*#__PURE__*/React.createElement("div", {
+    className: "work-session-tech-row"
+  }, /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended), " · ", machineName(r.machine || r.host || 'Unknown'), " · ", sessionModelLabel(r), " · ", backendLane(r)), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 1
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: costStateBadgeTone(costStateLabel(r))
+  }, costStateLabel(r)), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, fmtTokens(cacheInclusiveTokens(r))), /*#__PURE__*/React.createElement(Badge, {
+    tone: sessionCost(r) != null ? 'accent' : 'warning'
+  }, fmtCostMaybe(sessionCost(r)))));
+}
+function WorkSessionList({
+  groups,
+  compact = false,
+  onOpen
+}) {
+  if (!groups.length) return /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "No work sessions in this time frame.");
+  return /*#__PURE__*/React.createElement("div", {
+    className: "work-session-list"
+  }, groups.map(g => /*#__PURE__*/React.createElement("details", {
+    className: "work-session-item",
+    key: g.id
+  }, /*#__PURE__*/React.createElement("summary", {
+    className: "work-session-summary"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "work-session-headline"
+  }, /*#__PURE__*/React.createElement("strong", null, g.headline), /*#__PURE__*/React.createElement("span", {
+    className: "muted"
+  }, fmtStamp(g.started || g.ended), g.machines.length ? ` · ${g.machines.map(machineName).join(', ')}` : '', g.projects.length ? ` · ${g.projects.slice(0, 3).join(', ')}` : '')), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 1
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, g.technicalCount, " technical"), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, fmtTokens(g.tokens)), /*#__PURE__*/React.createElement(Badge, {
+    tone: costStateBadgeTone(g.costState)
+  }, g.cost == null ? g.costState : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
+    className: "work-session-drill"
+  }, g.technical.map((r, i) => /*#__PURE__*/React.createElement(WorkSessionTechnicalRow, {
+    key: r.session_uid || r.session || i,
+    r: r,
+    onClick: () => onOpen && onOpen(r)
+  }))) : null)));
 }
 function AzureFoundryPanel() {
   const b = state.azureBilling;
@@ -20196,7 +20425,7 @@ function UsageView() {
   const savedLocal = localSavedSum(rows);
   const laneRows = laneCompareRows(rows);
   const incompleteCount = rows.filter(isIncompleteSession).length;
-  const recent = rows.slice().sort((a, b) => Number(b.started || 0) - Number(a.started || 0)).slice(0, 8);
+  const recentGroups = groupWorkSessions(rows).slice(0, 8);
   const tabs = [{
     value: 'spend',
     label: 'Spend & limits'
@@ -20261,13 +20490,15 @@ function UsageView() {
     title: fmtCostMaybe(savedLocal)
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.")), /*#__PURE__*/React.createElement(ClaudeAttributionPanel, null)), /*#__PURE__*/React.createElement(UsageLaneTable, {
+  }, "Estimated avoided cloud spend for accepted on-device tokens in this time frame; actual local cost is $0.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
+    rows: rows
+  }), /*#__PURE__*/React.createElement(ClaudeAttributionPanel, null)), /*#__PURE__*/React.createElement(UsageLaneTable, {
     rows: laneRows
   }), /*#__PURE__*/React.createElement(Card, {
     title: "What this means"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain model-priced estimates across GPT-5.5, Codex, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show green savings.", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
+  }, "Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain model-priced estimates across GPT-5.5, Codex, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions have $0 actual model cost; comparison savings appear only for accepted work with an explicit parent model and pricing version.", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(UsageMixCard, {
@@ -20285,49 +20516,34 @@ function UsageView() {
   })), tab === 'projects' && /*#__PURE__*/React.createElement(UsageProjectPanel, {
     rows: rows
   }), tab === 'sessions' && /*#__PURE__*/React.createElement(Card, {
-    title: `Recent technical sessions · ${usageWindowLabel()}`,
+    title: `Work sessions · ${usageWindowLabel()}`,
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
       onClick: () => setView('sessions')
     }, "Open all sessions")
-  }, /*#__PURE__*/React.createElement(List, null, recent.map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
-    key: r.session_uid || r.sessionFull || r.session || i,
-    title: sessionHeadline(r),
-    description: `${fmtStamp(r.started || r.ended)} · ${machineName(r.machine || r.host || r.hostname || r.machineId || 'Unknown')} · ${sessionModelLabel(r)} · ${sessionProjectsText(r)}`,
-    trailing: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 1
-    }, /*#__PURE__*/React.createElement(Badge, {
-      tone: attributionMeta(r).tone
-    }, attributionMeta(r).short), /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, fmtTokens(cacheInclusiveTokens(r))), /*#__PURE__*/React.createElement(Badge, {
-      tone: sessionCost(r) != null ? 'accent' : 'warning'
-    }, fmtCostMaybe(sessionCost(r)))),
-    onClick: () => window.__WBOpenSession && window.__WBOpenSession(r)
-  })))), tab === 'efficiency' && /*#__PURE__*/React.createElement(UsageEfficiencyPanel, {
+  }, /*#__PURE__*/React.createElement(WorkSessionList, {
+    groups: recentGroups,
+    compact: true,
+    onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
+  })), tab === 'efficiency' && /*#__PURE__*/React.createElement(UsageEfficiencyPanel, {
     allRows: allRows
   })));
 }
 function SessionsView() {
   const mobile = useViewport();
-  const rows = sessionRowsFiltered();
-  const tableRows = rows.map(r => ({
-    ...r,
-    headline: sessionHeadline(r),
-    projectsText: sessionProjectsText(r),
-    machineName: machineName(r.machine || r.host || r.hostname || r.machineId || 'Unknown'),
-    tokens: cacheInclusiveTokens(r),
-    cost: sessionCost(r),
-    filesText: sessionFiles(r).join(', ')
-  }));
+  const allRows = sessionRowsFiltered();
+  const workGroups = groupWorkSessions(allRows);
+  const q = String(state.sessionQuery || '').toLowerCase().trim();
+  const filteredGroups = q ? workGroups.filter(g => [g.headline, g.id, g.projects.join(' '), g.machines.join(' ')].join(' ').toLowerCase().includes(q)) : workGroups;
+  const diag = workSessionsDiagnostics();
   if (mobile) {
     return /*#__PURE__*/React.createElement("div", {
       style: pagePad
     }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
       eyebrow: "Sessions",
-      title: "Session history",
-      lede: "Latest sessions first. Tap a card for title source, route, usage, and files."
+      title: "Work session history",
+      lede: "Work episodes group technical sessions. Expand a row for route, cost state, and token drill-down."
     }), /*#__PURE__*/React.createElement(Stack, {
       gap: 4
     }, /*#__PURE__*/React.createElement(SearchField, {
@@ -20336,98 +20552,25 @@ function SessionsView() {
         state.sessionQuery = v;
         forceRender();
       },
-      count: rows.length,
-      placeholder: "Search sessions, titles, projects…",
+      count: filteredGroups.length,
+      placeholder: "Search work sessions, projects…",
       minWidth: 280
-    }), rows.length ? /*#__PURE__*/React.createElement(List, {
-      bordered: true
-    }, tableRows.map(r => /*#__PURE__*/React.createElement(ListItem, {
-      key: r.session_uid || r.sessionFull || r.session || r.started,
-      title: r.headline,
-      description: `${fmtStamp(r.started || r.ended)} · ${r.machineName} · ${sessionModelLabel(r)} · ${liveStateLabel(r)}${todoSummaryText(r.todoCounts) ? ' · ' + todoSummaryText(r.todoCounts) : ''}`,
-      trailing: /*#__PURE__*/React.createElement(Cluster, {
-        gap: 1,
-        vertical: true
-      }, /*#__PURE__*/React.createElement(Badge, {
-        tone: attributionMeta(r).tone
-      }, attributionMeta(r).short), /*#__PURE__*/React.createElement(Badge, {
-        tone: sessionCost(r) != null ? 'accent' : 'warning'
-      }, fmtCostMaybe(sessionCost(r)))),
-      onClick: () => window.__WBOpenSession && window.__WBOpenSession(r)
-    }))) : /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No sessions match",
+    }), diag.rollup ? /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, diag.rollup.technicalSessions, " technical → ", diag.rollup.count, " work sessions", diag.fallback ? ' · live fallback' : '') : null, filteredGroups.length ? /*#__PURE__*/React.createElement(WorkSessionList, {
+      groups: filteredGroups,
+      onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
+    }) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No work sessions match",
       description: "Try a broader search or reload telemetry."
     })));
   }
-  const columns = [{
-    key: 'started',
-    header: 'Time',
-    width: '96px',
-    render: (v, r) => /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended))
-  }, {
-    key: 'headline',
-    header: 'Headline',
-    wrap: true,
-    render: (v, r) => /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, sessionHeadline(r)), r.summary && /*#__PURE__*/React.createElement("span", {
-      style: {
-        display: 'block',
-        marginTop: 3,
-        color: 'var(--text-muted)',
-        fontWeight: 400
-      }
-    }, displayText(r.summary, 130)))
-  }, {
-    key: 'projectsText',
-    header: 'Project(s)',
-    wrap: true,
-    render: v => /*#__PURE__*/React.createElement("span", null, v)
-  }, {
-    key: 'machineName',
-    header: 'Machine'
-  }, {
-    key: 'route',
-    header: 'Route',
-    render: (v, r) => /*#__PURE__*/React.createElement(Cluster, {
-      gap: 1
-    }, /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, normalizeEditor(r)), /*#__PURE__*/React.createElement(Badge, {
-      tone: "info"
-    }, backendLane(r)), /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, sessionModelLabel(r)), /*#__PURE__*/React.createElement(Badge, {
-      tone: attributionMeta(r).tone
-    }, attributionMeta(r).short))
-  }, {
-    key: 'tokens',
-    header: 'Usage',
-    align: 'right',
-    numeric: true,
-    render: (v, r) => /*#__PURE__*/React.createElement("span", null, fmtTokens(cacheInclusiveTokens(r)), r.requests ? /*#__PURE__*/React.createElement("span", {
-      style: {
-        display: 'block',
-        color: 'var(--text-muted)',
-        fontSize: 11
-      }
-    }, r.requests, " requests") : null)
-  }, {
-    key: 'cost',
-    header: 'Cost',
-    align: 'right',
-    numeric: true,
-    render: (v, r) => sessionCostNode(r)
-  }, {
-    key: 'filesText',
-    header: 'Files',
-    wrap: true,
-    render: v => v ? displayText(v, 80) : '—'
-  }];
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Sessions",
-    title: "Session history",
-    lede: "Latest sessions first, searchable by headline, summary, project, machine, route, and changed files."
+    title: "Work session history",
+    lede: "Latest work episodes first. Each groups one or more technical sessions with cost aggregated once per technical identity."
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 4
   }, /*#__PURE__*/React.createElement(Cluster, {
@@ -20440,8 +20583,8 @@ function SessionsView() {
       state.sessionQuery = v;
       forceRender();
     },
-    count: rows.length,
-    placeholder: "Search sessions, projects, files, models…",
+    count: filteredGroups.length,
+    placeholder: "Search work sessions, projects, machines…",
     minWidth: 360
   }), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
@@ -20449,13 +20592,83 @@ function SessionsView() {
       state.usageTab = 'sessions';
       setView('usage');
     }
-  }, "Usage summary")), /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(DataTable, {
-    rows: tableRows,
-    columns: columns,
-    compact: true,
-    getRowKey: r => r.session_uid || r.sessionFull || r.session || String(r.started),
-    onRowClick: r => window.__WBOpenSession && window.__WBOpenSession(r)
+  }, "Usage summary")), diag.rollup ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, diag.rollup.technicalSessions, " technical sessions → ", diag.rollup.count, " work sessions · cost states: actual, estimated, local-zero, pending, untracked") : null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(WorkSessionList, {
+    groups: filteredGroups,
+    onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
   }))));
+}
+function MachineRoutePanel({
+  machine
+}) {
+  const summary = machineRouteSummary(machine);
+  const local = summary.localRuntime || {};
+  const pickerEntries = Object.entries(summary.azurePicker || {});
+  const router = summary.azureRouter || {};
+  const telem = summary.telemetry || {};
+  const disk = local.disk || {};
+  return /*#__PURE__*/React.createElement(Card, {
+    title: machineName(summary.hostname),
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: summary.savedRouteKey === 'local' ? 'favorable' : summary.savedRouteKey === 'azure' ? 'info' : 'neutral'
+    }, summary.savedRoute)
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 1,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, Object.entries(SAVED_ROUTE_LABELS).map(([key, label]) => /*#__PURE__*/React.createElement(Badge, {
+    key: key,
+    tone: summary.savedRouteKey === key ? 'accent' : 'neutral'
+  }, label))), pickerEntries.length ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Azure native picker: ", pickerEntries.map(([k, v]) => `${k}→${v}`).join(' · ')) : null, router.installed != null ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Router ", router.running ? 'running' : router.configured ? 'configured' : 'offline', router.detail ? ` · ${router.detail}` : '', summary.reloadRequired ? ' · reload required' : '') : null, local.supported || local.installedModelIds?.length ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Local ", local.lane || 'runtime', ": ", local.installedModelIds?.length || 0, " installed · resident ", local.residentModel || '—', " · context ", local.contextLimit ? fmtTokens(local.contextLimit) : '—', " · workers ", local.workerLimit ?? '—', local.concurrencyCalibrated === false ? ' (serial)' : local.concurrencyCalibrated ? ' (calibrated)' : '', local.cacheBytes ? ` · cache ${fmtBytes(local.cacheBytes)}` : '', disk.freeBytes != null ? ` · free ${fmtBytes(disk.freeBytes)}` : '', local.lowDiskWarning || disk.lowDiskWarning ? ' · low disk warning' : '') : null, telem.latestShardMs ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Telemetry ", telem.fresh ? 'fresh' : 'stale', " · shard ", shortAge(telem.latestShardMs), telem.ageMs != null ? ` (${Math.round(telem.ageMs / 1000)}s)` : '') : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Telemetry freshness unknown")));
+}
+function CapabilityMatrixPanel() {
+  const view = capabilitiesView();
+  const status = view.status === 'ok' ? 'loaded' : view.status;
+  if (!view.installed.length && !view.models.length) {
+    return /*#__PURE__*/React.createElement(Card, {
+      title: "Local capability matrix",
+      action: /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral"
+      }, status)
+    }, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, view.meta?.message || 'No on-device models reported from machine beacons.', view.policy?.cloudFallback === 'forbidden' ? ' Cloud fallback forbidden.' : ''));
+  }
+  return /*#__PURE__*/React.createElement(Card, {
+    title: "Local capability matrix",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: status === 'loaded' ? 'favorable' : 'warning'
+    }, status)
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Only models installed on at least one machine. Each tool family stays blocked until that model/risk combination is certified; no implied cloud fallback.", view.updated ? ` Updated ${view.updated}.` : ''), /*#__PURE__*/React.createElement("div", {
+    className: "capability-matrix"
+  }, view.models.map(row => /*#__PURE__*/React.createElement("div", {
+    className: "capability-matrix-row",
+    key: row.id
+  }, /*#__PURE__*/React.createElement("strong", null, row.id), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 1,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, row.cells.map(cell => /*#__PURE__*/React.createElement(Badge, {
+    key: cell.family,
+    tone: cell.blocked || cell.read === 'blocked' || cell.read === 'uncertified' ? 'unfavorable' : cell.read === 'certified' ? 'favorable' : 'warning'
+  }, cell.family, cell.blocked ? ' blocked' : `: ${cell.read}${cell.write ? '/' + cell.write : ''}`)))))));
 }
 function MachinesView() {
   const health = dataHealthForMachinesView();
@@ -20551,7 +20764,13 @@ function MachinesView() {
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: i.state === 'ok' ? 'favorable' : i.state === 'bad' ? 'unfavorable' : 'warning'
     }, i.state)
-  }))))), /*#__PURE__*/React.createElement(Card, {
+  }))))), /*#__PURE__*/React.createElement(CapabilityMatrixPanel, null), /*#__PURE__*/React.createElement(Grid, {
+    cols: 2,
+    gap: 4
+  }, (state.machines || []).map(m => /*#__PURE__*/React.createElement(MachineRoutePanel, {
+    key: m.hostname || m._path,
+    machine: m
+  }))), /*#__PURE__*/React.createElement(Card, {
     title: "Action queue",
     action: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
@@ -22881,6 +23100,437 @@ window.__WBReactRender = function () {
   function workEpisodeIdentity(r) {
     return String(r?.workEpisodeId || sessionIdentity(r));
   }
+  const SAVED_ROUTE_LABELS = {
+    anthropic: "Anthropic",
+    azure: "Azure",
+    local: "Local",
+  };
+  const DELEGATION_ACCEPTED = new Set(["success", "accepted", "verified"]);
+  const DELEGATION_FAILED = new Set(["fail", "failed", "error"]);
+  const DELEGATION_PARTIAL = new Set(["partial", "partial-success"]);
+  function jsonSourceMeta(key) {
+    const row = dataHealthSources.get(key);
+    if (!row) return { status: "missing", message: "Not loaded yet." };
+    const stale =
+      row.staleAfterMs &&
+      row.updatedMs &&
+      Date.now() - row.updatedMs > row.staleAfterMs;
+    return {
+      status: stale ? "stale" : row.status || "ok",
+      message: row.message || "",
+      updatedMs: row.updatedMs || null,
+      path: row.path || "",
+    };
+  }
+  function costStateLabel(r) {
+    const explicit = String(r?.costState || "").toLowerCase();
+    if (
+      ["actual", "estimated", "local-zero", "pending", "untracked"].includes(
+        explicit,
+      )
+    )
+      return explicit;
+    if (isLocalRow(r) && hasTelemetry(r)) return "local-zero";
+    if (!hasTelemetry(r)) {
+      const status = String(r?.lastStatus || r?.status || "").toLowerCase();
+      return ["running", "waiting", "active"].includes(status)
+        ? "pending"
+        : "untracked";
+    }
+    const c = sessionCost(r);
+    if (c == null) return "untracked";
+    const source = String(r?.costSource || "").toLowerCase();
+    if (
+      ["actual-billing", "azure-actual-allocation", "provider-actual"].includes(
+        source,
+      )
+    )
+      return "actual";
+    return "estimated";
+  }
+  function costStateBadgeTone(state) {
+    if (state === "actual" || state === "local-zero") return "favorable";
+    if (state === "estimated") return "info";
+    if (state === "pending") return "warning";
+    return "neutral";
+  }
+  function delegationOutcome(r) {
+    return String(
+      r?.delegationOutcome || r?.outcome || r?.acceptanceState || "",
+    ).toLowerCase();
+  }
+  function isDelegationAccepted(r) {
+    return DELEGATION_ACCEPTED.has(delegationOutcome(r));
+  }
+  function aggregateTechnicalRows(rows) {
+    return uniqueSessionRows(rows || []);
+  }
+  function groupWorkSessions(rows) {
+    const filtered = aggregateTechnicalRows(rows || []);
+    const groups = new Map();
+    for (const r of filtered) {
+      const key = workEpisodeIdentity(r);
+      const cur = groups.get(key) || {
+        id: key,
+        technical: [],
+        technicalIds: new Set(),
+        tokens: 0,
+        cost: 0,
+        costStates: new Set(),
+        requests: 0,
+        projects: new Set(),
+        machines: new Set(),
+        started: null,
+        ended: null,
+        headline: "",
+        headlineRow: null,
+      };
+      const techId = sessionIdentity(r);
+      if (!cur.technicalIds.has(techId)) {
+        cur.technicalIds.add(techId);
+        cur.technical.push(r);
+        cur.tokens += cacheInclusiveTokens(r);
+        const c = sessionCost(r);
+        if (c != null) cur.cost += Number(c) || 0;
+        cur.requests += Number(r.requests || 0);
+        cur.costStates.add(costStateLabel(r));
+      }
+      for (const p of r.projects || []) if (p) cur.projects.add(p);
+      if (r.project) cur.projects.add(r.project);
+      if (r.cwd) cur.projects.add(cwdBasename(r.cwd) || r.cwd);
+      cur.machines.add(
+        r.machine || r.host || r.hostname || r.machineId || "Unknown",
+      );
+      const start = Number(r.started || r.ended || 0);
+      const end = Number(r.ended || r.started || 0);
+      if (start && (!cur.started || start < cur.started)) cur.started = start;
+      if (end && (!cur.ended || end > cur.ended)) cur.ended = end;
+      const score = Number(r.started || r.ended || 0);
+      if (
+        !cur.headlineRow ||
+        score >= Number(cur.headlineRow.started || cur.headlineRow.ended || 0)
+      ) {
+        cur.headlineRow = r;
+        cur.headline = sessionHeadline(r);
+      }
+      groups.set(key, cur);
+    }
+    return [...groups.values()]
+      .map((g) => {
+        const costStates = [...g.costStates];
+        const aggregateCostState = costStates.includes("pending")
+          ? "pending"
+          : costStates.includes("untracked")
+            ? "untracked"
+            : costStates.every((value) => value === "local-zero")
+              ? "local-zero"
+              : costStates.every((value) => value === "actual")
+                ? "actual"
+                : "estimated";
+        const costKnown = !["pending", "untracked"].includes(
+          aggregateCostState,
+        );
+        return {
+          id: g.id,
+          headline: g.headline,
+          technicalCount: g.technical.length,
+          technical: g.technical
+            .slice()
+            .sort(
+              (a, b) =>
+                Number(b.started || b.ended || 0) -
+                Number(a.started || a.ended || 0),
+            ),
+          tokens: g.tokens,
+          cost: costKnown ? g.cost : null,
+          costState: aggregateCostState,
+          costStates,
+          requests: g.requests,
+          projects: [...g.projects],
+          machines: [...g.machines],
+          started: g.started,
+          ended: g.ended,
+        };
+      })
+      .sort(
+        (a, b) =>
+          Number(b.started || b.ended || 0) - Number(a.started || a.ended || 0),
+      );
+  }
+  function workSessionsDiagnostics() {
+    const rollup = state.sessionMetrics?.workSessions || null;
+    const health = dataHealthSources.get("hydrate.session-metrics");
+    return {
+      rollup,
+      fallback: !!state.sessionMetricsFallback,
+      health: health?.status || "unknown",
+      version: state.sessionMetrics?.version || null,
+    };
+  }
+  function contextEfficiencyView() {
+    const meta = jsonSourceMeta("hydrate.context-efficiency-summary");
+    const data = state.contextEfficiencySummary;
+    if (!data) {
+      return {
+        status: meta.status === "ok" ? "missing" : meta.status,
+        meta,
+        summary: null,
+        trends: [],
+        availability: {},
+      };
+    }
+    const availability = data.availability || {};
+    const ctx = data.contextEfficiency || {};
+    const reqs = data.requests || {};
+    const episodes = data.workEpisodes || {};
+    const trends = [];
+    if (episodes.technicalSessions != null && episodes.derivedWorkEpisodes != null) {
+      trends.push({
+        label: "Technical → work episodes",
+        value: `${episodes.technicalSessions} → ${episodes.derivedWorkEpisodes}`,
+        detail:
+          episodes.technicalSessionsPerEpisode?.p50 != null
+            ? `p50 ${episodes.technicalSessionsPerEpisode.p50} technical/work`
+            : "",
+      });
+    }
+    if (reqs.requests != null) {
+      trends.push({
+        label: "Request telemetry",
+        value: `${reqs.usageAvailableRequests ?? reqs.requests}/${reqs.requests} with usage`,
+        detail: reqs.attributionQuality?.quality
+          ? `Attribution ${reqs.attributionQuality.quality}`
+          : "",
+      });
+    }
+    if (reqs.providerInputTokens?.p95 != null) {
+      trends.push({
+        label: "Provider input p95",
+        value: fmtTokens(reqs.providerInputTokens.p95),
+        detail:
+          reqs.providerInputTokens.max != null
+            ? `max ${fmtTokens(reqs.providerInputTokens.max)}`
+            : "",
+      });
+    }
+    if (ctx.compactions != null) {
+      trends.push({
+        label: "Compactions",
+        value: String(ctx.compactions),
+        detail: availability.compactionCountsPerSession || "",
+      });
+    }
+    if (reqs.cacheTokens?.read) {
+      trends.push({
+        label: "Cache read tokens",
+        value: fmtTokens(reqs.cacheTokens.read),
+        detail: data.samplePeriod
+          ? `${data.samplePeriod.start} → ${data.samplePeriod.end}`
+          : "",
+      });
+    }
+    return {
+      status: meta.status,
+      meta,
+      summary: data,
+      trends,
+      availability,
+      privacy: data.privacy || "",
+      unavailableFields: data.unavailableFields || [],
+    };
+  }
+  function installedLocalModelIds() {
+    const ids = new Set();
+    for (const m of state.machines || []) {
+      for (const id of m.localRuntime?.installedModelIds || []) ids.add(id);
+    }
+    return [...ids];
+  }
+  function capabilityMatrixRows(capabilities, installedIds) {
+    const models = capabilities?.models || {};
+    const installed = new Set(installedIds || installedLocalModelIds());
+    const blockedFamilies = [
+      "web",
+      "browser",
+      "inbox",
+      "power-platform",
+      "sharepoint",
+      "flow",
+    ];
+    const rows = [];
+    for (const id of installed) {
+      const normalizedId = String(id).split(":")[0].toLowerCase();
+      const modelKey =
+        Object.keys(models).find(
+          (key) =>
+            key.toLowerCase() === String(id).toLowerCase() ||
+            key.split(":")[0].toLowerCase() === normalizedId,
+        ) || id;
+      const entry = models[modelKey] || {};
+      const families = entry.toolFamilies || {};
+      const cells = [];
+      for (const family of ["repository", ...blockedFamilies]) {
+        const spec = families[family] || {};
+        const read = spec.read;
+        const write = spec.write || spec.consequential;
+        if (family === "repository") {
+          cells.push({
+            family,
+            read: read || "uncertified",
+            write: write || "uncertified",
+          });
+        } else {
+          const blocked = read !== "certified" && write !== "certified";
+          cells.push({
+            family,
+            blocked,
+            read: read || "uncertified",
+            write: write || "uncertified",
+          });
+        }
+      }
+      rows.push({
+        id,
+        evidence: entry.evidence || "",
+        cells,
+        advertised: true,
+      });
+    }
+    return rows.sort((a, b) => a.id.localeCompare(b.id));
+  }
+  function capabilitiesView() {
+    const meta = jsonSourceMeta("hydrate.local-agent-capabilities");
+    const data = state.localAgentCapabilities;
+    const installed = installedLocalModelIds();
+    if (!data) {
+      return {
+        status: meta.status === "ok" ? "missing" : meta.status,
+        meta,
+        models: [],
+        policy: null,
+        installed,
+      };
+    }
+    return {
+      status: meta.status,
+      meta,
+      policy: data.policy || null,
+      models: capabilityMatrixRows(data, installed),
+      installed,
+      updated: data.updated || null,
+    };
+  }
+  function savedRouteLabel(route) {
+    const key = String(route || "").toLowerCase();
+    return SAVED_ROUTE_LABELS[key] || (key ? key.replace(/\b\w/g, (c) => c.toUpperCase()) : "Unknown");
+  }
+  function machineRouteSummary(machine) {
+    const route = machine?.route || {};
+    const picker = route.azurePicker || {};
+    const router = route.azureRouter || {};
+    const local = machine?.localRuntime || {};
+    const telem = machine?.telemetry || {};
+    return {
+      hostname:
+        machine?.hostname ||
+        machine?._path?.split("/").pop()?.replace(/\.json$/, "") ||
+        "unknown",
+      savedRoute: savedRouteLabel(route.saved),
+      savedRouteKey: String(route.saved || "").toLowerCase() || "unknown",
+      azurePicker: picker,
+      azureRouter: router,
+      localRuntime: local,
+      telemetry: telem,
+      reloadRequired: !!route.reloadRequired,
+    };
+  }
+  function localDelegationSummary(rows) {
+    const attempts = new Map();
+    const published = state.delegationSummary?.attempts || [];
+    for (const r of [...(rows || []), ...published]) {
+      if (!r?.delegationId && r?.editor !== "local-agent") continue;
+      const id = String(r.delegationId || sessionIdentity(r));
+      const existing = attempts.get(id);
+      const ts = Number(r.endedMs || r.ended || r.startedMs || r.started || 0);
+      if (
+        !existing ||
+        ts >=
+          Number(
+            existing.endedMs ||
+              existing.ended ||
+              existing.startedMs ||
+              existing.started ||
+              0,
+          )
+      )
+        attempts.set(id, r);
+    }
+    const unique = [...attempts.values()];
+    let accepted = 0,
+      failed = 0,
+      partial = 0,
+      refused = 0,
+      pending = 0,
+      latencyTotal = 0,
+      latencyCount = 0,
+      savingsTotal = 0,
+      savingsCount = 0;
+    const comparators = new Set();
+    const pricingVersions = new Set();
+    for (const r of unique) {
+      const outcome = delegationOutcome(r);
+      if (DELEGATION_ACCEPTED.has(outcome)) accepted += 1;
+      else if (DELEGATION_PARTIAL.has(outcome)) partial += 1;
+      else if (["refused", "blocked"].includes(outcome)) refused += 1;
+      else if (["pending", "pending-verification", "running"].includes(outcome))
+        pending += 1;
+      else failed += 1;
+      const lat = Number(r.durationMs || durationMs(r));
+      if (lat > 0) {
+        latencyTotal += lat;
+        latencyCount += 1;
+      }
+      if (isDelegationAccepted(r)) {
+        const saved = localSavedCost(r);
+        if (saved != null) {
+          savingsTotal += saved;
+          savingsCount += 1;
+        }
+      }
+      const comp =
+        r.parentEquivalentModel || r.comparisonModel || r.savingsBaselineModel;
+      if (comp) comparators.add(comp);
+      if (r.pricingVersion) pricingVersions.add(r.pricingVersion);
+    }
+    const total = unique.length;
+    return {
+      attempts: total,
+      accepted,
+      failed,
+      partial,
+      refused,
+      pending,
+      acceptanceRate: total ? accepted / total : null,
+      avgLatencyMs: latencyCount ? latencyTotal / latencyCount : null,
+      savingsTotal: savingsCount ? savingsTotal : null,
+      savingsCount,
+      comparators: [...comparators],
+      pricingVersions: [...pricingVersions],
+      cloudFallback:
+        state.localAgentCapabilities?.policy?.cloudFallback || "forbidden",
+    };
+  }
+  function fmtBytes(n) {
+    n = Number(n || 0);
+    if (!n) return "0 B";
+    const u = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0;
+    while (n >= 1024 && i < u.length - 1) {
+      n /= 1024;
+      i += 1;
+    }
+    return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${u[i]}`;
+  }
   function uniqueSessionRows(rows) {
     const byId = new Map();
     for (const r of rows || []) {
@@ -23247,19 +23897,21 @@ window.__WBReactRender = function () {
   }
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
+    const outcome = delegationOutcome(r);
+    if (r.delegationId && !DELEGATION_ACCEPTED.has(outcome)) return null;
+    const comparator =
+      r.parentEquivalentModel || r.comparisonModel || r.savingsBaselineModel;
     if (r.savedEstimate != null) return Number(r.savedEstimate);
+    if (!comparator) return null;
     // Re-price the whole session's raw tokens at Claude rates. Drop byModel so
     // estimateSessionCost uses the row totals + the substituted Claude model
     // rather than the recorded local ($0) per-model costs.
-    const clone = { ...r, backend: "anthropic", byModel: undefined };
-    const model = String(r.model || "").toLowerCase();
-    clone.model = model.includes("opus")
-      ? "claude-opus-4-8-thinking-high"
-      : model.includes("fable")
-        ? "claude-fable-5"
-        : model.includes("haiku")
-          ? "claude-haiku-4-5"
-          : "claude-sonnet-5";
+    const clone = {
+      ...r,
+      backend: "anthropic",
+      model: String(comparator).trim(),
+      byModel: undefined,
+    };
     return estimateSessionCost(clone);
   }
   function localSavedSum(rows) {
