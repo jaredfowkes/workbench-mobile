@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-25.21";
+  const WB_VERSION = "2026-07-25.22";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23211,7 +23211,7 @@ window.__WBReactRender = function () {
         score >= Number(cur.headlineRow.started || cur.headlineRow.ended || 0)
       ) {
         cur.headlineRow = r;
-        cur.headline = sessionHeadline(r);
+        cur.headline = sessionTitle(r);
       }
       groups.set(key, cur);
     }
