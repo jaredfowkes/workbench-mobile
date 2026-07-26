@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-25.23";
+  const WB_VERSION = "2026-07-25.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23446,7 +23446,12 @@ window.__WBReactRender = function () {
   }
   function localDelegationSummary(rows) {
     const attempts = new Map();
-    const published = state.delegationSummary?.attempts || [];
+    const windowStart = usageWindowStart();
+    const published = (state.delegationSummary?.attempts || []).filter(
+      (row) =>
+        !windowStart ||
+        Number(row.endedMs || row.startedMs || 0) >= windowStart,
+    );
     for (const r of [...(rows || []), ...published]) {
       if (!r?.delegationId && r?.editor !== "local-agent") continue;
       const id = String(r.delegationId || sessionIdentity(r));
