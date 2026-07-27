@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-25.24";
+  const WB_VERSION = "2026-07-26.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -20883,6 +20883,10 @@ function ModelsView() {
     return m.runCount > 0 || m.lane === 'azure';
   });
   const benchmarked = filtered.filter(m => m.runCount > 0);
+  const capabilityCards = bench.capabilityCards || [];
+  const policyTasks = Object.entries(bench.dispatcherPolicy && bench.dispatcherPolicy.tasks || {});
+  const certifiedCandidates = policyTasks.reduce((count, [, rows]) => count + (Array.isArray(rows) ? rows.filter(r => r.eligible).length : 0), 0);
+  const selectedCard = selected ? capabilityCards.find(c => c.modelId === selected.id) : null;
   const scatterRows = benchmarked.filter(m => m.agenticPassRate != null && m.avgWallS != null);
   const toolRows = benchmarked.filter(m => m.toolReliability != null).slice().sort((a, b) => (b.toolReliability || 0) - (a.toolReliability || 0)).slice(0, 10);
   const agenticRows = benchmarked.filter(m => m.agenticPassRate != null).slice().sort((a, b) => (b.agenticPassRate || 0) - (a.agenticPassRate || 0)).slice(0, 10);
@@ -21110,9 +21114,13 @@ function ModelsView() {
     value: String(benchmarked.length),
     deltaNote: bench.updatedIso ? 'Updated ' + shortAge(bench.updated) : 'rollup pending'
   }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Best composite",
-    value: bestScore ? displayText(bestScore.id, 18) : '—',
-    deltaNote: bestScore && bestScore.compositeScore != null ? 'Score ' + bestScore.compositeScore.toFixed(1) : 'Run bake-offs'
+    label: "Capability cards",
+    value: String(capabilityCards.length),
+    deltaNote: (bench.capabilityReceipts && bench.capabilityReceipts.count ? bench.capabilityReceipts.count : 0) + ' granular receipts'
+  }), /*#__PURE__*/React.createElement(KpiStat, {
+    label: "Shadow candidates",
+    value: String(certifiedCandidates),
+    deltaNote: policyTasks.length ? policyTasks.length + ' task classes' : 'needs v2 receipts'
   }), /*#__PURE__*/React.createElement(KpiStat, {
     label: "Best agentic",
     value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
@@ -21121,10 +21129,6 @@ function ModelsView() {
     label: "Best tools",
     value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
     deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
-  }), /*#__PURE__*/React.createElement(KpiStat, {
-    label: "Test runs",
-    value: String(runs.length),
-    deltaNote: "Tool + agentic harnesses"
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
     gap: 4
@@ -21160,6 +21164,24 @@ function ModelsView() {
     cols: mobile ? 1 : 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Dispatcher profile",
+    title: "Capability evidence by task class"
+  }, policyTasks.length ? /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, policyTasks.slice(0, 8).map(([taskClass, rows]) => {
+    const best = Array.isArray(rows) ? rows[0] : null;
+    return /*#__PURE__*/React.createElement(ListItem, {
+      key: taskClass,
+      title: String(taskClass).replace(/-/g, ' '),
+      description: best ? displayText(best.modelId || 'no candidate', 36) + ' · ' + (best.samples || 0) + ' samples · lower bound ' + (best.wilsonLower95 != null ? Math.round(best.wilsonLower95 * 100) + '%' : '—') : 'No candidate',
+      trailing: /*#__PURE__*/React.createElement(Badge, {
+        tone: best && best.eligible ? 'favorable' : 'warning'
+      }, best && best.eligible ? 'eligible' : 'shadow')
+    });
+  })) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No granular capability cards yet",
+    description: "Run a v2 benchmark profile to generate task-class, tool, context, speed, and resource receipts."
+  })), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Tool reliability",
     title: "Structured tool_use pass rate"
   }, toolRows.length ? /*#__PURE__*/React.createElement(BarChart, {
@@ -21198,7 +21220,7 @@ function ModelsView() {
     cols: mobile ? 1 : 3,
     gap: 3
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail']]
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail'], ['Capability receipts', selectedCard ? selectedCard.evidence.samples : '—'], ['Verified task ctx', selectedCard && selectedCard.contextCapacity.highestVerifiedTaskTokens ? selectedCard.contextCapacity.highestVerifiedTaskTokens.toLocaleString() : '—'], ['Peak memory p95', selectedCard && selectedCard.resources.peakMemoryBytes.p95 ? Math.round(selectedCard.resources.peakMemoryBytes.p95 / (1024 * 1024 * 1024)) + ' GB' : '—']]
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("div", {
@@ -21209,18 +21231,18 @@ function ModelsView() {
       textTransform: 'uppercase',
       letterSpacing: 'var(--tracking-eyebrow)'
     }
-  }, "Runs"), /*#__PURE__*/React.createElement(List, {
+  }, "Capability slices"), selectedCard ? /*#__PURE__*/React.createElement(List, {
     bordered: true
-  }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
-    key: run.runId + run.kind,
-    title: run.runId + ' · ' + run.kind,
-    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
-    trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
-      tone: "favorable"
-    }, "winner") : /*#__PURE__*/React.createElement(Badge, {
-      tone: "neutral"
-    }, run.kind)
-  })))), /*#__PURE__*/React.createElement(Stack, {
+  }, Object.entries(selectedCard.taskCapabilities || {}).map(([taskClass, cap]) => /*#__PURE__*/React.createElement(ListItem, {
+    key: taskClass,
+    title: String(taskClass).replace(/-/g, ' '),
+    description: (cap.successes || 0) + '/' + (cap.samples || 0) + ' pass · median ' + (cap.wallMs && cap.wallMs.median ? Math.round(cap.wallMs.median / 1000) + 's' : '—'),
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: (cap.wilsonLower95 || 0) >= 0.7 ? 'favorable' : 'warning'
+    }, cap.wilsonLower95 != null ? Math.round(cap.wilsonLower95 * 100) + '%' : '—')
+  }))) : /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "No v2 capability card yet; legacy runs are display-only for routing.")), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("div", {
     style: {
@@ -21250,7 +21272,21 @@ function ModelsView() {
   }) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No benchmark rows",
     description: "Rebuild with python3 tools/build-model-benchmarks.py after new bake-off runs."
-  })), /*#__PURE__*/React.createElement(Card, {
+  })), selected && /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Run history",
+    title: selected.id + ' harness executions'
+  }, /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
+    key: run.runId + run.kind,
+    title: run.runId + ' · ' + run.kind,
+    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
+    trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, "winner") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, run.kind)
+  })))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Run history",
     title: "Harness executions"
   }, runs.length ? /*#__PURE__*/React.createElement(List, {
