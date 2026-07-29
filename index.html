@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-29.21";
+  const WB_VERSION = "2026-07-29.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14548,7 +14548,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     vscode: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxtYXNrIGlkPSJtYXNrMCIgbWFzay10eXBlPSJhbHBoYSIgbWFza1VuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeD0iMCIgeT0iMCIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTcwLjkxMTkgOTkuMzE3MUM3Mi40ODY5IDk5LjkzMDcgNzQuMjgyOCA5OS44OTE0IDc1Ljg3MjUgOTkuMTI2NEw5Ni40NjA4IDg5LjIxOTdDOTguNjI0MiA4OC4xNzg3IDEwMCA4NS45ODkyIDEwMCA4My41ODcyVjE2LjQxMzNDMTAwIDE0LjAxMTMgOTguNjI0MyAxMS44MjE4IDk2LjQ2MDkgMTAuNzgwOEw3NS44NzI1IDAuODczNzU2QzczLjc4NjIgLTAuMTMwMTI5IDcxLjM0NDYgMC4xMTU3NiA2OS41MTM1IDEuNDQ2OTVDNjkuMjUyIDEuNjM3MTEgNjkuMDAyOCAxLjg0OTQzIDY4Ljc2OSAyLjA4MzQxTDI5LjM1NTEgMzguMDQxNUwxMi4xODcyIDI1LjAwOTZDMTAuNTg5IDIzLjc5NjUgOC4zNTM2MyAyMy44OTU5IDYuODY5MzMgMjUuMjQ2MUwxLjM2MzAzIDMwLjI1NDlDLTAuNDUyNTUyIDMxLjkwNjQgLTAuNDU0NjMzIDM0Ljc2MjcgMS4zNTg1MyAzNi40MTdMMTYuMjQ3MSA1MC4wMDAxTDEuMzU4NTMgNjMuNTgzMkMtMC40NTQ2MzMgNjUuMjM3NCAtMC40NTI1NTIgNjguMDkzOCAxLjM2MzAzIDY5Ljc0NTNMNi44NjkzMyA3NC43NTQxQzguMzUzNjMgNzYuMTA0MyAxMC41ODkgNzYuMjAzNyAxMi4xODcyIDc0Ljk5MDVMMjkuMzU1MSA2MS45NTg3TDY4Ljc2OSA5Ny45MTY3QzY5LjM5MjUgOTguNTQwNiA3MC4xMjQ2IDk5LjAxMDQgNzAuOTExOSA5OS4zMTcxWk03NS4wMTUyIDI3LjI5ODlMNDUuMTA5MSA1MC4wMDAxTDc1LjAxNTIgNzIuNzAxMlYyNy4yOTg5WiIgZmlsbD0id2hpdGUiLz4KPC9tYXNrPgo8ZyBtYXNrPSJ1cmwoI21hc2swKSI+CjxwYXRoIGQ9Ik05Ni40NjE0IDEwLjc5NjJMNzUuODU2OSAwLjg3NTU0MkM3My40NzE5IC0wLjI3Mjc3MyA3MC42MjE3IDAuMjExNjExIDY4Ljc1IDIuMDgzMzNMMS4yOTg1OCA2My41ODMyQy0wLjUxNTY5MyA2NS4yMzczIC0wLjUxMzYwNyA2OC4wOTM3IDEuMzAzMDggNjkuNzQ1Mkw2LjgxMjcyIDc0Ljc1NEM4LjI5NzkzIDc2LjEwNDIgMTAuNTM0NyA3Ni4yMDM2IDEyLjEzMzggNzQuOTkwNUw5My4zNjA5IDEzLjM2OTlDOTYuMDg2IDExLjMwMjYgMTAwIDEzLjI0NjIgMTAwIDE2LjY2NjdWMTYuNDI3NUMxMDAgMTQuMDI2NSA5OC42MjQ2IDExLjgzNzggOTYuNDYxNCAxMC43OTYyWiIgZmlsbD0iIzAwNjVBOSIvPgo8ZyBmaWx0ZXI9InVybCgjZmlsdGVyMF9kKSI+CjxwYXRoIGQ9Ik05Ni40NjE0IDg5LjIwMzhMNzUuODU2OSA5OS4xMjQ1QzczLjQ3MTkgMTAwLjI3MyA3MC42MjE3IDk5Ljc4ODQgNjguNzUgOTcuOTE2N0wxLjI5ODU4IDM2LjQxNjlDLTAuNTE1NjkzIDM0Ljc2MjcgLTAuNTEzNjA3IDMxLjkwNjMgMS4zMDMwOCAzMC4yNTQ4TDYuODEyNzIgMjUuMjQ2QzguMjk3OTMgMjMuODk1OCAxMC41MzQ3IDIzLjc5NjQgMTIuMTMzOCAyNS4wMDk1TDkzLjM2MDkgODYuNjMwMUM5Ni4wODYgODguNjk3NCAxMDAgODYuNzUzOCAxMDAgODMuMzMzNFY4My41NzI2QzEwMCA4NS45NzM1IDk4LjYyNDYgODguMTYyMiA5Ni40NjE0IDg5LjIwMzhaIiBmaWxsPSIjMDA3QUNDIi8+CjwvZz4KPGcgZmlsdGVyPSJ1cmwoI2ZpbHRlcjFfZCkiPgo8cGF0aCBkPSJNNzUuODU3OCA5OS4xMjYzQzczLjQ3MjEgMTAwLjI3NCA3MC42MjE5IDk5Ljc4ODUgNjguNzUgOTcuOTE2NkM3MS4wNTY0IDEwMC4yMjMgNzUgOTguNTg5NSA3NSA5NS4zMjc4VjQuNjcyMTNDNzUgMS40MTAzOSA3MS4wNTY0IC0wLjIyMzEwNiA2OC43NSAyLjA4MzI5QzcwLjYyMTkgMC4yMTE0MDIgNzMuNDcyMSAtMC4yNzM2NjYgNzUuODU3OCAwLjg3MzYzM0w5Ni40NTg3IDEwLjc4MDdDOTguNjIzNCAxMS44MjE3IDEwMCAxNC4wMTEyIDEwMCAxNi40MTMyVjgzLjU4NzFDMTAwIDg1Ljk4OTEgOTguNjIzNCA4OC4xNzg2IDk2LjQ1ODYgODkuMjE5Nkw3NS44NTc4IDk5LjEyNjNaIiBmaWxsPSIjMUY5Q0YwIi8+CjwvZz4KPGcgc3R5bGU9Im1peC1ibGVuZC1tb2RlOm92ZXJsYXkiIG9wYWNpdHk9IjAuMjUiPgo8cGF0aCBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGNsaXAtcnVsZT0iZXZlbm9kZCIgZD0iTTcwLjg1MTEgOTkuMzE3MUM3Mi40MjYxIDk5LjkzMDYgNzQuMjIyMSA5OS44OTEzIDc1LjgxMTcgOTkuMTI2NEw5Ni40IDg5LjIxOTdDOTguNTYzNCA4OC4xNzg3IDk5LjkzOTIgODUuOTg5MiA5OS45MzkyIDgzLjU4NzFWMTYuNDEzM0M5OS45MzkyIDE0LjAxMTIgOTguNTYzNSAxMS44MjE3IDk2LjQwMDEgMTAuNzgwN0w3NS44MTE3IDAuODczNjk1QzczLjcyNTUgLTAuMTMwMTkgNzEuMjgzOCAwLjExNTY5OSA2OS40NTI3IDEuNDQ2ODhDNjkuMTkxMiAxLjYzNzA1IDY4Ljk0MiAxLjg0OTM3IDY4LjcwODIgMi4wODMzNUwyOS4yOTQzIDM4LjA0MTRMMTIuMTI2NCAyNS4wMDk2QzEwLjUyODMgMjMuNzk2NCA4LjI5Mjg1IDIzLjg5NTkgNi44MDg1NSAyNS4yNDZMMS4zMDIyNSAzMC4yNTQ4Qy0wLjUxMzMzNCAzMS45MDY0IC0wLjUxNTQxNSAzNC43NjI3IDEuMjk3NzUgMzYuNDE2OUwxNi4xODYzIDUwTDEuMjk3NzUgNjMuNTgzMkMtMC41MTU0MTUgNjUuMjM3NCAtMC41MTMzMzQgNjguMDkzNyAxLjMwMjI1IDY5Ljc0NTJMNi44MDg1NSA3NC43NTRDOC4yOTI4NSA3Ni4xMDQyIDEwLjUyODMgNzYuMjAzNiAxMi4xMjY0IDc0Ljk5MDVMMjkuMjk0MyA2MS45NTg2TDY4LjcwODIgOTcuOTE2N0M2OS4zMzE3IDk4LjU0MDUgNzAuMDYzOCA5OS4wMTA0IDcwLjg1MTEgOTkuMzE3MVpNNzQuOTU0NCAyNy4yOTg5TDQ1LjA0ODMgNTBMNzQuOTU0NCA3Mi43MDEyVjI3LjI5ODlaIiBmaWxsPSJ1cmwoI3BhaW50MF9saW5lYXIpIi8+CjwvZz4KPC9nPgo8ZGVmcz4KPGZpbHRlciBpZD0iZmlsdGVyMF9kIiB4PSItOC4zOTQxMSIgeT0iMTUuODI5MSIgd2lkdGg9IjExNi43MjciIGhlaWdodD0iOTIuMjQ1NiIgZmlsdGVyVW5pdHM9InVzZXJTcGFjZU9uVXNlIiBjb2xvci1pbnRlcnBvbGF0aW9uLWZpbHRlcnM9InNSR0IiPgo8ZmVGbG9vZCBmbG9vZC1vcGFjaXR5PSIwIiByZXN1bHQ9IkJhY2tncm91bmRJbWFnZUZpeCIvPgo8ZmVDb2xvck1hdHJpeCBpbj0iU291cmNlQWxwaGEiIHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAxMjcgMCIvPgo8ZmVPZmZzZXQvPgo8ZmVHYXVzc2lhbkJsdXIgc3RkRGV2aWF0aW9uPSI0LjE2NjY3Ii8+CjxmZUNvbG9yTWF0cml4IHR5cGU9Im1hdHJpeCIgdmFsdWVzPSIwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwLjI1IDAiLz4KPGZlQmxlbmQgbW9kZT0ib3ZlcmxheSIgaW4yPSJCYWNrZ3JvdW5kSW1hZ2VGaXgiIHJlc3VsdD0iZWZmZWN0MV9kcm9wU2hhZG93Ii8+CjxmZUJsZW5kIG1vZGU9Im5vcm1hbCIgaW49IlNvdXJjZUdyYXBoaWMiIGluMj0iZWZmZWN0MV9kcm9wU2hhZG93IiByZXN1bHQ9InNoYXBlIi8+CjwvZmlsdGVyPgo8ZmlsdGVyIGlkPSJmaWx0ZXIxX2QiIHg9IjYwLjQxNjciIHk9Ii04LjA3NTU4IiB3aWR0aD0iNDcuOTE2NyIgaGVpZ2h0PSIxMTYuMTUxIiBmaWx0ZXJVbml0cz0idXNlclNwYWNlT25Vc2UiIGNvbG9yLWludGVycG9sYXRpb24tZmlsdGVycz0ic1JHQiI+CjxmZUZsb29kIGZsb29kLW9wYWNpdHk9IjAiIHJlc3VsdD0iQmFja2dyb3VuZEltYWdlRml4Ii8+CjxmZUNvbG9yTWF0cml4IGluPSJTb3VyY2VBbHBoYSIgdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDEyNyAwIi8+CjxmZU9mZnNldC8+CjxmZUdhdXNzaWFuQmx1ciBzdGREZXZpYXRpb249IjQuMTY2NjciLz4KPGZlQ29sb3JNYXRyaXggdHlwZT0ibWF0cml4IiB2YWx1ZXM9IjAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAgMCAwIDAuMjUgMCIvPgo8ZmVCbGVuZCBtb2RlPSJvdmVybGF5IiBpbjI9IkJhY2tncm91bmRJbWFnZUZpeCIgcmVzdWx0PSJlZmZlY3QxX2Ryb3BTaGFkb3ciLz4KPGZlQmxlbmQgbW9kZT0ibm9ybWFsIiBpbj0iU291cmNlR3JhcGhpYyIgaW4yPSJlZmZlY3QxX2Ryb3BTaGFkb3ciIHJlc3VsdD0ic2hhcGUiLz4KPC9maWx0ZXI+CjxsaW5lYXJHcmFkaWVudCBpZD0icGFpbnQwX2xpbmVhciIgeDE9IjQ5LjkzOTIiIHkxPSIwLjI1NzgxMiIgeDI9IjQ5LjkzOTIiIHkyPSI5OS43NDIzIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+CjxzdG9wIHN0b3AtY29sb3I9IndoaXRlIi8+CjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0id2hpdGUiIHN0b3Atb3BhY2l0eT0iMCIvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+Cjwvc3ZnPgo=",
   };
   // On-device MLX / oMLX lane (local-agent delegation, claude-omlx.sh). Hints
-  // come from Tools/model-pricing.json so the collector and dashboard agree;
+  // come from Tools/Usage/model-pricing.json so the collector and dashboard agree;
   // "local" is the backend label the beacon stamps once detection is in place.
   const LOCAL_MODEL_HINTS_FALLBACK = [
     "gpt-oss",
@@ -15561,7 +15561,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           label: "Workbench Live status",
           path: WORKBENCH_LIVE_STATUS_PATH,
           status: "missing",
-          message: "Run python3 Tools/workbench-live-helper.py status on this machine.",
+          message: "Run python3 Tools/Sync/workbench-live-helper.py status on this machine.",
           coverage: { expected: 1, missing: 1 },
         });
         return null;
@@ -16567,7 +16567,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   async function hydrate() {
     renderStatusRail();
     const jobs = [
-      loadJson("Tools/session-metrics.json", {
+      loadJson("Tools/Usage/session-metrics.json", {
         source: "hydrate.session-metrics",
         label: "Session metrics rollup",
       }).then((v) => {
@@ -16577,7 +16577,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           ? null
           : loadJsonValue(v, "hydrate.session-metrics", {
               label: "Session metrics rollup",
-              path: "Tools/session-metrics.json",
+              path: "Tools/Usage/session-metrics.json",
               staleAfterMs: 45 * 60 * 1000,
               missingMessage:
                 "Session metrics rollup missing; using current-only live session fallback.",
@@ -16619,80 +16619,80 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           });
         }
       }),
-      loadJson("Tools/usage.json", {
+      loadJson("Tools/Usage/usage.json", {
         source: "hydrate.usage",
         label: "Usage snapshot",
       }).then((v) => {
         state.usage = loadJsonValue(v, "hydrate.usage", {
           label: "Usage snapshot",
-          path: "Tools/usage.json",
+          path: "Tools/Usage/usage.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/cursor-usage.json", {
+      loadJson("Tools/Usage/cursor-usage.json", {
         source: "hydrate.cursor-usage",
         label: "Cursor usage snapshot",
       }).then((v) => {
         state.cursorUsage = loadJsonValue(v, "hydrate.cursor-usage", {
           label: "Cursor usage snapshot",
-          path: "Tools/cursor-usage.json",
+          path: "Tools/Usage/cursor-usage.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/mobile-sync-status.json", {
+      loadJson("Tools/Sync/mobile-sync-status.json", {
         source: "hydrate.mobile-sync",
         label: "Mobile sync status",
       }).then((v) => {
         state.mobileSync = loadJsonValue(v, "hydrate.mobile-sync", {
           label: "Mobile sync status",
-          path: "Tools/mobile-sync-status.json",
+          path: "Tools/Sync/mobile-sync-status.json",
           staleAfterMs: 2 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/ccr-usage.json", {
+      loadJson("Tools/Usage/ccr-usage.json", {
         source: "hydrate.ccr-usage",
         label: "CCR usage snapshot",
       }).then((v) => {
         const next = loadJsonValue(v, "hydrate.ccr-usage", {
           label: "CCR usage snapshot",
-          path: "Tools/ccr-usage.json",
+          path: "Tools/Usage/ccr-usage.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
         if (next) state.ccrUsage = next;
       }),
-      loadJson("Tools/azure-billing.json", {
+      loadJson("Tools/Usage/azure-billing.json", {
         source: "hydrate.azure-billing",
         label: "Azure billing snapshot",
       }).then((v) => {
         const next = loadJsonValue(v, "hydrate.azure-billing", {
           label: "Azure billing snapshot",
-          path: "Tools/azure-billing.json",
+          path: "Tools/Usage/azure-billing.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
         if (next) state.azureBilling = next;
       }),
-      loadJson("Tools/azure-cost-calibration.json", {
+      loadJson("Tools/Usage/azure-cost-calibration.json", {
         source: "hydrate.azure-cost-calibration",
         label: "Azure cost calibration",
       }).then((v) => {
         const next = loadJsonValue(v, "hydrate.azure-cost-calibration", {
           label: "Azure cost calibration",
-          path: "Tools/azure-cost-calibration.json",
+          path: "Tools/Usage/azure-cost-calibration.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
         if (next) state.azureCostCalibration = next;
       }),
-      loadJson("Tools/efficiency-tips.json", {
+      loadJson("Tools/Delegation/efficiency-tips.json", {
         source: "hydrate.efficiency-tips",
         label: "Efficiency tips",
       }).then((v) => {
         state.efficiencyTipsFile = loadJsonValue(v, "hydrate.efficiency-tips", {
           label: "Efficiency tips",
-          path: "Tools/efficiency-tips.json",
+          path: "Tools/Delegation/efficiency-tips.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/context-efficiency-summary.json", {
+      loadJson("Tools/Context/context-efficiency-summary.json", {
         source: "hydrate.context-efficiency-summary",
         label: "Context efficiency summary",
       }).then((v) => {
@@ -16701,7 +16701,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           "hydrate.context-efficiency-summary",
           {
             label: "Context efficiency summary",
-            path: "Tools/context-efficiency-summary.json",
+            path: "Tools/Context/context-efficiency-summary.json",
             staleAfterMs: 24 * 60 * 60 * 1000,
             optional: true,
             missingMessage:
@@ -16709,7 +16709,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           },
         );
       }),
-      loadJson("Tools/delegation-summary.json", {
+      loadJson("Tools/Usage/delegation-summary.json", {
         source: "hydrate.delegation-summary",
         label: "Local delegation summary",
       }).then((v) => {
@@ -16718,7 +16718,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           "hydrate.delegation-summary",
           {
             label: "Local delegation summary",
-            path: "Tools/delegation-summary.json",
+            path: "Tools/Usage/delegation-summary.json",
             staleAfterMs: 24 * 60 * 60 * 1000,
             optional: true,
             missingMessage: "Delegation summary not built yet.",
@@ -16742,27 +16742,27 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           },
         );
       }),
-      loadJson("Tools/model-pricing.json", {
+      loadJson("Tools/Usage/model-pricing.json", {
         source: "hydrate.model-pricing",
         label: "Model pricing",
       }).then((v) => {
         state.modelPricing = loadJsonValue(v, "hydrate.model-pricing", {
           label: "Model pricing",
-          path: "Tools/model-pricing.json",
+          path: "Tools/Usage/model-pricing.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/model-fleet.json", {
+      loadJson("Tools/Delegation/model-fleet.json", {
         source: "hydrate.model-fleet",
         label: "Azure model fleet",
       }).then((v) => {
         state.modelFleet = loadJsonValue(v, "hydrate.model-fleet", {
           label: "Azure model fleet",
-          path: "Tools/model-fleet.json",
+          path: "Tools/Delegation/model-fleet.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/model-benchmarks.json", {
+      loadJson("Tools/Delegation/model-benchmarks.json", {
         source: "hydrate.model-benchmarks",
         label: "Model benchmarks",
       }).then((v) => {
@@ -16771,28 +16771,28 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           runs: [],
           machines: {},
           label: "Model benchmarks",
-          path: "Tools/model-benchmarks.json",
+          path: "Tools/Delegation/model-benchmarks.json",
           staleAfterMs: 7 * 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/machine-aliases.json", {
+      loadJson("Tools/Sync/machine-aliases.json", {
         source: "hydrate.machine-aliases",
         label: "Machine aliases",
       }).then((v) => {
         const aliases = loadJsonValue(v, "hydrate.machine-aliases", {
           label: "Machine aliases",
-          path: "Tools/machine-aliases.json",
+          path: "Tools/Sync/machine-aliases.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
         });
         state.machineAliases = aliases || {};
       }),
-      loadJson("Tools/dashboard-state.json", {
+      loadJson("Tools/Dashboard/dashboard-state.json", {
         source: "hydrate.dashboard-state",
         label: "Dashboard state",
       }).then((v) => {
         const dashboardState = loadJsonValue(v, "hydrate.dashboard-state", {
           label: "Dashboard state",
-          path: "Tools/dashboard-state.json",
+          path: "Tools/Dashboard/dashboard-state.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
           optional: true,
           defaultValue: { snoozed: {} },
@@ -16800,23 +16800,23 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         });
         state.dashboardState = dashboardState || state.dashboardState;
       }),
-      loadJson("Tools/dashboard-version.json", {
+      loadJson("Tools/Dashboard/dashboard-version.json", {
         source: "hydrate.dashboard-version",
         label: "Dashboard build version",
       }).then((v) => {
         state.latestBuild = loadJsonValue(v, "hydrate.dashboard-version", {
           label: "Dashboard build version",
-          path: "Tools/dashboard-version.json",
+          path: "Tools/Dashboard/dashboard-version.json",
           staleAfterMs: 30 * 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/agent-config.json", {
+      loadJson("Tools/Skills/agent-config.json", {
         source: "hydrate.agent-config",
         label: "Agent configuration",
       }).then((v) => {
         state.agentConfig = loadJsonValue(v, "hydrate.agent-config", {
           label: "Agent configuration",
-          path: "Tools/agent-config.json",
+          path: "Tools/Skills/agent-config.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
@@ -16830,13 +16830,13 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
-      loadJson("Tools/skills-wiki.json", {
+      loadJson("Tools/Skills/skills-wiki.json", {
         source: "hydrate.skills-wiki",
         label: "Skills wiki",
       }).then((v) => {
         state.skillsWiki = loadJsonValue(v, "hydrate.skills-wiki", {
           label: "Skills wiki",
-          path: "Tools/skills-wiki.json",
+          path: "Tools/Skills/skills-wiki.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
@@ -17992,7 +17992,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   // Snoozes follow the decision across devices: stored in
-  // Tools/dashboard-state.json through the active backend, with localStorage
+  // Tools/Dashboard/dashboard-state.json through the active backend, with localStorage
   // as the offline fallback. Keys must be stable — they are also how lane
   // rows resolve clicks (data-act-key), never positional indexes.
   function actionKey(a) {
@@ -18019,7 +18019,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     render();
     try {
       const result = await mutatePath(
-        "Tools/dashboard-state.json",
+        "Tools/Dashboard/dashboard-state.json",
         {
           type: "dashboard.mergeSnoozes",
           snoozed: m,
@@ -24098,7 +24098,7 @@ window.__WBReactRender = function () {
     const low = t.toLowerCase();
     if (low === "/wrap-session" || low === "wrap up" || low === "perfect wrap up") return "Session wrap-up";
     if (low.startsWith("/workbench-update")) return "Workbench machine update";
-    if (low.startsWith("/route")) return "Route/backend switch";
+    if (low.startsWith("/route")) return "Tools/Route/backend switch";
     if (low.includes("task-notification")) return "Background task completed";
     if (low.startsWith("ran into an error running")) return "Tool error recovery";
     t = t
@@ -24649,7 +24649,7 @@ window.__WBReactRender = function () {
     }
     return tips;
   }
-  // Tools/efficiency-tips.json is written by a separate generator (outside
+  // Tools/Delegation/efficiency-tips.json is written by a separate generator (outside
   // the dashboard) and may not exist yet - fall back to the tips computed
   // here from session rows whenever it's missing or empty.
   function fileEfficiencyTips() {
@@ -24670,7 +24670,7 @@ window.__WBReactRender = function () {
       const metric = Array.isArray(t) ? "" : t.metric;
       return `${i + 1}. ${title}${metric ? ` (${metric})` : ""}: ${detail || ""}`;
     });
-    return `Review these Workbench AI-efficiency issues and propose practical fixes. For each item, decide whether the best answer is to educate me/change my workflow, update Workbench repo automation/dashboard/hooks, or both. If repo changes are appropriate, inspect the code first, implement the smallest durable fix, update tasks/status/log as required, and verify it. After fixing or otherwise resolving an item, clear the solved tip from its source (Tools/efficiency-tips.json or the deterministic rule that emits it) while keeping any still-valid tips. Report only what changed, which tips were cleared, which remain, and what is blocked.\n\nIssues:\n${lines.join("\n") || "No current issues were listed; inspect the usage metrics and identify the highest-leverage improvements."}`;
+    return `Review these Workbench AI-efficiency issues and propose practical fixes. For each item, decide whether the best answer is to educate me/change my workflow, update Workbench repo automation/dashboard/hooks, or both. If repo changes are appropriate, inspect the code first, implement the smallest durable fix, update tasks/status/log as required, and verify it. After fixing or otherwise resolving an item, clear the solved tip from its source (Tools/Delegation/efficiency-tips.json or the deterministic rule that emits it) while keeping any still-valid tips. Report only what changed, which tips were cleared, which remain, and what is blocked.\n\nIssues:\n${lines.join("\n") || "No current issues were listed; inspect the usage metrics and identify the highest-leverage improvements."}`;
   }
   function tipsHTML(rows) {
     const fromFile = fileEfficiencyTips();
@@ -26243,9 +26243,9 @@ window.__WBReactRender = function () {
   }
   async function fetchSourceVersion() {
     if (state.backend !== "github") return WB_VERSION;
-    // Tools/dashboard-version.json is tiny; the old path downloaded the whole
+    // Tools/Dashboard/dashboard-version.json is tiny; the old path downloaded the whole
     // 170KB dashboard.html just to regex out one string.
-    const v = await loadJson("Tools/dashboard-version.json");
+    const v = await loadJson("Tools/Dashboard/dashboard-version.json");
     if (v?.version) return v.version;
     const t = await readPath("dashboard.html").catch(() => null);
     return t?.match(/WB_VERSION\s*=\s*['"]([^'"]+)/)?.[1] || WB_VERSION;
