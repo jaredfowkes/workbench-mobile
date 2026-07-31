@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-30.33";
+  const WB_VERSION = "2026-07-31.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23222,6 +23222,22 @@ window.__WBReactRender = function () {
       r?.delegationOutcome || r?.outcome || r?.acceptanceState || "",
     ).toLowerCase();
   }
+  // A worker's own outcome is its exit status, not a judgement of quality.
+  // Tools/Usage/delegation-summary.json carries the paid parent's verdict and
+  // the net figure after verification and rework; that is the only honest
+  // savings number, so prefer it whenever a verdict exists.
+  function delegationVerdictRow(r) {
+    const id = r?.delegationId;
+    if (!id) return null;
+    const attempts = state.delegationSummary?.attempts;
+    if (!Array.isArray(attempts)) return null;
+    return attempts.find((a) => a && a.delegationId === id) || null;
+  }
+  function verdictedSaving(r) {
+    const row = delegationVerdictRow(r);
+    if (!row || !row.verdict) return undefined; // unverified: caller decides
+    return row.netSaving != null ? Number(row.netSaving) : null;
+  }
   function isDelegationAccepted(r) {
     return DELEGATION_ACCEPTED.has(delegationOutcome(r));
   }
@@ -23969,8 +23985,11 @@ window.__WBReactRender = function () {
   }
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
+    const verdicted = verdictedSaving(r);
+    if (verdicted !== undefined) return verdicted;
     const outcome = delegationOutcome(r);
     if (r.delegationId && !DELEGATION_ACCEPTED.has(outcome)) return null;
+    if (r.delegationId) return null; // no parent verdict yet — claim nothing
     const comparator =
       r.parentEquivalentModel || r.comparisonModel || r.savingsBaselineModel;
     if (r.savedEstimate != null) return Number(r.savedEstimate);
@@ -24006,8 +24025,11 @@ window.__WBReactRender = function () {
   const FREE_LANE_BASELINE = "claude-sonnet-5";
   function freeLaneSavedCost(r) {
     if (!isFreeLaneRow(r) || !hasTelemetry(r)) return null;
+    const verdicted = verdictedSaving(r);
+    if (verdicted !== undefined) return verdicted;
     const outcome = delegationOutcome(r);
     if (r.delegationId && !DELEGATION_ACCEPTED.has(outcome)) return null;
+    if (r.delegationId) return null; // no parent verdict yet — claim nothing
     if (r.savedEstimate != null) return Number(r.savedEstimate);
     const comparator =
       r.parentEquivalentModel ||
