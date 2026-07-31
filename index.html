@@ -14498,7 +14498,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-07-30.24";
+  const WB_VERSION = "2026-07-30.29";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23010,6 +23010,9 @@ window.__WBReactRender = function () {
   function localSavingsCredit() {
     return syntheticCredit(localSavedSum(currentUsageRows()) || 0);
   }
+  function freeLaneSavingsCredit() {
+    return syntheticCredit(freeLaneSavedSum(currentUsageRows()) || 0);
+  }
   function allCreditLanesHTML() {
     const ccrModels = [
       "GPT-5.6-Sol",
@@ -23018,7 +23021,7 @@ window.__WBReactRender = function () {
       "GPT-5.5",
       "GPT-5.3-codex",
     ];
-    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${ccrModels.map((model) => creditLaneHTML(model, ccrModelCredit(model), "gpt", { mobileExtra: true })).join("")}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
+    return `${creditLaneHTML("Claude", state.usage, "anthropic")}${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}${ccrModels.map((model) => creditLaneHTML(model, ccrModelCredit(model), "gpt", { mobileExtra: true })).join("")}${creditLaneHTML("Local", localSavingsCredit(), "local", { mobileExtra: true, positive: true })}${creditLaneHTML("Free", freeLaneSavingsCredit(), "local", { mobileExtra: true, positive: true })}`;
   }
   function creditsRailHTML() {
     const ages = [state.usage?.updated, state.cursorUsage?.updated].filter(
@@ -23040,6 +23043,10 @@ window.__WBReactRender = function () {
   }
   function normalizeBackend(v) {
     v = String(v || "anthropic").toLowerCase();
+    // Foundry-direct Claude. Must be tested before the "azure" match below,
+    // which would otherwise file it under the router lane. It is metered Azure
+    // spend, so it must also never be filed under the free Anthropic lane.
+    if (v === "azure-claude") return "Azure Claude";
     // claude-code-router lane. New rows say "ccr"; legacy rows say
     // "route-azure"/"azure" — all three are the same CCR lane. It is displayed
     // split by model (GPT-5.5 / GPT-5.3-codex), never as a single "Azure" lane.
@@ -23053,7 +23060,16 @@ window.__WBReactRender = function () {
   // A session ran on-device (free) if the beacon tagged its backend "local" OR
   // its model id is an on-device MLX model - the second case also reclassifies
   // rows an older beacon mislabeled as "anthropic" before local detection.
+  function isFreeLaneRow(r) {
+    return String(r.backend || "")
+      .toLowerCase()
+      .includes("openrouter-free");
+  }
   function isLocalRow(r) {
+    // Free-lane rows are tested first on purpose: several free OpenRouter model
+    // ids ("nemotron", "qwen3", "glm-") are also on-device model name hints, so
+    // without this a free session would be reported as local work.
+    if (isFreeLaneRow(r)) return false;
     return (
       String(r.backend || "").toLowerCase().includes("local") ||
       isLocalLabel(r.model)
@@ -23820,6 +23836,10 @@ window.__WBReactRender = function () {
   function estimateSessionCost(r) {
     if (!hasTelemetry(r)) return null;
     if (isLocalRow(r)) return 0; // on-device MLX: real tokens, zero charge
+    // Free OpenRouter models are a hard zero, not an estimate. Claude Code
+    // prices these runs at Anthropic list rates and reports a dollar figure the
+    // provider never charged, so any recorded cost on the row is discarded.
+    if (isFreeLaneRow(r)) return 0;
     const asOfMs = Number(r.started || r.ended || 0) || Date.now();
     // Multi-model / subagent sessions carry a per-model breakdown; prefer the
     // recorded per-model cost (falling back to a token estimate when a model
@@ -23978,6 +23998,42 @@ window.__WBReactRender = function () {
     }
     return any ? total : null;
   }
+  // Free OpenRouter models charge nothing, so the interesting number is what the
+  // paid parent would have spent doing the same work in-session. Unlike the local
+  // lane this has a default comparator, because free-lane work is always
+  // delegated from a paid session. A rejected delegation claims nothing: redoing
+  // it on the paid lane cost more than it saved.
+  const FREE_LANE_BASELINE = "claude-sonnet-5";
+  function freeLaneSavedCost(r) {
+    if (!isFreeLaneRow(r) || !hasTelemetry(r)) return null;
+    const outcome = delegationOutcome(r);
+    if (r.delegationId && !DELEGATION_ACCEPTED.has(outcome)) return null;
+    if (r.savedEstimate != null) return Number(r.savedEstimate);
+    const comparator =
+      r.parentEquivalentModel ||
+      r.comparisonModel ||
+      r.savingsBaselineModel ||
+      FREE_LANE_BASELINE;
+    const clone = {
+      ...r,
+      backend: "anthropic",
+      model: String(comparator).trim(),
+      byModel: undefined,
+    };
+    return estimateSessionCost(clone);
+  }
+  function freeLaneSavedSum(rows) {
+    let total = 0,
+      any = false;
+    for (const r of rows) {
+      const saved = freeLaneSavedCost(r);
+      if (saved != null) {
+        total += saved;
+        any = true;
+      }
+    }
+    return any ? total : null;
+  }
   function monthStart() {
     // Calendar-month window shared by every lane: Cursor resets on the 1st,
     // Anthropic/Azure/Local on the last day - both mean the current month.
@@ -24074,6 +24130,8 @@ window.__WBReactRender = function () {
     const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
     const incompleteCount = rows.filter(isIncompleteSession).length;
     const savedLocal = localSavedSum(rows);
+    const savedFree = freeLaneSavedSum(rows);
+    const freeRows = rows.filter(isFreeLaneRow);
     const backends = groupMetrics(rows, (r) => backendLane(r));
     const models = groupModelMetrics(rows);
     const ides = groupMetrics(rows, (r) => normalizeIde(r.ide));
@@ -24082,7 +24140,7 @@ window.__WBReactRender = function () {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -24208,7 +24266,9 @@ window.__WBReactRender = function () {
         "Cost",
         isLocalRow(r) && localSavedCost(r) != null
           ? `<span class="cost-savings">${esc(fmtCostMaybe(localSavedCost(r)))} savings</span> · $0.00 charged${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`
-          : `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
+          : isFreeLaneRow(r)
+            ? `${freeLaneSavedCost(r) != null ? `<span class="cost-savings">${esc(fmtCostMaybe(freeLaneSavedCost(r)))} savings</span> · ` : ""}$0.00 charged${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`
+            : `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
       ),
       isLocalRow(r) && r.savedEstimate != null
         ? sessionDetailRow(
@@ -24368,6 +24428,14 @@ window.__WBReactRender = function () {
       cache:
         tokenSum(rs, "cacheCreationTokens") +
         tokenSum(rs, "cacheReadTokens"),
+      // Kept separate from `cache` so the lane table can show a hit rate.
+      // Reads bill at ~0.1x input; writes at 1.25x (5m) or 2x (1h), so a lane
+      // that is mostly writes is paying a premium, not saving.
+      cacheRead: tokenSum(rs, "cacheReadTokens"),
+      cacheDenom:
+        tokenSum(rs, "inputTokens") +
+        tokenSum(rs, "cacheCreationTokens") +
+        tokenSum(rs, "cacheReadTokens"),
       tokens: rs.reduce((sum, row) => sum + cacheInclusiveTokens(row), 0),
       requests: tokenSum(rs, "requests"),
       cost: costSum(rs),
@@ -24407,6 +24475,8 @@ window.__WBReactRender = function () {
           input: 0,
           output: 0,
           cache: 0,
+          cacheRead: 0,
+          cacheDenom: 0,
           tokens: 0,
           requests: 0,
           cost: 0,
@@ -24441,6 +24511,11 @@ window.__WBReactRender = function () {
           lane.cache +=
             Number(m.cacheCreationTokens || 0) +
             Number(m.cacheReadTokens || 0);
+          lane.cacheRead += Number(m.cacheReadTokens || 0);
+          lane.cacheDenom +=
+            Number(m.inputTokens || 0) +
+            Number(m.cacheCreationTokens || 0) +
+            Number(m.cacheReadTokens || 0);
           lane.tokens += cacheInclusiveTokens(m);
           lane.requests += Number(m.requests || 0);
           let c = Number(m.cost);
@@ -24464,6 +24539,11 @@ window.__WBReactRender = function () {
         lane.cache +=
           Number(r.cacheCreationTokens || 0) +
           Number(r.cacheReadTokens || 0);
+        lane.cacheRead += Number(r.cacheReadTokens || 0);
+        lane.cacheDenom +=
+          Number(r.inputTokens || 0) +
+          Number(r.cacheCreationTokens || 0) +
+          Number(r.cacheReadTokens || 0);
         lane.tokens += cacheInclusiveTokens(r);
         lane.requests += Number(r.requests || 0);
         const c = sessionCost(r);
@@ -24484,6 +24564,8 @@ window.__WBReactRender = function () {
       input: l.input,
       output: l.output,
       cache: l.cache,
+      cacheRead: l.cacheRead,
+      cacheDenom: l.cacheDenom,
       tokens: l.tokens,
       requests: l.requests,
       cost:
@@ -24526,8 +24608,21 @@ window.__WBReactRender = function () {
       .filter((r) => r.label !== "Local" || r.sessions)
       .sort((a, b) => Number(b.cost || 0) - Number(a.cost || 0));
   }
+  // Share of the prompt this lane read back from cache, over the whole prompt
+  // (uncached input + cache writes + cache reads). Null when the lane has no
+  // prompt tokens at all, so an empty lane reads "—" instead of a fake 0%.
+  function laneCacheHitRate(r) {
+    const denom = Number(r.cacheDenom || 0);
+    if (!denom) return null;
+    return Number(r.cacheRead || 0) / denom;
+  }
   function laneInfoText(r) {
     const bits = [];
+    const hit = laneCacheHitRate(r);
+    if (hit != null)
+      bits.push(
+        `${Math.round(hit * 100)}% of this lane's prompt tokens were cache reads, billed at roughly a tenth of the input rate; the rest were cache writes (1.25x) or uncached input.`,
+      );
     if (r.estimated) bits.push("Cost is estimated from recorded tokens and the configured model price.");
     if (r.sessions != null)
       bits.push(`${r.sessions} work episode${r.sessions === 1 ? "" : "s"} contributed to this lane.`);
@@ -24582,7 +24677,12 @@ window.__WBReactRender = function () {
     if (r.label === "Local" && r.savingsAmount) {
       costText = `<span class="cost-savings">${esc(fmtCostMaybe(r.savingsAmount))}</span>`;
     }
-    return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}<span class="session-summary">${r.sessions || 0} work episode${r.sessions === 1 ? "" : "s"}</span></span><span data-label="Tokens">${r.tokens == null ? "—" : fmtTokens(r.tokens)}</span><span data-label="Cache">${r.cache == null ? "—" : fmtTokens(r.cache)}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
+    const hit = laneCacheHitRate(r);
+    const cacheText =
+      r.cache == null
+        ? "—"
+        : `${fmtTokens(r.cache)}${hit == null ? "" : `<span class="session-summary">${Math.round(hit * 100)}% hit</span>`}`;
+    return `<div class="usage-table-row"><span data-label="Lane">${brandLabel(r.label)}<span class="session-summary">${r.sessions || 0} work episode${r.sessions === 1 ? "" : "s"}</span></span><span data-label="Tokens">${r.tokens == null ? "—" : fmtTokens(r.tokens)}</span><span data-label="Cache">${cacheText}</span><span data-label="Requests">${r.requests == null ? "—" : r.requests}</span><span data-label="Cost">${info ? `<button type="button" class="cost-link" data-lane-info="${i}" aria-label="Show ${esc(r.label)} lane details">${costText}</button>` : `<span class="cost-inline">${costText}</span>`}</span></div>`; }).join("")}</div></div>`;
   }
   function projectBreakdown(rows) {
     const map = new Map();
