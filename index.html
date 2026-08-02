@@ -2635,6 +2635,7 @@ button.metric-card:hover {
   color: var(--text);
 }
 .brand-label.local,
+.brand-label.opencode,
 .brand-label.cursor {
   color: var(--text);
 }
@@ -2686,6 +2687,12 @@ button.metric-card:hover {
   background: var(--positive-soft);
   border-color: var(--border-subtle);
   color: var(--positive);
+}
+/* Third harness. No vendor asset to inline, so it reads as a neutral chip —
+   distinct from Claude Code and Cursor without inventing a logo. */
+.brand-icon.opencode {
+  background: var(--muted-surface);
+  border-color: var(--text-3);
 }
 .brand-icon.local img {
   width: 12px;
@@ -14795,7 +14802,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.25";
+  const WB_VERSION = "2026-08-02.27";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14875,6 +14882,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     )
       return "vscode";
     if (v.includes("cursor")) return "cursor";
+    // Before the model tests below: opencode runs on Anthropic and Azure
+    // models, so matching on the model name would file every opencode session
+    // under whichever provider it happened to use that turn.
+    if (v.includes("opencode")) return "opencode";
     if (isLocalLabel(v)) return "local";
     if (v.includes("codex") || v.includes("openai") || v.includes("gpt"))
       return "openai";
@@ -14901,6 +14912,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   function normalizeHarness(v) {
     v = String(v || "claude-code").toLowerCase();
+    if (v.includes("opencode")) return "opencode";
     if (v.includes("claude")) return "Claude Code";
     if (v.includes("cursor")) return "Cursor";
     if (v.includes("codex")) return "Codex";
@@ -14920,6 +14932,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     )
       return "VS Code";
     if (v.includes("cursor")) return "Cursor";
+    // opencode is its own host as well as its own harness — it is a TUI, not
+    // something running inside an editor, so it must not fall through to the
+    // "Claude Code means VS Code" default below.
+    if (v.includes("opencode")) return "opencode";
     if (v.includes("jetbrains")) return "JetBrains";
     if (v.includes("terminal") || v.includes("cli")) return "Terminal";
     return normalizeIde(r.ide) === "Claude Code"
@@ -23102,6 +23118,7 @@ window.__WBReactRender = function () {
   function normalizeIde(v) {
     v = String(v || "claude").toLowerCase();
     if (v.includes("cursor")) return "Cursor";
+    if (v.includes("opencode")) return "opencode";
     if (v.includes("claude")) return "Claude Code";
     if (v.includes("codex")) return "Codex";
     return v ? v.replace(/\b\w/g, (c) => c.toUpperCase()) : "Unknown";
