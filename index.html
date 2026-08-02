@@ -14837,7 +14837,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.37";
+  const WB_VERSION = "2026-08-02.38";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23387,30 +23387,44 @@ window.__WBReactRender = function () {
   // seat costs the same whether it runs one session or a thousand, so the only
   // defensible per-session figure is its share of the month's tracked plan
   // tokens: the shares sum to the fee and never exceed what was paid.
-  function planShareMap(rows) {
-    const start = monthStart();
+  function planShareMap(rows, allRows) {
+    // Per calendar month, and always against the full store rather than the
+    // display window: only the current month used to get a fee at all, and a
+    // narrow window like "today" handed its few sessions the entire monthly fee.
+    const monthKey = (ms) => {
+      const d = new Date(ms);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    };
+    const current = monthKey(Date.now());
+    const wanted = new Set(rows || []);
     const byAccount = new Map();
-    for (const r of rows || []) {
+    for (const r of allRows || rows || []) {
       if (costBasis(r) !== "subscription") continue;
-      if (Number(r.started || r.ended || 0) < start) continue;
+      const stamp = Number(r.started || r.ended || 0);
+      if (!stamp) continue;
       const tokens = cacheInclusiveTokens(r);
       if (tokens <= 0) continue;
-      const slug = r.accountSlug || "unattributed";
+      const slug = `${r.accountSlug || "unattributed"}\u0000${monthKey(stamp)}`;
       if (!byAccount.has(slug)) byAccount.set(slug, []);
       byAccount.get(slug).push([r, tokens]);
     }
     const shares = new Map();
-    for (const [slug, entries] of byAccount) {
-      // Fee plus any extra usage already billed: a fixed-fee seat still
-      // charges real money once its windows run out, and that overage is
-      // account-level, so it amortizes the same way the fee does.
-      const wallet = state.usageByAccount?.accounts?.[slug]?.extraUsage;
-      const overage = Math.max(0, Number(wallet?.spend || 0));
-      const price = Number(accountBilling(slug).monthlyPrice || 0) + overage;
+    for (const [key, entries] of byAccount) {
+      const [slug, month] = key.split("\u0000");
+      let price = Number(accountBilling(slug).monthlyPrice || 0);
+      if (month === current) {
+        // A fixed-fee seat still bills extra usage once its windows run out.
+        // The wallet reports a live balance, not history, so only the current
+        // month can carry it.
+        const wallet = state.usageByAccount?.accounts?.[slug]?.extraUsage;
+        price += Math.max(0, Number(wallet?.spend || 0));
+      }
       if (price <= 0) continue; // no configured fee allocates nothing
       const total = entries.reduce((a, [, t]) => a + t, 0);
       if (total <= 0) continue;
-      for (const [r, tokens] of entries) shares.set(r, (price * tokens) / total);
+      for (const [r, tokens] of entries) {
+        if (wanted.has(r)) shares.set(r, (price * tokens) / total);
+      }
     }
     return shares;
   }
@@ -23436,8 +23450,8 @@ window.__WBReactRender = function () {
       : "";
     return `<h3>Cost</h3><div class="usage-big">${esc(fmtCostMaybe(c.cost ?? c.total))}</div><div class="cost-measures">${parts.join("")}</div>${subline ? `<p class="muted">${esc(subline)}</p>` : ""}${note}`;
   }
-  function costTriple(rows) {
-    const shares = planShareMap(rows);
+  function costTriple(rows, allRows) {
+    const shares = planShareMap(rows, allRows);
     let billed = 0,
       plan = 0,
       saved = 0,
