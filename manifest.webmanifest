@@ -1,0 +1,12 @@
+{
+  "name": "Workbench",
+  "short_name": "Workbench",
+  "description": "Jared's workbench dashboard.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#faf9f8",
+  "theme_color": "#faf9f8",
+  "icons": []
+}
