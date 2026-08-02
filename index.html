@@ -12904,11 +12904,91 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return session?.provider_token || "";
   }
 
-  function signIn(redirectTo) {
-    const target = redirectTo || location.origin + location.pathname;
+  const VERIFIER_KEY = "workbench-sb-pkce-verifier";
+  let lastError = "";
+
+  function lastAuthError() {
+    return lastError;
+  }
+
+  /* Supabase matches redirect_to against an allowlist literally, so
+     "/workbench-mobile/index.html" is a different entry from
+     "/workbench-mobile/". Always hand back the directory form. */
+  function canonicalRedirect() {
+    return (
+      location.origin + location.pathname.replace(/index\.html?$/i, "")
+    );
+  }
+
+  function b64url(bytes) {
+    let bin = "";
+    for (const b of new Uint8Array(bytes)) bin += String.fromCharCode(b);
+    return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  async function signIn(redirectTo) {
+    const target = redirectTo || canonicalRedirect();
+    let extra = "";
+    try {
+      // PKCE. Without a challenge GoTrue answers with implicit hash tokens;
+      // with one it answers with ?code=. Pick PKCE explicitly so the return
+      // shape is deterministic instead of depending on server defaults.
+      const verifier = b64url(crypto.getRandomValues(new Uint8Array(64)));
+      sessionStorage.setItem(VERIFIER_KEY, verifier);
+      localStorage.setItem(VERIFIER_KEY, verifier);
+      const digest = await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(verifier),
+      );
+      extra =
+        `&code_challenge=${encodeURIComponent(b64url(digest))}` +
+        "&code_challenge_method=s256";
+    } catch {
+      // No WebCrypto (very old browser): fall back to the implicit flow.
+      extra = "";
+    }
     location.href =
       `${CONFIG.url}/auth/v1/authorize?provider=github&redirect_to=` +
-      encodeURIComponent(target);
+      encodeURIComponent(target) +
+      extra;
+  }
+
+  async function exchangeCode(code) {
+    const verifier =
+      sessionStorage.getItem(VERIFIER_KEY) || localStorage.getItem(VERIFIER_KEY) || "";
+    if (!verifier) {
+      lastError = "Sign-in could not be completed on this device (missing PKCE verifier).";
+      return false;
+    }
+    try {
+      const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=pkce`, {
+        method: "POST",
+        headers: { apikey: CONFIG.anonKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ auth_code: code, code_verifier: verifier }),
+      });
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j?.access_token) {
+        lastError = j?.error_description || j?.msg || `Token exchange failed (${res.status}).`;
+        return false;
+      }
+      sessionStorage.removeItem(VERIFIER_KEY);
+      localStorage.removeItem(VERIFIER_KEY);
+      save({
+        access_token: j.access_token,
+        refresh_token: j.refresh_token || "",
+        provider_token: j.provider_token || "",
+        provider_refresh_token: j.provider_refresh_token || "",
+        expires_at: Date.now() + Number(j.expires_in || 3600) * 1000,
+      });
+      if (!j.provider_token) {
+        lastError = "Signed in, but GitHub did not return an access token.";
+        return false;
+      }
+      return true;
+    } catch (e) {
+      lastError = e?.message || "Token exchange failed.";
+      return false;
+    }
   }
 
   function signOut() {
@@ -12918,18 +12998,33 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   /* Consume the fragment Supabase appends on return from GitHub.
      Returns true when a session was captured, so the caller knows to re-boot
      rather than show the landing screen. */
-  function consumeRedirect() {
-    if (!location.hash || location.hash.length < 2) return false;
-    const p = new URLSearchParams(location.hash.slice(1));
-    const access = p.get("access_token");
-    const provider = p.get("provider_token");
-    if (!access) {
-      if (p.get("error")) {
-        console.warn("supabase auth error:", p.get("error_description") || p.get("error"));
-        history.replaceState(null, "", location.pathname + location.search);
-      }
+  async function consumeRedirect() {
+    const query = new URLSearchParams(location.search);
+    const hash = new URLSearchParams(
+      location.hash.startsWith("#") ? location.hash.slice(1) : "",
+    );
+
+    // Errors arrive in either place depending on how far the flow got.
+    const err = query.get("error") || hash.get("error");
+    if (err) {
+      lastError =
+        query.get("error_description") || hash.get("error_description") || err;
+      history.replaceState(null, "", location.pathname);
       return false;
     }
+
+    // PKCE return.
+    const code = query.get("code");
+    if (code) {
+      const ok = await exchangeCode(code);
+      history.replaceState(null, "", location.pathname);
+      return ok;
+    }
+
+    const p = hash;
+    const access = p.get("access_token");
+    const provider = p.get("provider_token");
+    if (!access) return false;
     const expiresIn = Number(p.get("expires_in") || 3600);
     save({
       access_token: access,
@@ -12942,7 +13037,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     });
     // Strip the tokens out of the address bar so they never reach history,
     // a bookmark, or a screenshot.
-    history.replaceState(null, "", location.pathname + location.search);
+    history.replaceState(null, "", location.pathname);
+    if (!provider) {
+      lastError = "Signed in, but GitHub did not return an access token.";
+      return false;
+    }
     return true;
   }
 
@@ -12996,6 +13095,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   window.WBSupabaseAuth = {
     configured,
+    lastAuthError,
     signedIn,
     githubToken,
     signIn,
@@ -14688,7 +14788,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-01.27";
+  const WB_VERSION = "2026-08-01.28";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -26644,7 +26744,7 @@ window.__WBReactRender = function () {
     bindShell();
     const Auth = window.WBSupabaseAuth;
     // Returning from GitHub: swallow the fragment before anything renders.
-    const justSignedIn = Auth?.consumeRedirect?.() || false;
+    const justSignedIn = Auth ? await Auth.consumeRedirect() : false;
     if (Auth?.signedIn?.()) await Auth.ensureFresh();
 
     let cfg = await ghLoadConfig();
@@ -26655,7 +26755,7 @@ window.__WBReactRender = function () {
       ghSaveConfig(cfg);
     }
     if (cfg && (Auth?.signedIn?.() || ghToken())) autoGithub(cfg);
-    else showLanding(justSignedIn ? "Sign-in did not return a GitHub token. Try again." : undefined);
+    else showLanding(Auth?.lastAuthError?.() || (justSignedIn ? "Sign-in did not complete. Try again." : undefined));
   })();
 })();
 
