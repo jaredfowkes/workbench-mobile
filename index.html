@@ -14788,7 +14788,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-01.28";
+  const WB_VERSION = "2026-08-01.29";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15617,11 +15617,12 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     try {
       if (LiveApi?.enabled?.()) {
         await loadLiveActions();
-      } else if (state.backend === "github") {
-        await ghGetTree(forceTree);
-        await loadLiveActions({ fresh: forceTree });
       } else {
-        await loadLiveActions();
+        // Deliberately does NOT refresh the repo tree. These files change while
+        // sessions run, so they are listed directly from their own directories
+        // (a couple of small calls) rather than by re-pulling a whole-repo
+        // listing on every poll.
+        await loadLiveActions({ fresh: forceTree });
       }
       if (state.connected) render();
       syncLiveActionPollTimer();
@@ -15633,18 +15634,44 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return refreshLiveActions(forceTree);
   }
   async function walkWorkbenchLiveActionPaths(onPath) {
-    const re = /^Tools\/workbench-live\/(requests|results)\/[^/]+\/[^/]+\.json$/;
-    if (state.backend === "github") {
-      let tree = [];
-      try {
-        tree = await ghGetTree();
-      } catch {
-        return;
+    // Live request/result files are written by other machines between builds,
+    // so they are the one thing the build index cannot describe. List their
+    // directories on demand -- 1 + N small calls -- instead of refetching the
+    // whole repo tree, which is what this used to cost on every poll.
+    const roots = [
+      "Tools/workbench-live/requests",
+      "Tools/workbench-live/results",
+    ];
+    for (const root of roots) {
+      const entries = await ghListDir(root);
+      for (const entry of entries) {
+        if (entry.type === "file" && entry.name.endsWith(".json")) {
+          await onPath(entry.path);
+        } else if (entry.type === "dir") {
+          for (const child of await ghListDir(entry.path)) {
+            if (child.type === "file" && child.name.endsWith(".json")) {
+              await onPath(child.path);
+            }
+          }
+        }
       }
-      for (const path of tree.filter((p) => re.test(p))) await onPath(path);
-      return;
     }
   }
+  /** Directory listing via the Contents API. [] when absent or unreachable. */
+  async function ghListDir(path) {
+    try {
+      const cfg = ghConfig();
+      const res = await ghFetch(
+        `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
+      );
+      if (!res.ok) return [];
+      const body = await res.json();
+      return Array.isArray(body) ? body : [];
+    } catch {
+      return [];
+    }
+  }
+
   async function loadLiveActions(opts = {}) {
     const fresh = !!opts.fresh;
     const rowsById = new Map();
