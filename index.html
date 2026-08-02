@@ -2534,6 +2534,11 @@ button.metric-card:hover {
 .usage-table-row:last-child:not(.head) {
   border-bottom: 0;
 }
+/* Six columns: project, tokens, lane, then the three cost measures kept
+   visually separate so billed and saved are never read as one number. */
+.project-cost-table .usage-table-row {
+  grid-template-columns: 1.4fr 0.7fr 0.9fr 0.8fr 0.8fr 0.8fr;
+}
 .recent-sessions-table .usage-table-row {
   grid-template-columns: 1.2fr 0.75fr 1fr 1fr 1fr 1fr 1fr 0.7fr 0.6fr 0.7fr;
 }
@@ -2625,6 +2630,36 @@ button.metric-card:hover {
   color: var(--text-2);
   font-weight: 500;
   font-variant-numeric: tabular-nums;
+}
+/* The seat fee actually paid, amortized — real money, so it reads like it. */
+.cost-plan-share {
+  display: block;
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cost-measures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 10px 0 6px;
+}
+.cost-measure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 92px;
+}
+.cost-measure-label {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.cost-measure-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.cost-measure.saved .cost-measure-value {
+  color: var(--positive-deep);
 }
 .brand-label {
   display: inline-flex;
@@ -14802,7 +14837,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.27";
+  const WB_VERSION = "2026-08-02.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16772,6 +16807,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
+      loadJson("Tools/Usage/anthropic-accounts.json", {
+        source: "hydrate.anthropic-accounts",
+        label: "Claude account billing terms",
+      }).then((v) => {
+        // Billing mode per seat — what makes the Anthropic lane split into
+        // metered (Disney, usage-based) and subscription (personal Max).
+        state.anthropicAccounts = loadJsonValue(v, "hydrate.anthropic-accounts", {
+          label: "Claude account billing terms",
+          path: "Tools/Usage/anthropic-accounts.json",
+        });
+      }),
       loadJson("Tools/Usage/usage-by-account.json", {
         source: "hydrate.usage-by-account",
         label: "Claude accounts snapshot",
@@ -17679,12 +17725,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const names = new Set([p.dirName, p.data.project].filter(Boolean).map((name) => String(name).toLowerCase()));
     const refined = (state.azureCostCalibration?.projects || []).find((item) => names.has(String(item?.project || "").toLowerCase()));
     const nonCcr = rows.filter((row) => normalizeBackend(row.backend) !== "CCR");
-    const nonCcrCost = costSum(nonCcr);
+    const triple = costTriple(rows);
+    // Azure's reconciled actuals replace the CCR estimate when available; the
+    // rest of the billed figure keeps its own basis.
+    const billed =
+      refined?.cost != null
+        ? Number(refined.cost) + costTriple(nonCcr).billed
+        : triple.billed;
     return {
       rows,
-      cost: refined?.cost != null
-        ? Number(refined.cost) + Number(nonCcrCost || 0)
-        : costSum(rows),
+      // Billed and plan share are both real money and may be summed. `saved`
+      // never joins them — avoided cost is not incurred cost.
+      billed,
+      planShare: triple.planShare,
+      saved: triple.saved,
+      notional: triple.notional,
+      cost: billed + triple.planShare,
       tokens: rows.reduce((sum, row) => sum + cacheInclusiveTokens(row), 0),
       sessions: new Set(rows.map(workEpisodeIdentity)).size,
     };
@@ -18508,7 +18564,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const c = counts(p), cost = projectCostSummary(p), related = projectRelatedKB(p);
     const activeRows = taskRows(p).filter((r) => !isClosedStatus(r.it.status));
     const timeline = (p.log || []).slice().reverse().slice(0, 6);
-    return `<section class="page reveal project-room"><button class="btn tertiary" data-view="projects">Back to projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><div class="kicker">Project room · ${esc(p.section)}</div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip ${c.blocked ? "bad" : "ok"}">${c.blocked} blocked</span><span class="chip">${esc(priorityLabel(projectPriority(p)))}</span>${projectTargetDate(p) ? `<span class="chip">${esc(dueLabel(projectTargetDate(p)))}</span>` : ""}${checkoutChipHTML(p)}</div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div><div class="dossier-grid"><section class="card resume-panel"><div class="kicker">Resume</div><h3>${esc(p.data.whatsNext?.text || p.nextSteps?.[0] || "No recorded next step")}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps?.[0] || `Continue ${p.data.project}` }))}">Copy prompt</button></div></section><section class="card meta-panel"><h3>Priority and target</h3><div class="form-two"><label class="form-row"><span class="tiny">Priority</span><select data-proj-priority><option value="">Unprioritized</option>${["P0", "P1", "P2", "P3"].map((v) => `<option value="${v}"${priorityLabel(projectPriority(p)) === v ? " selected" : ""}>${v}</option>`).join("")}</select></label><label class="form-row"><span class="tiny">Target date</span><input class="input" type="date" data-proj-target value="${esc(projectTargetDate(p))}"></label></div><button class="btn" data-save-project-meta>Save metadata</button></section><section class="card artifact-panel"><div class="cardhead"><h3>Visual and docs band</h3></div><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div><div class="docs" id="docsList" style="margin-top:12px"><span class="skeleton" style="width:110px;height:26px"></span></div></section><section class="card"><h3>Session and cost summary</h3><p class="usage-big">${esc(fmtCostMaybe(cost.cost))}</p><p class="muted">${cost.sessions} session${cost.sessions === 1 ? "" : "s"} · ${esc(fmtTokens(cost.tokens || 0))} tokens in the selected usage window.</p></section></div><div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks..." data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task..."><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group...</option></select></div></div></div><aside class="grid"><div class="card"><h3>Actionability</h3><p class="muted">${activeRows.length} open rows, ${c.blocked} blocked, ${c.doing} in flight.</p></div><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>Related knowledge</h3><div class="refined-list">${related.map((e) => `<button class="refined-row" data-open-entry="${esc(e.section + "/" + e.sub + "/" + e.fileName)}"><span><span class="refined-title">${esc(e.title)}</span><span class="refined-sub">${esc(e.sub)} · ${esc(e.summary || "")}</span></span></button>`).join("") || '<div class="empty-state">No direct KB links found.</div>'}</div></div><div class="card"><h3>Timeline</h3><div class="refined-list">${timeline.map((l) => `<div class="refined-row"><span><span class="refined-title">${esc(l.text)}</span><span class="refined-sub">${esc(l.ts)}</span></span></div>`).join("") || '<div class="empty-state">No log entries yet.</div>'}</div></div><div class="card"><h3>File drawer</h3><p class="muted tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">deliverables</span><span class="chip">working files</span><span class="chip">screenshots</span><span class="chip">archive</span></div></div></aside></div></section>`;
+    return `<section class="page reveal project-room"><button class="btn tertiary" data-view="projects">Back to projects</button><div class="project-header card"><div class="project-cover" data-cover-for="${esc(p.dirName)}"></div><div><div class="kicker">Project room · ${esc(p.section)}</div><h1>${esc(p.data.project)}</h1><p class="lede">${esc(p.data.tagline || "")}</p><div class="row-meta"><span class="chip">${c.open} open</span><span class="chip">${c.done} done</span><span class="chip ${c.blocked ? "bad" : "ok"}">${c.blocked} blocked</span><span class="chip">${esc(priorityLabel(projectPriority(p)))}</span>${projectTargetDate(p) ? `<span class="chip">${esc(dueLabel(projectTargetDate(p)))}</span>` : ""}${checkoutChipHTML(p)}</div></div><div class="action-tools"><button class="btn" data-project-prompt>Copy agent prompt</button>${state.helperUp ? '<button class="btn" data-open-folder>Open folder</button>' : ""}</div></div><div>${progress(c)}</div><div class="dossier-grid"><section class="card resume-panel"><div class="kicker">Resume</div><h3>${esc(p.data.whatsNext?.text || p.nextSteps?.[0] || "No recorded next step")}</h3>${p.data.whatsNext?.leftOff ? `<p class="muted">Left off: ${esc(p.data.whatsNext.leftOff)}</p>` : ""}<div class="action-tools"><button class="btn" data-copy-text="${esc(p.data.whatsNext?.text ? actionPrompt({ p, kind: "wnext", text: p.data.whatsNext.text, wn: p.data.whatsNext }) : actionPrompt({ p, text: p.nextSteps?.[0] || `Continue ${p.data.project}` }))}">Copy prompt</button></div></section><section class="card meta-panel"><h3>Priority and target</h3><div class="form-two"><label class="form-row"><span class="tiny">Priority</span><select data-proj-priority><option value="">Unprioritized</option>${["P0", "P1", "P2", "P3"].map((v) => `<option value="${v}"${priorityLabel(projectPriority(p)) === v ? " selected" : ""}>${v}</option>`).join("")}</select></label><label class="form-row"><span class="tiny">Target date</span><input class="input" type="date" data-proj-target value="${esc(projectTargetDate(p))}"></label></div><button class="btn" data-save-project-meta>Save metadata</button></section><section class="card artifact-panel"><div class="cardhead"><h3>Visual and docs band</h3></div><div class="shots" id="shotsList"><span class="shot skeleton"></span><span class="shot skeleton"></span></div><div class="docs" id="docsList" style="margin-top:12px"><span class="skeleton" style="width:110px;height:26px"></span></div></section><section class="card">${costTripleHTML(cost, `${cost.sessions} session${cost.sessions === 1 ? "" : "s"} · ${fmtTokens(cost.tokens || 0)} tokens in the selected usage window.`)}</section></div><div class="task-layout"><div class="grid"><div class="toolbar"><div class="task-filter-inline"><div class="seg">${["open", "todo", "doing", "blocked", "done", "idea", "all"].map((f) => `<button class="${state.pfilter === f ? "active" : ""}" data-pfilter="${f}">${f}</button>`).join("")}</div><select data-pgroup>${[["category", "Group by category"], ["status", "Group by status"], ["flat", "Flat"]].map(([v, l]) => `<option value="${v}"${state.pgroup === v ? " selected" : ""}>${l}</option>`).join("")}</select></div><button class="btn filter-sheet-btn" data-open-filters>Filters · ${esc(state.pfilter)}</button><input class="input" placeholder="Filter tasks..." data-task-search value="${esc(state.ptaskq)}"></div><div id="taskList">${taskListHTML(p)}</div><div class="card"><div class="form-two"><input class="input" data-add-task placeholder="Add a task..."><select data-add-group>${(p.data.groups || []).map((g) => `<option>${esc(g.name)}</option>`).join("")}<option value="__new">New group...</option></select></div></div></div><aside class="grid"><div class="card"><h3>Actionability</h3><p class="muted">${activeRows.length} open rows, ${c.blocked} blocked, ${c.doing} in flight.</p></div><div class="card"><h3>Status</h3>${digestHTML(p.statusFM, p.statusText, "status")}</div><div class="card"><h3>Related knowledge</h3><div class="refined-list">${related.map((e) => `<button class="refined-row" data-open-entry="${esc(e.section + "/" + e.sub + "/" + e.fileName)}"><span><span class="refined-title">${esc(e.title)}</span><span class="refined-sub">${esc(e.sub)} · ${esc(e.summary || "")}</span></span></button>`).join("") || '<div class="empty-state">No direct KB links found.</div>'}</div></div><div class="card"><h3>Timeline</h3><div class="refined-list">${timeline.map((l) => `<div class="refined-row"><span><span class="refined-title">${esc(l.text)}</span><span class="refined-sub">${esc(l.ts)}</span></span></div>`).join("") || '<div class="empty-state">No log entries yet.</div>'}</div></div><div class="card"><h3>File drawer</h3><p class="muted tiny">${esc(projectBase(p))}</p><div class="row-meta"><span class="chip">deliverables</span><span class="chip">working files</span><span class="chip">screenshots</span><span class="chip">archive</span></div></div></aside></div></section>`;
   }
 
   function digestHTML(fm = {}, text = "", kind) {
@@ -23068,10 +23124,13 @@ window.__WBReactRender = function () {
   // A session ran on-device (free) if the beacon tagged its backend "local" OR
   // its model id is an on-device MLX model - the second case also reclassifies
   // rows an older beacon mislabeled as "anthropic" before local detection.
+  // Mirror of usage_cost.FREE_BACKENDS. The free lane is no longer only
+  // OpenRouter: opencode's hosted service bills nothing either, and leaving it
+  // out silently dropped its savings from every total.
+  const FREE_BACKENDS = ["openrouter-free", "opencode-zen"];
   function isFreeLaneRow(r) {
-    return String(r.backend || "")
-      .toLowerCase()
-      .includes("openrouter-free");
+    const backend = String(r.backend || "").toLowerCase();
+    return FREE_BACKENDS.some((free) => backend.includes(free));
   }
   function isLocalRow(r) {
     // Free-lane rows are tested first on purpose: several free OpenRouter model
@@ -23199,13 +23258,131 @@ window.__WBReactRender = function () {
   // windows rather than dollars, so a per-token figure on those rows is
   // API-list-price equivalent, not spend. Metered lanes (CCR/Azure, Azure
   // Claude, paid OpenRouter, API keys) do bill per token.
+  function accountBilling(slug) {
+    if (!slug) return {};
+    const accounts = state.anthropicAccounts?.accounts || {};
+    for (const entry of Object.values(accounts)) {
+      if (entry?.slug === slug) return entry.billing || {};
+    }
+    return {};
+  }
   function costBasis(r) {
     if (isLocalRow(r) || isFreeLaneRow(r)) return "free";
+    // The Anthropic lane splits by account, not backend: the Disney seat is
+    // usage-based (real dollars, $2k cap) while the personal Max seat is a
+    // fixed $200/month. Rows predating account tagging stay "subscription" —
+    // guessing "metered" would invent billed dollars no invoice will show.
+    if (normalizeBackend(r?.backend) === "Anthropic") {
+      const mode = accountBilling(r?.accountSlug).mode;
+      return ["subscription", "metered", "free"].includes(mode)
+        ? mode
+        : "subscription";
+    }
     const explicit = String(r?.costBasis || "").toLowerCase();
     if (["subscription", "metered", "free"].includes(explicit)) return explicit;
-    return normalizeBackend(r?.backend) === "Anthropic"
-      ? "subscription"
-      : "metered";
+    return "metered";
+  }
+  // Mirror of usage_cost.MEASURED_COST_SOURCES — a provider actually charged,
+  // as opposed to a rate-card estimate.
+  const MEASURED_COST_SOURCES = [
+    "openrouter-online-surcharge-estimate",
+    "openrouter-usage-delta",
+    "provider-actual",
+    "actual-billing",
+  ];
+  function billedCost(r) {
+    const basis = costBasis(r);
+    const source = String(r?.costSource || "").toLowerCase();
+    // A provider reporting its own charge outranks every inference below, and
+    // keeps an unrecognized lane from being priced off the rate card.
+    if (source === "provider-actual" || source === "actual-billing")
+      return Number(r?.cost || 0);
+    if (basis === "metered") return Number(sessionCost(r) || 0);
+    if (basis === "free") {
+      const source = String(r?.costSource || "").toLowerCase();
+      const recorded = Number(r?.surchargeCost ?? r?.cost ?? 0);
+      // A free model can still bill: OpenRouter charges $0.005 for a
+      // server-side web search.
+      if (recorded > 0 && MEASURED_COST_SOURCES.some((s) => source.includes(s)))
+        return recorded;
+    }
+    return 0;
+  }
+  function notionalCost(r) {
+    return costBasis(r) === "subscription" ? sessionCost(r) : null;
+  }
+  function savedCost(r) {
+    if (isLocalRow(r)) return localSavedCost(r);
+    if (isFreeLaneRow(r)) return freeLaneSavedCost(r);
+    return null;
+  }
+  // Amortize each fixed subscription fee across its own rows this month. A
+  // seat costs the same whether it runs one session or a thousand, so the only
+  // defensible per-session figure is its share of the month's tracked plan
+  // tokens: the shares sum to the fee and never exceed what was paid.
+  function planShareMap(rows) {
+    const start = monthStart();
+    const byAccount = new Map();
+    for (const r of rows || []) {
+      if (costBasis(r) !== "subscription") continue;
+      if (Number(r.started || r.ended || 0) < start) continue;
+      const tokens = cacheInclusiveTokens(r);
+      if (tokens <= 0) continue;
+      const slug = r.accountSlug || "unattributed";
+      if (!byAccount.has(slug)) byAccount.set(slug, []);
+      byAccount.get(slug).push([r, tokens]);
+    }
+    const shares = new Map();
+    for (const [slug, entries] of byAccount) {
+      const price = Number(accountBilling(slug).monthlyPrice || 0);
+      if (price <= 0) continue; // no configured fee allocates nothing
+      const total = entries.reduce((a, [, t]) => a + t, 0);
+      if (total <= 0) continue;
+      for (const [r, tokens] of entries) shares.set(r, (price * tokens) / total);
+    }
+    return shares;
+  }
+  // One card, three measures. Billed and plan share are both real money and
+  // are added; saved sits apart because avoided cost is not incurred cost, and
+  // the notional equivalent is a comparison instrument that belongs in a
+  // tooltip rather than in any total.
+  function costTripleHTML(c, subline) {
+    const row = (label, value, cls, hint) =>
+      `<div class="cost-measure ${cls}" title="${esc(hint)}"><span class="cost-measure-label">${esc(label)}</span><span class="cost-measure-value">${esc(fmtCostMaybe(value))}</span></div>`;
+    const parts = [
+      row("Billed", c.billed, "billed",
+        "Real dollars on an invoice: Azure, Foundry, Cursor, paid OpenRouter, and the Disney Anthropic seat (usage-based)."),
+    ];
+    if (c.planShare)
+      parts.push(row("Plan share", c.planShare, "plan",
+        "This work's share of the fixed monthly subscription fee, allocated by share of tracked plan tokens this month. Runs slightly high because work outside the workbench is not counted."));
+    if (c.saved)
+      parts.push(row("Saved", c.saved, "saved",
+        "What free-lane work would have cost on a paid lane. Never added to spend."));
+    const note = c.notional
+      ? `<p class="tiny muted">Plan-seat tokens priced at API list rates would be ${esc(fmtCostMaybe(c.notional))} — a lane-comparison figure, not spend.</p>`
+      : "";
+    return `<h3>Cost</h3><div class="usage-big">${esc(fmtCostMaybe(c.cost ?? c.total))}</div><div class="cost-measures">${parts.join("")}</div>${subline ? `<p class="muted">${esc(subline)}</p>` : ""}${note}`;
+  }
+  function costTriple(rows) {
+    const shares = planShareMap(rows);
+    let billed = 0,
+      plan = 0,
+      saved = 0,
+      notional = 0;
+    for (const r of rows || []) {
+      billed += billedCost(r);
+      plan += shares.get(r) || 0;
+      saved += Number(savedCost(r) || 0);
+      notional += Number(notionalCost(r) || 0);
+    }
+    return {
+      billed,
+      planShare: plan,
+      saved,
+      notional,
+      total: billed + plan,
+    };
   }
   function isNotionalRow(r) {
     return costStateLabel(r) === "notional";
@@ -23953,8 +24130,13 @@ window.__WBReactRender = function () {
     if (c == null) return '<span class="muted">untracked</span>';
     // A plan seat charges nothing per token, so the figure is what this
     // session would have cost at API list price. Marked, and never bare.
-    if (isNotionalRow(r))
-      return `<span class="cost-notional" title="Plan seat — no per-token charge. API list-price equivalent, shown for lane comparison.">≈${esc(fmtCostMaybe(c))} plan</span>`;
+    if (isNotionalRow(r)) {
+      const share = state._planShares?.get(r);
+      const shareLabel = share
+        ? `<span class="cost-plan-share" title="This session's share of the fixed monthly fee, allocated by share of tracked plan tokens this month.">${esc(fmtCostMaybe(share))} plan share</span>`
+        : "";
+      return `${shareLabel}<span class="cost-notional" title="Plan seat — no per-token charge. API list-price equivalent, shown for lane comparison, never counted as spend.">≈${esc(fmtCostMaybe(c))}</span>`;
+    }
     const source = calibratedSessionCost(r)?.costSource || r.costSource;
     const est = source === "actual-billing" || source === "azure-actual-refined"
       ? " refined"
@@ -24298,6 +24480,9 @@ window.__WBReactRender = function () {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
+    // Shares are only meaningful against the whole month's plan usage, so they
+    // are computed once here rather than per row.
+    state._planShares = planShareMap(allRows);
     return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
@@ -24872,8 +25057,14 @@ window.__WBReactRender = function () {
       cur.active += Number(r.activeMs || durationMs(r));
       cur.fail += Number(r.toolFailCount || 0);
       {
-        const c = sessionCost(r);
-        if (c != null) cur.cost = (cur.cost || 0) + Number(c);
+        // Split rather than summed: adding a plan seat's notional dollars to
+        // Azure's invoice dollars is what made the old single column overstate
+        // total spend by a third.
+        cur.billed = (cur.billed || 0) + billedCost(r);
+        cur.saved = (cur.saved || 0) + Number(savedCost(r) || 0);
+        cur.notional = (cur.notional || 0) + Number(notionalCost(r) || 0);
+        cur.planRows = cur.planRows || [];
+        if (costBasis(r) === "subscription") cur.planRows.push(r);
       }
       const modelBuckets =
         normalizeBackend(r.backend) === "CCR" ? sessionModelBuckets(r) : [];
@@ -24892,9 +25083,13 @@ window.__WBReactRender = function () {
       }
       map.set(key, cur);
     }
+    // Plan share is computed against the whole row set so each project's slice
+    // is its share of the month's plan usage, not a share of itself.
+    const shares = planShareMap(uniqueSessionRows(rows));
     return [...map.values()]
       .map((r) => ({
         ...r,
+        planShare: (r.planRows || []).reduce((a, row) => a + (shares.get(row) || 0), 0),
         lane:
           [...r.lanes.entries()].sort((a, b) => b[1] - a[1]).length > 1
             ? "Mixed"
@@ -24905,7 +25100,7 @@ window.__WBReactRender = function () {
   }
   function projectBreakdownHTML(rows) {
     const list = projectBreakdown(rows);
-    return `<div class="usage-card"><h3>Spend and tokens by project</h3><div class="usage-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Requests</span><span>Lane</span><span>Cost</span></div>${list.map((r) => `<div class="usage-table-row"><span data-label="Project">${esc(r.cwd.split("/").filter(Boolean).pop() || r.cwd)}</span><span data-label="Tokens">${fmtTokens(r.tokens)}</span><span data-label="Requests">${r.requests}</span><span data-label="Lane">${brandLabel(r.lane || "Unknown")}</span><span data-label="Cost">${esc(fmtCostMaybe(r.cost))}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
+    return `<div class="usage-card"><h3>Cost and tokens by project</h3><p class="tiny muted">Billed and plan share are real money and add up. Saved is cost avoided and never joins them.</p><div class="usage-table project-cost-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Lane</span><span>Billed</span><span>Plan share</span><span>Saved</span></div>${list.map((r) => `<div class="usage-table-row"><span data-label="Project">${esc(r.cwd.split("/").filter(Boolean).pop() || r.cwd)}</span><span data-label="Tokens">${fmtTokens(r.tokens)}</span><span data-label="Lane">${brandLabel(r.lane || "Unknown")}</span><span data-label="Billed">${esc(fmtCostMaybe(r.billed || 0))}</span><span data-label="Plan share">${r.planShare ? esc(fmtCostMaybe(r.planShare)) : '<span class="muted">—</span>'}</span><span data-label="Saved">${r.saved ? `<span class="cost-savings">${esc(fmtCostMaybe(r.saved))}</span>` : '<span class="muted">—</span>'}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
   }
   function efficiencyTips(rows) {
     const tips = [];
