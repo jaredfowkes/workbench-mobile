@@ -14837,7 +14837,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.35";
+  const WB_VERSION = "2026-08-02.36";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23401,7 +23401,12 @@ window.__WBReactRender = function () {
     }
     const shares = new Map();
     for (const [slug, entries] of byAccount) {
-      const price = Number(accountBilling(slug).monthlyPrice || 0);
+      // Fee plus any extra usage already billed: a fixed-fee seat still
+      // charges real money once its windows run out, and that overage is
+      // account-level, so it amortizes the same way the fee does.
+      const wallet = state.usageByAccount?.accounts?.[slug]?.extraUsage;
+      const overage = Math.max(0, Number(wallet?.spend || 0));
+      const price = Number(accountBilling(slug).monthlyPrice || 0) + overage;
       if (price <= 0) continue; // no configured fee allocates nothing
       const total = entries.reduce((a, [, t]) => a + t, 0);
       if (total <= 0) continue;
