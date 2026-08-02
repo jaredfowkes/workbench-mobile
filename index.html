@@ -2638,6 +2638,70 @@ button.metric-card:hover {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+/* Per-lane project cost. Markdown cannot make a column primary; CSS can, so
+   Cost gets real weight, size and colour here rather than the position-only
+   emphasis the terminal digest has to settle for. */
+.cost-lanes {
+  display: flex;
+  flex-direction: column;
+  margin: 10px 0 4px;
+}
+.cost-lane {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.9fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.cost-lane.head {
+  font-size: 12px;
+  color: var(--text-2);
+  border-bottom-color: var(--text-3);
+}
+.cost-lane.total {
+  border-bottom: none;
+  border-top: 2px solid var(--text-3);
+  margin-top: 4px;
+  padding-top: 9px;
+  font-weight: 600;
+}
+.cost-lane-model {
+  color: var(--text-2);
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cost-lane-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+}
+.cost-lane-num.saved {
+  color: var(--positive-deep);
+}
+/* The primary figure: heavier, larger, full-contrast. */
+.cost-lane-num.cost {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 15px;
+}
+.cost-lane.head .cost-lane-num.cost {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+@media (max-width: 640px) {
+  .cost-lane {
+    grid-template-columns: 1.4fr 0.8fr 0.9fr;
+  }
+  .cost-lane-model,
+  .cost-lane .cost-lane-num:nth-child(3) {
+    display: none;
+  }
+}
 .cost-measures {
   display: flex;
   flex-wrap: wrap;
@@ -14837,7 +14901,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.42";
+  const WB_VERSION = "2026-08-02.44";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23432,23 +23496,49 @@ window.__WBReactRender = function () {
   // are added; saved sits apart because avoided cost is not incurred cost, and
   // the notional equivalent is a comparison instrument that belongs in a
   // tooltip rather than in any total.
+  // Per-lane cost for a project, same five columns as the wrap digest so the
+  // terminal and the dashboard read identically. The difference is emphasis:
+  // markdown cannot weight a column, CSS can, so Cost is genuinely primary here.
+  function projectLaneRows(rows) {
+    const shares = planShareMap(rows, (state.sessionMetrics?.sessions || []).filter(Boolean));
+    const lanes = new Map();
+    for (const r of rows || []) {
+      const basis = costBasis(r);
+      const lane =
+        normalizeBackend(r.backend) === "Anthropic" && r.accountSlug
+          ? `Anthropic ${r.accountSlug}${basis === "subscription" ? " (plan)" : ""}`
+          : backendLane(r);
+      const cur = lanes.get(lane) || { lane, model: sessionModelLabel(r), metered: 0, cost: 0 };
+      const cost = billedCost(r);
+      const metered =
+        basis === "subscription"
+          ? Number(notionalCost(r) || 0)
+          : basis === "free"
+            ? Number(savedCost(r) || 0)
+            : cost;
+      cur.metered += metered;
+      cur.cost += basis === "subscription" ? (shares.get(r) || 0) : cost;
+      lanes.set(lane, cur);
+    }
+    return [...lanes.values()]
+      .map((l) => ({ ...l, saved: Math.max(0, l.metered - l.cost) }))
+      .sort((a, b) => b.cost - a.cost || b.metered - a.metered);
+  }
   function costTripleHTML(c, subline) {
-    const row = (label, value, cls, hint) =>
-      `<div class="cost-measure ${cls}" title="${esc(hint)}"><span class="cost-measure-label">${esc(label)}</span><span class="cost-measure-value">${esc(fmtCostMaybe(value))}</span></div>`;
-    const parts = [
-      row("Billed", c.billed, "billed",
-        "Real dollars on an invoice: Azure, Foundry, Cursor, paid OpenRouter, and the Disney Anthropic seat (usage-based)."),
-    ];
-    if (c.planShare)
-      parts.push(row("Plan share", c.planShare, "plan",
-        "This work's share of the fixed monthly fee plus any overage, allocated by share of tracked plan tokens that month. Month-to-date figures settle as the month fills — early in a month a few sessions carry most of the fee. Runs slightly high because work outside the workbench is not counted."));
-    if (c.saved)
-      parts.push(row("Saved", c.saved, "saved",
-        "What free-lane work would have cost on a paid lane. Never added to spend."));
-    const note = c.notional
-      ? `<p class="tiny muted">Plan-seat tokens priced at API list rates would be ${esc(fmtCostMaybe(c.notional))} — a lane-comparison figure, not spend.</p>`
-      : "";
-    return `<h3>Cost</h3><div class="usage-big">${esc(fmtCostMaybe(c.cost ?? c.total))}</div><div class="cost-measures">${parts.join("")}</div>${subline ? `<p class="muted">${esc(subline)}</p>` : ""}${note}`;
+    const lanes = projectLaneRows(c.rows || []);
+    const money2 = (v) => "$" + Number(v || 0).toFixed(2);
+    const body = lanes
+      .map(
+        (l) =>
+          `<div class="cost-lane"><span class="cost-lane-name">${brandLabel(l.lane)}</span><span class="cost-lane-model">${esc(l.model || "")}</span><span class="cost-lane-num">${esc(money2(l.metered))}</span><span class="cost-lane-num saved">${l.saved > 0.005 ? esc(money2(l.saved)) : ""}</span><span class="cost-lane-num cost">${esc(money2(l.cost))}</span></div>`,
+      )
+      .join("");
+    const totals = lanes.reduce(
+      (a, l) => ({ metered: a.metered + l.metered, saved: a.saved + l.saved, cost: a.cost + l.cost }),
+      { metered: 0, saved: 0, cost: 0 },
+    );
+    const provisional = lanes.some((l) => l.lane.includes("(plan)"));
+    return `<h3>Cost</h3><div class="cost-lanes"><div class="cost-lane head"><span>Lane</span><span>Model</span><span class="cost-lane-num">Metered</span><span class="cost-lane-num">Saved</span><span class="cost-lane-num cost">Cost</span></div>${body || '<p class="muted">No tokenized sessions yet.</p>'}${lanes.length ? `<div class="cost-lane total"><span>Total</span><span></span><span class="cost-lane-num">${esc(money2(totals.metered))}</span><span class="cost-lane-num saved">${totals.saved > 0.005 ? esc(money2(totals.saved)) : ""}</span><span class="cost-lane-num cost">${esc(money2(totals.cost))}</span></div>` : ""}</div>${subline ? `<p class="muted">${esc(subline)}</p>` : ""}${provisional ? '<p class="tiny muted">Plan share settles when the month closes.</p>' : ""}`;
   }
   function costTriple(rows, allRows) {
     const shares = planShareMap(rows, allRows);
