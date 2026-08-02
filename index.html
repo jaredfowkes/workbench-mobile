@@ -3575,9 +3575,14 @@ button.metric-card:hover {
       <p class="lede" id="landingNote">Connect the private workbench repo to get started.</p>
       <div class="grid" style="margin-top:20px">
         <div class="card">
-          <h3>GitHub</h3>
-          <p class="muted">Use a fine-grained PAT for the private repo. The token stays in this browser and is mirrored to IndexedDB for home-screen reliability.</p>
-          <button class="btn primary" id="ghMode">Connect with GitHub</button>
+          <h3>Sign in with GitHub</h3>
+          <p class="muted">One sign-in per device, no token to paste. Access is scoped by the workbench GitHub App to repository contents only.</p>
+          <button class="btn primary" id="sbSignIn">Sign in with GitHub</button>
+        </div>
+        <div class="card">
+          <h3>Use a token instead</h3>
+          <p class="muted">Fallback for a device where sign-in will not work. Paste a fine-grained PAT; it stays in this browser.</p>
+          <button class="btn" id="ghMode">Connect with a token</button>
         </div>
       </div>
     </div>
@@ -12837,6 +12842,171 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   </script>
   <script>
+/* Supabase-backed GitHub sign-in for the dashboard.
+
+   Replaces the hand-pasted personal access token. The browser cannot complete
+   an OAuth exchange itself -- GitHub serves no CORS headers on
+   /login/oauth/access_token or /login/device/code, verified directly -- so
+   Supabase performs the exchange and hands back a session.
+
+   The credential we actually want is `provider_token`: the GitHub user-to-server
+   token. Because the provider is a GitHub *App* rather than an OAuth App, its
+   permissions come from the app installation (Contents + Metadata) rather than
+   from a classic `repo` scope, so this token cannot touch Actions, webhooks or
+   deploy keys. That is the whole reason for the App over an OAuth App.
+
+   Deliberately hand-rolled rather than vendoring supabase-js: the dashboard is a
+   single self-contained file under a hard gzipped-size budget, and this needs
+   four endpoints.
+*/
+(function () {
+  const CONFIG = {
+    url: "https://corwgghnonquxyajzpul.supabase.co",
+    // The anon key is a publishable identifier, not a secret -- it is designed
+    // to ship in client code and is useless without a session plus row-level
+    // security. The service_role key must never appear here.
+    anonKey:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvcndnZ2hub25xdXh5YWp6cHVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTAyNDgsImV4cCI6MjA5OTIyNjI0OH0.aZ7NlwaPVkP31c2qCf6sZD-lkkwSCrIErwJozq6g6kY",
+  };
+
+  const KEY = "workbench-sb-session";
+  // Refresh this far before expiry so a long-lived tab never makes a call with
+  // an access token that dies mid-flight.
+  const REFRESH_SKEW_MS = 60 * 1000;
+
+  let session = null;
+  try {
+    session = JSON.parse(localStorage.getItem(KEY) || "null");
+  } catch {
+    session = null;
+  }
+
+  function save(next) {
+    session = next;
+    try {
+      if (next) localStorage.setItem(KEY, JSON.stringify(next));
+      else localStorage.removeItem(KEY);
+    } catch {
+      // Private mode: the session stays in memory for this tab only.
+    }
+  }
+
+  function configured() {
+    return !!(CONFIG.url && CONFIG.anonKey);
+  }
+
+  function signedIn() {
+    return !!session?.provider_token;
+  }
+
+  /** The GitHub user-to-server token, or "" when not signed in. */
+  function githubToken() {
+    return session?.provider_token || "";
+  }
+
+  function signIn(redirectTo) {
+    const target = redirectTo || location.origin + location.pathname;
+    location.href =
+      `${CONFIG.url}/auth/v1/authorize?provider=github&redirect_to=` +
+      encodeURIComponent(target);
+  }
+
+  function signOut() {
+    save(null);
+  }
+
+  /* Consume the fragment Supabase appends on return from GitHub.
+     Returns true when a session was captured, so the caller knows to re-boot
+     rather than show the landing screen. */
+  function consumeRedirect() {
+    if (!location.hash || location.hash.length < 2) return false;
+    const p = new URLSearchParams(location.hash.slice(1));
+    const access = p.get("access_token");
+    const provider = p.get("provider_token");
+    if (!access) {
+      if (p.get("error")) {
+        console.warn("supabase auth error:", p.get("error_description") || p.get("error"));
+        history.replaceState(null, "", location.pathname + location.search);
+      }
+      return false;
+    }
+    const expiresIn = Number(p.get("expires_in") || 3600);
+    save({
+      access_token: access,
+      refresh_token: p.get("refresh_token") || "",
+      // Supabase returns provider_token only on the initial sign-in, never on a
+      // token refresh, so it has to be persisted here or it is lost.
+      provider_token: provider || "",
+      provider_refresh_token: p.get("provider_refresh_token") || "",
+      expires_at: Date.now() + expiresIn * 1000,
+    });
+    // Strip the tokens out of the address bar so they never reach history,
+    // a bookmark, or a screenshot.
+    history.replaceState(null, "", location.pathname + location.search);
+    return true;
+  }
+
+  /* Keep the Supabase session alive. Note this refreshes the *Supabase*
+     session, not the GitHub token: Supabase does not re-issue provider_token,
+     so an expired GitHub App token requires a fresh sign-in. Surfaced by
+     githubTokenLikelyExpired() rather than failing silently. */
+  async function ensureFresh() {
+    if (!session?.refresh_token) return signedIn();
+    if (Date.now() < (session.expires_at || 0) - REFRESH_SKEW_MS) return true;
+    try {
+      const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
+        method: "POST",
+        headers: {
+          apikey: CONFIG.anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ refresh_token: session.refresh_token }),
+      });
+      if (!res.ok) {
+        if (res.status === 400 || res.status === 401) save(null);
+        return false;
+      }
+      const j = await res.json();
+      save({
+        ...session,
+        access_token: j.access_token || session.access_token,
+        refresh_token: j.refresh_token || session.refresh_token,
+        expires_at: Date.now() + Number(j.expires_in || 3600) * 1000,
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function currentUser() {
+    if (!session?.access_token) return null;
+    try {
+      const res = await fetch(`${CONFIG.url}/auth/v1/user`, {
+        headers: {
+          apikey: CONFIG.anonKey,
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      return res.ok ? await res.json() : null;
+    } catch {
+      return null;
+    }
+  }
+
+  window.WBSupabaseAuth = {
+    configured,
+    signedIn,
+    githubToken,
+    signIn,
+    signOut,
+    consumeRedirect,
+    ensureFresh,
+    currentUser,
+  };
+})();
+
+
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -14518,7 +14688,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-01.26";
+  const WB_VERSION = "2026-08-01.27";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -14933,6 +15103,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     }
   }
   function ghToken() {
+    // Supabase sign-in wins when present: that token comes from the GitHub App
+    // and is scoped to Contents + Metadata, where a pasted classic PAT is not.
+    // The PAT path stays as a fallback so an existing device keeps working.
+    const viaSupabase = window.WBSupabaseAuth?.githubToken?.() || "";
+    if (viaSupabase) return viaSupabase;
     return localStorage.getItem(GH_TOKEN_KEY) || "";
   }
   function ghSaveConfig(cfg) {
@@ -14942,6 +15117,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     idb.set("gh-config", { ...safe, ...(pat ? { pat } : {}) }).catch(() => {});
   }
   function ghDisconnect() {
+    window.WBSupabaseAuth?.signOut?.();
     localStorage.removeItem(GH_CONFIG_KEY);
     localStorage.removeItem(GH_TOKEN_KEY);
     localStorage.removeItem(GH_TREE_KEY);
@@ -26254,6 +26430,13 @@ window.__WBReactRender = function () {
       if (e.target?.id === "landing") hideLanding();
     });
     $("#ghMode")?.addEventListener("click", openGithubConnect);
+    $("#sbSignIn")?.addEventListener("click", () => {
+      if (!window.WBSupabaseAuth?.configured?.()) {
+        toast("Supabase sign-in is not configured in this build.", "danger");
+        return;
+      }
+      window.WBSupabaseAuth.signIn();
+    });
     $("#themeBtn")?.addEventListener("click", () => {
       document.documentElement.dataset.theme =
         document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -26459,9 +26642,20 @@ window.__WBReactRender = function () {
     document.documentElement.dataset.theme =
       localStorage.getItem("wb-theme") || "light";
     bindShell();
-    const cfg = await ghLoadConfig();
-    if (cfg) autoGithub(cfg);
-    else showLanding();
+    const Auth = window.WBSupabaseAuth;
+    // Returning from GitHub: swallow the fragment before anything renders.
+    const justSignedIn = Auth?.consumeRedirect?.() || false;
+    if (Auth?.signedIn?.()) await Auth.ensureFresh();
+
+    let cfg = await ghLoadConfig();
+    if (!cfg && Auth?.signedIn?.()) {
+      // Signed in but never configured on this device: the repo is fixed, so
+      // there is nothing left to ask for.
+      cfg = { owner: "jaredfowkes", repo: "workbench", branch: "main" };
+      ghSaveConfig(cfg);
+    }
+    if (cfg && (Auth?.signedIn?.() || ghToken())) autoGithub(cfg);
+    else showLanding(justSignedIn ? "Sign-in did not return a GitHub token. Try again." : undefined);
   })();
 })();
 
