@@ -14795,7 +14795,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.23";
+  const WB_VERSION = "2026-08-02.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -24131,14 +24131,24 @@ window.__WBReactRender = function () {
   // the whole account's usage. Reading it as monthly spend is what made the old
   // attribution card compare hooked-session estimates against overage-only
   // dollars and report the difference as "outside workbench".
+  const SURFACE_LABELS = { "desktop-app": "desktop app", cli: "CLI" };
   function claudeAccounts() {
     const accounts = state.usageByAccount?.accounts;
-    if (accounts && typeof accounts === "object" && Object.keys(accounts).length)
+    if (accounts && typeof accounts === "object" && Object.keys(accounts).length) {
+      // The CLI and the desktop app are separate Claude Code installs with
+      // separate credentials, and are routinely signed into different seats.
+      // A seat polled by either surface is live, so "active" is a question
+      // about surfaces, not a single winner.
+      const surfaces = state.usageByAccount?.surfaces || {};
+      const polled = new Set(Object.values(surfaces).filter(Boolean));
+      if (state.usageByAccount?.active) polled.add(state.usageByAccount.active);
       return Object.entries(accounts).map(([slug, snap]) => ({
         slug,
         snap: snap || {},
-        active: state.usageByAccount?.active === slug,
+        active: polled.has(slug),
+        surface: (snap || {}).surface || "cli",
       }));
+    }
     if (state.usage)
       return [{ slug: "claude", snap: state.usage, active: true }];
     return [];
@@ -24187,7 +24197,8 @@ window.__WBReactRender = function () {
     };
   }
   function claudePlanCard(account) {
-    const { slug, snap, active } = account;
+    const { slug, snap, active, surface } = account;
+    const surfaceLabel = SURFACE_LABELS[surface] || null;
     const label = snap.accountLabel || slug.charAt(0).toUpperCase() + slug.slice(1);
     const limits = Array.isArray(snap.planLimits) ? snap.planLimits : [];
     const binding =
@@ -24214,18 +24225,24 @@ window.__WBReactRender = function () {
         ? "extra usage cap — this seat reports no rate-limit windows"
         : "no rate-limit windows and no usage cap reported";
     const notional = claudePlanNotional(slug);
-    const staleNote = !active
-      ? `Not the signed-in account — Claude Code holds one at a time, so this figure is frozen at its last read.`
-      : "";
+    // Each Claude Code install holds one account, but there are two installs
+    // — the CLI and the one inside the desktop app — so both seats can be
+    // signed in at once and this is a statement about a surface, not about
+    // Claude as a whole.
+    const staleNote = active
+      ? ""
+      : "No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.";
     // Only repeat the wallet as a detail row when something else is the
     // headline, so a windowless seat doesn't print the same figure twice.
-    const walletRow = binding
+    // The desktop app's usage log reports windows only, so a seat read that way
+    // has no wallet figure to show — and a row of dashes is worse than no row.
+    const walletRow = binding && wallet.limit != null
       ? `<div class="mix-row"><div><div class="mix-label">Extra usage billed</div><div class="mix-sub">pay-as-you-go overage — the only real charge on this seat</div></div><span class="creditbar"><i style="width:${Math.max(0, Math.min(100, Number(wallet.percent) || 0))}%"></i></span><span class="credit-amt">${money(wallet.spend)} / ${money(wallet.limit)}</span></div>`
       : "";
     const basisNote = binding
       ? "Plan seats ration session and weekly windows, not dollars."
       : "This seat reports no rate-limit windows — its extra-usage cap is what runs out, and it is billed.";
-    return `<div class="usage-card"><div class="tiny">Claude ${esc(label)} · plan usage${active ? "" : " · idle"}</div><div class="usage-big">${esc(headline)}</div><p class="muted">${esc(headSub)} · ${esc(ageLabel(snap.updated))}</p>${limits.map(planWindowRow).join("")}${walletRow}${
+    return `<div class="usage-card"><div class="tiny">Claude ${esc(label)} · plan usage${active ? (surfaceLabel ? ` · signed in on the ${esc(surfaceLabel)}` : "") : " · idle"}</div><div class="usage-big">${esc(headline)}</div><p class="muted">${esc(headSub)} · ${esc(ageLabel(snap.updated))}</p>${limits.map(planWindowRow).join("")}${walletRow}${
       notional && notional.cost != null
         ? `<div class="mix-row"><div><div class="mix-label">Workbench sessions this month</div><div class="mix-sub">${notional.sessions} hooked session${notional.sessions === 1 ? "" : "s"} · API list-price equivalent, not billed</div></div><span class="credit-amt cost-notional">≈${esc(fmtCostMaybe(notional.cost))}</span></div>`
         : ""
