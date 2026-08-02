@@ -2619,6 +2619,13 @@ button.metric-card:hover {
   color: var(--positive-deep);
   font-weight: 600;
 }
+/* A plan-seat figure is arithmetic, not money. Muted and never bold, so it
+   never reads with the same weight as a lane that actually bills. */
+.cost-notional {
+  color: var(--text-2);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
 .brand-label {
   display: inline-flex;
   align-items: center;
@@ -14788,7 +14795,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-01.29";
+  const WB_VERSION = "2026-08-02.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16746,6 +16753,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         state.usage = loadJsonValue(v, "hydrate.usage", {
           label: "Usage snapshot",
           path: "Tools/Usage/usage.json",
+          staleAfterMs: 24 * 60 * 60 * 1000,
+        });
+      }),
+      loadJson("Tools/Usage/usage-by-account.json", {
+        source: "hydrate.usage-by-account",
+        label: "Claude accounts snapshot",
+      }).then((v) => {
+        state.usageByAccount = loadJsonValue(v, "hydrate.usage-by-account", {
+          label: "Claude accounts snapshot",
+          path: "Tools/Usage/usage-by-account.json",
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
@@ -20315,8 +20332,8 @@ function WorkSessionTechnicalRow({
   }, costStateLabel(r)), /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
   }, fmtTokens(cacheInclusiveTokens(r))), /*#__PURE__*/React.createElement(Badge, {
-    tone: sessionCost(r) != null ? 'accent' : 'warning'
-  }, fmtCostMaybe(sessionCost(r)))));
+    tone: sessionCost(r) == null ? 'warning' : isNotionalRow(r) ? 'neutral' : 'accent'
+  }, isNotionalRow(r) ? `≈${fmtCostMaybe(sessionCost(r))}` : fmtCostMaybe(sessionCost(r)))));
 }
 function WorkSessionList({
   groups,
@@ -20345,7 +20362,7 @@ function WorkSessionList({
     tone: "neutral"
   }, fmtTokens(g.tokens)), /*#__PURE__*/React.createElement(Badge, {
     tone: costStateBadgeTone(g.costState)
-  }, g.cost == null ? g.costState : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
+  }, g.cost == null ? g.costState : g.costState === 'notional' ? `≈${fmtCostMaybe(g.cost)}` : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
     className: "work-session-drill"
   }, g.technical.map((r, i) => /*#__PURE__*/React.createElement(WorkSessionTechnicalRow, {
     key: r.session_uid || r.session || i,
@@ -23160,12 +23177,33 @@ window.__WBReactRender = function () {
       path: row.path || "",
     };
   }
+  // Mirror of usage_cost.cost_basis (Tools/Lib/usage_cost.py) — keep in step.
+  // A Claude plan seat (Pro/Max/Enterprise) rations rolling session and weekly
+  // windows rather than dollars, so a per-token figure on those rows is
+  // API-list-price equivalent, not spend. Metered lanes (CCR/Azure, Azure
+  // Claude, paid OpenRouter, API keys) do bill per token.
+  function costBasis(r) {
+    if (isLocalRow(r) || isFreeLaneRow(r)) return "free";
+    const explicit = String(r?.costBasis || "").toLowerCase();
+    if (["subscription", "metered", "free"].includes(explicit)) return explicit;
+    return normalizeBackend(r?.backend) === "Anthropic"
+      ? "subscription"
+      : "metered";
+  }
+  function isNotionalRow(r) {
+    return costStateLabel(r) === "notional";
+  }
   function costStateLabel(r) {
     const explicit = String(r?.costState || "").toLowerCase();
     if (
-      ["actual", "estimated", "local-zero", "pending", "untracked"].includes(
-        explicit,
-      )
+      [
+        "actual",
+        "estimated",
+        "notional",
+        "local-zero",
+        "pending",
+        "untracked",
+      ].includes(explicit)
     )
       return explicit;
     if (isLocalRow(r) && hasTelemetry(r)) return "local-zero";
@@ -23184,6 +23222,7 @@ window.__WBReactRender = function () {
       )
     )
       return "actual";
+    if (costBasis(r) === "subscription") return "notional";
     return "estimated";
   }
   function costStateBadgeTone(state) {
@@ -23272,6 +23311,9 @@ window.__WBReactRender = function () {
     return [...groups.values()]
       .map((g) => {
         const costStates = [...g.costStates];
+        // "notional" only survives if nothing in the group is real money —
+        // one metered row makes the group's total partly spend, and the
+        // weaker claim has to win.
         const aggregateCostState = costStates.includes("pending")
           ? "pending"
           : costStates.includes("untracked")
@@ -23280,7 +23322,11 @@ window.__WBReactRender = function () {
               ? "local-zero"
               : costStates.every((value) => value === "actual")
                 ? "actual"
-                : "estimated";
+                : costStates.every((value) =>
+                      ["notional", "local-zero"].includes(value),
+                    )
+                  ? "notional"
+                  : "estimated";
         const costKnown = !["pending", "untracked"].includes(
           aggregateCostState,
         );
@@ -23888,6 +23934,10 @@ window.__WBReactRender = function () {
     }
     const c = sessionCost(r);
     if (c == null) return '<span class="muted">untracked</span>';
+    // A plan seat charges nothing per token, so the figure is what this
+    // session would have cost at API list price. Marked, and never bare.
+    if (isNotionalRow(r))
+      return `<span class="cost-notional" title="Plan seat — no per-token charge. API list-price equivalent, shown for lane comparison.">≈${esc(fmtCostMaybe(c))} plan</span>`;
     const source = calibratedSessionCost(r)?.costSource || r.costSource;
     const est = source === "actual-billing" || source === "azure-actual-refined"
       ? " refined"
@@ -24074,41 +24124,118 @@ window.__WBReactRender = function () {
     ];
     return `<div class="usage-window usage-card"><div><h3>Time frame</h3><p class="muted">Applies to the session-based boxes below.</p></div><div class="seg">${opts.map(([k, l]) => `<button class="${(state.usageWindow || "month") === k ? "active" : ""}" data-usage-window="${k}">${l}</button>`).join("")}</div></div>`;
   }
-  // The Claude billing snapshot (usage.json) is the *whole* account's monthly
-  // spend, so it already includes tokens burned outside workbench - the Excel
-  // add-in, claude.ai chat, other API keys. Workbench only attributes the slice
-  // that ran through session hooks. Subtracting the hooked-session estimate from
-  // the real billed total surfaces everything else as "outside workbench".
-  // Fixed to the current calendar month (not the modal's time frame selector)
-  // so it always lines up with the billed number it's compared against.
-  function claudeAttribution() {
-    const spend = Number(state.usage?.spend);
-    if (!isFinite(spend) || spend <= 0) return null;
+  // A Claude seat is rationed by rolling session and weekly windows, not by a
+  // monthly dollar figure. `spend`/`limit` on these snapshots is the extra-usage
+  // wallet — the pay-as-you-go overage that starts billing only once a window is
+  // exhausted — so it is the one real-money figure here and it is nowhere near
+  // the whole account's usage. Reading it as monthly spend is what made the old
+  // attribution card compare hooked-session estimates against overage-only
+  // dollars and report the difference as "outside workbench".
+  function claudeAccounts() {
+    const accounts = state.usageByAccount?.accounts;
+    if (accounts && typeof accounts === "object" && Object.keys(accounts).length)
+      return Object.entries(accounts).map(([slug, snap]) => ({
+        slug,
+        snap: snap || {},
+        active: state.usageByAccount?.active === slug,
+      }));
+    if (state.usage)
+      return [{ slug: "claude", snap: state.usage, active: true }];
+    return [];
+  }
+  function windowExpired(limit) {
+    const at = Date.parse(limit?.resetsAt || "");
+    return isFinite(at) && at < Date.now();
+  }
+  function planWindowRow(limit) {
+    const expired = windowExpired(limit);
+    const p = expired ? 0 : Math.max(0, Math.min(100, Number(limit.percent) || 0));
+    const resets = limit?.resetsAt
+      ? new Date(limit.resetsAt).toLocaleString(undefined, {
+          weekday: "short",
+          hour: "numeric",
+          minute: "2-digit",
+        })
+      : null;
+    const sub = expired
+      ? `window rolled over unread${limit.percent != null ? ` · was ${limit.percent}%` : ""}`
+      : resets
+        ? `resets ${resets}`
+        : "no reset time reported";
+    const hot = !expired && p >= 85;
+    return `<div class="mix-row"><div><div class="mix-label">${esc(limit.label || limit.kind || "Window")}</div><div class="mix-sub">${esc(sub)}</div></div><span class="creditbar anthropic ${hot ? "hot" : ""}"><i style="width:${p}%"></i></span><span class="credit-amt">${expired ? "—" : `${p}%`}</span></div>`;
+  }
+  // Notional, and labelled as such: what this account's hooked sessions would
+  // have cost at API list price this month. It is the honest comparison figure
+  // for a plan seat, and the one number that must never be added to spend.
+  function claudePlanNotional(slug) {
     const start = monthStart();
-    const wbRows = (state.sessionMetrics?.sessions || [])
+    const rows = (state.sessionMetrics?.sessions || [])
       .filter(Boolean)
       .filter((r) => Number(r.started || r.ended || 0) >= start)
-      .filter(
-        (r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r),
-      );
-    const workbench = Number(costSum(wbRows) || 0);
-    const outside = Math.max(0, spend - workbench);
+      .filter((r) => normalizeBackend(r.backend) === "Anthropic" && !isLocalRow(r))
+      .filter((r) => {
+        // Rows written before account tagging can't be split by seat, so they
+        // only count on a single-account view rather than being guessed at.
+        const tag = String(r.accountSlug || "");
+        return tag ? tag === slug : claudeAccounts().length === 1;
+      });
+    if (!rows.length) return null;
     return {
-      spend,
-      workbench,
-      outside,
-      sessions: new Set(wbRows.map(workEpisodeIdentity)).size,
-      wbPct: Math.round((Math.min(workbench, spend) / spend) * 100),
-      outPct: Math.round((outside / spend) * 100),
-      overAttributed: workbench > spend,
+      cost: costSum(rows),
+      sessions: new Set(rows.map(workEpisodeIdentity)).size,
     };
   }
-  function claudeAttributionCard() {
-    const a = claudeAttribution();
-    if (!a) return "";
-    const row = (label, amt, p, kind, sub) =>
-      `<div class="mix-row"><div><div class="mix-label">${esc(label)}</div><div class="mix-sub">${esc(sub)}</div></div><span class="creditbar ${kind}"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></span><span class="credit-amt">${esc(fmtCostMaybe(amt))}</span></div>`;
-    return `<div class="usage-card"><div class="tiny">Claude spend attribution · billing month</div><div class="usage-big">${esc(fmtCostMaybe(a.spend))} billed</div>${row("In workbench", a.workbench, a.wbPct, "anthropic", `${a.sessions} hooked session${a.sessions === 1 ? "" : "s"} · estimated from tokens`)}${row("Outside workbench", a.outside, a.outPct, "", "Excel add-in, claude.ai, other tools + estimate drift")}<p class="muted">Billed total is the real Claude monthly spend and already covers usage from outside workbench. The in-workbench slice is estimated from hooked-session tokens${a.overAttributed ? "; it currently exceeds the billed total, so outside reads $0 (estimate drift)" : ""}, so the outside slice is approximate.</p></div>`;
+  function claudePlanCard(account) {
+    const { slug, snap, active } = account;
+    const label = snap.accountLabel || slug.charAt(0).toUpperCase() + slug.slice(1);
+    const limits = Array.isArray(snap.planLimits) ? snap.planLimits : [];
+    const binding =
+      snap.bindingLimit ||
+      limits.slice().sort((a, b) => (b.percent || 0) - (a.percent || 0))[0];
+    const wallet = snap.extraUsage || {
+      spend: snap.spend,
+      limit: snap.limit,
+    };
+    // Not every seat is window-rationed: the Disney Enterprise seat reports no
+    // rate-limit windows at all, just a contracted extra-usage cap. There the
+    // wallet is both the real money and the only thing that runs out, so it
+    // earns the headline rather than being buried under "no data".
+    const headline = binding
+      ? windowExpired(binding)
+        ? "—"
+        : `${binding.percent}%`
+      : wallet.limit != null
+        ? `${money(wallet.spend)} / ${money(wallet.limit)}`
+        : "no data";
+    const headSub = binding
+      ? `${binding.label || binding.kind} window`
+      : wallet.limit != null
+        ? "extra usage cap — this seat reports no rate-limit windows"
+        : "no rate-limit windows and no usage cap reported";
+    const notional = claudePlanNotional(slug);
+    const staleNote = !active
+      ? `Not the signed-in account — Claude Code holds one at a time, so this figure is frozen at its last read.`
+      : "";
+    // Only repeat the wallet as a detail row when something else is the
+    // headline, so a windowless seat doesn't print the same figure twice.
+    const walletRow = binding
+      ? `<div class="mix-row"><div><div class="mix-label">Extra usage billed</div><div class="mix-sub">pay-as-you-go overage — the only real charge on this seat</div></div><span class="creditbar"><i style="width:${Math.max(0, Math.min(100, Number(wallet.percent) || 0))}%"></i></span><span class="credit-amt">${money(wallet.spend)} / ${money(wallet.limit)}</span></div>`
+      : "";
+    const basisNote = binding
+      ? "Plan seats ration session and weekly windows, not dollars."
+      : "This seat reports no rate-limit windows — its extra-usage cap is what runs out, and it is billed.";
+    return `<div class="usage-card"><div class="tiny">Claude ${esc(label)} · plan usage${active ? "" : " · idle"}</div><div class="usage-big">${esc(headline)}</div><p class="muted">${esc(headSub)} · ${esc(ageLabel(snap.updated))}</p>${limits.map(planWindowRow).join("")}${walletRow}${
+      notional && notional.cost != null
+        ? `<div class="mix-row"><div><div class="mix-label">Workbench sessions this month</div><div class="mix-sub">${notional.sessions} hooked session${notional.sessions === 1 ? "" : "s"} · API list-price equivalent, not billed</div></div><span class="credit-amt cost-notional">≈${esc(fmtCostMaybe(notional.cost))}</span></div>`
+        : ""
+    }<p class="muted">${esc(basisNote)} Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.${staleNote ? ` ${esc(staleNote)}` : ""}${active && snap.stalledError ? ` Last fetch failed: ${esc(String(snap.stalledError).split("—")[0].trim())}.` : ""}</p></div>`;
+  }
+  function claudePlanCards() {
+    return claudeAccounts()
+      .sort((a, b) => Number(b.active) - Number(a.active))
+      .map(claudePlanCard)
+      .join("");
   }
   function modelFleetCard() {
     const deployments = state.modelFleet?.deployments || [];
@@ -24137,7 +24264,7 @@ window.__WBReactRender = function () {
       .sort((a, b) => (b.started || 0) - (a.started || 0))
       .slice(0, 12);
     state._recentSessions = recent;
-    return `<div class="usage-grid"><div class="usage-card"><div class="tiny">Anthropic / Claude monthly allotment</div><div class="usage-big">${money(state.usage?.spend)} / ${money(state.usage?.limit)}</div>${creditLaneHTML("Claude", state.usage, "anthropic")}<p class="muted">${esc(ageLabel(state.usage?.updated))}${state.usage?.resetLabel ? ` · resets ${esc(state.usage.resetLabel)}` : ""}</p></div>${claudeAttributionCard()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
