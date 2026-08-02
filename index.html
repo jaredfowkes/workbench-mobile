@@ -14837,7 +14837,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.31";
+  const WB_VERSION = "2026-08-02.34";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -20210,31 +20210,89 @@ function UsageLaneTable({
     }, costText)));
   })));
 }
-function ClaudeAttributionPanel() {
-  const a = claudeAttribution();
-  if (!a) return null;
-  const row = (label, amt, share, kind, sub) => /*#__PURE__*/React.createElement("div", {
-    className: "mix-row",
-    key: label
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    className: "mix-label"
-  }, label), /*#__PURE__*/React.createElement("div", {
-    className: "mix-sub"
-  }, sub)), /*#__PURE__*/React.createElement("span", {
-    className: `creditbar ${kind}`
-  }, /*#__PURE__*/React.createElement("i", {
-    style: {
-      width: `${Math.max(0, Math.min(100, share))}%`
-    }
-  })), /*#__PURE__*/React.createElement("span", {
-    className: "credit-amt"
-  }, fmtCostMaybe(amt)));
-  return /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Claude spend attribution · billing month",
-    title: `${fmtCostMaybe(a.spend)} billed`
-  }, row('In workbench', a.workbench, a.wbPct, 'anthropic', `${a.sessions} hooked session${a.sessions === 1 ? '' : 's'} · estimated from tokens`), row('Outside workbench', a.outside, a.outPct, '', 'Excel add-in, claude.ai, other tools + estimate drift'), /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "Billed total is the real Claude monthly spend and already covers usage from outside workbench. The in-workbench slice is estimated from hooked-session tokens", a.overAttributed ? '; it currently exceeds the billed total, so outside reads $0 (estimate drift)' : '', ", so the outside slice is approximate."));
+
+// Replaced the "Claude spend attribution" card on 2026-08-02. That card
+// subtracted hooked-session estimates from `state.usage.spend` and called
+// the remainder "outside workbench" — but that figure is the extra-usage
+// wallet, not the account's spend, so it compared two unrelated numbers.
+// Each seat now leads with whatever actually runs out for it.
+function ClaudePlanPanels() {
+  const accounts = claudeAccounts();
+  if (!accounts.length) return null;
+  return accounts.slice().sort((a, b) => Number(b.active) - Number(a.active)).map(account => {
+    const {
+      slug,
+      snap,
+      active,
+      surface
+    } = account;
+    const label = snap.accountLabel || slug.charAt(0).toUpperCase() + slug.slice(1);
+    const limits = Array.isArray(snap.planLimits) ? snap.planLimits : [];
+    const binding = snap.bindingLimit || limits.slice().sort((a, b) => (b.percent || 0) - (a.percent || 0))[0];
+    const wallet = snap.extraUsage || {
+      spend: snap.spend,
+      limit: snap.limit
+    };
+    const surfaceLabel = SURFACE_LABELS[surface];
+    // A seat with no windows is not window-rationed at all: the Disney
+    // seat reports only a contracted cap, and that cap is what runs out.
+    const headline = binding ? windowExpired(binding) ? '—' : `${binding.percent}%` : wallet.limit != null ? `${money(wallet.spend)} / ${money(wallet.limit)}` : 'no data';
+    const notional = claudePlanNotional(slug);
+    return /*#__PURE__*/React.createElement(Card, {
+      key: slug,
+      eyebrow: `Claude ${label} · plan usage${active ? surfaceLabel ? ` · signed in on the ${surfaceLabel}` : '' : ' · idle'}`,
+      title: headline
+    }, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, binding ? `${binding.label || binding.kind} window` : wallet.limit != null ? 'extra usage cap — this seat reports no rate-limit windows' : 'no rate-limit windows and no usage cap reported', " · ", ageLabel(snap.updated)), limits.map(row => {
+      const expired = windowExpired(row);
+      const pct = expired ? 0 : Math.max(0, Math.min(100, Number(row.percent) || 0));
+      return /*#__PURE__*/React.createElement("div", {
+        className: "mix-row",
+        key: row.kind
+      }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+        className: "mix-label"
+      }, row.label || row.kind), /*#__PURE__*/React.createElement("div", {
+        className: "mix-sub"
+      }, expired ? `window rolled over unread${row.percent != null ? ` · was ${row.percent}%` : ''}` : row.resetsAt ? `resets ${new Date(row.resetsAt).toLocaleString(undefined, {
+        weekday: 'short',
+        hour: 'numeric',
+        minute: '2-digit'
+      })}` : 'no reset time reported')), /*#__PURE__*/React.createElement("span", {
+        className: `creditbar anthropic ${!expired && pct >= 85 ? 'hot' : ''}`
+      }, /*#__PURE__*/React.createElement("i", {
+        style: {
+          width: `${pct}%`
+        }
+      })), /*#__PURE__*/React.createElement("span", {
+        className: "credit-amt"
+      }, expired ? '—' : `${pct}%`));
+    }), binding && wallet.limit != null ? /*#__PURE__*/React.createElement("div", {
+      className: "mix-row"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "mix-label"
+    }, "Extra usage billed"), /*#__PURE__*/React.createElement("div", {
+      className: "mix-sub"
+    }, "pay-as-you-go overage — the only real charge on this seat")), /*#__PURE__*/React.createElement("span", {
+      className: "creditbar"
+    }, /*#__PURE__*/React.createElement("i", {
+      style: {
+        width: `${Math.max(0, Math.min(100, Number(wallet.percent) || 0))}%`
+      }
+    })), /*#__PURE__*/React.createElement("span", {
+      className: "credit-amt"
+    }, money(wallet.spend), " / ", money(wallet.limit))) : null, notional && notional.cost != null ? /*#__PURE__*/React.createElement("div", {
+      className: "mix-row"
+    }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+      className: "mix-label"
+    }, "Workbench sessions this month"), /*#__PURE__*/React.createElement("div", {
+      className: "mix-sub"
+    }, notional.sessions, " hooked session", notional.sessions === 1 ? '' : 's', " · API list-price equivalent, not billed")), /*#__PURE__*/React.createElement("span", {
+      className: "credit-amt cost-notional"
+    }, "≈", fmtCostMaybe(notional.cost))) : null, /*#__PURE__*/React.createElement("p", {
+      style: muted
+    }, binding ? 'Plan seats ration session and weekly windows, not dollars.' : 'This seat reports no rate-limit windows — its extra-usage cap is what runs out, and it is billed.', ' ', "Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.", active ? '' : ' No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.'));
+  });
 }
 function UsageWindowPicker() {
   const opts = [{
@@ -20271,13 +20329,19 @@ function UsageProjectPanel({
   rows
 }) {
   const list = projectBreakdown(rows);
+  // Three columns, not one. Billed and plan share are both real money and
+  // add up; saved is cost avoided and never joins them. Collapsing these
+  // back together is what overstated total spend by a third.
   return /*#__PURE__*/React.createElement(Card, {
-    title: "Spend and tokens by project"
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "usage-table"
+    title: "Cost and tokens by project"
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "tiny",
+    style: muted
+  }, "Billed and plan share are real money and add up. Saved is cost avoided and never joins them."), /*#__PURE__*/React.createElement("div", {
+    className: "usage-table project-cost-table"
   }, /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row head"
-  }, /*#__PURE__*/React.createElement("span", null, "Project/folder"), /*#__PURE__*/React.createElement("span", null, "Tokens"), /*#__PURE__*/React.createElement("span", null, "Requests"), /*#__PURE__*/React.createElement("span", null, "Lane"), /*#__PURE__*/React.createElement("span", null, "Cost")), list.length ? list.map(r => /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "Project/folder"), /*#__PURE__*/React.createElement("span", null, "Tokens"), /*#__PURE__*/React.createElement("span", null, "Lane"), /*#__PURE__*/React.createElement("span", null, "Billed"), /*#__PURE__*/React.createElement("span", null, "Plan share"), /*#__PURE__*/React.createElement("span", null, "Saved")), list.length ? list.map(r => /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row",
     key: r.cwd
   }, /*#__PURE__*/React.createElement("span", {
@@ -20285,14 +20349,22 @@ function UsageProjectPanel({
   }, r.cwd.split('/').filter(Boolean).pop() || r.cwd), /*#__PURE__*/React.createElement("span", {
     "data-label": "Tokens"
   }, fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
-    "data-label": "Requests"
-  }, r.requests), /*#__PURE__*/React.createElement("span", {
     "data-label": "Lane"
   }, /*#__PURE__*/React.createElement(UsageBrandLabel, {
     label: r.lane || 'Unknown'
   })), /*#__PURE__*/React.createElement("span", {
-    "data-label": "Cost"
-  }, fmtCostMaybe(r.cost)))) : /*#__PURE__*/React.createElement("p", {
+    "data-label": "Billed"
+  }, fmtCostMaybe(r.billed || 0)), /*#__PURE__*/React.createElement("span", {
+    "data-label": "Plan share"
+  }, r.planShare ? fmtCostMaybe(r.planShare) : /*#__PURE__*/React.createElement("span", {
+    style: muted
+  }, "—")), /*#__PURE__*/React.createElement("span", {
+    "data-label": "Saved"
+  }, r.saved ? /*#__PURE__*/React.createElement("span", {
+    className: "cost-savings"
+  }, fmtCostMaybe(r.saved)) : /*#__PURE__*/React.createElement("span", {
+    style: muted
+  }, "—")))) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No tokenized sessions yet.")));
 }
@@ -20542,16 +20614,7 @@ function UsageView() {
   }, /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
-  }, /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Anthropic / Claude monthly allotment",
-    title: `${money(state.usage?.spend)} / ${money(state.usage?.limit)}`
-  }, /*#__PURE__*/React.createElement(UsageCreditLane, {
-    name: "Claude",
-    usage: state.usage,
-    laneClass: "anthropic"
-  }), /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, ageLabel(state.usage?.updated), state.usage?.resetLabel ? ` · resets ${state.usage.resetLabel}` : '')), /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement(ClaudePlanPanels, null), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Cursor monthly allotment",
     title: `${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}`
   }, /*#__PURE__*/React.createElement(UsageCreditLane, {
@@ -20567,13 +20630,13 @@ function UsageView() {
     style: muted
   }, "Estimated avoided cloud spend for accepted on-device tokens in this time frame; actual local cost is $0.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
     rows: rows
-  }), /*#__PURE__*/React.createElement(ClaudeAttributionPanel, null)), /*#__PURE__*/React.createElement(UsageLaneTable, {
+  })), /*#__PURE__*/React.createElement(UsageLaneTable, {
     rows: laneRows
   }), /*#__PURE__*/React.createElement(Card, {
     title: "What this means"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Monthly Claude and Cursor spend comes from actual usage snapshots. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain model-priced estimates across GPT-5.5, Codex, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions have $0 actual model cost; comparison savings appear only for accepted work with an explicit parent model and pricing version.", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
+  }, "Claude runs on two seats that bill differently: the Disney seat is charged per token against a $2,000 cap (real money), while the personal Max seat is a flat monthly fee whose per-token figures are API list-price equivalents, never spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain model-priced estimates across GPT-5.5, Codex, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions have $0 actual model cost; comparison savings appear only for accepted work with an explicit parent model and pricing version.", incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? '' : 's'} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ''))), tab === 'models' && /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(UsageMixCard, {
@@ -23274,9 +23337,13 @@ window.__WBReactRender = function () {
     // guessing "metered" would invent billed dollars no invoice will show.
     if (normalizeBackend(r?.backend) === "Anthropic") {
       const mode = accountBilling(r?.accountSlug).mode;
-      return ["subscription", "metered", "free"].includes(mode)
-        ? mode
-        : "subscription";
+      if (["subscription", "metered", "free"].includes(mode)) return mode;
+      // No account recorded. A provider-reported charge is evidence of a
+      // usage-based seat — nothing bills per token on a fixed-fee plan.
+      const source = String(r?.costSource || "").toLowerCase();
+      if (source === "actual-billing" || source === "provider-actual")
+        return "metered";
+      return "subscription";
     }
     const explicit = String(r?.costBasis || "").toLowerCase();
     if (["subscription", "metered", "free"].includes(explicit)) return explicit;
