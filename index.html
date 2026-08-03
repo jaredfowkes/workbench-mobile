@@ -15244,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.55";
+  const WB_VERSION = "2026-08-02.57";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -24935,15 +24935,21 @@ window.__WBReactRender = function () {
       return [{ slug: "claude", snap: state.usage, active: true }];
     return [];
   }
+  // A reset derived from the desktop app's utilization curve is good to about
+  // ten minutes, so it is marked "~" and gets that much grace before the
+  // window counts as rolled over — otherwise a live window reads as expired.
+  const RESET_ESTIMATE_GRACE_MS = 15 * 60 * 1000;
   function windowExpired(limit) {
     const at = Date.parse(limit?.resetsAt || "");
-    return isFinite(at) && at < Date.now();
+    if (!isFinite(at)) return false;
+    return at + (limit?.resetsAtEstimated ? RESET_ESTIMATE_GRACE_MS : 0) < Date.now();
   }
   function planWindowRow(limit) {
     const expired = windowExpired(limit);
     const p = expired ? 0 : Math.max(0, Math.min(100, Number(limit.percent) || 0));
     const resets = limit?.resetsAt
-      ? new Date(limit.resetsAt).toLocaleString(undefined, {
+      ? (limit.resetsAtEstimated ? "~" : "") +
+        new Date(limit.resetsAt).toLocaleString(undefined, {
           weekday: "short",
           hour: "numeric",
           minute: "2-digit",
