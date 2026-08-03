@@ -13238,6 +13238,226 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WorkbenchUuidV7 = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // RFC 9562 UUIDv7: a 48-bit big-endian Unix-ms timestamp, a version
+  // nibble (0111), the variant bits (10), and the rest drawn from
+  // crypto.getRandomValues. Client-minted so a capture's id (and receipt)
+  // can exist before the row does -- see the `captures` migration.
+  //
+  // Two ids minted in the same millisecond must still sort in call order,
+  // or a queued capture flushed twice could race its own retry in the
+  // table's (owner, state, captured_at) index. RFC 9562's "monotonic
+  // random" method covers this: within a millisecond, replace `rand_a`
+  // (12 bits) with an incrementing counter instead of drawing it fresh.
+
+  let lastMs = -1;
+  let counter = 0;
+
+  function randomBytes(len) {
+    const bytes = new Uint8Array(len);
+    crypto.getRandomValues(bytes);
+    return bytes;
+  }
+
+  function seedCounter() {
+    const seed = randomBytes(2);
+    return ((seed[0] << 8) | seed[1]) & 0x0fff;
+  }
+
+  function nextCounter() {
+    counter = (counter + 1) & 0x0fff;
+    // Exceedingly rare (4096 ids in one millisecond): step the clock
+    // forward by 1ms rather than reuse a counter value, so ordering never
+    // breaks even under a hot loop.
+    if (counter === 0) lastMs += 1;
+    return counter;
+  }
+
+  function toHex(bytes) {
+    let hex = "";
+    for (let i = 0; i < bytes.length; i += 1) hex += bytes[i].toString(16).padStart(2, "0");
+    return hex;
+  }
+
+  function uuidv7() {
+    const nowMs = Date.now();
+    let randA;
+    if (nowMs > lastMs) {
+      lastMs = nowMs;
+      counter = seedCounter();
+      randA = counter;
+    } else {
+      // Same millisecond, or the device clock stepped backwards -- either
+      // way, keep using `lastMs` and bump the counter so the id still
+      // sorts after the previous one.
+      randA = nextCounter();
+    }
+
+    const bytes = new Uint8Array(16);
+    bytes[0] = (lastMs / 0x10000000000) & 0xff;
+    bytes[1] = (lastMs / 0x100000000) & 0xff;
+    bytes[2] = (lastMs / 0x1000000) & 0xff;
+    bytes[3] = (lastMs / 0x10000) & 0xff;
+    bytes[4] = (lastMs / 0x100) & 0xff;
+    bytes[5] = lastMs & 0xff;
+
+    // Version 7 in the high nibble of byte 6; rand_a's top 4 bits in the low.
+    bytes[6] = 0x70 | ((randA >> 8) & 0x0f);
+    bytes[7] = randA & 0xff;
+
+    const tail = randomBytes(8);
+    // Variant `10` in the top two bits of byte 8, then 62 bits of
+    // randomness (rand_b) fill the rest.
+    bytes[8] = 0x80 | (tail[0] & 0x3f);
+    for (let i = 1; i < 8; i += 1) bytes[8 + i] = tail[i];
+
+    const hex = toHex(bytes);
+    return (
+      hex.slice(0, 8) +
+      "-" +
+      hex.slice(8, 12) +
+      "-" +
+      hex.slice(12, 16) +
+      "-" +
+      hex.slice(16, 20) +
+      "-" +
+      hex.slice(20, 32)
+    );
+  }
+
+  return { uuidv7 };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WBSupabaseData = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Thin browser PostgREST client. Writes go browser-direct to Supabase
+  // under RLS -- the Edge Function (workbench-live-api.js) stays for
+  // machine actions only. Hand-rolled for the same reason as
+  // supabase-auth.js: the dashboard is one file under a hard size budget.
+  //
+  // Pure module, no DOM access, same DI shape as capture-outbox.js's
+  // createCaptureOutbox: the caller hands in an `auth` (shaped like
+  // WBSupabaseAuth -- ensureFresh/accessToken/config) and, for tests, a
+  // fake `fetchImpl`. Nothing here reaches for `window` on its own.
+
+  class PostgrestError extends Error {
+    constructor(status, body, message) {
+      super(message || `PostgREST request failed (${status}).`);
+      this.name = "PostgrestError";
+      this.status = status;
+      this.code = body?.code ?? null;
+      this.details = body?.details ?? null;
+      this.hint = body?.hint ?? null;
+      this.body = body ?? null;
+    }
+  }
+
+  function safeParseJson(text) {
+    if (!text) return null;
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
+
+  function buildSelectQuery({ columns, filters, order, limit } = {}) {
+    const params = new URLSearchParams();
+    params.set("select", columns || "*");
+    for (const [key, value] of Object.entries(filters || {})) {
+      if (value !== undefined) params.append(key, value);
+    }
+    if (order) params.set("order", order);
+    if (Number.isFinite(limit)) params.set("limit", String(limit));
+    return params.toString();
+  }
+
+  function createClient(options = {}) {
+    const auth = options.auth;
+    const fetchImpl =
+      options.fetchImpl || (typeof globalThis !== "undefined" ? globalThis.fetch : null);
+    if (!auth || typeof auth.ensureFresh !== "function") {
+      throw new Error("supabase-data requires a WBSupabaseAuth-shaped `auth`.");
+    }
+    if (typeof fetchImpl !== "function") {
+      throw new Error("supabase-data has no `fetch` available.");
+    }
+
+    function readConfig() {
+      const cfg = typeof auth.config === "function" ? auth.config() : null;
+      if (!cfg?.url || !cfg?.anonKey) {
+        throw new Error("supabase-data has no Supabase URL/anon key configured.");
+      }
+      return cfg;
+    }
+
+    async function request(path, { method = "GET", headers = {}, body } = {}) {
+      await auth.ensureFresh();
+      const cfg = readConfig();
+      const token = typeof auth.accessToken === "function" ? auth.accessToken() : "";
+
+      // A rejected fetch (offline, DNS, CORS) is deliberately left
+      // unwrapped: a thrown TypeError with no `.status` is exactly how the
+      // outbox tells "network failure" apart from a PostgrestError, which
+      // always carries one.
+      const res = await fetchImpl(`${cfg.url}${path}`, {
+        method,
+        headers: {
+          apikey: cfg.anonKey,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      });
+
+      const text = await res.text();
+      const parsed = safeParseJson(text);
+      if (!res.ok) {
+        throw new PostgrestError(res.status, parsed, parsed?.message);
+      }
+      return parsed;
+    }
+
+    async function select(table, { columns, filters, order, limit } = {}) {
+      const query = buildSelectQuery({ columns, filters, order, limit });
+      return request(`/rest/v1/${table}?${query}`, { method: "GET" });
+    }
+
+    async function upsert(table, rows, { onConflict, ignoreDuplicates, returning = "representation" } = {}) {
+      const resolution = ignoreDuplicates ? "resolution=ignore-duplicates" : "resolution=merge-duplicates";
+      const query = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : "";
+      return request(`/rest/v1/${table}${query}`, {
+        method: "POST",
+        headers: { Prefer: `${resolution},return=${returning}` },
+        body: rows,
+      });
+    }
+
+    return { select, upsert };
+  }
+
+  return {
+    PostgrestError,
+    buildSelectQuery,
+    createClient,
+  };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.WorkbenchMutations = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
@@ -13616,6 +13836,33 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   const OUTBOX_VERSION = 1;
 
+  // Mirrors `captures.client_schema_version` in the Supabase migration -- a
+  // record's shape version, independent of OUTBOX_VERSION above (which is
+  // this *local queue entry's* shape, a delivery concern the server never
+  // sees).
+  const CAPTURE_SCHEMA_VERSION = 1;
+
+  function resolveUuidv7() {
+    if (
+      typeof globalThis !== "undefined" &&
+      typeof globalThis.WorkbenchUuidV7?.uuidv7 === "function"
+    ) {
+      return globalThis.WorkbenchUuidV7.uuidv7;
+    }
+    if (typeof require === "function") {
+      try {
+        return require("./uuidv7.js").uuidv7;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  // Resolved once at module load, same as CONFIG in supabase-auth.js -- the
+  // browser bundle always loads uuidv7.js first, and Node test runs resolve
+  // it via the sibling `require`.
+  const defaultUuidv7 = resolveUuidv7();
+
   function toNumber(value, fallback = 0) {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
@@ -13787,8 +14034,61 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     };
   }
 
+  // Maps a "note" (loose-capture / inbox) outbox record onto a row of the
+  // Supabase `captures` table. Attachment bytes are not part of this slice
+  // (they stay in git per issue #19, not yet wired for Supabase captures) --
+  // same gap the old notes-inbox.md write had, since applyOutboxNote never
+  // called writeCaptureAttachments either.
+  function toCaptureRow(record, ownerUid) {
+    return {
+      id: record?.captureId,
+      owner_uid: ownerUid,
+      text: String(record?.text || ""),
+      kind: "note",
+      project: record?.project?.projectName || null,
+      captured_at: new Date(toNumber(record?.createdAt, Date.now())).toISOString(),
+      client_schema_version: toNumber(record?.schemaVersion, CAPTURE_SCHEMA_VERSION),
+      attachments: [],
+      meta: record?.meta && typeof record.meta === "object" ? record.meta : {},
+    };
+  }
+
+  // Sorts a thrown error from supabase-data.js's client into the three
+  // classes the outbox needs to treat differently. `err.retryable` on the
+  // result is read straight by drain()'s catch block above.
+  //   - a network failure (a raw TypeError, no `.status`) is transient --
+  //     the record should stay pending and retry on its own.
+  //   - a 401/403 PostgrestError means the session needs re-authentication,
+  //     not that the data was rejected.
+  //   - any other PostgrestError is a real data problem; surface its code.
+  function classifyCaptureSyncError(err) {
+    if (err instanceof TypeError) {
+      return {
+        retryable: true,
+        message: err.message || "Network error while syncing capture.",
+      };
+    }
+    if (err && err.name === "PostgrestError") {
+      if (err.status === 401 || err.status === 403) {
+        return {
+          retryable: false,
+          message: `Sign in again to sync captures (${err.status}).`,
+        };
+      }
+      return {
+        retryable: false,
+        message: `${err.code || err.status}: ${err.message}`,
+      };
+    }
+    return {
+      retryable: false,
+      message: (err && err.message) || "Capture sync failed.",
+    };
+  }
+
   function createCaptureRecord(seed, options = {}) {
     const now = typeof options.now === "function" ? options.now : Date.now;
+    const mintId = typeof options.uuidv7 === "function" ? options.uuidv7 : defaultUuidv7;
     const createdAt = toNumber(seed?.createdAt, now());
     const attachments = (seed?.attachments || []).map((a, idx) =>
       normalizeAttachmentInput(a, idx),
@@ -13796,13 +14096,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const project = normalizeProject(seed?.project);
     const deliveryMode =
       seed?.deliveryMode || ((seed?.type === "task" || seed?.type === "idea") && project ? "project-task" : "direct");
-    const captureId = seed?.captureId || deriveCaptureId({
-      ...seed,
-      createdAt,
-      project,
-      attachments,
-      deliveryMode,
-    });
+    if (!seed?.captureId && typeof mintId !== "function") {
+      throw new Error("capture-outbox requires a uuidv7 id minter (uuidv7.js not loaded).");
+    }
+    // Client-minted at capture time, per the `captures` migration's comment on
+    // `id`: this is the record's one true identity, and every retry of this
+    // same record reuses it -- that is what makes a doubled flush collide on
+    // the server's primary key instead of creating a second row. Replaces the
+    // old content-hash `deriveCaptureId`, which optimized for a different
+    // property (enqueue-time dedup of identical content) that a real primary
+    // key no longer needs.
+    const captureId = seed?.captureId || mintId();
     const paths = derivePaths({
       captureId,
       type: seed?.type,
@@ -13813,6 +14117,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const updatedAt = now();
     return {
       version: OUTBOX_VERSION,
+      schemaVersion: CAPTURE_SCHEMA_VERSION,
       captureId,
       type: String(seed?.type || "note"),
       text: String(seed?.text || "").trim(),
@@ -13857,7 +14162,13 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       updated.lastError = msg;
     }
     if (nextState === "pending") {
-      updated.lastError = null;
+      // A manual retry (markForRetry, an empty patch) clears the slate. A
+      // drain() falling back to pending after a retryable failure (a network
+      // error, not a data problem) passes an explicit lastError and wants it
+      // kept, so the record still explains itself while it waits.
+      if (!Object.prototype.hasOwnProperty.call(patch, "lastError")) {
+        updated.lastError = null;
+      }
     }
     return updated;
   }
@@ -13965,6 +14276,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   function createCaptureOutbox(options = {}) {
     const store = options.store || createMemoryStore();
     const now = typeof options.now === "function" ? options.now : Date.now;
+    const mintId = typeof options.uuidv7 === "function" ? options.uuidv7 : undefined;
     const applyRecord = options.applyRecord;
     const submittedLimit = Math.max(0, toNumber(options.submittedLimit, 120));
     const failedLimit = Math.max(0, toNumber(options.failedLimit, 120));
@@ -14003,7 +14315,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
     async function enqueue(seed) {
       await ensureLoaded();
-      const record = createCaptureRecord(seed, { now });
+      const record = createCaptureRecord(seed, { now, uuidv7: mintId });
       const idx = snapshot.records.findIndex((r) => r.captureId === record.captureId);
       if (idx >= 0) {
         const existing = snapshot.records[idx];
@@ -14075,15 +14387,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
               err && err.message
                 ? err.message
                 : "Capture failed before repository acknowledgement.";
+            // A retryable error (e.g. a network failure -- see
+            // classifyCaptureSyncError) leaves the record pending instead of
+            // failed, so the very next drain() retries it without anyone
+            // having to notice and click "retry". Every other apply handler
+            // never sets `.retryable`, so this is a no-op for them.
+            const retryable = !!(err && err.retryable);
             snapshot.records[i] = transitionRecord(
               snapshot.records[i],
-              "failed",
+              retryable ? "pending" : "failed",
               { lastError: message },
               { now },
             );
             errors.push({
               captureId: snapshot.records[i].captureId,
               message,
+              retryable,
             });
           }
 
@@ -14135,6 +14454,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   return {
     OUTBOX_VERSION,
+    CAPTURE_SCHEMA_VERSION,
     stableStringify,
     hashFNV1a,
     sanitizeAttachmentName,
@@ -14143,6 +14463,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     deriveCaptureId,
     deriveTaskId,
     derivePaths,
+    toCaptureRow,
+    classifyCaptureSyncError,
     createCaptureRecord,
     transitionRecord,
     pruneRecords,
@@ -14916,7 +15238,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.49";
+  const WB_VERSION = "2026-08-02.52";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15432,6 +15754,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   if (!CaptureOutbox) {
     throw new Error("WorkbenchCaptureOutbox module missing. Rebuild dashboard bundle.");
   }
+  const SupabaseData = globalThis.WBSupabaseData;
+  if (!SupabaseData) {
+    throw new Error("WBSupabaseData module missing. Rebuild dashboard bundle.");
+  }
   const ActionOutbox = globalThis.WorkbenchActionOutbox;
   if (!ActionOutbox) {
     throw new Error("WorkbenchActionOutbox module missing. Rebuild dashboard bundle.");
@@ -15443,6 +15769,13 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   let captureOutbox = null;
   let actionOutbox = null;
+  let supabaseDataClient = null;
+  function ensureSupabaseDataClient() {
+    if (!supabaseDataClient) {
+      supabaseDataClient = SupabaseData.createClient({ auth: window.WBSupabaseAuth });
+    }
+    return supabaseDataClient;
+  }
   const dataHealthSources = new Map();
   function dataHealthLabelFromPath(path) {
     return String(path || "")
@@ -25597,16 +25930,32 @@ window.__WBReactRender = function () {
     await writePath(intakePath, JSON.stringify(payload, null, 2) + "\n");
   }
   async function applyOutboxNote(record) {
-    const line = `- ${captureDateFromMs(record.createdAt)} ${new Date(Number(record.createdAt) || Date.now()).toTimeString().slice(0, 5)} — ${record.text}`;
-    await mutatePath(
-      record.paths?.targetPath || "notes-inbox.md",
-      {
-        type: "notes.appendRecord",
-        header: Mutations.DEFAULT_NOTES_HEADER,
-        line,
-      },
-      "Dashboard: append notes inbox",
-    );
+    // The inbox capture path (#10/#12): a loose note is a row in Supabase's
+    // `captures` table now, written browser-direct under RLS, not a commit to
+    // notes-inbox.md through the GitHub Contents API. Captures that target a
+    // specific project (deliveryMode "project-task"/"intake") are unaffected
+    // -- they still write into that project's tasks.json, per #16.
+    const Auth = window.WBSupabaseAuth;
+    if (!Auth?.signedIn?.()) {
+      throw new Error("Sign in again to sync captures.");
+    }
+    await Auth.ensureFresh();
+    const user = await Auth.currentUser();
+    if (!user?.id) {
+      throw new Error("Sign in again to sync captures.");
+    }
+    const row = CaptureOutbox.toCaptureRow(record, user.id);
+    try {
+      await ensureSupabaseDataClient().upsert("captures", [row], {
+        onConflict: "id",
+        ignoreDuplicates: true,
+      });
+    } catch (err) {
+      const classified = CaptureOutbox.classifyCaptureSyncError(err);
+      const wrapped = new Error(classified.message);
+      wrapped.retryable = classified.retryable;
+      throw wrapped;
+    }
   }
   async function applyOutboxKnowledgeNote(record) {
     const title = displayText(record.text, 60);
