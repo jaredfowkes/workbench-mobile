@@ -15244,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.54";
+  const WB_VERSION = "2026-08-02.55";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -19967,9 +19967,33 @@ function outboxTone(status) {
   return status === 'failed' ? 'unfavorable' : status === 'submitted' ? 'favorable' : status === 'submitting' ? 'info' : 'warning';
 }
 function captureRecordLabel(record) {
-  const project = record.project?.projectName || record.project?.dirName || 'Workbench';
   const text = displayText(record.text || record.attachments?.[0]?.name || 'Attachment capture', 76);
-  return `${project} · ${text}`;
+  // Only a capture that actually targets a project gets a project prefix.
+  // This used to default to 'Workbench', which labelled every loose note
+  // as though it belonged to the Workbench project.
+  const project = record.project?.projectName || record.project?.dirName || '';
+  return project ? `${project} · ${text}` : text;
+}
+
+// What this capture is on its way to becoming. The outbox previously
+// showed everything as either 'Neutral intake' or 'Project task', so a
+// loose note, a KB entry and a new project all read as project tasks.
+function captureDestinationLabel(record) {
+  if (record.deliveryMode === 'intake') return 'Neutral intake';
+  switch (record.type) {
+    case 'note':
+      return 'Inbox capture';
+    case 'kb':
+      return 'Knowledge note';
+    case 'project':
+      return 'New project';
+    case 'idea':
+      return 'Project idea';
+    case 'task':
+      return 'Project task';
+    default:
+      return 'Capture';
+  }
 }
 function CaptureOutboxPanel({
   compact = false
@@ -20007,7 +20031,7 @@ function CaptureOutboxPanel({
       justifyContent: 'space-between',
       width: '100%'
     }
-  }, /*#__PURE__*/React.createElement("span", null, failed, " capture", failed === 1 ? '' : 's', " need retry."), /*#__PURE__*/React.createElement(Button, {
+  }, /*#__PURE__*/React.createElement("span", null, failed, " capture", failed === 1 ? ' needs' : 's need', " retry."), /*#__PURE__*/React.createElement(Button, {
     variant: "subtle",
     size: "sm",
     onClick: retryAll
@@ -20016,7 +20040,7 @@ function CaptureOutboxPanel({
   }, visible.map(record => /*#__PURE__*/React.createElement(ListItem, {
     key: record.captureId,
     title: captureRecordLabel(record),
-    description: `${record.deliveryMode === 'intake' ? 'Neutral intake' : 'Project task'} · ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' · ' + displayText(record.lastError, 120) : ''}`,
+    description: `${captureDestinationLabel(record)} · ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' · ' + displayText(record.lastError, 120) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, /*#__PURE__*/React.createElement(Badge, {
@@ -22245,6 +22269,32 @@ function SimpleView({
   }, "Clear cached tree")), pub.syncMessage ? /*#__PURE__*/React.createElement(Banner, {
     variant: "warn"
   }, /*#__PURE__*/React.createElement("span", null, displayText(pub.syncMessage, 180))) : null), /*#__PURE__*/React.createElement(Card, {
+    title: "Account"
+  }, /*#__PURE__*/React.createElement(DescriptionList, {
+    items: [["Supabase sign-in", window.WBSupabaseAuth?.configured?.() ? window.WBSupabaseAuth?.signedIn?.() ? 'signed in' : 'not signed in' : 'not configured in this build'], ["Captures", window.WBSupabaseAuth?.signedIn?.() ? 'syncing' : 'queued on this device until you sign in']]
+  }), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Loose notes are stored in Supabase, not the repo, so they need this sign-in as well as repo access. A GitHub token alone authenticates the repo and will leave captures stuck in the outbox."), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, window.WBSupabaseAuth?.signedIn?.() ? /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    onClick: () => {
+      window.WBSupabaseAuth.signOut();
+      forceRender();
+    }
+  }, "Sign out of Supabase") : /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    onClick: () => {
+      if (!window.WBSupabaseAuth?.configured?.()) {
+        toast('Supabase sign-in is not configured in this build.', 'danger');
+        return;
+      }
+      window.WBSupabaseAuth.signIn();
+    }
+  }, "Sign in with GitHub"))), /*#__PURE__*/React.createElement(Card, {
     title: "Mobile publish truth"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
     items: [["Repo dashboard version", pub.repoVersion ? 'v' + pub.repoVersion : 'unknown'], ["Live Pages version", pub.pagesVersion ? 'v' + pub.pagesVersion : 'unknown'], ["Versions aligned", pub.aligned ? 'yes' : 'no'], ["Last publish record", pub.publishedAt ? shortAge(pub.publishedAt) : 'unknown'], ["Pages URL", pub.pagesUrl]]
