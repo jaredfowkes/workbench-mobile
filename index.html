@@ -13017,6 +13017,19 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return session?.provider_token || "";
   }
 
+  /** The Supabase (GoTrue) access token -- what PostgREST wants as the
+      `Authorization: Bearer` value, as opposed to githubToken() above. */
+  function accessToken() {
+    return session?.access_token || "";
+  }
+
+  /** The one Supabase URL/anon-key pair the whole dashboard should read,
+      so a second module (e.g. supabase-data.js) never hand-copies these
+      literals. Safe to expose: the anon key is a publishable identifier. */
+  function config() {
+    return { url: CONFIG.url, anonKey: CONFIG.anonKey };
+  }
+
   const VERIFIER_KEY = "workbench-sb-pkce-verifier";
   let lastError = "";
 
@@ -13211,6 +13224,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     lastAuthError,
     signedIn,
     githubToken,
+    accessToken,
+    config,
     signIn,
     signOut,
     consumeRedirect,
@@ -14901,7 +14916,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.48";
+  const WB_VERSION = "2026-08-02.49";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
