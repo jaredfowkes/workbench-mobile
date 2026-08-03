@@ -13965,7 +13965,13 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   function deriveTaskId(captureId) {
-    return `cap-${String(captureId || "").replace(/^cap-/, "").slice(0, 14)}`;
+    // A uuidv7 has hyphens at fixed offsets (8-4-4-4-12), so a raw 14-char
+    // slice can land right on one -- trim it rather than ship a task id with
+    // a dangling "-".
+    return `cap-${String(captureId || "")
+      .replace(/^cap-/, "")
+      .slice(0, 14)
+      .replace(/-+$/, "")}`;
   }
 
   function derivePaths({
@@ -15238,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.52";
+  const WB_VERSION = "2026-08-02.54";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -15464,6 +15470,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     },
     actionOutboxRecords: [],
     liveActionRows: [],
+    captures: [],
   };
   const ghShaCache = new Map();
   // path -> blob sha from the last tree read; lets ghGetFile serve unchanged
@@ -20497,7 +20504,7 @@ function IntakeView() {
   }, /*#__PURE__*/React.createElement(List, null, items.map((it, i) => /*#__PURE__*/React.createElement(ListItem, {
     key: i,
     title: displayText(it.text, 150),
-    description: (it.kind || 'capture') + ' · unverified until triaged',
+    description: (it.kind || 'capture') + ' · unverified until triaged' + (it.capturedAt ? ' · captured ' + shortAge(it.capturedAt) : ''),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "warning"
     }, "needs triage")
@@ -26587,8 +26594,82 @@ window.__WBReactRender = function () {
   async function listUnder(prefix) {
     return Object.keys(ghTreeShas).filter((p) => p.startsWith(prefix));
   }
+  // Cache-first per issue #13's read-model decision: render whatever was last
+  // seen from IndexedDB immediately, then refresh from Supabase in the
+  // background -- same idb key/value cache ghGetFile already uses for git
+  // blobs. RLS already scopes `captures` to the signed-in owner
+  // (owner_uid = auth.uid()), so no owner filter needs to travel from the
+  // client.
+  const CAPTURES_CACHE_KEY = "captures:inbox";
+  async function loadPendingCaptures() {
+    const sourceKey = "hydrate.captures";
+    const cached = await idb.get(CAPTURES_CACHE_KEY).catch(() => null);
+    if (Array.isArray(cached)) state.captures = cached;
+    const Auth = window.WBSupabaseAuth;
+    if (!Auth?.signedIn?.()) {
+      // Not signed in is an expected state, not a failure -- stay quiet and
+      // let the file-based sources below carry the inbox.
+      setDataHealth(sourceKey, {
+        source: sourceKey,
+        label: "Inbox captures",
+        path: "captures",
+        status: "ok",
+        message: "Not signed in; showing file-based inbox sources only.",
+        coverage: { expected: 0, ok: 0 },
+      });
+      return state.captures || [];
+    }
+    try {
+      await Auth.ensureFresh();
+      const rows = await ensureSupabaseDataClient().select("captures", {
+        columns: "id,text,kind,project,captured_at",
+        filters: { state: "eq.inbox" },
+        order: "captured_at.desc",
+        limit: 200,
+      });
+      state.captures = Array.isArray(rows) ? rows : [];
+      idb.set(CAPTURES_CACHE_KEY, state.captures).catch(() => {});
+      setDataHealth(sourceKey, {
+        source: sourceKey,
+        label: "Inbox captures",
+        path: "captures",
+        status: "ok",
+        message: `Loaded ${state.captures.length} inbox capture(s) from Supabase.`,
+        coverage: { expected: 1, found: 1, ok: 1 },
+        updatedMs: Date.now(),
+        staleAfterMs: 5 * 60 * 1000,
+      });
+    } catch (err) {
+      // Deliberately keep whatever was cached/rendered above -- an empty
+      // inbox that is actually a failed fetch is exactly the bug class this
+      // read path closes. The failure still needs to be visible, so it goes
+      // through the same data-health channel every other source uses; that
+      // surfaces it in the top status strip via dataHealthPrimaryWarning().
+      setDataHealth(sourceKey, {
+        source: sourceKey,
+        label: "Inbox captures",
+        path: "captures",
+        status: "unreachable",
+        message: `Could not load Supabase captures: ${String(err?.message || err)}`,
+      });
+    }
+    return state.captures || [];
+  }
   async function pendingIntake() {
     const out = [];
+    // Loose notes captured on the phone land as `captures` rows now (#10/#12)
+    // instead of notes-inbox.md commits. Merge them with every source below
+    // so a note captured tonight and an older file-based note both render --
+    // neither source may silently replace the other.
+    for (const row of await loadPendingCaptures()) {
+      out.push({
+        kind: row.kind || "capture",
+        text: row.project ? `${row.project}: ${row.text}` : row.text,
+        // The device clock, not received_at -- what Jared actually made the
+        // capture at, offline queue latency notwithstanding.
+        capturedAt: row.captured_at ? Date.parse(row.captured_at) : null,
+      });
+    }
     for (const p of state.projects)
       for (const g of p.data.groups || [])
         for (const it of g.items || [])
