@@ -15244,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-03.21";
+  const WB_VERSION = "2026-08-03.22";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16659,7 +16659,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const treeSha = !fresh ? ghTreeShas[path] : null;
     if (treeSha) {
       const hit = await idb.get("ghc:" + treeSha).catch(() => null);
-      if (hit != null) {
+      // An empty cached body is treated as a miss: an earlier build cached "" for
+      // every file over the Contents API's 1 MB cap, and trusting that entry kept
+      // the Sessions view blank long after the fetch itself was fixed.
+      if (hit) {
         ghShaCache.set(path, treeSha);
         return { text: hit, sha: treeSha };
       }
@@ -16682,11 +16685,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
             conflict: true,
           });
     }
-    if (!res.ok)
+    if (!res.ok) {
+      // A file over the Contents API's 1 MB ceiling can be refused outright
+      // (403 "too_large") rather than returned with an empty body, so recover
+      // its sha from the parent directory listing and read the blob instead.
+      const viaBlob = await ghTextViaBlob(path).catch(() => null);
+      if (viaBlob) return viaBlob;
       throw Object.assign(
         new Error(`GitHub read failed (${res.status}) for ${path}`),
         { status: res.status },
       );
+    }
     const j = await res.json();
     ghShaCache.set(path, j.sha);
     ghTreeShas[path] = j.sha;
@@ -16701,9 +16710,38 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       : j.size === 0
         ? ""
         : await ghGetBlobText(j.sha);
-    idb.set("ghc:" + j.sha, text).catch(() => {});
+    // Never cache an empty body for a file that is not empty; that is what poisoned
+    // the cache before, and the entry outlived every later fix.
+    if (text) idb.set("ghc:" + j.sha, text).catch(() => {});
     patchTreeCache(path, j.sha);
     return { text, sha: j.sha };
+  }
+  async function ghFileSha(path) {
+    const known = ghTreeShas[path] || ghShaCache.get(path);
+    if (known) return known;
+    // A directory listing stays small however large its files are, and it carries
+    // the sha the blob endpoint needs.
+    const cfg = ghConfig();
+    const cut = path.lastIndexOf("/");
+    const dir = cut < 0 ? "" : path.slice(0, cut);
+    const name = path.slice(cut + 1);
+    const res = await ghFetch(
+      `/contents/${dir.split("/").filter(Boolean).map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
+    );
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const row = rows.find((r) => r && r.name === name);
+    return row?.sha || null;
+  }
+  async function ghTextViaBlob(path) {
+    const sha = await ghFileSha(path);
+    if (!sha) return null;
+    const text = await ghGetBlobText(sha);
+    ghShaCache.set(path, sha);
+    ghTreeShas[path] = sha;
+    if (text) idb.set("ghc:" + sha, text).catch(() => {});
+    return { text, sha };
   }
   async function ghGetBlobText(sha) {
     const res = await ghFetch(`/git/blobs/${encodeURIComponent(sha)}`);
@@ -19820,16 +19858,19 @@ function navItems() {
       id: 'followups',
       label: 'Follow-ups',
       active: state.view === 'followups'
+    },
+    // Kept in Work: only this group is expanded by default, and a nav item
+    // inside a collapsed group reads as a missing feature.
+    {
+      id: 'transcripts',
+      label: 'Meetings',
+      active: state.view === 'transcripts'
     }]
   }, {
     id: 'memory',
     label: 'Memory',
     icon: icon('file'),
     children: [{
-      id: 'transcripts',
-      label: 'Meetings',
-      active: state.view === 'transcripts'
-    }, {
       id: 'knowledge',
       label: 'Knowledge base',
       active: state.view === 'knowledge'
