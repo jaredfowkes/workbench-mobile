@@ -15244,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-03.22";
+  const WB_VERSION = "2026-08-03.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16716,6 +16716,37 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     patchTreeCache(path, j.sha);
     return { text, sha: j.sha };
   }
+  async function ghListDir(path) {
+    const cfg = ghConfig();
+    const res = await ghFetch(
+      `/contents/${path.split("/").filter(Boolean).map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
+    ).catch(() => null);
+    if (!res || !res.ok) return [];
+    const rows = await res.json().catch(() => null);
+    return Array.isArray(rows) ? rows : [];
+  }
+  // The build-time index only knows what existed at the last rebuild, so a
+  // transcript saved since then would be invisible. Listing the year/month
+  // folders costs a handful of small requests and keeps Meetings current.
+  async function ghListTranscriptPaths() {
+    const found = [];
+    for (const root of ["Personal/Transcripts", "Work/Transcripts"]) {
+      for (const year of await ghListDir(root)) {
+        if (year.type !== "dir" || !/^\d{4}$/.test(year.name)) continue;
+        for (const month of await ghListDir(`${root}/${year.name}`)) {
+          if (month.type !== "dir" || !/^\d{2}$/.test(month.name)) continue;
+          for (const file of await ghListDir(`${root}/${year.name}/${month.name}`)) {
+            if (file.type !== "file") continue;
+            if (file.sha && (file.name.endsWith(".html") || file.name.endsWith(".jsonl"))) {
+              ghTreeShas[file.path] = file.sha;
+            }
+            if (file.name.endsWith(".html")) found.push(file.path);
+          }
+        }
+      }
+    }
+    return found;
+  }
   async function ghFileSha(path) {
     const known = ghTreeShas[path] || ghShaCache.get(path);
     if (known) return known;
@@ -16997,9 +17028,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       // without anyone maintaining a list by hand.
       async scanTranscripts() {
         const tree = await ghGetTree();
-        const paths = tree.filter((p) =>
+        let paths = tree.filter((p) =>
           /^(Work|Personal)\/Transcripts\/\d{4}\/\d{2}\/[^/]+\.html$/.test(p),
         );
+        if (!paths.length) paths = await ghListTranscriptPaths();
         const manifests = {};
         const out = [];
         for (const path of paths) {
