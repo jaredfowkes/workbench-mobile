@@ -15244,7 +15244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-02.57";
+  const WB_VERSION = "2026-08-03.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16690,10 +16690,30 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const j = await res.json();
     ghShaCache.set(path, j.sha);
     ghTreeShas[path] = j.sha;
-    const text = decUtf8(j.content);
+    // The Contents API hard-caps at 1 MB and returns an empty body above it
+    // (encoding "none"), which is how Tools/Usage/session-metrics.json — 1.4 MB —
+    // silently emptied the Sessions view. The blob endpoint carries the same
+    // object with a far higher ceiling, and its sha is already in hand.
+    const inlined =
+      j.encoding === "base64" && typeof j.content === "string" && j.content.length > 0;
+    const text = inlined
+      ? decUtf8(j.content)
+      : j.size === 0
+        ? ""
+        : await ghGetBlobText(j.sha);
     idb.set("ghc:" + j.sha, text).catch(() => {});
     patchTreeCache(path, j.sha);
     return { text, sha: j.sha };
+  }
+  async function ghGetBlobText(sha) {
+    const res = await ghFetch(`/git/blobs/${encodeURIComponent(sha)}`);
+    if (!res.ok)
+      throw Object.assign(
+        new Error(`GitHub blob read failed (${res.status}) for ${sha}`),
+        { status: res.status },
+      );
+    const j = await res.json();
+    return j.encoding === "base64" ? decUtf8(j.content) : String(j.content || "");
   }
   async function ghPutFile(path, text, message, opts = {}) {
     const cfg = ghConfig();
@@ -16934,6 +16954,112 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           staleAfterMs: 30 * 60 * 1000,
         });
       },
+      // Meeting transcripts. Titles and summaries come from the manifest the
+      // transcript controller rewrites on every save, so this stays current
+      // without anyone maintaining a list by hand.
+      async scanTranscripts() {
+        const tree = await ghGetTree();
+        const paths = tree.filter((p) =>
+          /^(Work|Personal)\/Transcripts\/\d{4}\/\d{2}\/[^/]+\.html$/.test(p),
+        );
+        const manifests = {};
+        const out = [];
+        for (const path of paths) {
+          const m = path.match(
+            /^((Work|Personal)\/Transcripts)\/(\d{4})\/(\d{2})\/(.+)\.html$/,
+          );
+          if (!m) continue;
+          const [, root, section, year, month, base] = m;
+          if (!(root in manifests)) {
+            try {
+              const f = await ghGetFile(`${root}/docs.json`, {
+                allowMissing: true,
+              });
+              manifests[root] = f ? JSON.parse(f.text) : {};
+            } catch {
+              manifests[root] = {};
+            }
+          }
+          const key = `${year}/${month}/${base}.html`;
+          const meta = manifests[root][key] || {};
+          out.push({
+            section,
+            root,
+            path,
+            key,
+            year,
+            month,
+            fileName: `${base}.html`,
+            dataPath: `${root}/${year}/${month}/${base}.jsonl`,
+            title: meta.title || base,
+            summary: meta.summary || "",
+            tags: Array.isArray(meta.tags) ? meta.tags : [],
+            date:
+              (base.match(/^(\d{4}-\d{2}-\d{2})/) || [])[1] ||
+              `${year}-${month}-01`,
+          });
+        }
+        out.sort(
+          (a, b) =>
+            (a.date < b.date ? 1 : a.date > b.date ? -1 : 0) ||
+            a.title.localeCompare(b.title),
+        );
+        state.transcripts = out;
+        return out;
+      },
+      async loadTranscript(entry) {
+        if (!entry) return { lines: [], meta: {} };
+        const f = await ghGetFile(entry.dataPath, { allowMissing: true });
+        if (!f) return { lines: [], meta: {}, missing: true };
+        const rows = [];
+        for (const line of String(f.text).split(/\r?\n/)) {
+          if (!line.trim()) continue;
+          try {
+            rows.push(JSON.parse(line));
+          } catch {}
+        }
+        const start = rows.find((r) => r.type === "session-start") || {};
+        const end = rows.find((r) => r.type === "session-end") || {};
+        return {
+          meta: {
+            startedAt: start.started_at,
+            endedAt: end.endedAt,
+            reason: end.reason,
+            durationSeconds: end.durationSeconds,
+            source: start.detection_source,
+          },
+          lines: rows
+            .filter((r) => r.type === "segment")
+            .map((r) => ({
+              time: Number(r.time) || 0,
+              speaker: r.speaker || "Unknown speaker",
+              text: r.text || "",
+              channel: r.channel || "",
+              engine: r.engine || "",
+            })),
+        };
+      },
+      // Search inside every meeting. Bodies are cached by blob sha, so the first
+      // query pays for the fetches and later ones do not.
+      async searchTranscripts(query) {
+        const q = String(query || "").toLowerCase().trim();
+        if (q.length < 2) return [];
+        const results = [];
+        for (const entry of state.transcripts || []) {
+          let data;
+          try {
+            data = await Backends.github.loadTranscript(entry);
+          } catch {
+            continue;
+          }
+          const hits = data.lines.filter((l) =>
+            (l.speaker + " " + l.text).toLowerCase().includes(q),
+          );
+          if (hits.length)
+            results.push({ entry, hits: hits.slice(0, 6), total: hits.length });
+        }
+        return results;
+      },
       async scanKB() {
         const tree = await ghGetTree();
         const kb = tree.filter((p) =>
@@ -17086,6 +17212,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     state.projects = [];
     state.kb = [];
     state.intake = [];
+    state.transcripts = [];
     if (state.backend === "github") {
       // Paint as soon as projects exist; KB entries stream in behind the
       // first render so a phone on cellular sees the Overview in a few round
@@ -17102,6 +17229,12 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
                 a.title.localeCompare(b.title),
             );
             if (["knowledge"].includes(state.view)) render();
+          })
+          .catch(() => {});
+        Backends.github
+          .scanTranscripts()
+          .then(() => {
+            if (state.view === "transcripts") render();
           })
           .catch(() => {});
       }
@@ -19617,12 +19750,16 @@ function isMobileSiteHost() {
   }
 }
 function isMobileLayout() {
-  if (isMobileSiteHost()) return true;
+  // The mobile-shell host is the only surface the dashboard is served from,
+  // so the host alone cannot decide the layout: doing that forced the phone
+  // shell onto every desktop browser. Width decides; the host only breaks
+  // the tie when the viewport cannot be measured.
   try {
     if (window.innerWidth > 900) return false;
+    if (isMobileSiteHost()) return true;
     return matchMedia('(max-width: 900px)').matches;
   } catch {
-    return false;
+    return isMobileSiteHost();
   }
 }
 function useViewport() {
@@ -19689,6 +19826,10 @@ function navItems() {
     label: 'Memory',
     icon: icon('file'),
     children: [{
+      id: 'transcripts',
+      label: 'Meetings',
+      active: state.view === 'transcripts'
+    }, {
       id: 'knowledge',
       label: 'Knowledge base',
       active: state.view === 'knowledge'
@@ -22383,7 +22524,315 @@ function SimpleView({
     title: "Per-project costs are estimates, not billing-grade figures"
   })))));
 }
+const clock = s => {
+  const t = Math.max(0, Math.round(Number(s) || 0));
+  const h = Math.floor(t / 3600),
+    m = Math.floor(t % 3600 / 60);
+  return `${h ? h + ':' : ''}${String(m).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+};
+const speakerHue = name => {
+  let n = 0;
+  for (const ch of String(name || '')) n = (n * 31 + ch.charCodeAt(0)) % 360;
+  return n;
+};
+function HighlightedText({
+  text,
+  query
+}) {
+  const q = String(query || '').trim();
+  if (!q) return /*#__PURE__*/React.createElement(React.Fragment, null, text);
+  const at = String(text).toLowerCase().indexOf(q.toLowerCase());
+  if (at < 0) return /*#__PURE__*/React.createElement(React.Fragment, null, text);
+  return /*#__PURE__*/React.createElement(React.Fragment, null, String(text).slice(0, at), /*#__PURE__*/React.createElement("mark", {
+    style: {
+      background: 'var(--warn-bg, #fde68a)',
+      color: 'inherit',
+      padding: '0 2px',
+      borderRadius: 3
+    }
+  }, String(text).slice(at, at + q.length)), String(text).slice(at + q.length));
+}
+function TranscriptsView() {
+  const mobile = useViewport();
+  const all = state.transcripts || [];
+  const open = state.transcript || null;
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [globalHits, setGlobalHits] = React.useState(null);
+  const [searching, setSearching] = React.useState(false);
+  React.useEffect(() => {
+    if (!open) {
+      setData(null);
+      return;
+    }
+    let live = true;
+    setLoading(true);
+    Backends.github.loadTranscript(open).then(d => {
+      if (live) setData(d);
+    }).catch(() => {
+      if (live) setData({
+        lines: [],
+        meta: {},
+        failed: true
+      });
+    }).finally(() => {
+      if (live) setLoading(false);
+    });
+    return () => {
+      live = false;
+    };
+  }, [open && open.path]);
+  const runGlobalSearch = async () => {
+    const q = String(state.tgq || '').trim();
+    if (q.length < 2) {
+      setGlobalHits(null);
+      return;
+    }
+    setSearching(true);
+    try {
+      setGlobalHits(await Backends.github.searchTranscripts(q));
+    } catch {
+      setGlobalHits([]);
+    } finally {
+      setSearching(false);
+    }
+  };
+  const listQuery = String(state.tq || '').toLowerCase().trim();
+  const list = all.filter(e => !listQuery || `${e.title} ${e.summary} ${(e.tags || []).join(' ')} ${e.date}`.toLowerCase().includes(listQuery));
+  const lineQuery = String(state.tdq || '').trim();
+  const lines = (data?.lines || []).filter(l => !lineQuery || `${l.speaker} ${l.text}`.toLowerCase().includes(lineQuery.toLowerCase()));
+
+  // Search across every meeting sits above the whole screen.
+  const globalBar = /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: '1 1 320px',
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(SearchField, {
+    value: state.tgq || '',
+    placeholder: "Search across every meeting…",
+    onChange: v => {
+      state.tgq = v;
+      forceRender();
+    }
+  })), /*#__PURE__*/React.createElement(Button, {
+    onClick: runGlobalSearch,
+    disabled: searching
+  }, searching ? 'Searching…' : 'Search all'), globalHits ? /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    onClick: () => {
+      setGlobalHits(null);
+      state.tgq = '';
+      forceRender();
+    }
+  }, "Clear") : null), globalHits ? globalHits.length ? /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, globalHits.reduce((a, r) => a + r.total, 0), " matches in ", globalHits.length, " meeting", globalHits.length === 1 ? '' : 's', "."), globalHits.map(r => /*#__PURE__*/React.createElement(Card, {
+    key: r.entry.path,
+    interactive: true,
+    onClick: () => {
+      state.transcript = r.entry;
+      state.tdq = state.tgq;
+      forceRender();
+    },
+    eyebrow: `${r.entry.date} · ${r.total} match${r.total === 1 ? '' : 'es'}`,
+    title: r.entry.title
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 1
+  }, r.hits.map((hit, i) => /*#__PURE__*/React.createElement("p", {
+    key: i,
+    style: {
+      ...muted,
+      margin: 0
+    }
+  }, /*#__PURE__*/React.createElement("strong", {
+    style: {
+      color: 'var(--text-strong)'
+    }
+  }, hit.speaker, ": "), /*#__PURE__*/React.createElement(HighlightedText, {
+    text: hit.text,
+    query: state.tgq
+  }))))))) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No meeting contains that",
+    description: "Try fewer words, or a name."
+  }) : null));
+  const meetingList = /*#__PURE__*/React.createElement(Card, {
+    title: "Meetings",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, list.length)
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement(SearchField, {
+    value: state.tq || '',
+    placeholder: "Search this list…",
+    count: list.length,
+    onChange: v => {
+      state.tq = v;
+      forceRender();
+    }
+  }), list.length ? /*#__PURE__*/React.createElement(List, null, list.map(e => /*#__PURE__*/React.createElement(ListItem, {
+    key: e.path,
+    title: e.title,
+    description: e.summary || e.date,
+    trailing: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, (e.tags || []).includes('captions') ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "info"
+    }, "captions") : /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, "audio")),
+    onClick: () => {
+      state.transcript = e;
+      state.tdq = '';
+      forceRender();
+    }
+  }))) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No meetings match",
+    description: all.length ? 'Try a broader query.' : 'Transcripts appear here once they are committed to the repo.'
+  })));
+
+  // Reader styled after the Teams captions panel: dark, speaker-led rows.
+  const viewer = /*#__PURE__*/React.createElement(Card, {
+    title: open ? open.title : 'Transcript',
+    action: open ? /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, open.date), /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "ghost",
+      onClick: () => {
+        state.transcript = null;
+        forceRender();
+      }
+    }, "Close")) : null
+  }, !open ? /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Pick a meeting",
+    description: "Choose a meeting on the left to read its transcript."
+  }) : loading ? /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Loading transcript…") : data?.failed || data?.missing ? /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Transcript data unavailable",
+    description: "The reader file is in the repo but its data file could not be read."
+  }) : /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: '1 1 260px',
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement(SearchField, {
+    value: state.tdq || '',
+    placeholder: "Search in this transcript…",
+    count: lines.length,
+    onChange: v => {
+      state.tdq = v;
+      forceRender();
+    }
+  })), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, (data?.lines || []).length, " lines"), data?.meta?.durationSeconds ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, clock(data.meta.durationSeconds)) : null), /*#__PURE__*/React.createElement("div", {
+    style: {
+      background: '#1b1b1f',
+      color: '#f4f4f6',
+      borderRadius: 'var(--radius-md, 10px)',
+      padding: mobile ? 14 : 20,
+      maxHeight: '62vh',
+      overflowY: 'auto'
+    }
+  }, lines.length ? /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gap: 14
+    }
+  }, lines.map((l, i) => /*#__PURE__*/React.createElement("div", {
+    key: i,
+    style: {
+      display: 'grid',
+      gridTemplateColumns: mobile ? '1fr' : '64px 1fr',
+      gap: mobile ? 2 : 14,
+      alignItems: 'baseline'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#9aa0a6',
+      fontVariantNumeric: 'tabular-nums',
+      fontSize: 12
+    }
+  }, clock(l.time)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    style: {
+      color: `hsl(${speakerHue(l.speaker)} 70% 74%)`,
+      fontWeight: 700,
+      fontSize: 12,
+      letterSpacing: '0.02em',
+      marginBottom: 2
+    }
+  }, l.speaker), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: mobile ? 15 : 16,
+      lineHeight: 1.5
+    }
+  }, /*#__PURE__*/React.createElement(HighlightedText, {
+    text: l.text,
+    query: lineQuery
+  })))))) : /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: '#9aa0a6',
+      margin: 0
+    }
+  }, "Nothing in this transcript matches that search."))));
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 2,
+    style: {
+      marginBottom: 18
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      ...muted,
+      margin: 0,
+      textTransform: 'uppercase',
+      letterSpacing: '0.08em',
+      fontSize: 12
+    }
+  }, all.length, " transcript", all.length === 1 ? '' : 's'), /*#__PURE__*/React.createElement("h1", {
+    style: {
+      ...titleStyle,
+      fontSize: 'clamp(24px, 3vw, 34px)'
+    }
+  }, "Meetings"), /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Saved call transcripts with speaker names, searchable across every meeting or inside one.")), /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, globalBar, mobile ? open ? viewer : meetingList : /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'minmax(280px, 380px) minmax(0, 1fr)',
+      gap: 18,
+      alignItems: 'start'
+    }
+  }, meetingList, viewer)));
+}
 function Content() {
+  if (state.view === 'transcripts') return /*#__PURE__*/React.createElement(TranscriptsView, null);
   if (state.view === 'overview') return /*#__PURE__*/React.createElement(TodayView, null);
   if (state.view === 'focus') return /*#__PURE__*/React.createElement(FocusView, null);
   if (state.view === 'projects') return /*#__PURE__*/React.createElement(ProjectsView, null);
@@ -22660,7 +23109,7 @@ function MoreDrawer({
   open,
   onClose
 }) {
-  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['models', 'Models', 'star'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
+  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['transcripts', 'Meetings', 'list'], ['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['models', 'Models', 'star'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
   return /*#__PURE__*/React.createElement(Drawer, {
     open: open,
     onClose: onClose,
