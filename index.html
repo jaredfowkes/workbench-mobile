@@ -15250,7 +15250,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-05.43";
+  const WB_VERSION = "2026-08-05.46";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -22770,9 +22770,132 @@ function HighlightedText({
     }
   }, String(text).slice(at, at + q.length)), String(text).slice(at + q.length));
 }
+function Lightbox({
+  src,
+  alt,
+  onClose
+}) {
+  React.useEffect(() => {
+    const key = e => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', key);
+    return () => window.removeEventListener('keydown', key);
+  }, [onClose]);
+  return /*#__PURE__*/React.createElement("div", {
+    onClick: onClose,
+    title: "Click anywhere, or press Escape, to close",
+    style: {
+      position: 'fixed',
+      inset: 0,
+      zIndex: 200,
+      background: 'rgba(0,0,0,0.86)',
+      display: 'grid',
+      placeItems: 'center',
+      padding: 16,
+      cursor: 'zoom-out'
+    }
+  }, /*#__PURE__*/React.createElement("img", {
+    src: src,
+    alt: alt || '',
+    style: {
+      maxWidth: '100%',
+      maxHeight: '100%',
+      borderRadius: 8,
+      display: 'block'
+    }
+  }));
+}
+
+// Every shared screen at the top, in the order they were shared, so a
+// meeting can be skimmed by what was on screen rather than read through.
+function SharedScreenStrip({
+  shots,
+  load,
+  onOpen
+}) {
+  const [urls, setUrls] = React.useState({});
+  React.useEffect(() => {
+    let live = true;
+    (async () => {
+      for (const shot of shots) {
+        const url = await load(shot.path).catch(() => null);
+        if (!live) return;
+        if (url) setUrls(prev => ({
+          ...prev,
+          [shot.file]: url
+        }));
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [shots]);
+  return /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      ...muted,
+      margin: 0,
+      textTransform: 'uppercase',
+      letterSpacing: '0.06em',
+      fontSize: 11
+    }
+  }, "Shared screens"), /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      gap: 10,
+      overflowX: 'auto',
+      paddingBottom: 6,
+      scrollSnapType: 'x mandatory'
+    }
+  }, shots.map(shot => {
+    const label = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} · ${clock(shot.time)}`;
+    const url = urls[shot.file];
+    return /*#__PURE__*/React.createElement("figure", {
+      key: shot.file,
+      style: {
+        margin: 0,
+        flex: '0 0 auto',
+        width: 220,
+        scrollSnapAlign: 'start'
+      }
+    }, url ? /*#__PURE__*/React.createElement("img", {
+      src: url,
+      alt: label,
+      title: "Click to enlarge",
+      onClick: () => onOpen(url, label),
+      style: {
+        width: '100%',
+        borderRadius: 8,
+        display: 'block',
+        cursor: 'zoom-in',
+        background: '#111116'
+      }
+    }) : /*#__PURE__*/React.createElement("div", {
+      style: {
+        width: '100%',
+        height: 124,
+        borderRadius: 8,
+        background: '#111116',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#6b7280',
+        fontSize: 12
+      }
+    }, "Loading…"), /*#__PURE__*/React.createElement("figcaption", {
+      style: {
+        fontSize: 11,
+        color: 'var(--text-muted)',
+        marginTop: 4
+      }
+    }, label));
+  })));
+}
 function SharedScreenShot({
   shot,
-  load
+  load,
+  onOpen
 }) {
   const [url, setUrl] = React.useState(null);
   const [busy, setBusy] = React.useState(false);
@@ -22801,19 +22924,18 @@ function SharedScreenShot({
       padding: 10,
       margin: '4px 0'
     }
-  }, url ? /*#__PURE__*/React.createElement("a", {
-    href: url,
-    target: "_blank",
-    rel: "noreferrer"
-  }, /*#__PURE__*/React.createElement("img", {
+  }, url ? /*#__PURE__*/React.createElement("img", {
     src: url,
     alt: caption,
+    title: "Click to enlarge",
+    onClick: () => onOpen(url, caption),
     style: {
       width: '100%',
       display: 'block',
-      borderRadius: 6
+      borderRadius: 6,
+      cursor: 'zoom-in'
     }
-  })) : /*#__PURE__*/React.createElement(Cluster, {
+  }) : /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap',
@@ -22888,11 +23010,15 @@ function TranscriptsView() {
   // Screens are only interleaved on an unfiltered read; hiding lines by
   // search would otherwise drop the pictures that go with them.
   const shots = lineQuery ? [] : data?.screens || [];
-  const cams = data?.cameras || [];
   const brief = data?.summary || null;
   const shotCursor = {
     at: 0
   };
+  const [zoomed, setZoomed] = React.useState(null);
+  const openImage = React.useCallback((src, alt) => setZoomed({
+    src,
+    alt
+  }), []);
   const lines = (data?.lines || []).filter(l => !lineQuery || `${l.speaker} ${l.text}`.toLowerCase().includes(lineQuery.toLowerCase()));
 
   // Search across every meeting sits above the whole screen.
@@ -23094,44 +23220,11 @@ function TranscriptsView() {
     }
   }, action.owner) : /*#__PURE__*/React.createElement("em", {
     style: muted
-  }, "unassigned"))))) : null)) : null, cams.length ? /*#__PURE__*/React.createElement(Stack, {
-    gap: 2
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      ...muted,
-      margin: 0
-    }
-  }, "Who was on camera — occasional frames through the meeting, so a room that joins under one name can be matched to the people in it."), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))',
-      gap: 8
-    }
-  }, cams.map((frame, i) => /*#__PURE__*/React.createElement("figure", {
-    key: i,
-    style: {
-      margin: 0
-    }
-  }, /*#__PURE__*/React.createElement("a", {
-    href: frame.url,
-    target: "_blank",
-    rel: "noreferrer"
-  }, /*#__PURE__*/React.createElement("img", {
-    src: frame.url,
-    alt: frame.participant,
-    style: {
-      width: '100%',
-      borderRadius: 7,
-      display: 'block'
-    }
-  })), /*#__PURE__*/React.createElement("figcaption", {
-    style: {
-      fontSize: 11,
-      color: 'var(--text-muted)',
-      marginTop: 3,
-      wordBreak: 'break-word'
-    }
-  }, frame.participant, " · ", clock(frame.time)))))) : null, /*#__PURE__*/React.createElement("div", {
+  }, "unassigned"))))) : null)) : null, shots.length ? /*#__PURE__*/React.createElement(SharedScreenStrip, {
+    shots: shots,
+    load: data.loadScreen,
+    onOpen: openImage
+  }) : null, /*#__PURE__*/React.createElement("div", {
     style: {
       background: '#1b1b1f',
       color: '#f4f4f6',
@@ -23155,7 +23248,8 @@ function TranscriptsView() {
       before.push(/*#__PURE__*/React.createElement(SharedScreenShot, {
         key: 'shot' + shot.file,
         shot: shot,
-        load: data.loadScreen
+        load: data.loadScreen,
+        onOpen: openImage
       }));
     }
     return before.concat(/*#__PURE__*/React.createElement("div", {
@@ -23202,7 +23296,8 @@ function TranscriptsView() {
   }).concat(shots.slice(shotCursor.at).map(shot => /*#__PURE__*/React.createElement(SharedScreenShot, {
     key: 'shot' + shot.file,
     shot: shot,
-    load: data.loadScreen
+    load: data.loadScreen,
+    onOpen: openImage
   })))) : /*#__PURE__*/React.createElement("p", {
     style: {
       color: '#9aa0a6',
@@ -23211,7 +23306,11 @@ function TranscriptsView() {
   }, "Nothing in this transcript matches that search."))));
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
-  }, /*#__PURE__*/React.createElement(Stack, {
+  }, zoomed ? /*#__PURE__*/React.createElement(Lightbox, {
+    src: zoomed.src,
+    alt: zoomed.alt,
+    onClose: () => setZoomed(null)
+  }) : null, /*#__PURE__*/React.createElement(Stack, {
     gap: 2,
     style: {
       marginBottom: 18
