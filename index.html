@@ -15250,7 +15250,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-05.42";
+  const WB_VERSION = "2026-08-05.43";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -23101,7 +23101,7 @@ function TranscriptsView() {
       ...muted,
       margin: 0
     }
-  }, "Who was on camera — occasional frames from participants with no profile photo, usually a meeting room."), /*#__PURE__*/React.createElement("div", {
+  }, "Who was on camera — occasional frames through the meeting, so a room that joins under one name can be matched to the people in it."), /*#__PURE__*/React.createElement("div", {
     style: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))',
