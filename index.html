@@ -15250,7 +15250,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-05.31";
+  const WB_VERSION = "2026-08-05.33";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16726,18 +16726,42 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // pointing at raw.githubusercontent would just 404 — the bytes have to come
   // through the authenticated API like everything else here.
   const ghImageCache = new Map();
+  // A file's blob sha, from the tree index or by listing its parent directory.
+  async function ghBlobSha(path) {
+    if (ghTreeShas[path]) return ghTreeShas[path];
+    const parent = path.slice(0, path.lastIndexOf("/"));
+    const name = path.slice(path.lastIndexOf("/") + 1);
+    for (const row of await ghListDir(parent)) {
+      if (row.name === name && row.sha) return row.sha;
+    }
+    return null;
+  }
   async function ghGetImage(path) {
     if (ghImageCache.has(path)) return ghImageCache.get(path);
     const cfg = ghConfig();
     const res = await ghFetch(
       `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
     ).catch(() => null);
-    let url = null;
+    const mime = /\.jpe?g$/i.test(path) ? "image/jpeg" : "image/png";
+    let base64 = "";
     if (res && res.ok) {
       const j = await res.json().catch(() => null);
-      const base64 = j && typeof j.content === "string" ? j.content.replace(/\s+/g, "") : "";
-      if (base64) url = `data:image/png;base64,${base64}`;
+      base64 = j && typeof j.content === "string" ? j.content.replace(/\s+/g, "") : "";
     }
+    // Anything over the contents API's 1 MB ceiling comes back refused or with
+    // an empty body — which is exactly what a full-screen still is. The blob
+    // endpoint serves it by sha, the same recovery ghGetFile already uses.
+    if (!base64) {
+      const sha = await ghBlobSha(path).catch(() => null);
+      if (sha) {
+        const blob = await ghFetch(`/git/blobs/${encodeURIComponent(sha)}`).catch(() => null);
+        if (blob && blob.ok) {
+          const j = await blob.json().catch(() => null);
+          base64 = j && typeof j.content === "string" ? j.content.replace(/\s+/g, "") : "";
+        }
+      }
+    }
+    const url = base64 ? `data:${mime};base64,${base64}` : null;
     ghImageCache.set(path, url);
     return url;
   }
@@ -22752,13 +22776,18 @@ function SharedScreenShot({
 }) {
   const [url, setUrl] = React.useState(null);
   const [busy, setBusy] = React.useState(false);
+  const [failed, setFailed] = React.useState(false);
   const show = async () => {
     if (url || busy) return;
     setBusy(true);
+    setFailed(false);
     try {
-      setUrl(await load(shot.path));
+      const loaded = await load(shot.path);
+      setUrl(loaded);
+      // Silence here read as a dead button; say so instead.
+      setFailed(!loaded);
     } catch {
-      setUrl(null);
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -22784,12 +22813,23 @@ function SharedScreenShot({
       display: 'block',
       borderRadius: 6
     }
-  })) : /*#__PURE__*/React.createElement(Button, {
+  })) : /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
     size: "sm",
     variant: "ghost",
     onClick: show,
     disabled: busy
-  }, busy ? 'Loading…' : 'Show shared screen'), /*#__PURE__*/React.createElement("div", {
+  }, busy ? 'Loading…' : failed ? 'Try again' : 'Show shared screen'), failed ? /*#__PURE__*/React.createElement("span", {
+    style: {
+      color: '#e8a0a0',
+      fontSize: 12
+    }
+  }, "Could not load this image.") : null), /*#__PURE__*/React.createElement("div", {
     style: {
       color: '#9aa0a6',
       fontSize: 12,
