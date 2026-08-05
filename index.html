@@ -2624,6 +2624,12 @@ button.metric-card:hover {
   color: var(--positive-deep);
   font-weight: 600;
 }
+/* The inverse of cost-savings: a delegation that cost more than it should
+   have (same-tier-or-up), not less. */
+.cost-warning {
+  color: var(--warning);
+  font-weight: 600;
+}
 /* A plan-seat figure is arithmetic, not money. Muted and never bold, so it
    never reads with the same weight as a lane that actually bills. */
 .cost-notional {
@@ -15546,7 +15552,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-04.20";
+  const WB_VERSION = "2026-08-04.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21529,6 +21535,7 @@ function UsageView() {
   const totalMs = rows.reduce((a, r) => a + durationMs(r), 0);
   const tab = state.usageTab || 'spend';
   const savedLocal = localSavedSum(rows);
+  const wastedTier = wastedTierSpend(rows);
   const laneRows = laneCompareRows(rows);
   const incompleteCount = rows.filter(isIncompleteSession).length;
   const recentGroups = groupWorkSessions(rows).slice(0, 8);
@@ -21587,7 +21594,14 @@ function UsageView() {
     title: fmtCostMaybe(savedLocal)
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Estimated avoided cloud spend for accepted on-device tokens in this time frame; actual local cost is $0.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
+  }, "Estimated avoided cloud spend for accepted on-device tokens in this time frame; actual local cost is $0.")), wastedTier > 0 && /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Wasted-tier delegation spend",
+    title: /*#__PURE__*/React.createElement("span", {
+      className: "cost-warning"
+    }, fmtCostMaybe(wastedTier))
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, "Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up â€” never a saving) in this time frame. Only sessions with a role-attributed model breakdown are included.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
     rows: rows
   })), /*#__PURE__*/React.createElement(UsageLaneTable, {
     rows: laneRows
@@ -21601,6 +21615,10 @@ function UsageView() {
   }, /*#__PURE__*/React.createElement(UsageMixCard, {
     title: "Model mix",
     rows: groupModelMetrics(rows),
+    totalMs: totalMs
+  }), /*#__PURE__*/React.createElement(UsageMixCard, {
+    title: "Delegation role mix",
+    rows: groupRoleMetrics(rows),
     totalMs: totalMs
   }), /*#__PURE__*/React.createElement(UsageMixCard, {
     title: "Backend traffic share",
@@ -25610,9 +25628,95 @@ window.__WBReactRender = function () {
             r.pricingVersion ||
             state.modelPricing?.pricingVersion ||
             null,
+          // Orchestrator-vs-subagent split within this model (cce-014), when
+          // the row has been through the byRole-aware backfill/beacon path.
+          // Passed through as-is; consumers (groupRoleMetrics,
+          // wastedTierSpend) decide what to do with it.
+          byRole: bucket.byRole && typeof bucket.byRole === "object" ? bucket.byRole : null,
         };
       })
       .sort((a, b) => b.tokens - a.tokens || a.model.localeCompare(b.model));
+  }
+  // Cheapest-first tier rank, reused from Tools/Hooks/delegation-tier-guard.py
+  // and the lane equivalence documented in Tools/CLAUDE.user.md
+  // (Fable~Sol, Opus~Luna, Sonnet~Terra, Haiku~GPT-5.5) -- one table for
+  // both the plain-Anthropic and CCR/Azure lanes.
+  const MODEL_TIER_RANK = [
+    ["haiku", 1],
+    ["gpt-5.5", 1],
+    ["sonnet", 2],
+    ["terra", 2],
+    ["opus", 3],
+    ["luna", 3],
+    ["fable", 4],
+    ["sol", 4],
+  ];
+  function modelTierRank(model) {
+    const key = String(model || "").toLowerCase();
+    for (const [needle, rank] of MODEL_TIER_RANK) {
+      if (key.includes(needle)) return rank;
+    }
+    return null;
+  }
+  function groupRoleMetrics(rows) {
+    // Same shape/aggregation as groupModelMetrics, but flattened across every
+    // model in a session's byModel and keyed by role ("orchestrator" vs a
+    // named subagent type or "generic-subagent") instead of by model id.
+    const map = new Map();
+    for (const r of uniqueSessionRows(rows)) {
+      for (const bucket of sessionModelBuckets(r)) {
+        if (!bucket.byRole) continue;
+        for (const [role, roleBucket] of Object.entries(bucket.byRole)) {
+          const cur = map.get(role) || {
+            label: role,
+            count: 0,
+            sessionIds: new Set(),
+            ms: 0,
+            tokens: 0,
+            cost: 0,
+            requests: 0,
+          };
+          cur.sessionIds.add(workEpisodeIdentity(r));
+          cur.count = cur.sessionIds.size;
+          cur.tokens += Number(roleBucket.totalTokens || 0);
+          cur.cost += Number(roleBucket.cost || 0);
+          cur.requests += Number(roleBucket.requests || 0);
+          map.set(role, cur);
+        }
+      }
+    }
+    return [...map.values()].sort(
+      (a, b) => b.tokens - a.tokens || b.count - a.count,
+    );
+  }
+  function wastedTierSpend(rows) {
+    // Dollar cost of the exact pattern that prompted the delegation-tier
+    // guard: a subagent call priced at the parent's tier or higher (same-tier
+    // delegation saves nothing; up-tier is the Fable-style waste). Only rows
+    // with a byRole breakdown contribute -- older, un-backfilled rows are
+    // silently excluded rather than guessed at.
+    let total = 0;
+    for (const r of uniqueSessionRows(rows)) {
+      const buckets = sessionModelBuckets(r);
+      let parentTier = null;
+      for (const b of buckets) {
+        if (b.byRole && b.byRole.orchestrator) {
+          const t = modelTierRank(b.model);
+          if (t != null && (parentTier == null || t > parentTier)) parentTier = t;
+        }
+      }
+      if (parentTier == null) continue;
+      for (const b of buckets) {
+        if (!b.byRole) continue;
+        const modelTier = modelTierRank(b.model);
+        if (modelTier == null || modelTier < parentTier) continue;
+        for (const [role, roleBucket] of Object.entries(b.byRole)) {
+          if (role === "orchestrator") continue;
+          total += Number(roleBucket.cost || 0);
+        }
+      }
+    }
+    return total;
   }
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
@@ -25887,6 +25991,8 @@ window.__WBReactRender = function () {
     const freeRows = rows.filter(isFreeLaneRow);
     const backends = groupMetrics(rows, (r) => backendLane(r));
     const models = groupModelMetrics(rows);
+    const roleGroups = groupRoleMetrics(rows);
+    const wastedTier = wastedTierSpend(rows);
     const ides = groupMetrics(rows, (r) => normalizeIde(r.ide));
     const recent = rows
       .slice()
@@ -25898,7 +26004,7 @@ window.__WBReactRender = function () {
     // Kept for project/month rollups only. Session rows deliberately do not
     // use it — see sessionCostHTML.
     state._planShares = planShareMap(allRows, allRows);
-    return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${wastedTier > 0 ? `<div class="usage-card"><div class="tiny">Wasted-tier delegation spend</div><div class="usage-big cost-warning">${esc(fmtCostMaybe(wastedTier))}</div><p class="muted">Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up -- never a saving) in this time frame. Only sessions with a role-attributed byModel breakdown are included.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Delegation role mix", roleGroups, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
