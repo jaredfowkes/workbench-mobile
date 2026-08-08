@@ -4059,15 +4059,10 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 window.__DS = window.__DS || {};
 ;(function(){
 /**
-
  * KnowsMore Motion helpers — mirrored from the Vibe motion system at full
-
  * liveliness. usePressable(): hover = soft lift/pop with a small RANDOMIZED
-
  * tilt (so repeated interactions never feel mechanical), press = quick
-
  * compression, release = springy rebound. Disabled under prefers-reduced-motion.
-
  */
 
 function prefersReducedMotion() {
@@ -4127,11 +4122,8 @@ function riseIn(index = 0, step = 40) {
 }
 
 /**
-
  * usePresence(open, exitMs) — keeps a floating surface mounted for `exitMs`
-
  * after `open` goes false so it can animate closed. Returns { mounted, entered }.
-
  */
 function usePresence(open, exitMs = 160) {
   const [mounted, setMounted] = React.useState(open);
@@ -4156,13 +4148,9 @@ function usePresence(open, exitMs = 160) {
 }
 
 /**
-
  * Tactile icon/text press-split — the "Invite button" effect: on press an
-
  * icon and its adjacent label compress/move independently instead of as one
-
  * rigid block. Adds real liveliness to primary buttons.
-
  */
 function useTactilePress() {
   const [state, setState] = React.useState('rest');
@@ -4211,25 +4199,15 @@ function textPartStyle(state, {
 }
 
 /**
-
  * useRimLight() — the ONE button hover treatment, system-wide. A cursor-tracking
-
  * rim edge-light rides the border under the pointer. On light fills it's an accent
-
  * rim (reads great on white). On solid/dark fills (`light`) it's a three-part
-
  * treatment so it never blends into the fill: a faint always-on perimeter, a
-
  * bright white arc that catches under the cursor, and a subtle refraction in the
-
  * fill's own colour on the OPPOSITE edge (like glass catching light front and back).
-
  * Pair with a hover lift + press compress + spring rebound. `refractColor` sets the
-
  * fill hue for that opposite glow (defaults to the accent).
-
  * Returns { ref, hover, press, handlers, rim }.
-
  */
 function useRimLight({
   light = false,
@@ -4341,23 +4319,14 @@ function useRimLight({
 }
 
 /**
-
  * useSlideHighlight() — the ONE dropdown/list hover treatment, system-wide.
-
  * A single indicator element springs to the hovered row with a slight overshoot
-
  * and bounce (--ease-spring) instead of the fill disappearing and reappearing.
-
  * Rows call onItemEnter; the container calls onLeave. A row may set data-tone
-
  * ("danger" | "accent") to recolor the indicator. Render <span style={hiStyle}/>
-
  * as the first child of a position:relative container. moveTo(el) lets callers
-
  * drive it from the keyboard or the current selection.
-
  * Returns { containerRef, hiStyle, onItemEnter, onLeave, moveTo, box }.
-
  */
 function useSlideHighlight({
   tone = 'hover'
@@ -4414,11 +4383,8 @@ function useSlideHighlight({
 }
 
 /**
-
  * flyArc() — send a glyph along a parabola from one element into another and
-
  * resolve when it lands. The commit gesture behind the date picker's day-select.
-
  */
 function flyArc(fromEl, toEl, text, opt = {}) {
   return new Promise(res => {
@@ -4474,16 +4440,12 @@ Object.assign(window.__DS,{prefersReducedMotion,randTilt,usePressable,riseIn,use
 })();
 ;(function(){
 /* Resolve a gap/size prop: a number 0–13 maps to the --space-N ramp; anything
-
    else (string like "12px", "2rem", or a var()) passes through untouched. */
 const sp = v => typeof v === 'number' ? v >= 0 && v <= 13 ? `var(--space-${v})` : v + 'px' : v;
 
 /**
-
  * Stack — vertical rhythm. Children flow top-to-bottom with a consistent gap.
-
  * The default vertical layout primitive. gap defaults to --stack-gap.
-
  */
 function Stack({
   gap,
@@ -4509,11 +4471,8 @@ function Stack({
 }
 
 /**
-
  * Cluster — horizontal group that wraps. For button rows, tag/chip runs,
-
  * toolbars, meta lines. Uses gap (never margins) so it survives reordering.
-
  */
 function Cluster({
   gap = 2,
@@ -4540,13 +4499,9 @@ function Cluster({
 }
 
 /**
-
  * Grid — responsive auto-grid. By default cards gain columns instead of
-
  * stretching (repeat(auto-fill, minmax(min, 1fr))). Pass `cols` for a fixed
-
  * column count instead.
-
  */
 function Grid({
   min = 'var(--col-min)',
@@ -4573,13 +4528,9 @@ function Grid({
 }
 
 /**
-
  * Container — OPT-IN bounded width for reading/marketing/auth layouts. Product
-
  * surfaces should stay fluid; use size="fluid" (default padding only) for those.
-
  * size: sm | md | lg | xl | fluid, or an explicit max width.
-
  */
 function Container({
   size = 'lg',
@@ -4613,11 +4564,8 @@ function Container({
 }
 
 /**
-
  * Split — a fixed-width side column beside a fluid main column (the sidebar
-
  * layout). side="start"|"end"; collapses to a stack below `at` (px).
-
  */
 function Split({
   side = 'start',
@@ -4651,11 +4599,8 @@ function Split({
 }
 
 /**
-
  * Center — center a block horizontally and cap its reading measure so prose
-
  * never runs to fatiguing line lengths. measure: 'narrow' | 'body' | 'wide'.
-
  */
 function Center({
   measure = 'body',
@@ -4709,11 +4654,8 @@ function Spacer({
 }
 
 /**
-
  * Divider — hairline separator, horizontal (default) or vertical, with an
-
  * optional centered label ("OR", "MORE").
-
  */
 function Divider({
   vertical = false,
@@ -4774,13 +4716,9 @@ function Divider({
 }
 
 /**
-
  * Box — generic surface: token-driven padding, background, radius, border,
-
  * shadow. The escape hatch for one-off containers so pages stop hand-rolling
-
  * the same card div. `bg`/`radius`/`shadow` take token step names.
-
  */
 function Box({
   p,
@@ -5262,15 +5200,10 @@ function ContextRail({
 }
 
 /**
-
  * AppShell — the canonical three-zone frame: optional Sidebar, sticky TopBar,
-
  * fully-fluid content column, optional ContextRail. Compose with the slot
-
  * components above. Content NEVER gets a fixed max-width (product surfaces are
-
  * fluid); cap reading blocks inside with <Center> instead.
-
  */
 function AppShell({
   sidebar,
@@ -5313,11 +5246,8 @@ Object.assign(window.__DS,{NavList,Sidebar,TopBar,ContextRail,AppShell});
 })();
 ;(function(){
 /**
-
  * Signed, directional finance value. Auto-colors by sign (favorable = under/positive,
-
  * unfavorable = over/negative) unless tone is forced. Tabular figures always.
-
  */
 function VarianceValue({
   value,
@@ -5445,11 +5375,8 @@ Object.assign(window.__DS,{Avatar});
 })();
 ;(function(){
 /* Curated Lucide-style path set (1.75px stroke, 24×24). The house icon
-
    vocabulary, vendored so the system has no CDN dependency. Pass a name from
-
    this set, or a custom `path` (string) / `paths` (string[]) for anything else.
-
    Keep new glyphs in the Lucide line style so the set stays coherent. */
 const ICONS = {
   home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -5541,37 +5468,21 @@ Object.assign(window.__DS,{Icon,ICONS});
 })();
 ;(function(){
 /**
-
  * KnowsMore data grid — the center of gravity. Column-config driven, tabular
-
  * figures on numeric columns, hairline dividers, sticky header, hover row
-
  * highlight, and a totals footer. Cells render any node (VarianceValue, Badge,
-
  * TraceStamp) via column.render(value, row, isSubtotal).
-
  *
-
  * Two looks:
-
  *  - default: a bordered card (self-contained widget).
-
  *  - `report`: FRAMELESS — no outer box, no card fill, transparent header;
-
  *    hairlines do all the structural work. This is the light, whitespace-
-
  *    forward look for a full budget/ledger surface.
-
  *
-
  * Special rows: `{_group: 'Section title'}` renders a section header spanning
-
  * all columns; `{_subtotal: true, ...}` renders a subtotal row (top rule on
-
  * numeric cells, no hover). Column extras: `indent`, `margin` (left rule +
-
  * inset), `wrap` (multi-line cell), `strong`, `muted`, `mono`, `numeric`.
-
  */
 function DataTable({
   columns = [],
@@ -5732,15 +5643,10 @@ Object.assign(window.__DS,{DataTable});
 })();
 ;(function(){
 /**
-
  * Traceability stamp: who changed what and when, with staleness. The face is the
-
  * UI sans (Avenir Next) at micro size with tabular figures — names and relative
-
  * times ("2h ago") are human-readable, not codes, so mono is reserved for true
-
  * IDs/PO numbers. Muted; the backbone of KnowsMore's trust language.
-
  */
 function TraceStamp({
   owner,
@@ -5794,13 +5700,9 @@ const DV = ['var(--dv-1)', 'var(--dv-2)', 'var(--dv-3)', 'var(--dv-4)', 'var(--d
 const fmt = n => Math.abs(n) >= 1000 ? (n / 1000).toFixed(n % 1000 ? 1 : 0) + 'k' : '' + n;
 
 /**
-
  * BarChart — restrained vertical bars on the data-viz ramp. data: [{label,value,
-
  * color?}] or [number]. The accent bar can be highlighted via `highlight` index.
-
  * Bars grow from zero on mount (the house motion), reduced-motion aware.
-
  */
 function BarChart({
   data = [],
@@ -5880,13 +5782,9 @@ function BarChart({
 }
 
 /**
-
  * LineChart / Sparkline — a single trend line with an optional area fill. data:
-
  * [number] or [{value}]. Set `area` for a filled sparkline; `dots` to mark
-
  * points. Scales to its container width via viewBox.
-
  */
 function LineChart({
   data = [],
@@ -5949,11 +5847,8 @@ function Sparkline(props) {
 }
 
 /**
-
  * Donut — a single ratio as a ring (e.g. % of budget committed). value 0–1.
-
  * Shows the percentage in the middle unless `label` overrides.
-
  */
 function Donut({
   value = 0,
@@ -6521,11 +6416,8 @@ function ListItem({
 }
 
 /**
-
  * DescriptionList — aligned key/value pairs (semantic dl/dt/dd). `items` is
-
  * [[key, value], …] or [{ term, detail }]. layout: 'rows' (default) | 'inline'.
-
  */
 function DescriptionList({
   items = [],
@@ -6845,15 +6737,10 @@ Object.assign(window.__DS,{Tag});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore Banner — an inline, in-flow message that scopes to a section (not a
-
  * transient toast). Tone-tinted: `warn` (attention), `fav` (positive/on-track),
-
  * `info` (neutral). Dismissible via `onDismiss`. Use for standing conditions:
-
  * "estimate is stale", "pacing is under plan".
-
  */
 function Banner({
   variant = 'info',
@@ -6917,15 +6804,10 @@ Object.assign(window.__DS,{Banner});
 })();
 ;(function(){
 /**
-
  * KnowsMore Breadcrumb — shows where a value sits in the LOB → year → forecast →
-
  * line hierarchy and walks back up. The last crumb is the current location (bold,
-
  * non-interactive); ancestors are links. `items` is an array of strings, or
-
  * { label, href, onClick } objects. Deep paths can collapse the middle upstream.
-
  */
 function Breadcrumb({
   items = [],
@@ -7027,15 +6909,10 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
-
  * KnowsMore CommandPalette — the ⌘K launcher. A frosted scrim, a field that
-
  * autofocuses, and results that stagger in; ↑/↓ move the highlight and ↵ runs.
-
  * Self-manages the ⌘K / Escape hotkeys by default (`hotkey`), and can also be
-
  * driven with `open` + `onOpenChange`. Each command: {icon,title,subtitle,onRun}.
-
  */
 function CommandPalette({
   commands = [],
@@ -7255,15 +7132,10 @@ Object.assign(window.__DS,{CommandPalette});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * ConfirmDialog — decision modal for confirming an action. Self-contained (own
-
  * scrim + panel, no external deps). `variant="danger"` frames destructive
-
  * actions in the unfavorable red; `hold` requires a deliberate press-and-hold
-
  * to confirm (irreversible actions), matching the destructive-action pattern.
-
  */
 function ConfirmDialog({
   open,
@@ -7613,15 +7485,10 @@ function usePresence(open, exitMs = 240) {
 }
 
 /**
-
  * KnowsMore Drawer — a side rail that slides in over a scrim for context and
-
  * detail without leaving the page (line detail, filters, activity). Slides from
-
  * the right by default with a soft settle (`km-drawer-in`); Escape and scrim
-
  * click close it. Controlled via `open` + `onClose`.
-
  */
 function Drawer({
   open,
@@ -7783,17 +7650,11 @@ const uploadIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
-
  * KnowsMore Dropzone — a drag-and-drop import target. The frame lifts + lights
-
  * accent on drag-over; on drop it shows a progress bar, then a favorable "done"
-
  * card with a Replace affordance. Wire real uploads with `uploadFn(files,
-
  * onProgress) => Promise`; omit it and the zone simulates progress (useful for
-
  * demos). `onFiles` fires with the chosen FileList either way.
-
  */
 function Dropzone({
   onFiles,
@@ -7994,13 +7855,9 @@ Object.assign(window.__DS,{Dropzone});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore EmptyState — a centered, low-key prompt for a zero-data view. A
-
  * quiet framed icon, a plain-spoken title, one line of guidance, and a single
-
  * next action. Never a dead end: always give the user the one thing to do next.
-
  */
 function EmptyState({
   icon,
@@ -8089,21 +7946,13 @@ const linkIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
-
  * KnowsMore ImageInput — add an image three ways: drop / browse a file, paste
-
  * an image URL, or paste from the clipboard (⌘V) anywhere over the control. The
-
  * frame lifts + lights accent on drag-over; once an image is set it shows a
-
  * preview with its source and a Replace / Remove pair. Files read to a data URL
-
  * locally (no upload) unless you wire `uploadFn(file) => Promise<url>`.
-
  * `onChange(src)` fires with the resolved src either way. Controlled (`value`)
-
  * or uncontrolled (`defaultValue`).
-
  */
 function ImageInput({
   value,
@@ -8425,15 +8274,10 @@ Object.assign(window.__DS,{ImageInput});
 })();
 ;(function(){
 /**
-
  * KnowsMore Pagination — numbered pager with an accent-tint indicator that
-
  * slides between pages. Controlled (`page`) or uncontrolled (`defaultPage`).
-
  * Prev/next chevrons clamp at the ends. Keeps figures tabular so widths don't
-
  * jitter as you move.
-
  */
 function Pagination({
   total,
@@ -8551,17 +8395,11 @@ Object.assign(window.__DS,{Pagination});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore Popover — the generic anchored floating panel that sits under Select,
-
  * Combobox, Menu and DatePicker, exposed on its own for detail-on-demand. Anchors
-
  * to its trigger with a caret, springs open, collapses back toward the trigger on
-
  * close, and dismisses on outside-click or Escape. `trigger` is the anchor node;
-
  * `children` is the panel body. Controlled (open/onOpenChange) or uncontrolled.
-
  */
 function Popover({
   trigger,
@@ -8638,17 +8476,11 @@ Object.assign(window.__DS,{Popover});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore Progress — one accent-driven progress primitive in four shapes,
-
  * chosen by context: `linear` (inline/upload), `circular` (compact tiles),
-
  * `indeterminate` (unknown total), `segmented` (discrete steps). `value` is
-
  * 0–1. All fill with the live --accent and collapse to a static bar under
-
  * reduced motion.
-
  */
 function Progress({
   variant = 'linear',
@@ -8794,15 +8626,10 @@ Object.assign(window.__DS,{Progress});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore Skeleton — a quiet shimmer placeholder that holds layout while data
-
  * loads. Use as a single bar/block (`width`/`height`/`circle`) or pass `lines`
-
  * (an array of widths) for a stacked text placeholder. The shimmer uses sunken
-
  * surface tokens so it re-themes automatically; reduced-motion holds it static.
-
  */
 function Skeleton({
   width = '100%',
@@ -9018,15 +8845,10 @@ function Check({
 }
 
 /**
-
  * KnowsMore Toast — a transient confirmation that rises from the bottom center
-
  * on a dark ink surface. `success` shows a spring ✓. Auto-dismisses after
-
  * `duration` (0 keeps it up); an optional `action` (Undo / View) keeps it
-
  * actionable. Controlled via `open` + `onClose`.
-
  */
 function Toast({
   open,
@@ -9206,15 +9028,10 @@ Object.assign(window.__DS,{Tooltip});
 })();
 ;(function(){
 /**
-
  * KnowsMore Tree — a browsable hierarchy (nav rail or roll-up explorer). Rows
-
  * disclose with a spring caret; each branch can carry a `meta` value (e.g. a
-
  * subtotal) so structure and numbers read together. `nodes` is a nested array of
-
  * { label, meta?, defaultOpen?, children?: [...] }.
-
  */
 function TreeNode({
   node,
@@ -9332,19 +9149,12 @@ function Check({
 }
 
 /**
-
  * KnowsMore VerticalStepper — a longer / detail-heavy flow than the horizontal
-
  * Wizard. Each step expands in place to reveal its own content; the connector
-
  * fills as steps complete; done + current dots both carry the brand hero accent
-
  * (done = ✓, current = number with a focus ring) — never green. Click any dot to
-
  * jump. steps: [{ title, desc, detail | render(i) }]. Controlled via value/onChange
-
  * or uncontrolled via defaultValue.
-
  */
 function VerticalStepper({
   steps = [],
@@ -9507,17 +9317,11 @@ function Check({
 }
 
 /**
-
  * KnowsMore Wizard — a horizontal stepper for a short, ordered task (scope →
-
  * allocate → review). Completed steps flip to a favorable ✓ and their connector
-
  * fills; the active step wears the accent. Controlled (`current`) or
-
  * uncontrolled (`defaultCurrent`); renders `children` as the current step body
-
  * and, unless `controls={false}`, a Back / Continue row.
-
  */
 function Wizard({
   steps = [],
@@ -9685,19 +9489,12 @@ function Check({
 }
 
 /**
-
  * KnowsMore AsyncButton — a commit action that carries its own
-
  * idle → saving → done lifecycle so the user always knows their action landed.
-
  * Press compresses; on success the label morphs into a ✓ and the fill flips to
-
  * the favorable green, then resets. Use for the ONE value-committing action on
-
  * a view (Approve & save, Lock close). `onAction` may return a Promise; the
-
  * spinner holds until it resolves.
-
  */
 function AsyncButton({
   children = 'Approve & save',
@@ -9803,19 +9600,12 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore Button — the primary action primitive.
-
  * Restrained, tactile: a cursor-tracking **rim edge-light** rides the border
-
  * under the pointer on hover (a thin bright ring masked to the cursor, tapering
-
  * along the rim), the button lifts on hover and compresses on press. Accent-
-
  * driven so it reorients under any [data-lob] scope. Reduced-motion → plain
-
  * state changes only.
-
  */
 function Button({
   children,
@@ -10079,9 +9869,7 @@ function Check({
 }
 
 /** Searchable combo box — type to filter, click to select. On hover the highlight
-
  *  slides to the pointer's row with a slight overshoot (system dropdown behavior);
-
  *  the picked row flashes an accent ✓ before the popover collapses. Options: {value,label,hint}. */
 function Combobox({
   options = [],
@@ -10280,21 +10068,13 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
-
  * KnowsMore CommittedSearch — a search field that RUNS on Enter or the Search
-
  * button, not on every keystroke. Unlike SearchField (live in-page filter),
-
  * this is for queries that hit a service or reload a table: the button lights
-
  * accent while the query differs from the last run, dims once results match,
-
  * and shows a spinner while `onSearch` is in flight (return a Promise). Focus
-
  * lights the field + glyph accent and lifts it 1px. Controlled (`value`) or
-
  * uncontrolled (`defaultValue`).
-
  */
 function CommittedSearch({
   value,
@@ -10464,15 +10244,10 @@ Object.assign(window.__DS,{CommittedSearch});
 })();
 ;(function(){
 /**
-
  * KnowsMore CurrencyStepper — a ± stepper for a single bounded number
-
  * (extra investment, unit counts). Each committed value rolls up or down in
-
  * place (digit-roll), and the buttons compress on press. Controlled (`value`)
-
  * or uncontrolled (`defaultValue`). Figures are tabular so the width is stable.
-
  */
 function CurrencyStepper({
   value,
@@ -10603,15 +10378,10 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /**
-
  * KnowsMore DatePicker — calendar popover. On select the chosen day flies on an
-
  * arc out of the grid and drops into the field, bumping the month left and the
-
  * year right before it nestles into place (the signature commit gesture). Reduced
-
  * motion collapses straight to the value. value/onChange use YYYY-MM-DD strings.
-
  */
 function DatePicker({
   value,
@@ -10874,17 +10644,11 @@ Object.assign(window.__DS,{DatePicker});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore FilterBar — a row of active filter chips plus a dashed "add filter"
-
  * affordance. Adding a filter springs the chip in and slides the add button
-
  * right to make room; removing one (or clearing all, chip by chip) collapses its
-
  * width so the row slides left to close the gap. Options are `{key,label}`; the
-
  * active set is the list of keys. Controlled (`value`) or uncontrolled (`defaultValue`).
-
  */
 function Chip({
   label,
@@ -11135,9 +10899,7 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Square icon-only button. Ghost by default; used in toolbars, grid rows, rails.
-
  *  Carries the same system button interaction as Button: a cursor-tracking rim
-
  *  edge-light on hover, a hover lift, and a press-compress + spring pop. */
 function IconButton({
   icon,
@@ -11268,25 +11030,15 @@ function applyCase(s, mode) {
 }
 
 /**
-
  * KnowsMore InlineEdit — click a value to edit it in place. Numbers group with
-
  * commas + fixed decimals LIVE as you type, and per the house rule negatives
-
  * render in parentheses, never with a minus (type '-' anywhere to toggle sign).
-
  * Text can auto-case on commit ('title' | 'sentence'). On commit: the value
-
  * pops (`km-value-pop`), the field flashes accent (`km-cell-flash`) and a ✓
-
  * confirms. Controlled (`value`) or uncontrolled (`defaultValue`).
-
  *
-
  * Layout: pass `label` for a full label⇄value row; omit it for a bare editable
-
  * value you can drop into your own row/table.
-
  */
 function InlineEdit({
   value,
@@ -11517,11 +11269,8 @@ Object.assign(window.__DS,{InlineEdit});
 })();
 ;(function(){
 /**
-
  * Text input with editorial label, optional prefix (e.g. $), helper/error text,
-
  * and an optional trace line for "who last changed this".
-
  */
 function Input({
   label,
@@ -11652,13 +11401,9 @@ let _id = 0;
 const useId = given => React.useMemo(() => given || 'fld-' + ++_id, [given]);
 
 /**
-
  * Field — the label + control + help/error wrapper every form control composes
-
  * into. Wires htmlFor / aria-describedby / aria-invalid to the child control by
-
  * cloning it, so accessibility is automatic. Pass any control as the child.
-
  */
 function Field({
   label,
@@ -11753,11 +11498,8 @@ function Field({
 }
 
 /**
-
  * FormRow — horizontal label / control layout for settings-style forms: label
-
  * (+ description) on the left, control on the right. Stacks under `at` px.
-
  */
 function FormRow({
   label,
@@ -11859,11 +11601,8 @@ function Fieldset({
 }
 
 /**
-
  * FormError — a submit-time summary that lists the fields that failed, so the
-
  * user sees everything wrong at once. `errors` is [{ label, message, href? }].
-
  */
 function FormError({
   title = 'Please fix the following',
@@ -11929,15 +11668,10 @@ function pulse(el) {
 }
 
 /**
-
  * Dropdown menu — a trigger + popover list of actions. Animates in/out. On hover
-
  * the highlight slides to the pointer's row with a slight overshoot + bounce
-
  * (the system dropdown behavior via useSlideHighlight), turning red over a
-
  * destructive item. items: {label, icon?, onClick?, danger?, disabled?} or {divider:true}.
-
  */
 function Menu({
   trigger,
@@ -12124,7 +11858,6 @@ function RadioItem({
 }
 
 /** Vertical radio group with springy dot + ring pulse on select. Re-picking the
-
  *  already-selected option re-fires the same micro-animation. Options: strings or {value,label,hint,disabled}. */
 function RadioGroup({
   options = [],
@@ -12162,13 +11895,9 @@ Object.assign(window.__DS,{RadioGroup});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * RangeSlider — dual-thumb range selector. value is [low, high]; controlled via
-
  * value/onChange or uncontrolled via defaultValue. Accent fill spans the range;
-
  * thumbs pop on grab. Shows the two values unless showValues is false.
-
  */
 function RangeSlider({
   min = 0,
@@ -12291,17 +12020,11 @@ Object.assign(window.__DS,{RangeSlider});
 })();
 ;(function(){
 /**
-
  * KnowsMore SearchField — a text field for on-page filtering. On focus the
-
  * whole field and its glyph light up accent and it lifts 1px; a live result
-
  * count pill and the clear button spring in whenever there's a query. Pass
-
  * `count` to show a real match count (omit to hide the pill). Controlled
-
  * (`value`) or uncontrolled (`defaultValue`).
-
  */
 function SearchField({
   value,
@@ -12541,17 +12264,11 @@ function Check({
 }
 
 /**
-
  * KnowsMore Select — a custom popover dropdown (the native control never matched
-
  * the field styling). Opens a bordered menu; the highlight slides to the hovered
-
  * row with a slight overshoot + bounce (system dropdown behavior), and the picked
-
  * row confirms with an accent ✓ that pops before the menu collapses and the field
-
  * pulses. Controlled (`value` + `onChange`) or uncontrolled (`defaultValue`).
-
  */
 function Select({
   label,
@@ -12752,15 +12469,10 @@ Object.assign(window.__DS,{Select});
 })();
 ;(function(){
 /**
-
  * KnowsMore Slider — a labeled range for exploratory "what-if" inputs
-
  * ("if we invest more…"). The accent fills the track behind the thumb; the
-
  * readout pops while dragging and the thumb springs on release. Controlled or
-
  * uncontrolled. Renders a native range so keyboard + a11y come for free.
-
  */
 function Slider({
   value,
@@ -12930,21 +12642,13 @@ function Check({
 }
 
 /**
-
  * KnowsMore Textarea — an auto-growing note field. The box grows with its
-
  * content up to `maxHeight`, then scrolls. Pass `onSave` to enable the lock-in
-
  * workflow: while there are edits the field shows "Unsaved changes" and an
-
  * accent Save button; on save the field flashes favorable green, the border and
-
  * fill settle to a calm "Saved" state, and a transient "Saved · locked in"
-
  * confirms. Omit `onSave` for a plain auto-grow field (accent focus only).
-
  * Controlled (`value`) or uncontrolled (`defaultValue`).
-
  */
 function Textarea({
   value,
@@ -13088,17 +12792,11 @@ Object.assign(window.__DS,{Textarea});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
-
  * KnowsMore TokenInput — a multi-select chip field. Click to open the pool,
-
  * pick to add (the chip springs in with `km-chip-in`), press × to remove (the
-
  * chip scales out with `km-chip-out` before the value updates). Accent-driven,
-
  * so chips reorient under any [data-lob] scope. Controlled (`value`) or
-
  * uncontrolled (`defaultValue`).
-
  */
 function TokenInput({
   value,
@@ -13759,6 +13457,508 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     PostgrestError,
     buildSelectQuery,
     createClient,
+  };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WBSupabaseTasks = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Task hierarchy reads/writes for issue #6's schema (see the migration at
+  // Tools/workbench-live/supabase/migrations/20260808000000_tasks.sql). Pure
+  // module, no DOM access, same DI shape as capture-outbox.js and
+  // supabase-data.js: the caller hands in a `client` (supabase-data's
+  // createClient() -- select/upsert only), nothing here touches `window` or
+  // `fetch` directly. app.js is expected to wire this in later; that wiring
+  // is a separate, supervised step and does not live here.
+
+  // Check-constraint vocabularies, copied verbatim from the migration so this
+  // module fails the same request the database would, but before it leaves
+  // the browser. Keep these in lockstep with the migration -- they are not
+  // derived from it automatically, so a schema change has to touch both.
+  const STATUS_VALUES = ["open", "done", "cancelled"];
+  const WHEN_BUCKET_VALUES = ["today", "this_week", "someday", "scheduled"];
+  const WAITING_ON_VALUES = ["jared", "machine", "agent", "device-test", "date", "external"];
+
+  function assertOneOf(value, allowed, field, { nullable = false } = {}) {
+    if (value === undefined || value === null) {
+      if (nullable) return;
+      throw new Error(`${field} is required and must be one of: ${allowed.join(", ")}.`);
+    }
+    if (!allowed.includes(value)) {
+      const suffix = nullable ? ", or null" : "";
+      throw new Error(`Invalid ${field} "${value}" -- must be one of: ${allowed.join(", ")}${suffix}.`);
+    }
+  }
+
+  function indexById(rows) {
+    const byId = {};
+    for (const row of rows || []) {
+      if (row && row.id != null) byId[row.id] = row;
+    }
+    return byId;
+  }
+
+  // scopes -> areas -> projects -> stages is a straight-line chain of real
+  // foreign keys (see the migration), so PostgREST can embed the whole tree
+  // in a single request instead of four -- "as few round trips as is
+  // reasonable" here means one, not four in parallel. The trade is a nested
+  // shape on the wire; flattenHierarchy() below undoes that so callers get
+  // flat arrays and by-id maps, not a tree they have to walk themselves.
+  function flattenHierarchy(scopeRows) {
+    const scopes = [];
+    const areas = [];
+    const projects = [];
+    const stages = [];
+
+    for (const scopeRow of scopeRows || []) {
+      const { areas: nestedAreas, ...scope } = scopeRow;
+      scopes.push(scope);
+      for (const areaRow of nestedAreas || []) {
+        const { projects: nestedProjects, ...area } = areaRow;
+        areas.push(area);
+        for (const projectRow of nestedProjects || []) {
+          const { stages: nestedStages, ...project } = projectRow;
+          projects.push(project);
+          for (const stage of nestedStages || []) {
+            stages.push(stage);
+          }
+        }
+      }
+    }
+
+    return {
+      scopes,
+      areas,
+      projects,
+      stages,
+      scopesById: indexById(scopes),
+      areasById: indexById(areas),
+      projectsById: indexById(projects),
+      stagesById: indexById(stages),
+    };
+  }
+
+  // Computes a task's visible locator (SCOPE.AREA.PROJECT[.STAGE].NNN) from
+  // its *current* parents. There is deliberately no stored `locator` column
+  // on tasks (see the migration's comment on `number`) -- reading it fresh
+  // every time is what makes it impossible for a locator to disagree with
+  // the hierarchy after a task moves. `index` is the shape loadHierarchy()
+  // returns (or an equivalent hand-built one, which is why this is exposed
+  // as a plain function rather than only a store method).
+  function locatorFor(task, index) {
+    const project = task?.project_id ? index?.projectsById?.[task.project_id] : null;
+    if (!project) {
+      // The migration leaves numbering (and therefore locators) for
+      // unfiled/personal tasks undefined on purpose -- there is no project
+      // scope for `number` to be unique within, so there is nothing to
+      // compute here. Throwing beats guessing a format the schema never
+      // promised.
+      throw new Error(
+        `locatorFor: task "${task?.id}" has no project_id; personal/unfiled tasks have no defined locator.`,
+      );
+    }
+    const area = index.areasById[project.area_id];
+    const scope = index.scopesById[area.scope_id];
+
+    const segments = [scope.code, area.code, project.code];
+    if (task.stage_id) {
+      const stage = index.stagesById[task.stage_id];
+      segments.push(stage.code);
+    }
+    segments.push(String(task.number).padStart(3, "0"));
+    return segments.join(".").toUpperCase();
+  }
+
+  // "Waiting" and "queued" are never stored booleans (the migration is
+  // explicit about this on both `tasks.waiting_on` and `task_dependencies`):
+  // they are derived here, on read, from waiting_on and the dependency
+  // graph, so they can never drift out of sync with either. A task can be
+  // both at once -- e.g. filed and blocked on a person -- so this returns
+  // the full set alongside a single `state` for callers that just need one
+  // bucket to sort or badge by.
+  function deriveState(task, { dependencies = [], tasksById = {} } = {}) {
+    const closed = task?.status === "done" || task?.status === "cancelled";
+
+    const waiting = !closed && task?.waiting_on != null;
+
+    const queued =
+      !closed &&
+      (dependencies || []).some((dep) => {
+        if (dep?.task_id !== task?.id) return false;
+        const prereq = tasksById[dep.depends_on_task_id];
+        // A prerequisite that was not loaded into tasksById can't be proven
+        // done or cancelled, so it still counts as queuing -- failing open
+        // (still queued) is the safe direction; failing closed would show a
+        // possibly-blocked task as actionable.
+        if (!prereq) return true;
+        return prereq.status !== "done" && prereq.status !== "cancelled";
+      });
+
+    const states = [];
+    if (waiting) states.push("waiting");
+    if (queued) states.push("queued");
+    if (states.length === 0) states.push("actionable");
+
+    return {
+      // Waiting outranks queued when a task is both, because "who does this
+      // need" is the more specific thing to surface -- issue #6/#13 don't
+      // state an order for the both-true case, so this is a module decision,
+      // not a schema rule.
+      state: states[0],
+      waiting,
+      queued,
+      states,
+    };
+  }
+
+  function isActionable(task, { dependencies, tasksById } = {}) {
+    return deriveState(task, { dependencies, tasksById }).state === "actionable";
+  }
+
+  // No real deadline / no project priority both sort last, not first --
+  // Number.POSITIVE_INFINITY loses every ascending comparison against a real
+  // value on either axis.
+  const NO_DEADLINE = Number.POSITIVE_INFINITY;
+  const NO_PRIORITY = Number.POSITIVE_INFINITY;
+
+  function deadlineSortKey(task) {
+    if (!task?.deadline) return NO_DEADLINE;
+    const parsed = Date.parse(task.deadline);
+    return Number.isFinite(parsed) ? parsed : NO_DEADLINE;
+  }
+
+  function prioritySortKey(task, projectsById) {
+    const project = task?.project_id ? projectsById?.[task.project_id] : null;
+    const priority = project ? project.priority : null;
+    return priority == null ? NO_PRIORITY : priority;
+  }
+
+  // Issue #13's ordering rule: actionable first, then soonest deadline, then
+  // projects.priority ascending with nulls last. `dependencies`/`tasksById`
+  // are accepted beyond the caller's minimum ({projectsById, now}) so
+  // "actionable" can be the real, dependency-aware computation from
+  // deriveState rather than a stand-in that only looks at waiting_on; when a
+  // caller doesn't have the dependency graph handy, omitting them still
+  // works; every task just resolves `queued: false`. `now` is accepted for
+  // the same injected-clock convention the rest of this codebase uses
+  // (capture-outbox's `options.now`) even though the current three-part rule
+  // never reads it -- keeping the parameter here means a later clock-relative
+  // refinement doesn't have to change every call site.
+  function rank(tasks, { projectsById = {}, now = Date.now, dependencies = [], tasksById = {} } = {}) {
+    void (typeof now === "function" ? now() : now);
+
+    return (tasks || [])
+      .map((task, position) => ({ task, position }))
+      .sort((a, b) => {
+        const aActionable = isActionable(a.task, { dependencies, tasksById });
+        const bActionable = isActionable(b.task, { dependencies, tasksById });
+        if (aActionable !== bActionable) return aActionable ? -1 : 1;
+
+        // Compared, never subtracted. Both sentinels are +Infinity, and
+        // `Infinity - Infinity` is NaN — which is `!== 0`, so a subtracting
+        // comparator returns NaN for two tasks that merely both lack a
+        // deadline, short-circuits, and silently skips every rule below it.
+        // That is how priority stopped applying to any task without a
+        // deadline, which is most of them.
+        const aDeadline = deadlineSortKey(a.task);
+        const bDeadline = deadlineSortKey(b.task);
+        if (aDeadline !== bDeadline) return aDeadline < bDeadline ? -1 : 1;
+
+        const aPriority = prioritySortKey(a.task, projectsById);
+        const bPriority = prioritySortKey(b.task, projectsById);
+        if (aPriority !== bPriority) return aPriority < bPriority ? -1 : 1;
+
+        // Every rule above is a tie: keep the caller's original order rather
+        // than lean on Array#sort's stability alone, since "ties keep input
+        // order" is a property the tests pin down explicitly.
+        return a.position - b.position;
+      })
+      .map((entry) => entry.task);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Legacy translation layer
+  //
+  // The dashboard renderer (app.js) consumes p.data shaped like a parsed
+  // tasks.json: {project, tagline, groups: [{name, items: [{id, text,
+  // status, completed?, tags?, priority?}]}]}. Supabase has neither `groups`
+  // nor that status vocabulary -- status/when_bucket/waiting_on/cancel_reason
+  // are four independent columns (see the migration). This section is the
+  // migration's own status_map (slice-plan.json), applied backwards, kept
+  // here so the renderer itself never has to change for two migrated
+  // projects to render and write.
+  // ---------------------------------------------------------------------------
+
+  const LEGACY_STATUS_VALUES = ["todo", "doing", "blocked", "done", "idea", "skipped", "cancelled"];
+
+  // Supabase row -> legacy vocabulary. Order matters: waiting_on is checked
+  // before when_bucket, because a task that is both waiting on someone and
+  // scheduled for today is blocked in the old vocabulary, not doing -- "who
+  // does this need" outranks "when is it planned", the same precedence
+  // deriveState() above gives waiting over queued.
+  function toLegacyStatus(task) {
+    if (task.status === "done") return "done";
+    if (task.status === "cancelled") {
+      // 'skipped' has no column of its own -- the migration folds it into
+      // cancel_reason, so it is the one legacy status this function has to
+      // recover from a second field rather than status alone.
+      return task.cancel_reason === "skipped" ? "skipped" : "cancelled";
+    }
+    // Every remaining case is status === 'open'.
+    if (task.waiting_on != null) return "blocked";
+    if (task.when_bucket === "today") return "doing";
+    if (task.when_bucket === "someday") return "idea";
+    return "todo";
+  }
+
+  // The exact inverse: legacy vocabulary -> the column patch a write needs.
+  // Every branch sets all four columns, including the ones that don't apply,
+  // rather than leaving them out -- an omitted key here would leave a stale
+  // waiting_on or cancel_reason on the row from whatever status the task
+  // held before, and toLegacyStatus() above would read exactly that
+  // leftover. `existing` is the task's current row (or nothing, for a task
+  // that doesn't exist yet); only 'blocked' ever consults it.
+  function fromLegacyStatus(legacy, existing = {}) {
+    assertOneOf(legacy, LEGACY_STATUS_VALUES, "legacy status");
+
+    const patch = { status: "open", when_bucket: null, waiting_on: null, cancel_reason: null };
+
+    switch (legacy) {
+      case "doing":
+        patch.when_bucket = "today";
+        break;
+      case "idea":
+        patch.when_bucket = "someday";
+        break;
+      case "blocked":
+        // Can't invent a specific reason a task is waiting -- keep one if
+        // the row already has it, otherwise fall back to 'external'.
+        // 'external' is a true statement (something outside this task has
+        // to move) even when it isn't a useful one; a fabricated specific
+        // reason (defaulting to, say, 'jared') would be worse than a
+        // generic true one.
+        patch.waiting_on = existing?.waiting_on ?? "external";
+        break;
+      case "done":
+        patch.status = "done";
+        break;
+      case "skipped":
+        patch.status = "cancelled";
+        patch.cancel_reason = "skipped";
+        break;
+      case "cancelled":
+        patch.status = "cancelled";
+        // Matches slice-plan.json's status_map for issue #6 -- distinct
+        // from 'skipped' above so the two migrated projects' rows keep
+        // meaning the different things they meant in the file store.
+        patch.cancel_reason = "cancelled in the file store";
+        break;
+      // 'todo' needs nothing beyond the open/null defaults above.
+    }
+
+    return patch;
+  }
+
+  // Nulls-last stage ordering, the same "compare, never subtract" shape as
+  // deadlineSortKey/prioritySortKey above -- stages.position is nullable (a
+  // short stage list often doesn't need manual ordering; see the migration),
+  // and Infinity - Infinity is NaN, not a tie.
+  function stagePositionSortKey(stage) {
+    return stage?.position == null ? NO_DEADLINE : stage.position;
+  }
+
+  function taskToItem(task) {
+    const item = {
+      id: task.id,
+      text: task.title,
+      status: toLegacyStatus(task),
+    };
+    // Only a task that is actually closed gets a completion date --
+    // status_changed_at is stamped on every transition (the migration's
+    // trigger fires on reopen too), so a reopened task must not read as
+    // completed just because the column is non-null.
+    const closed = task.status === "done" || task.status === "cancelled";
+    if (closed && task.status_changed_at) {
+      item.completed = String(task.status_changed_at).slice(0, 10);
+    }
+    if (task.notes != null) item.notes = task.notes;
+    return item;
+  }
+
+  // Supabase's {project, stages, tasks} -> the renderer's {project, tagline,
+  // groups}. One group per stage, in stage order; a trailing "Tasks" group
+  // holds whatever has no stage_id at all -- the migration deliberately
+  // dropped the old, information-free Tasks/Shipped/Ideas groups (#6), so
+  // this is where those items live now. Tags and per-item priority are left
+  // untouched: this function's inputs carry neither (no task_tags join, and
+  // there is no per-task priority column, only projects.priority), so there
+  // is nothing here to translate them from.
+  function toProjectData({ project, stages, tasks }) {
+    const itemsByStage = new Map();
+    const unstaged = [];
+    for (const task of tasks || []) {
+      if (task.stage_id == null) {
+        unstaged.push(task);
+        continue;
+      }
+      if (!itemsByStage.has(task.stage_id)) itemsByStage.set(task.stage_id, []);
+      itemsByStage.get(task.stage_id).push(task);
+    }
+
+    const byPosition = (a, b) => a.position - b.position;
+
+    const orderedStages = [...(stages || [])].sort((a, b) => {
+      const aKey = stagePositionSortKey(a);
+      const bKey = stagePositionSortKey(b);
+      if (aKey !== bKey) return aKey < bKey ? -1 : 1;
+      return (a.name || "").localeCompare(b.name || "");
+    });
+
+    const groups = orderedStages.map((stage) => ({
+      name: stage.name,
+      items: (itemsByStage.get(stage.id) || []).sort(byPosition).map(taskToItem),
+    }));
+
+    if (unstaged.length > 0) {
+      groups.push({ name: "Tasks", items: unstaged.sort(byPosition).map(taskToItem) });
+    }
+
+    return {
+      project: project.name,
+      // Not a projects column (see the migration) -- always null today, but
+      // kept as a real key rather than omitted so callers can rely on its
+      // presence the same way a parsed tasks.json always has one.
+      tagline: project.tagline ?? null,
+      groups,
+    };
+  }
+
+  function createTaskStore(options = {}) {
+    const client = options.client;
+    if (!client || typeof client.select !== "function" || typeof client.upsert !== "function") {
+      throw new Error("supabase-tasks requires a supabase-data-shaped `client` (select/upsert).");
+    }
+
+    async function loadHierarchy() {
+      const scopes = await client.select("scopes", {
+        columns: "*,areas(*,projects(*,stages(*)))",
+        order: "position.asc",
+      });
+      return flattenHierarchy(scopes);
+    }
+
+    async function listTasks({ projectId, status, whenBucket, limit } = {}) {
+      const filters = {};
+      // Omitted options must not add a filter -- an absent key here, not an
+      // `eq.null`, is what "don't filter on this" means to PostgREST.
+      if (projectId !== undefined) filters.project_id = `eq.${projectId}`;
+      if (status !== undefined) filters.status = `eq.${status}`;
+      if (whenBucket !== undefined) filters.when_bucket = `eq.${whenBucket}`;
+      return client.select("tasks", { filters, limit });
+    }
+
+    async function loadDependencies(taskIds) {
+      const ids = Array.from(new Set((taskIds || []).filter((id) => id != null).map(String)));
+      // Nothing to ask for -- and an empty `in.()` filter is invalid
+      // PostgREST syntax anyway, so this is a real guard, not just an
+      // optimization.
+      if (ids.length === 0) return [];
+      // Task ids are short hand-typed slugs (per the migration's comment on
+      // tasks.id), never containing "," or ")", so joining them raw into
+      // `in.(...)` is safe -- the same assumption task_dependencies' own ids
+      // rely on.
+      return client.select("task_dependencies", {
+        columns: "task_id,depends_on_task_id",
+        filters: { task_id: `in.(${ids.join(",")})` },
+      });
+    }
+
+    async function setStatus(taskId, status) {
+      assertOneOf(status, STATUS_VALUES, "status");
+      const row = { id: taskId, status };
+      if (status !== "cancelled") {
+        // The migration's check constraint ties cancel_reason to
+        // status = 'cancelled'. Clearing it here means setStatus alone is
+        // always enough to reopen or complete a previously-cancelled task,
+        // instead of leaving a stale reason behind that fails the very next
+        // update that happens to touch this row.
+        row.cancel_reason = null;
+      }
+      return client.upsert("tasks", [row], { onConflict: "id" });
+    }
+
+    async function setWhen(taskId, { bucket, date } = {}) {
+      // Nullable column: bucket === null/undefined means "no plan yet",
+      // which is a normal state, not an error.
+      assertOneOf(bucket, WHEN_BUCKET_VALUES, "when_bucket", { nullable: true });
+      // when_date is deliberately unvalidated at the schema level (its shape
+      // depends on when_bucket -- an ISO week for 'this_week', a plain date
+      // for 'scheduled'), so this guard is intentionally silent on it too.
+      return client.upsert(
+        "tasks",
+        [{ id: taskId, when_bucket: bucket ?? null, when_date: date ?? null }],
+        { onConflict: "id" },
+      );
+    }
+
+    async function setWaiting(taskId, { on, note, date } = {}) {
+      // Nullable column: `on: null` is how a task stops waiting on anything,
+      // which deriveState relies on directly.
+      assertOneOf(on, WAITING_ON_VALUES, "waiting_on", { nullable: true });
+      return client.upsert(
+        "tasks",
+        [{ id: taskId, waiting_on: on ?? null, waiting_note: note ?? null, waiting_date: date ?? null }],
+        { onConflict: "id" },
+      );
+    }
+
+    // Fetches one project's stages and tasks through the two queries this
+    // store already has (loadHierarchy, listTasks) rather than a new query
+    // shape, and hands back the renderer's shape directly -- a caller can
+    // assign the result straight to p.data without knowing Supabase's
+    // schema exists underneath it.
+    async function loadProjectData(projectId) {
+      const index = await loadHierarchy();
+      const project = index.projectsById[projectId];
+      if (!project) {
+        throw new Error(`loadProjectData: no project found for id "${projectId}".`);
+      }
+      const stages = index.stages.filter((stage) => stage.project_id === projectId);
+      const tasks = await listTasks({ projectId });
+      return toProjectData({ project, stages, tasks });
+    }
+
+    return {
+      loadHierarchy,
+      listTasks,
+      loadDependencies,
+      deriveState,
+      locatorFor,
+      rank,
+      setStatus,
+      setWhen,
+      setWaiting,
+      loadProjectData,
+    };
+  }
+
+  return {
+    STATUS_VALUES,
+    WHEN_BUCKET_VALUES,
+    WAITING_ON_VALUES,
+    LEGACY_STATUS_VALUES,
+    deriveState,
+    locatorFor,
+    rank,
+    toLegacyStatus,
+    fromLegacyStatus,
+    toProjectData,
+    createTaskStore,
   };
 });
 
@@ -15552,7 +15752,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-07.28";
+  const WB_VERSION = "2026-08-08.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16073,6 +16273,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   if (!SupabaseData) {
     throw new Error("WBSupabaseData module missing. Rebuild dashboard bundle.");
   }
+  const SupabaseTasks = globalThis.WBSupabaseTasks;
+  if (!SupabaseTasks) {
+    throw new Error("WBSupabaseTasks module missing. Rebuild dashboard bundle.");
+  }
   const ActionOutbox = globalThis.WorkbenchActionOutbox;
   if (!ActionOutbox) {
     throw new Error("WorkbenchActionOutbox module missing. Rebuild dashboard bundle.");
@@ -16090,6 +16294,40 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       supabaseDataClient = SupabaseData.createClient({ auth: window.WBSupabaseAuth });
     }
     return supabaseDataClient;
+  }
+  let supabaseTaskStore = null;
+  function ensureSupabaseTaskStore() {
+    if (!supabaseTaskStore) {
+      supabaseTaskStore = SupabaseTasks.createTaskStore({ client: ensureSupabaseDataClient() });
+    }
+    return supabaseTaskStore;
+  }
+  // Per-project migration gate for issue #6/#11: a project's tasks live in
+  // Supabase iff `projects` has a row for its git_path, no marker file and
+  // nothing to drift. Queried once per scan and cached by git_path (the
+  // scanProjects loop's `path` minus the trailing "/tasks.json") so 36
+  // per-project checks cost one request, not 36. Every failure path below
+  // (signed out, query failure) resolves to an empty map -- i.e. every
+  // project reads from the index, exactly like today.
+  async function loadMigratedProjectsByGitPath() {
+    const byGitPath = new Map();
+    if (!window.WBSupabaseAuth?.signedIn?.()) return byGitPath;
+    try {
+      const rows = await ensureSupabaseDataClient().select("projects", {
+        columns: "id,git_path",
+      });
+      for (const row of rows || []) {
+        if (row?.git_path) byGitPath.set(row.git_path, row);
+      }
+    } catch (error) {
+      // Offline/401/500/etc -- log once and treat every project as
+      // unmigrated for this scan rather than failing it.
+      console.warn(
+        "Supabase projects query failed; reading every project from tasks.json this scan.",
+        error,
+      );
+    }
+    return byGitPath;
   }
   const dataHealthSources = new Map();
   function dataHealthLabelFromPath(path) {
@@ -17272,15 +17510,21 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           malformed: 0,
           unreachable: 0,
         };
+        // One query for the whole scan (empty on sign-out or query failure --
+        // see loadMigratedProjectsByGitPath), not one per project.
+        const migratedProjects = await loadMigratedProjectsByGitPath();
         // Shared by both paths into this scan: tasks.json inlined in the build
         // index, and tasks.json fetched individually when it was not.
-        const addProject = async (section, name, path, data) => {
+        const addProject = async (section, name, path, data, supabaseProjectId) => {
           const base = `${section}/Projects/${name}`;
           const p = {
             section,
             dirName: name,
             path,
             data,
+            // Stashed so saveProject() can find it without re-querying; null
+            // for every one of the other 34 projects, exactly like today.
+            supabaseProjectId: supabaseProjectId || null,
             log: [],
             cover:
               COVER_NAMES.map((n) => `${base}/${n}`).find((x) => set.has(x)) ||
@@ -17316,6 +17560,31 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           );
           const section = m?.[1] || "Work";
           const name = m?.[2] || path;
+          // A migrated project's data comes from Supabase, never tasks.json.
+          // `path` is always "<git_path>/tasks.json" (the filter regex above
+          // guarantees the suffix), so stripping it is what maps this loop's
+          // path onto the git_path the projects table keys on.
+          const migratedProject = migratedProjects.get(
+            path.slice(0, -"/tasks.json".length),
+          );
+          if (migratedProject) {
+            try {
+              const data = await ensureSupabaseTaskStore().loadProjectData(
+                migratedProject.id,
+              );
+              taskCoverage.found += 1;
+              taskCoverage.ok += 1;
+              await addProject(section, name, path, data, migratedProject.id);
+              return;
+            } catch (error) {
+              // This project only falls back to its tasks.json for this scan;
+              // the other 35 (migrated or not) are unaffected.
+              console.warn(
+                `Supabase loadProjectData failed for ${name}; reading tasks.json for this scan.`,
+                error,
+              );
+            }
+          }
           // The index already carries every project's parsed tasks.json, so the
           // common path costs zero requests here. Only projects it could not
           // inline (malformed JSON, or the tree fallback) still fetch.
@@ -20151,7 +20420,7 @@ const refreshData = async () => {
   }
 };
 const commitAndPush = async () => {
-  if (state.backend === 'github') return toast('Edits save straight to GitHub â€” nothing to push.');
+  if (state.backend === 'github') return toast('Edits save straight to GitHub — nothing to push.');
   try {
     await helperPost('/sync');
     toast('Synced.', 'success');
@@ -20174,7 +20443,7 @@ function cleanSessionHeadline(text, r) {
   if (low.startsWith('ran into an error running')) return 'Tool error recovery';
   t = t.replace(/^(please\s+)?(can you|could you|would you)\s+/i, '').replace(/^i\s+need\s+help\s+/i, '').replace(/^help\s+me\s+/i, '').replace(/^continue\s+from\s+where\s+you\s+left\s+off\.?\s*/i, 'Continue previous work').replace(/^go\s+ahead\s+and\s+/i, '').replace(/^execute\s+this\s+plan\.?\s*/i, 'Implement approved plan');
   t = t.replace(/\b(my|the)\s+outlook\s+email\s+inbox\b/i, 'Outlook email inbox').replace(/^triaging\s+/i, 'Triage ').replace(/^triage\s+my\s+/i, 'Triage ');
-  if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, '') + 'â€¦';
+  if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, '') + '…';
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 const sessionHeadline = r => {
@@ -20399,7 +20668,7 @@ function TopStatusStrip({
         size: 28,
         thickness: 4,
         color: color,
-        label: p == null ? 'â€”' : p + '%'
+        label: p == null ? '—' : p + '%'
       }));
     }
     return /*#__PURE__*/React.createElement("button", {
@@ -20425,7 +20694,7 @@ function TopStatusStrip({
       size: 24,
       thickness: 4,
       color: color,
-      label: p == null ? 'â€”' : p + '%'
+      label: p == null ? '—' : p + '%'
     }), /*#__PURE__*/React.createElement("span", {
       style: {
         display: 'grid',
@@ -20460,7 +20729,7 @@ function TopStatusStrip({
   } : worstItems[0]);
   const tone = primary ? primary.state === 'bad' ? 'unfavorable' : 'warning' : 'favorable';
   const fullMessage = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
-  const shortMessage = primary ? healthWarning ? displayText(String(primary.value || primary.label), mobile ? 24 : 38) : String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync Â·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), mobile ? 22 : 34) : 'All clear';
+  const shortMessage = primary ? healthWarning ? displayText(String(primary.value || primary.label), mobile ? 24 : 38) : String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync ·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), mobile ? 22 : 34) : 'All clear';
   return /*#__PURE__*/React.createElement(Cluster, {
     gap: mobile ? 1 : 3,
     style: {
@@ -20545,7 +20814,7 @@ function ActionListItem({
 }) {
   return /*#__PURE__*/React.createElement(ListItem, {
     title: displayText(a.text, 150),
-    description: projectTitle(a.p) + ' Â· ' + (a.g && a.g.name || 'Project handoff') + ' Â· ' + actionWhy(a),
+    description: projectTitle(a.p) + ' · ' + (a.g && a.g.name || 'Project handoff') + ' · ' + actionWhy(a),
     leading: statusDotNode(a.kind === 'blocked' ? 'bad' : a.kind === 'doing' ? 'live' : 'idle'),
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
@@ -20574,7 +20843,7 @@ function captureRecordLabel(record) {
   // This used to default to 'Workbench', which labelled every loose note
   // as though it belonged to the Workbench project.
   const project = record.project?.projectName || record.project?.dirName || '';
-  return project ? `${project} Â· ${text}` : text;
+  return project ? `${project} · ${text}` : text;
 }
 
 // What this capture is on its way to becoming. The outbox previously
@@ -20609,7 +20878,7 @@ function CaptureOutboxPanel({
       const record = await retryCaptureOutbox(captureId);
       if (record?.state === 'submitted') toast('Capture submitted.', 'success');else toast(record?.lastError || 'Capture is still waiting to submit.', 'warning');
     } catch (error) {
-      toast(error.message || 'Retry failed â€” the capture remains in the outbox.', 'danger');
+      toast(error.message || 'Retry failed — the capture remains in the outbox.', 'danger');
     }
   };
   const retryAll = async () => {
@@ -20617,7 +20886,7 @@ function CaptureOutboxPanel({
       const result = await retryAllFailedCaptures();
       if (result?.errors?.length) toast(`${result.errors.length} capture${result.errors.length === 1 ? '' : 's'} still failed.`, 'warning');else toast('Failed captures submitted.', 'success');
     } catch (error) {
-      toast(error.message || 'Retry failed â€” captures remain in the outbox.', 'danger');
+      toast(error.message || 'Retry failed — captures remain in the outbox.', 'danger');
     }
   };
   if (!visible.length) return /*#__PURE__*/React.createElement(EmptyState, {
@@ -20642,7 +20911,7 @@ function CaptureOutboxPanel({
   }, visible.map(record => /*#__PURE__*/React.createElement(ListItem, {
     key: record.captureId,
     title: captureRecordLabel(record),
-    description: `${captureDestinationLabel(record)} Â· ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' Â· ' + displayText(record.lastError, 120) : ''}`,
+    description: `${captureDestinationLabel(record)} · ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' · ' + displayText(record.lastError, 120) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, /*#__PURE__*/React.createElement(Badge, {
@@ -20750,7 +21019,7 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement(List, null, recentActivity().slice(0, 5).map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
     key: i,
     title: projectTitle(r.p),
-    description: r.ts + ' Â· ' + r.text,
+    description: r.ts + ' · ' + r.text,
     onClick: () => openProject(r.p),
     trailing: /*#__PURE__*/React.createElement(Icon, {
       name: "chevronRight",
@@ -20844,7 +21113,7 @@ function ProjectsView() {
       forceRender();
     },
     count: rows.length,
-    placeholder: "Filter projectsâ€¦"
+    placeholder: "Filter projects…"
   })), /*#__PURE__*/React.createElement(Grid, {
     min: 280,
     gap: 4
@@ -20924,7 +21193,7 @@ function ProjectRoomView() {
       size: 16
     })
   }, "Back to projects"), /*#__PURE__*/React.createElement(PageHeader, {
-    eyebrow: 'Project room Â· ' + p.section,
+    eyebrow: 'Project room · ' + p.section,
     title: projectTitle(p),
     lede: p.data.tagline || '',
     action: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
@@ -21026,7 +21295,7 @@ function ProjectRoomView() {
     key: r.idx,
     leading: statusDotNode(r.it.status),
     title: displayText(r.it.text, 150),
-    description: r.g.name + (r.it.completed ? ' Â· completed ' + r.it.completed : ''),
+    description: r.g.name + (r.it.completed ? ' · completed ' + r.it.completed : ''),
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, statusBadge(r.it.status), /*#__PURE__*/React.createElement(Button, {
@@ -21069,7 +21338,7 @@ function ProjectRoomView() {
   }, /*#__PURE__*/React.createElement(List, null, related.map(e => /*#__PURE__*/React.createElement(ListItem, {
     key: e.path || e.fileName,
     title: e.title,
-    description: e.sub + ' Â· ' + (e.summary || ''),
+    description: e.sub + ' · ' + (e.summary || ''),
     onClick: () => openEntry(e.section + '/' + e.sub + '/' + e.fileName)
   })), !related.length && /*#__PURE__*/React.createElement(EmptyState, {
     title: "No direct KB links",
@@ -21130,7 +21399,7 @@ function IntakeView() {
   }, /*#__PURE__*/React.createElement(List, null, items.map((it, i) => /*#__PURE__*/React.createElement(ListItem, {
     key: i,
     title: displayText(it.text, 150),
-    description: (it.kind || 'capture') + ' Â· unverified until triaged' + (it.capturedAt ? ' Â· captured ' + shortAge(it.capturedAt) : ''),
+    description: (it.kind || 'capture') + ' · unverified until triaged' + (it.capturedAt ? ' · captured ' + shortAge(it.capturedAt) : ''),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "warning"
     }, "needs triage")
@@ -21187,8 +21456,8 @@ function UsageMixCard({
     title: title
   }, rows.length ? rows.map(r => {
     const share = totalTokens ? Math.round(r.tokens / totalTokens * 100) : totalMs ? Math.round(r.ms / totalMs * 100) : 0;
-    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} work episodes Â· ${fmtDuration(r.ms)}`;
-    const extra = r.cost ? `${base} Â· ${fmtCostMaybe(r.cost)}` : base;
+    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} work episodes · ${fmtDuration(r.ms)}`;
+    const extra = r.cost ? `${base} · ${fmtCostMaybe(r.cost)}` : base;
     return /*#__PURE__*/React.createElement("div", {
       className: "mix-row",
       key: r.label
@@ -21237,11 +21506,11 @@ function UsageLaneTable({
       className: "session-summary"
     }, r.sessions || 0, " work episode", r.sessions === 1 ? '' : 's')), /*#__PURE__*/React.createElement("span", {
       "data-label": "Tokens"
-    }, r.tokens == null ? 'â€”' : fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
+    }, r.tokens == null ? '—' : fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
       "data-label": "Cache"
-    }, r.cache == null ? 'â€”' : fmtTokens(r.cache)), /*#__PURE__*/React.createElement("span", {
+    }, r.cache == null ? '—' : fmtTokens(r.cache)), /*#__PURE__*/React.createElement("span", {
       "data-label": "Requests"
-    }, r.requests == null ? 'â€”' : r.requests), /*#__PURE__*/React.createElement("span", {
+    }, r.requests == null ? '—' : r.requests), /*#__PURE__*/React.createElement("span", {
       "data-label": "Cost"
     }, info ? /*#__PURE__*/React.createElement("button", {
       type: "button",
@@ -21258,7 +21527,7 @@ function UsageLaneTable({
 
 // Replaced the "Claude spend attribution" card on 2026-08-02. That card
 // subtracted hooked-session estimates from `state.usage.spend` and called
-// the remainder "outside workbench" â€” but that figure is the extra-usage
+// the remainder "outside workbench" — but that figure is the extra-usage
 // wallet, not the account's spend, so it compared two unrelated numbers.
 // Each seat now leads with whatever actually runs out for it.
 function ClaudePlanPanels() {
@@ -21281,15 +21550,15 @@ function ClaudePlanPanels() {
     const surfaceLabel = SURFACE_LABELS[surface];
     // A seat with no windows is not window-rationed at all: the Disney
     // seat reports only a contracted cap, and that cap is what runs out.
-    const headline = binding ? windowExpired(binding) ? 'â€”' : `${binding.percent}%` : wallet.limit != null ? `${money(wallet.spend)} / ${money(wallet.limit)}` : 'no data';
+    const headline = binding ? windowExpired(binding) ? '—' : `${binding.percent}%` : wallet.limit != null ? `${money(wallet.spend)} / ${money(wallet.limit)}` : 'no data';
     const notional = claudePlanNotional(slug);
     return /*#__PURE__*/React.createElement(Card, {
       key: slug,
-      eyebrow: `Claude ${label} Â· plan usage${active ? surfaceLabel ? ` Â· signed in on the ${surfaceLabel}` : '' : ' Â· idle'}`,
+      eyebrow: `Claude ${label} · plan usage${active ? surfaceLabel ? ` · signed in on the ${surfaceLabel}` : '' : ' · idle'}`,
       title: headline
     }, /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, binding ? `${binding.label || binding.kind} window` : wallet.limit != null ? 'extra usage cap â€” this seat reports no rate-limit windows' : 'no rate-limit windows and no usage cap reported', " Â· ", ageLabel(snap.updated)), limits.map(row => {
+    }, binding ? `${binding.label || binding.kind} window` : wallet.limit != null ? 'extra usage cap — this seat reports no rate-limit windows' : 'no rate-limit windows and no usage cap reported', " · ", ageLabel(snap.updated)), limits.map(row => {
       const expired = windowExpired(row);
       const pct = expired ? 0 : Math.max(0, Math.min(100, Number(row.percent) || 0));
       return /*#__PURE__*/React.createElement("div", {
@@ -21299,7 +21568,7 @@ function ClaudePlanPanels() {
         className: "mix-label"
       }, row.label || row.kind), /*#__PURE__*/React.createElement("div", {
         className: "mix-sub"
-      }, expired ? `window rolled over unread${row.percent != null ? ` Â· was ${row.percent}%` : ''}` : row.resetsAt ? `resets ${new Date(row.resetsAt).toLocaleString(undefined, {
+      }, expired ? `window rolled over unread${row.percent != null ? ` · was ${row.percent}%` : ''}` : row.resetsAt ? `resets ${new Date(row.resetsAt).toLocaleString(undefined, {
         weekday: 'short',
         hour: 'numeric',
         minute: '2-digit'
@@ -21311,14 +21580,14 @@ function ClaudePlanPanels() {
         }
       })), /*#__PURE__*/React.createElement("span", {
         className: "credit-amt"
-      }, expired ? 'â€”' : `${pct}%`));
+      }, expired ? '—' : `${pct}%`));
     }), binding && wallet.limit != null ? /*#__PURE__*/React.createElement("div", {
       className: "mix-row"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       className: "mix-label"
     }, "Extra usage billed"), /*#__PURE__*/React.createElement("div", {
       className: "mix-sub"
-    }, "pay-as-you-go overage â€” the only real charge on this seat")), /*#__PURE__*/React.createElement("span", {
+    }, "pay-as-you-go overage — the only real charge on this seat")), /*#__PURE__*/React.createElement("span", {
       className: "creditbar"
     }, /*#__PURE__*/React.createElement("i", {
       style: {
@@ -21332,11 +21601,11 @@ function ClaudePlanPanels() {
       className: "mix-label"
     }, "Workbench sessions this month"), /*#__PURE__*/React.createElement("div", {
       className: "mix-sub"
-    }, notional.sessions, " hooked session", notional.sessions === 1 ? '' : 's', " Â· API list-price equivalent, not billed")), /*#__PURE__*/React.createElement("span", {
+    }, notional.sessions, " hooked session", notional.sessions === 1 ? '' : 's', " · API list-price equivalent, not billed")), /*#__PURE__*/React.createElement("span", {
       className: "credit-amt cost-notional"
-    }, "â‰ˆ", fmtCostMaybe(notional.cost))) : null, /*#__PURE__*/React.createElement("p", {
+    }, "≈", fmtCostMaybe(notional.cost))) : null, /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, binding ? 'Plan seats ration session and weekly windows, not dollars.' : 'This seat reports no rate-limit windows â€” its extra-usage cap is what runs out, and it is billed.', ' ', "Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.", active ? '' : ' No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.'));
+    }, binding ? 'Plan seats ration session and weekly windows, not dollars.' : 'This seat reports no rate-limit windows — its extra-usage cap is what runs out, and it is billed.', ' ', "Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.", active ? '' : ' No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.'));
   });
 }
 function UsageWindowPicker() {
@@ -21403,13 +21672,13 @@ function UsageProjectPanel({
     "data-label": "Plan share"
   }, r.planShare ? fmtCostMaybe(r.planShare) : /*#__PURE__*/React.createElement("span", {
     style: muted
-  }, "â€”")), /*#__PURE__*/React.createElement("span", {
+  }, "—")), /*#__PURE__*/React.createElement("span", {
     "data-label": "Saved"
   }, r.saved ? /*#__PURE__*/React.createElement("span", {
     className: "cost-savings"
   }, fmtCostMaybe(r.saved)) : /*#__PURE__*/React.createElement("span", {
     style: muted
-  }, "â€”")))) : /*#__PURE__*/React.createElement("p", {
+  }, "—")))) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No tokenized sessions yet.")));
 }
@@ -21442,13 +21711,13 @@ function UsageEfficiencyPanel({
     style: muted
   }, "No aggregate trends in the current sample."), Object.keys(ctx.availability || {}).length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, Object.entries(ctx.availability).map(([k, v]) => `${k}: ${v}`).join(' Â· ')) : null) : /*#__PURE__*/React.createElement("p", {
+  }, Object.entries(ctx.availability).map(([k, v]) => `${k}: ${v}`).join(' · ')) : null) : /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ctx.meta?.message || 'Context-efficiency summary unavailable â€” rebuild telemetry rollups when ready.')), /*#__PURE__*/React.createElement(Card, {
+  }, ctx.meta?.message || 'Context-efficiency summary unavailable — rebuild telemetry rollups when ready.')), /*#__PURE__*/React.createElement(Card, {
     title: "Session methodology"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Work sessions group related technical sessions by work episode. Technical sessions are one hooked beacon each; costs aggregate once per technical identity. Cost states: actual (provider/billing), estimated (model pricing), local-zero (on-device), pending (live without usage), untracked (ended without telemetry).", diag.rollup ? ` Rollup v${diag.version || '?'}: ${diag.rollup.technicalSessions} technical â†’ ${diag.rollup.count} work sessions.` : '', diag.fallback ? ' Showing live-beacon fallback â€” historical rollup missing.' : '')), /*#__PURE__*/React.createElement(Card, {
+  }, "Work sessions group related technical sessions by work episode. Technical sessions are one hooked beacon each; costs aggregate once per technical identity. Cost states: actual (provider/billing), estimated (model pricing), local-zero (on-device), pending (live without usage), untracked (ended without telemetry).", diag.rollup ? ` Rollup v${diag.version || '?'}: ${diag.rollup.technicalSessions} technical → ${diag.rollup.count} work sessions.` : '', diag.fallback ? ' Showing live-beacon fallback — historical rollup missing.' : '')), /*#__PURE__*/React.createElement(Card, {
     title: "AI-efficiency tips",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "subtle",
@@ -21481,7 +21750,7 @@ function LocalDelegationSummaryCard({
 }) {
   const summary = localDelegationSummary(rows);
   if (!summary.attempts) return null;
-  const rate = summary.acceptanceRate != null ? `${Math.round(summary.acceptanceRate * 100)}%` : 'â€”';
+  const rate = summary.acceptanceRate != null ? `${Math.round(summary.acceptanceRate * 100)}%` : '—';
   return /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Local delegation",
     title: `${summary.attempts} attempt${summary.attempts === 1 ? '' : 's'}`
@@ -21507,14 +21776,14 @@ function LocalDelegationSummaryCard({
     tone: "neutral"
   }, "avg ", fmtDuration(summary.avgLatencyMs)) : null), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, summary.savingsTotal != null ? `${fmtCostMaybe(summary.savingsTotal)} avoided cloud spend from ${summary.savingsCount} accepted attempt${summary.savingsCount === 1 ? '' : 's'} only` : 'No accepted savings in this window â€” failed/partial attempts never count.', summary.comparators.length ? ` Â· Comparator: ${summary.comparators.join(', ')}` : '', summary.pricingVersions.length ? ` Â· Pricing ${summary.pricingVersions.join(', ')}` : '', summary.cloudFallback === 'forbidden' ? ' Â· Cloud fallback forbidden' : ''));
+  }, summary.savingsTotal != null ? `${fmtCostMaybe(summary.savingsTotal)} avoided cloud spend from ${summary.savingsCount} accepted attempt${summary.savingsCount === 1 ? '' : 's'} only` : 'No accepted savings in this window — failed/partial attempts never count.', summary.comparators.length ? ` · Comparator: ${summary.comparators.join(', ')}` : '', summary.pricingVersions.length ? ` · Pricing ${summary.pricingVersions.join(', ')}` : '', summary.cloudFallback === 'forbidden' ? ' · Cloud fallback forbidden' : ''));
 }
 function WorkSessionTechnicalRow({
   r
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "work-session-tech-row"
-  }, /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended), " Â· ", machineName(r.machine || r.host || 'Unknown'), " Â· ", sessionModelLabel(r), " Â· ", backendLane(r)), /*#__PURE__*/React.createElement(Cluster, {
+  }, /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended), " · ", machineName(r.machine || r.host || 'Unknown'), " · ", sessionModelLabel(r), " · ", backendLane(r)), /*#__PURE__*/React.createElement(Cluster, {
     gap: 1
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: costStateBadgeTone(costStateLabel(r))
@@ -21522,7 +21791,7 @@ function WorkSessionTechnicalRow({
     tone: "neutral"
   }, fmtTokens(cacheInclusiveTokens(r))), /*#__PURE__*/React.createElement(Badge, {
     tone: sessionCost(r) == null ? 'warning' : isNotionalRow(r) ? 'neutral' : 'accent'
-  }, isNotionalRow(r) ? `â‰ˆ${fmtCostMaybe(sessionCost(r))}` : fmtCostMaybe(sessionCost(r)))));
+  }, isNotionalRow(r) ? `≈${fmtCostMaybe(sessionCost(r))}` : fmtCostMaybe(sessionCost(r)))));
 }
 function WorkSessionList({
   groups,
@@ -21543,7 +21812,7 @@ function WorkSessionList({
     className: "work-session-headline"
   }, /*#__PURE__*/React.createElement("strong", null, g.headline), /*#__PURE__*/React.createElement("span", {
     className: "muted"
-  }, fmtStamp(g.started || g.ended), g.machines.length ? ` Â· ${g.machines.map(machineName).join(', ')}` : '', g.projects.length ? ` Â· ${g.projects.slice(0, 3).join(', ')}` : '')), /*#__PURE__*/React.createElement(Cluster, {
+  }, fmtStamp(g.started || g.ended), g.machines.length ? ` · ${g.machines.map(machineName).join(', ')}` : '', g.projects.length ? ` · ${g.projects.slice(0, 3).join(', ')}` : '')), /*#__PURE__*/React.createElement(Cluster, {
     gap: 1
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
@@ -21551,7 +21820,7 @@ function WorkSessionList({
     tone: "neutral"
   }, fmtTokens(g.tokens)), /*#__PURE__*/React.createElement(Badge, {
     tone: costStateBadgeTone(g.costState)
-  }, g.cost == null ? g.costState : g.costState === 'notional' ? `â‰ˆ${fmtCostMaybe(g.cost)}` : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
+  }, g.cost == null ? g.costState : g.costState === 'notional' ? `≈${fmtCostMaybe(g.cost)}` : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
     className: "work-session-drill"
   }, g.technical.map((r, i) => /*#__PURE__*/React.createElement(WorkSessionTechnicalRow, {
     key: r.session_uid || r.session || i,
@@ -21571,7 +21840,7 @@ function AzureFoundryPanel() {
     title: fmtCostMaybe(projected)
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, fmtCostMaybe(posted), " posted Â· ", pending == null ? 'pending estimate unavailable' : `${fmtCostMaybe(pending)} pending estimate`, " Â· ", c?.settledThrough ? `posted through ${c.settledThrough}` : 'settlement pending', Number(c?.unallocatedActual || 0) > 0 ? ` Â· ${fmtCostMaybe(c.unallocatedActual)} unallocated` : '', " Â· ", c?.confidence || 'baseline', " confidence Â· ", ageLabel(c?.updated || b.updated)));
+  }, fmtCostMaybe(posted), " posted · ", pending == null ? 'pending estimate unavailable' : `${fmtCostMaybe(pending)} pending estimate`, " · ", c?.settledThrough ? `posted through ${c.settledThrough}` : 'settlement pending', Number(c?.unallocatedActual || 0) > 0 ? ` · ${fmtCostMaybe(c.unallocatedActual)} unallocated` : '', " · ", c?.confidence || 'baseline', " confidence · ", ageLabel(c?.updated || b.updated)));
 }
 function AzureModelReconciliationPanel() {
   const reconciliation = azureModelReconciliation();
@@ -21590,7 +21859,7 @@ function AzureModelReconciliationPanel() {
     className: "usage-table"
   }, /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row head"
-  }, /*#__PURE__*/React.createElement("span", null, "Model"), /*#__PURE__*/React.createElement("span", null, "Estimated"), /*#__PURE__*/React.createElement("span", null, "Actual"), /*#__PURE__*/React.createElement("span", null, "Est. âˆ’ actual"), /*#__PURE__*/React.createElement("span", null, "Sessions")), reconciliation.models.map(row => /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "Model"), /*#__PURE__*/React.createElement("span", null, "Estimated"), /*#__PURE__*/React.createElement("span", null, "Actual"), /*#__PURE__*/React.createElement("span", null, "Est. − actual"), /*#__PURE__*/React.createElement("span", null, "Sessions")), reconciliation.models.map(row => /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row",
     key: row.label
   }, /*#__PURE__*/React.createElement("span", {
@@ -21603,11 +21872,11 @@ function AzureModelReconciliationPanel() {
     "data-label": "Actual"
   }, fmtCostMaybe(row.actualSpend)), /*#__PURE__*/React.createElement("span", {
     "data-label": "Variance"
-  }, row.delta == null ? 'â€”' : `${row.delta >= 0 ? '+' : 'âˆ’'}${fmtCostMaybe(Math.abs(row.delta))}`), /*#__PURE__*/React.createElement("span", {
+  }, row.delta == null ? '—' : `${row.delta >= 0 ? '+' : '−'}${fmtCostMaybe(Math.abs(row.delta))}`), /*#__PURE__*/React.createElement("span", {
     "data-label": "Sessions"
   }, row.sessions || 0)))), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, reconciliation.period || 'Current billing month', " Â· estimated ", fmtCostMaybe(reconciliation.estimatedSpend), " Â· actual ", fmtCostMaybe(reconciliation.actualSpend))));
+  }, reconciliation.period || 'Current billing month', " · estimated ", fmtCostMaybe(reconciliation.estimatedSpend), " · actual ", fmtCostMaybe(reconciliation.actualSpend))));
 }
 function UsageView() {
   const allRows = (state.sessionMetrics && state.sessionMetrics.sessions || []).filter(Boolean);
@@ -21669,7 +21938,7 @@ function UsageView() {
     laneClass: "cursor"
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` Â· resets ${state.cursorUsage.resetLabel}` : '')), /*#__PURE__*/React.createElement(AzureFoundryPanel, null), /*#__PURE__*/React.createElement(AzureModelReconciliationPanel, null), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
+  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` · resets ${state.cursorUsage.resetLabel}` : '')), /*#__PURE__*/React.createElement(AzureFoundryPanel, null), /*#__PURE__*/React.createElement(AzureModelReconciliationPanel, null), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Local lane savings",
     title: fmtCostMaybe(savedLocal)
   }, /*#__PURE__*/React.createElement("p", {
@@ -21681,7 +21950,7 @@ function UsageView() {
     }, fmtCostMaybe(wastedTier))
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up â€” never a saving) in this time frame. Only sessions with a role-attributed model breakdown are included.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
+  }, "Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up — never a saving) in this time frame. Only sessions with a role-attributed model breakdown are included.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
     rows: rows
   })), /*#__PURE__*/React.createElement(UsageLaneTable, {
     rows: laneRows
@@ -21711,7 +21980,7 @@ function UsageView() {
   })), tab === 'projects' && /*#__PURE__*/React.createElement(UsageProjectPanel, {
     rows: rows
   }), tab === 'sessions' && /*#__PURE__*/React.createElement(Card, {
-    title: `Work sessions Â· ${usageWindowLabel()}`,
+    title: `Work sessions · ${usageWindowLabel()}`,
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
@@ -21748,11 +22017,11 @@ function SessionsView() {
         forceRender();
       },
       count: filteredGroups.length,
-      placeholder: "Search work sessions, projectsâ€¦",
+      placeholder: "Search work sessions, projects…",
       minWidth: 280
     }), diag.rollup ? /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, diag.rollup.technicalSessions, " technical â†’ ", diag.rollup.count, " work sessions", diag.fallback ? ' Â· live fallback' : '') : null, filteredGroups.length ? /*#__PURE__*/React.createElement(WorkSessionList, {
+    }, diag.rollup.technicalSessions, " technical → ", diag.rollup.count, " work sessions", diag.fallback ? ' · live fallback' : '') : null, filteredGroups.length ? /*#__PURE__*/React.createElement(WorkSessionList, {
       groups: filteredGroups,
       onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
     }) : /*#__PURE__*/React.createElement(EmptyState, {
@@ -21779,7 +22048,7 @@ function SessionsView() {
       forceRender();
     },
     count: filteredGroups.length,
-    placeholder: "Search work sessions, projects, machinesâ€¦",
+    placeholder: "Search work sessions, projects, machines…",
     minWidth: 360
   }), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
@@ -21789,7 +22058,7 @@ function SessionsView() {
     }
   }, "Usage summary")), diag.rollup ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, diag.rollup.technicalSessions, " technical sessions â†’ ", diag.rollup.count, " work sessions Â· cost states: actual, estimated, local-zero, pending, untracked") : null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(WorkSessionList, {
+  }, diag.rollup.technicalSessions, " technical sessions → ", diag.rollup.count, " work sessions · cost states: actual, estimated, local-zero, pending, untracked") : null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(WorkSessionList, {
     groups: filteredGroups,
     onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
   }))));
@@ -21820,13 +22089,13 @@ function MachineRoutePanel({
     tone: summary.savedRouteKey === key ? 'accent' : 'neutral'
   }, label))), pickerEntries.length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Azure native picker: ", pickerEntries.map(([k, v]) => `${k}â†’${v}`).join(' Â· ')) : null, router.installed != null ? /*#__PURE__*/React.createElement("p", {
+  }, "Azure native picker: ", pickerEntries.map(([k, v]) => `${k}→${v}`).join(' · ')) : null, router.installed != null ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Router ", router.running ? 'running' : router.configured ? 'configured' : 'offline', router.detail ? ` Â· ${router.detail}` : '', summary.reloadRequired ? ' Â· reload required' : '') : null, local.supported || local.installedModelIds?.length ? /*#__PURE__*/React.createElement("p", {
+  }, "Router ", router.running ? 'running' : router.configured ? 'configured' : 'offline', router.detail ? ` · ${router.detail}` : '', summary.reloadRequired ? ' · reload required' : '') : null, local.supported || local.installedModelIds?.length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Local ", local.lane || 'runtime', ": ", local.installedModelIds?.length || 0, " installed Â· resident ", local.residentModel || 'â€”', " Â· context ", local.contextLimit ? fmtTokens(local.contextLimit) : 'â€”', " Â· workers ", local.workerLimit ?? 'â€”', local.concurrencyCalibrated === false ? ' (serial)' : local.concurrencyCalibrated ? ' (calibrated)' : '', local.cacheBytes ? ` Â· cache ${fmtBytes(local.cacheBytes)}` : '', disk.freeBytes != null ? ` Â· free ${fmtBytes(disk.freeBytes)}` : '', local.lowDiskWarning || disk.lowDiskWarning ? ' Â· low disk warning' : '') : null, telem.latestShardMs ? /*#__PURE__*/React.createElement("p", {
+  }, "Local ", local.lane || 'runtime', ": ", local.installedModelIds?.length || 0, " installed · resident ", local.residentModel || '—', " · context ", local.contextLimit ? fmtTokens(local.contextLimit) : '—', " · workers ", local.workerLimit ?? '—', local.concurrencyCalibrated === false ? ' (serial)' : local.concurrencyCalibrated ? ' (calibrated)' : '', local.cacheBytes ? ` · cache ${fmtBytes(local.cacheBytes)}` : '', disk.freeBytes != null ? ` · free ${fmtBytes(disk.freeBytes)}` : '', local.lowDiskWarning || disk.lowDiskWarning ? ' · low disk warning' : '') : null, telem.latestShardMs ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Telemetry ", telem.fresh ? 'fresh' : 'stale', " Â· shard ", shortAge(telem.latestShardMs), telem.ageMs != null ? ` (${Math.round(telem.ageMs / 1000)}s)` : '') : /*#__PURE__*/React.createElement("p", {
+  }, "Telemetry ", telem.fresh ? 'fresh' : 'stale', " · shard ", shortAge(telem.latestShardMs), telem.ageMs != null ? ` (${Math.round(telem.ageMs / 1000)}s)` : '') : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Telemetry freshness unknown")));
 }
@@ -21923,14 +22192,14 @@ function MachinesView() {
     gap: 3
   }, liveQuota && liveQuota.state && liveQuota.state !== 'ok' ? /*#__PURE__*/React.createElement(Banner, {
     variant: liveQuota.state === 'critical' ? 'warn' : 'info'
-  }, /*#__PURE__*/React.createElement("span", null, "Supabase budget ", liveQuota.state, ": ", Math.round((liveQuota.utilization || 0) * 100), "% of soft limits Â· ", liveQuota.eventsMonth || 0, " events this month")) : null, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("span", null, "Supabase budget ", liveQuota.state, ": ", Math.round((liveQuota.utilization || 0) * 100), "% of soft limits · ", liveQuota.eventsMonth || 0, " events this month")) : null, /*#__PURE__*/React.createElement("p", {
     style: muted
   }, liveSummary), liveSessions.length ? /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, liveSessions.map(s => /*#__PURE__*/React.createElement(ListItem, {
     key: s.session_uid || s.sessionFull || s.session,
     title: sessionHeadline(s),
-    description: `${liveStateLabel(s)} Â· ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' Â· ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' Â· â—‰ ' + displayText(s.activeTodo.content, 72) : ''}`,
+    description: `${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: attentionTone(s.attentionLevel)
     }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
@@ -21946,7 +22215,7 @@ function MachinesView() {
   }, /*#__PURE__*/React.createElement(List, null, machineStatusRows().map(r => /*#__PURE__*/React.createElement(ListItem, {
     key: r.key,
     title: r.name,
-    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' Â· longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' Â· helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' Â· Live ' + (r.liveDataSource || 'Git fallback') : ''),
+    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' · longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' · helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' · Live ' + (r.liveDataSource || 'Git fallback') : ''),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: r.state === 'active' ? 'favorable' : r.state === 'idle' ? 'warning' : 'unfavorable'
     }, r.state)
@@ -22002,8 +22271,8 @@ function MachinesView() {
     bordered: true
   }, actionRows.map(a => /*#__PURE__*/React.createElement(ListItem, {
     key: a.action_id,
-    title: `${String(a.kind || 'action').replace(/_/g, ' ')} Â· ${machineName(a.machine_id)}`,
-    description: `${String(a.status || a.outboxState || 'queued').replace(/_/g, ' ')}${a.requested_at ? ' Â· requested ' + shortAge(a.requested_at) : ''}${a.lastError ? ' Â· ' + displayText(a.lastError, 96) : ''}`,
+    title: `${String(a.kind || 'action').replace(/_/g, ' ')} · ${machineName(a.machine_id)}`,
+    description: `${String(a.status || a.outboxState || 'queued').replace(/_/g, ' ')}${a.requested_at ? ' · requested ' + shortAge(a.requested_at) : ''}${a.lastError ? ' · ' + displayText(a.lastError, 96) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, a.outboxState === 'failed' ? /*#__PURE__*/React.createElement(Button, {
@@ -22043,7 +22312,7 @@ function MachinesView() {
   }, rows.map(row => /*#__PURE__*/React.createElement(ListItem, {
     key: row.source,
     title: row.label || row.source,
-    description: `${displayText(row.message || row.path || 'No detail available.', 160)}${row.updatedMs ? ' Â· checked ' + shortAge(row.updatedMs) : ''}${row.staleAfterMs ? ' Â· stale after ' + fmtDuration(row.staleAfterMs) : ''}`,
+    description: `${displayText(row.message || row.path || 'No detail available.', 160)}${row.updatedMs ? ' · checked ' + shortAge(row.updatedMs) : ''}${row.staleAfterMs ? ' · stale after ' + fmtDuration(row.staleAfterMs) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: toneForStatus(row.status)
     }, row.status)
@@ -22144,7 +22413,7 @@ function ModelsView() {
       y: height - 8,
       fill: "var(--text-muted)",
       fontSize: "11"
-    }, "Avg wall time (s) â†’ slower"), /*#__PURE__*/React.createElement("text", {
+    }, "Avg wall time (s) → slower"), /*#__PURE__*/React.createElement("text", {
       x: 8,
       y: pad.t + 8,
       fill: "var(--text-muted)",
@@ -22175,7 +22444,7 @@ function ModelsView() {
         fill: familyColors[row.family] || familyColors.Other,
         stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
         strokeWidth: active ? 2 : 1.5
-      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic Â· ' + row.avgWallS + 's avg Â· ' + (row.avgTps || 'â€”') + ' tok/s'));
+      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic · ' + row.avgWallS + 's avg · ' + (row.avgTps || '—') + ' tok/s'));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -22186,9 +22455,9 @@ function ModelsView() {
   const tableRows = benchmarked.map(m => ({
     ...m,
     machineNames: (m.machines || []).map(machineLabel).join(', '),
-    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : 'â€”',
-    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : 'â€”',
-    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : 'â€”'
+    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : '—',
+    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : '—',
+    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—'
   }));
   const columns = [{
     key: 'id',
@@ -22235,18 +22504,18 @@ function ModelsView() {
     header: 'Tok/s',
     align: 'right',
     numeric: true,
-    render: v => v != null ? v.toFixed(1) : 'â€”'
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
     key: 'avgWallS',
     header: 'Wall (s)',
     align: 'right',
     numeric: true,
-    render: v => v != null ? v.toFixed(1) : 'â€”'
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
     key: 'context64kOk',
     header: '64K ctx',
     align: 'center',
-    render: v => v == null ? 'â€”' : v ? /*#__PURE__*/React.createElement(Badge, {
+    render: v => v == null ? '—' : v ? /*#__PURE__*/React.createElement(Badge, {
       tone: "favorable"
     }, "OK") : /*#__PURE__*/React.createElement(Badge, {
       tone: "warning"
@@ -22257,7 +22526,7 @@ function ModelsView() {
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
     title: "Benchmarked models across machines",
-    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards â€” grounded in your own test runs.",
+    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards — grounded in your own test runs.",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -22318,11 +22587,11 @@ function ModelsView() {
     deltaNote: policyTasks.length ? policyTasks.length + ' task classes' : 'needs v2 receipts'
   }), /*#__PURE__*/React.createElement(KpiStat, {
     label: "Best agentic",
-    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : 'â€”',
+    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
     deltaNote: bestAgentic ? displayText(bestAgentic.id, 24) : ''
   }), /*#__PURE__*/React.createElement(KpiStat, {
     label: "Best tools",
-    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : 'â€”',
+    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
     deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
@@ -22368,7 +22637,7 @@ function ModelsView() {
     return /*#__PURE__*/React.createElement(ListItem, {
       key: taskClass,
       title: String(taskClass).replace(/-/g, ' '),
-      description: best ? displayText(best.modelId || 'no candidate', 36) + ' Â· ' + (best.samples || 0) + ' samples Â· lower bound ' + (best.wilsonLower95 != null ? Math.round(best.wilsonLower95 * 100) + '%' : 'â€”') : 'No candidate',
+      description: best ? displayText(best.modelId || 'no candidate', 36) + ' · ' + (best.samples || 0) + ' samples · lower bound ' + (best.wilsonLower95 != null ? Math.round(best.wilsonLower95 * 100) + '%' : '—') : 'No candidate',
       trailing: /*#__PURE__*/React.createElement(Badge, {
         tone: best && best.eligible ? 'favorable' : 'warning'
       }, best && best.eligible ? 'eligible' : 'shadow')
@@ -22415,7 +22684,7 @@ function ModelsView() {
     cols: mobile ? 1 : 3,
     gap: 3
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || 'â€”'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : 'â€”'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : 'â€”'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : 'â€”'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : 'â€”'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : 'â€”'], ['64K context', selected.context64kOk == null ? 'â€”' : selected.context64kOk ? 'Pass' : 'Fail'], ['Capability receipts', selectedCard ? selectedCard.evidence.samples : 'â€”'], ['Verified task ctx', selectedCard && selectedCard.contextCapacity.highestVerifiedTaskTokens ? selectedCard.contextCapacity.highestVerifiedTaskTokens.toLocaleString() : 'â€”'], ['Peak memory p95', selectedCard && selectedCard.resources.peakMemoryBytes.p95 ? Math.round(selectedCard.resources.peakMemoryBytes.p95 / (1024 * 1024 * 1024)) + ' GB' : 'â€”']]
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail'], ['Capability receipts', selectedCard ? selectedCard.evidence.samples : '—'], ['Verified task ctx', selectedCard && selectedCard.contextCapacity.highestVerifiedTaskTokens ? selectedCard.contextCapacity.highestVerifiedTaskTokens.toLocaleString() : '—'], ['Peak memory p95', selectedCard && selectedCard.resources.peakMemoryBytes.p95 ? Math.round(selectedCard.resources.peakMemoryBytes.p95 / (1024 * 1024 * 1024)) + ' GB' : '—']]
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("div", {
@@ -22431,10 +22700,10 @@ function ModelsView() {
   }, Object.entries(selectedCard.taskCapabilities || {}).map(([taskClass, cap]) => /*#__PURE__*/React.createElement(ListItem, {
     key: taskClass,
     title: String(taskClass).replace(/-/g, ' '),
-    description: (cap.successes || 0) + '/' + (cap.samples || 0) + ' pass Â· median ' + (cap.wallMs && cap.wallMs.median ? Math.round(cap.wallMs.median / 1000) + 's' : 'â€”'),
+    description: (cap.successes || 0) + '/' + (cap.samples || 0) + ' pass · median ' + (cap.wallMs && cap.wallMs.median ? Math.round(cap.wallMs.median / 1000) + 's' : '—'),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: (cap.wilsonLower95 || 0) >= 0.7 ? 'favorable' : 'warning'
-    }, cap.wilsonLower95 != null ? Math.round(cap.wilsonLower95 * 100) + '%' : 'â€”')
+    }, cap.wilsonLower95 != null ? Math.round(cap.wilsonLower95 * 100) + '%' : '—')
   }))) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No v2 capability card yet; legacy runs are display-only for routing.")), /*#__PURE__*/React.createElement(Stack, {
@@ -22453,7 +22722,7 @@ function ModelsView() {
     totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
   }) : /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "No close session-traffic match this window. Cloud attribution lives under Usage â†’ Models.")))), /*#__PURE__*/React.createElement(Card, {
+  }, "No close session-traffic match this window. Cloud attribution lives under Usage → Models.")))), /*#__PURE__*/React.createElement(Card, {
     title: "Benchmark catalog",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
@@ -22474,8 +22743,8 @@ function ModelsView() {
     bordered: true
   }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.runId + run.kind,
-    title: run.runId + ' Â· ' + run.kind,
-    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' Â· ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' Â· tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
+    title: run.runId + ' · ' + run.kind,
+    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
     trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
       tone: "favorable"
     }, "winner") : /*#__PURE__*/React.createElement(Badge, {
@@ -22489,7 +22758,7 @@ function ModelsView() {
   }, runs.slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.id,
     title: run.id,
-    description: (run.date || 'unknown date') + ' Â· ' + machineLabel(run.machine) + ' Â· ' + run.lane + ' Â· ' + Object.keys(run.models || {}).length + ' models',
+    description: (run.date || 'unknown date') + ' · ' + machineLabel(run.machine) + ' · ' + run.lane + ' · ' + Object.keys(run.models || {}).length + ' models',
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: run.kind === 'agentic' ? 'accent' : 'info'
     }, run.kind)
@@ -22527,7 +22796,7 @@ function ModelsView() {
     description: d.lifecycle || 'unknown',
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, d.verified || 'â€”')
+    }, d.verified || '—')
   }))))))));
 }
 function SimpleView({
@@ -22604,7 +22873,7 @@ function SimpleView({
         forceRender();
       },
       count: entries.length,
-      placeholder: "Search knowledgeâ€¦"
+      placeholder: "Search knowledge…"
     }), /*#__PURE__*/React.createElement(SegmentedControl, {
       value: state.karea,
       onChange: v => {
@@ -22942,7 +23211,7 @@ function SimpleView({
     className: "input",
     id: "liveDashboardToken",
     type: "password",
-    placeholder: liveDashboardToken() ? 'Saved token â€” leave blank to keep' : 'dashboard bearer token'
+    placeholder: liveDashboardToken() ? 'Saved token — leave blank to keep' : 'dashboard bearer token'
   })), /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Token stays on this device only. Helpers use WB_LIVE_MACHINE_TOKEN on each machine; never put service-role keys here."), /*#__PURE__*/React.createElement(Cluster, {
@@ -23016,7 +23285,7 @@ const speakerInitials = name => {
   return parts.filter(p => p && /[a-z]/i.test(p[0])).map(p => p[0].toUpperCase()).slice(0, 2).join('') || '?';
 };
 // The face Teams showed next to the caption, or their initials when no
-// photo was captured â€” which is what Teams itself falls back to.
+// photo was captured — which is what Teams itself falls back to.
 function SpeakerAvatar({
   name,
   src,
@@ -23152,7 +23421,7 @@ function SharedScreenStrip({
       scrollSnapType: 'x mandatory'
     }
   }, shots.map(shot => {
-    const label = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} Â· ${clock(shot.time)}`;
+    const label = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} · ${clock(shot.time)}`;
     const url = urls[shot.file];
     return /*#__PURE__*/React.createElement("figure", {
       key: shot.file,
@@ -23185,7 +23454,7 @@ function SharedScreenStrip({
         color: '#6b7280',
         fontSize: 12
       }
-    }, "Loadingâ€¦"), /*#__PURE__*/React.createElement("figcaption", {
+    }, "Loading…"), /*#__PURE__*/React.createElement("figcaption", {
       style: {
         fontSize: 11,
         color: 'var(--text-muted)',
@@ -23217,7 +23486,7 @@ function SharedScreenShot({
       setBusy(false);
     }
   };
-  const caption = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} Â· ${clock(shot.time)}`;
+  const caption = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} · ${clock(shot.time)}`;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: '#111116',
@@ -23248,7 +23517,7 @@ function SharedScreenShot({
     variant: "ghost",
     onClick: show,
     disabled: busy
-  }, busy ? 'Loadingâ€¦' : failed ? 'Try again' : 'Show shared screen'), failed ? /*#__PURE__*/React.createElement("span", {
+  }, busy ? 'Loading…' : failed ? 'Try again' : 'Show shared screen'), failed ? /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#e8a0a0',
       fontSize: 12
@@ -23338,7 +23607,7 @@ function TranscriptsView() {
     }
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tgq || '',
-    placeholder: "Search across every meetingâ€¦",
+    placeholder: "Search across every meeting…",
     onChange: v => {
       state.tgq = v;
       forceRender();
@@ -23346,7 +23615,7 @@ function TranscriptsView() {
   })), /*#__PURE__*/React.createElement(Button, {
     onClick: runGlobalSearch,
     disabled: searching
-  }, searching ? 'Searchingâ€¦' : 'Search all'), globalHits ? /*#__PURE__*/React.createElement(Button, {
+  }, searching ? 'Searching…' : 'Search all'), globalHits ? /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => {
       setGlobalHits(null);
@@ -23365,7 +23634,7 @@ function TranscriptsView() {
       state.tdq = state.tgq;
       forceRender();
     },
-    eyebrow: `${r.entry.date} Â· ${r.total} match${r.total === 1 ? '' : 'es'}`,
+    eyebrow: `${r.entry.date} · ${r.total} match${r.total === 1 ? '' : 'es'}`,
     title: r.entry.title
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 1
@@ -23395,7 +23664,7 @@ function TranscriptsView() {
     gap: 3
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tq || '',
-    placeholder: "Search this listâ€¦",
+    placeholder: "Search this list…",
     count: list.length,
     onChange: v => {
       state.tq = v;
@@ -23442,7 +23711,7 @@ function TranscriptsView() {
     description: "Choose a meeting on the left to read its transcript."
   }) : loading ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Loading transcriptâ€¦") : data?.failed || data?.missing ? /*#__PURE__*/React.createElement(EmptyState, {
+  }, "Loading transcript…") : data?.failed || data?.missing ? /*#__PURE__*/React.createElement(EmptyState, {
     title: "Transcript data unavailable",
     description: "The reader file is in the repo but its data file could not be read."
   }) : /*#__PURE__*/React.createElement(Stack, {
@@ -23459,7 +23728,7 @@ function TranscriptsView() {
     }
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tdq || '',
-    placeholder: "Search in this transcriptâ€¦",
+    placeholder: "Search in this transcript…",
     count: lines.length,
     onChange: v => {
       state.tdq = v;
@@ -23516,7 +23785,7 @@ function TranscriptsView() {
     style: {
       margin: '3px 0'
     }
-  }, action.item, " â€” ", action.owner ? /*#__PURE__*/React.createElement("strong", {
+  }, action.item, " — ", action.owner ? /*#__PURE__*/React.createElement("strong", {
     style: {
       color: 'var(--text-strong)'
     }
@@ -23866,7 +24135,7 @@ function OverlayHost() {
     commands: commands,
     open: paletteOpen,
     onOpenChange: setPaletteOpen,
-    placeholder: "Jump to project, note, skill, or actionâ€¦"
+    placeholder: "Jump to project, note, skill, or action…"
   }), /*#__PURE__*/React.createElement(MoreDrawer, {
     open: moreOpen,
     onClose: () => setMoreOpen(false)
@@ -24114,9 +24383,9 @@ function CaptureDialog({
       onClose();
       if (result?.mode === 'outbox' && result.record?.deliveryMode === 'intake') {
         const owner = result.record.ownerContext || {};
-        toast(`${projectTitle(project)} is checked out by ${owner.ide || 'an agent'} @ ${machineName(owner.machine || '')} â€” capture submitted to neutral intake.`, 'success');
+        toast(`${projectTitle(project)} is checked out by ${owner.ide || 'an agent'} @ ${machineName(owner.machine || '')} — capture submitted to neutral intake.`, 'success');
       } else {
-        const destination = type === 'note' ? 'notes inbox' : type === 'kb' ? 'knowledge base' : type === 'project' ? 'new project seed' : `${projectTitle(project)} Â· ${type === 'idea' ? 'Ideas' : 'Tasks'}`;
+        const destination = type === 'note' ? 'notes inbox' : type === 'kb' ? 'knowledge base' : type === 'project' ? 'new project seed' : `${projectTitle(project)} · ${type === 'idea' ? 'Ideas' : 'Tasks'}`;
         toast(`Capture submitted to ${destination}.`, 'success');
       }
       render();
@@ -24161,7 +24430,7 @@ function CaptureDialog({
   }, /*#__PURE__*/React.createElement(Textarea, {
     value: text,
     onChange: setText,
-    placeholder: "Captureâ€¦",
+    placeholder: "Capture…",
     maxHeight: 220
   })), isTask && /*#__PURE__*/React.createElement(Stack, {
     gap: 3
@@ -24298,11 +24567,11 @@ function SessionDialog({
   }, session.summary)), (session.latestPrompt || session.approvedTitle || session.initialPromptTitle) && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Title context"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Display title', sessionHeadline(session)], ['Source', sessionTitleSourceLabel(session)], ['Confidence', session.titleConfidence != null ? String(Math.round(Number(session.titleConfidence) * 100)) + '%' : 'unknown'], ['Approved title', session.approvedTitle || 'â€”'], ['Initial prompt title', session.initialPromptTitle || 'â€”'], ['Latest prompt', session.latestPrompt || 'â€”'], ['Locked', session.titleLocked ? 'yes' : 'no']]
+    items: [['Display title', sessionHeadline(session)], ['Source', sessionTitleSourceLabel(session)], ['Confidence', session.titleConfidence != null ? String(Math.round(Number(session.titleConfidence) * 100)) + '%' : 'unknown'], ['Approved title', session.approvedTitle || '—'], ['Initial prompt title', session.initialPromptTitle || '—'], ['Latest prompt', session.latestPrompt || '—'], ['Locked', session.titleLocked ? 'yes' : 'no']]
   })), (session.todoCounts || session.activeTodo) && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Todo snapshot"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Summary', todoSummaryText(session.todoCounts) || 'â€”'], ['Active task', session.activeTodo?.content || session.activeTodo?.activeForm || 'â€”'], ['Live state', liveStateLabel(session)], ['Attention', String(session.attentionLevel || 'monitor').replace(/_/g, ' ')]]
+    items: [['Summary', todoSummaryText(session.todoCounts) || '—'], ['Active task', session.activeTodo?.content || session.activeTodo?.activeForm || '—'], ['Live state', liveStateLabel(session)], ['Attention', String(session.attentionLevel || 'monitor').replace(/_/g, ' ')]]
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
@@ -24334,13 +24603,13 @@ function SessionDialog({
     title: "No changed files recorded",
     description: "Older sessions and read-only sessions may not include file lists."
   })))), modelBuckets.length ? /*#__PURE__*/React.createElement(Card, {
-    title: `Per-model usage Â· ${modelBuckets.length} model${modelBuckets.length === 1 ? '' : 's'}`
+    title: `Per-model usage · ${modelBuckets.length} model${modelBuckets.length === 1 ? '' : 's'}`
   }, /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, modelBuckets.map(bucket => /*#__PURE__*/React.createElement(ListItem, {
     key: bucket.model,
     title: bucket.model,
-    description: `${fmtTokens(bucket.tokens)} tokens Â· ${fmtTokens(bucket.input)} input Â· ${fmtTokens(bucket.output)} output Â· ${fmtTokens(bucket.cacheRead + bucket.cacheCreation)} cache Â· ${bucket.requests} request${bucket.requests === 1 ? '' : 's'}`,
+    description: `${fmtTokens(bucket.tokens)} tokens · ${fmtTokens(bucket.input)} input · ${fmtTokens(bucket.output)} output · ${fmtTokens(bucket.cacheRead + bucket.cacheCreation)} cache · ${bucket.requests} request${bucket.requests === 1 ? '' : 's'}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1,
       vertical: true
@@ -28315,7 +28584,40 @@ window.__WBReactRender = function () {
       }
     }
     try {
-      if (opts.intent?.type) {
+      if (p.supabaseProjectId) {
+        // A migrated project's tasks live in Supabase, not tasks.json --
+        // writing the file here would leave both shapes holding different
+        // answers, exactly what issue #11 forbids. Only tasks.setStatus has
+        // a translation today (fromLegacyStatus); anything else -- including
+        // a plain full-file save with no intent -- is a loud failure rather
+        // than a silent fall-through to mutatePath/writeText.
+        if (opts.intent?.type !== "tasks.setStatus") {
+          throw new Error(
+            `${p.data.project} is Supabase-migrated; "${opts.intent?.type || "a full-file save"}" has no Supabase write path yet.`,
+          );
+        }
+        // Read the row before writing it. fromLegacyStatus cannot invent a
+        // waiting_on reason, so without the existing row every move to
+        // "blocked" would flatten a specific reason into the generic
+        // "external" -- dsh-409 really does carry "jared" today, and a status
+        // toggle is not a reason to lose that. One extra round trip on a
+        // write is the right price for not silently degrading data.
+        const [existing] = await ensureSupabaseDataClient().select("tasks", {
+          columns: "id,status,when_bucket,waiting_on,cancel_reason",
+          filters: { id: `eq.${opts.intent.taskId}` },
+          limit: 1,
+        });
+        const patch = SupabaseTasks.fromLegacyStatus(opts.intent.nextStatus, existing);
+        await ensureSupabaseDataClient().upsert(
+          "tasks",
+          [{ id: opts.intent.taskId, ...patch }],
+          { onConflict: "id" },
+        );
+        // Reconcile the optimistic in-memory update against what the
+        // database actually stored, the same way the GitHub path below
+        // re-reads its own commit into p.data.
+        p.data = await ensureSupabaseTaskStore().loadProjectData(p.supabaseProjectId);
+      } else if (opts.intent?.type) {
         const result = await mutatePath(
           p.path,
           opts.intent,
