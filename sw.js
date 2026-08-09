@@ -15,7 +15,7 @@
 
    Escape hatch: load any page with ?nosw=1 to unregister and drop all caches.
 */
-const VERSION = '2026-08-09.22';
+const VERSION = '2026-08-09.27';
 const CACHE = 'workbench-shell-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
