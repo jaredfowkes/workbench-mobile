@@ -13455,6 +13455,33 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return request(`/rest/v1/${table}?${query}`, { method: "GET" });
     }
 
+    // A partial change to an existing row is a PATCH, never an upsert.
+    // PostgREST's upsert is an INSERT ... ON CONFLICT, so Postgres evaluates
+    // the table's INSERT policy against the proposed row — and every table
+    // here checks `owner_uid = auth.uid()`, which a partial patch does not
+    // carry. The result is "new row violates row-level security policy" on a
+    // row the caller is perfectly entitled to change. NOT NULL columns the
+    // patch omits (tasks.title, tasks.number) would fail it too.
+    //
+    // UPDATE's policy is `using (owner_uid = auth.uid())`, evaluated against
+    // the row already in the table, so it needs nothing in the body.
+    async function update(table, patch, { filters, returning = "representation" } = {}) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters || {})) {
+        if (value !== undefined) params.append(key, value);
+      }
+      const query = params.toString();
+      if (!query) {
+        // PostgREST applies an unfiltered PATCH to every row in the table.
+        throw new Error("supabase-data update requires filters; refusing to patch a whole table.");
+      }
+      return request(`/rest/v1/${table}?${query}`, {
+        method: "PATCH",
+        headers: { Prefer: `return=${returning}` },
+        body: patch,
+      });
+    }
+
     async function upsert(table, rows, { onConflict, ignoreDuplicates, returning = "representation" } = {}) {
       const resolution = ignoreDuplicates ? "resolution=ignore-duplicates" : "resolution=merge-duplicates";
       const query = onConflict ? `?on_conflict=${encodeURIComponent(onConflict)}` : "";
@@ -13465,7 +13492,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       });
     }
 
-    return { select, upsert };
+    return { select, update, upsert };
   }
 
   return {
@@ -13487,7 +13514,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // Tools/workbench-live/supabase/migrations/20260808000000_tasks.sql). Pure
   // module, no DOM access, same DI shape as capture-outbox.js and
   // supabase-data.js: the caller hands in a `client` (supabase-data's
-  // createClient() -- select/upsert only), nothing here touches `window` or
+  // createClient() -- select/update/upsert), nothing here touches `window` or
   // `fetch` directly. app.js is expected to wire this in later; that wiring
   // is a separate, supervised step and does not live here.
 
@@ -13855,8 +13882,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   function createTaskStore(options = {}) {
     const client = options.client;
-    if (!client || typeof client.select !== "function" || typeof client.upsert !== "function") {
-      throw new Error("supabase-tasks requires a supabase-data-shaped `client` (select/upsert).");
+    if (!client || typeof client.select !== "function" || typeof client.update !== "function") {
+      throw new Error("supabase-tasks requires a supabase-data-shaped `client` (select/update).");
     }
 
     async function loadHierarchy() {
@@ -13904,7 +13931,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         // update that happens to touch this row.
         row.cancel_reason = null;
       }
-      return client.upsert("tasks", [row], { onConflict: "id" });
+      return client.update("tasks", row, { filters: { id: `eq.${taskId}` } });
     }
 
     async function setWhen(taskId, { bucket, date } = {}) {
@@ -13914,10 +13941,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       // when_date is deliberately unvalidated at the schema level (its shape
       // depends on when_bucket -- an ISO week for 'this_week', a plain date
       // for 'scheduled'), so this guard is intentionally silent on it too.
-      return client.upsert(
+      return client.update(
         "tasks",
-        [{ id: taskId, when_bucket: bucket ?? null, when_date: date ?? null }],
-        { onConflict: "id" },
+        { when_bucket: bucket ?? null, when_date: date ?? null },
+        { filters: { id: `eq.${taskId}` } },
       );
     }
 
@@ -13925,10 +13952,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       // Nullable column: `on: null` is how a task stops waiting on anything,
       // which deriveState relies on directly.
       assertOneOf(on, WAITING_ON_VALUES, "waiting_on", { nullable: true });
-      return client.upsert(
+      return client.update(
         "tasks",
-        [{ id: taskId, waiting_on: on ?? null, waiting_note: note ?? null, waiting_date: date ?? null }],
-        { onConflict: "id" },
+        { waiting_on: on ?? null, waiting_note: note ?? null, waiting_date: date ?? null },
+        { filters: { id: `eq.${taskId}` } },
       );
     }
 
@@ -15767,7 +15794,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.24";
+  const WB_VERSION = "2026-08-08.25";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -28663,11 +28690,12 @@ window.__WBReactRender = function () {
           limit: 1,
         });
         const patch = SupabaseTasks.fromLegacyStatus(opts.intent.nextStatus, existing);
-        await ensureSupabaseDataClient().upsert(
-          "tasks",
-          [{ id: opts.intent.taskId, ...patch }],
-          { onConflict: "id" },
-        );
+        // PATCH, not upsert: an upsert is an INSERT under the hood, so the
+        // insert policy checks owner_uid = auth.uid() against a body that
+        // does not carry it and rejects a row we are entitled to change.
+        await ensureSupabaseDataClient().update("tasks", patch, {
+          filters: { id: `eq.${opts.intent.taskId}` },
+        });
         // Reconcile the optimistic in-memory update against what the
         // database actually stored, the same way the GitHub path below
         // re-reads its own commit into p.data.
