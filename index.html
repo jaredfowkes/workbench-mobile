@@ -13509,7 +13509,24 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       });
     }
 
-    return { select, update, upsert };
+    // Same filter discipline as update(): PostgREST deletes every row in the
+    // table when no filter is supplied.
+    async function remove(table, { filters } = {}) {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(filters || {})) {
+        if (value !== undefined) params.append(key, value);
+      }
+      const query = params.toString();
+      if (!query) {
+        throw new Error("supabase-data delete requires filters; refusing to empty a table.");
+      }
+      return request(`/rest/v1/${table}?${query}`, {
+        method: "DELETE",
+        headers: { Prefer: "return=minimal" },
+      });
+    }
+
+    return { select, update, upsert, delete: remove };
   }
 
   return {
@@ -15811,7 +15828,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-09.26";
+  const WB_VERSION = "2026-08-09.29";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -22269,6 +22286,41 @@ function MachinesView() {
   };
   // Stale outranks whatever the file claims: a supervisor that stopped
   // reporting says "fine" forever by omission (issue #33).
+  const [pushBusy, setPushBusy] = React.useState(false);
+  const pushKind = pushState();
+  React.useEffect(() => {
+    refreshPushState().then(forceRender);
+  }, []);
+  const pushTone = pushKind === 'on' ? 'favorable' : pushKind === 'blocked' ? 'unfavorable' : 'neutral';
+  const pushLabel = {
+    on: 'on',
+    off: 'off',
+    blocked: 'blocked',
+    unsupported: 'unavailable'
+  }[pushKind];
+  const pushBlurb = {
+    on: 'This device will be told when something is silently broken and costing money. Nothing else — under one alert a day.',
+    off: 'Get told on your phone when a check fails and the dashboard cannot reach you, because sync itself is the fault.',
+    blocked: 'Notifications are blocked for this site. Turn them back on in Settings, then reload.',
+    unsupported: 'This browser cannot receive push. On iPhone, add the dashboard to your Home Screen first.'
+  }[pushKind];
+  const togglePush = async () => {
+    setPushBusy(true);
+    try {
+      if (pushKind === 'on') {
+        await disablePush();
+        toast('Phone alerts off.');
+      } else {
+        await enablePush();
+        toast('Phone alerts on.');
+      }
+    } catch (err) {
+      toast(String(err?.message || err));
+    } finally {
+      setPushBusy(false);
+      forceRender();
+    }
+  };
   const subsystemRows = subsystemHealthRows();
   const subsystemBad = subsystemRows.filter(r => r.status === 'failing').length;
   const subsystemStale = subsystemRows.filter(r => r.status === 'stale' || r.status === 'unknown').length;
@@ -22395,6 +22447,20 @@ function MachinesView() {
     title: "No recent actions",
     description: "Request a refresh to verify the local action queue end-to-end."
   }))), /*#__PURE__*/React.createElement(Card, {
+    title: "Phone alerts",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: pushTone
+    }, pushLabel)
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, pushBlurb), pushKind === 'unsupported' || pushKind === 'blocked' ? null : /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2
+  }, /*#__PURE__*/React.createElement(Button, {
+    onClick: togglePush,
+    disabled: pushBusy
+  }, pushKind === 'on' ? 'Turn off' : 'Turn on')))), /*#__PURE__*/React.createElement(Card, {
     title: "Subsystem health",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: subsystemTone
@@ -25222,6 +25288,95 @@ window.__WBReactRender = function () {
   // STALE. A supervisor that stopped reporting says "ok" forever by omission,
   // which is how a permanently false rollup alarm went unnoticed. Stale outranks
   // whatever the file claims.
+  // --- Web Push enrolment (issue #33) ---------------------------------------
+  // The VAPID public key is an identifier, not a secret -- same class as the
+  // Supabase anon key. It is useless without the private half, which never
+  // leaves Tools/.secrets/.
+  const WB_VAPID_PUBLIC_KEY =
+    "BHyrlu15-vjKpDzhwWNy1N58t4ddZ9m8ZGEr2_r9GborFr68xgzUOUIESsp5_eshz-oLif5sxP2_M3jHNp-zu4I";
+
+  function vapidKeyBytes(base64Url) {
+    const padded = (base64Url + "=".repeat((4 - (base64Url.length % 4)) % 4))
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const raw = atob(padded);
+    return Uint8Array.from(raw, (c) => c.charCodeAt(0));
+  }
+
+  function pushSupported() {
+    return (
+      typeof navigator !== "undefined" &&
+      "serviceWorker" in navigator &&
+      typeof window !== "undefined" &&
+      "PushManager" in window &&
+      "Notification" in window
+    );
+  }
+
+  function pushState() {
+    if (!pushSupported()) return "unsupported";
+    if (Notification.permission === "denied") return "blocked";
+    return state.pushSubscribed ? "on" : "off";
+  }
+
+  async function refreshPushState() {
+    if (!pushSupported()) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      state.pushSubscribed = !!(await reg.pushManager.getSubscription());
+    } catch {
+      state.pushSubscribed = false;
+    }
+  }
+
+  // iOS only allows a permission prompt from a real user gesture, and only for
+  // a PWA installed to the Home Screen -- so this is a button, never something
+  // that fires on load.
+  async function enablePush() {
+    if (!pushSupported()) throw new Error("This browser cannot receive push notifications.");
+    if (!window.WBSupabaseAuth?.hasSession?.()) {
+      throw new Error("Sign in with GitHub first — a subscription is stored against your account.");
+    }
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      throw new Error(
+        permission === "denied"
+          ? "Notifications are blocked for this site in Settings."
+          : "Notification permission was not granted.",
+      );
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const existing = await reg.pushManager.getSubscription();
+    const sub =
+      existing ||
+      (await reg.pushManager.subscribe({
+        // Required by every browser now; a push without it is rejected.
+        userVisibleOnly: true,
+        applicationServerKey: vapidKeyBytes(WB_VAPID_PUBLIC_KEY),
+      }));
+    // Only the endpoint is stored. p256dh/auth exist for encrypted payloads,
+    // which this deliberately never sends, so there is nothing to keep.
+    await ensureSupabaseDataClient().upsert(
+      "push_subscriptions",
+      [{ endpoint: sub.endpoint, user_agent: (navigator.userAgent || "").slice(0, 200) }],
+      { onConflict: "owner_uid,endpoint", returning: "minimal" },
+    );
+    state.pushSubscribed = true;
+    return true;
+  }
+
+  async function disablePush() {
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) {
+      await ensureSupabaseDataClient()
+        .delete("push_subscriptions", { filters: { endpoint: `eq.${sub.endpoint}` } })
+        .catch(() => {});
+      await sub.unsubscribe();
+    }
+    state.pushSubscribed = false;
+  }
+
   function subsystemHealthRows() {
     const rows = [];
     for (const m of state.machines || []) {
