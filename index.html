@@ -15828,7 +15828,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-09.29";
+  const WB_VERSION = "2026-08-09.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18642,6 +18642,33 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     });
     return deduped;
   }
+  // One row per machine, carrying the same snapshot the git file holds:
+  // machine-heartbeat.py publishes the whole payload as `snapshot` jsonb, so
+  // adding a field to the beacon needs no migration and no reader change.
+  async function loadMachinesFromSupabase() {
+    if (!window.WBSupabaseAuth?.hasSession?.()) return null;
+    try {
+      const rows = await ensureSupabaseDataClient().select("machines", {
+        columns: "machine_id,snapshot,health,updated_at",
+        order: "updated_at.desc",
+      });
+      if (!Array.isArray(rows) || !rows.length) return null;
+      return rows.map((row) => ({
+        ...(row.snapshot || {}),
+        hostname: row.machine_id,
+        health: row.health || (row.snapshot || {}).health || null,
+        // The view ages and sorts on `updated`; the row's own timestamp is more
+        // trustworthy than one carried inside a payload the machine wrote.
+        updated: Date.parse(row.updated_at) || (row.snapshot || {}).updated || 0,
+        _path: `supabase:machines/${row.machine_id}`,
+      }));
+    } catch {
+      // Fall through to git rather than emptying the view: a machine list that
+      // silently goes blank is worse than a stale one.
+      return null;
+    }
+  }
+
   async function loadMachines() {
     const out = [];
     let failed = false;
@@ -18655,13 +18682,28 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       stale: 0,
     };
 
-    let tree;
-    try {
-      tree = await ghGetTree();
-    } catch {
-      failed = true;
-      coverage.unreachable += 1;
-      tree = [];
+    // Supabase first (#26). The machines table has been live and current for a
+    // week; the git files duplicate it at a cost of ~291 commits a day. One
+    // query replaces a tree read plus a file fetch per machine. The git path
+    // stays as the fallback -- it is the only thing that works before sign-in.
+    const dbRows = await loadMachinesFromSupabase();
+    if (dbRows) {
+      out.push(...dbRows);
+      coverage.expected = dbRows.length;
+      coverage.found = dbRows.length;
+      coverage.ok = dbRows.length;
+    }
+    state.machinesSource = dbRows ? "supabase" : "git";
+
+    let tree = [];
+    if (!dbRows) {
+      try {
+        tree = await ghGetTree();
+      } catch {
+        failed = true;
+        coverage.unreachable += 1;
+        tree = [];
+      }
     }
     await batch(
       tree.filter((p) => /^Tools\/machines\/[^/]+\.json$/.test(p)),
