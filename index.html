@@ -15828,7 +15828,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-09.31";
+  const WB_VERSION = "2026-08-09.32";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18699,11 +18699,20 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     if (!window.WBSupabaseAuth?.hasSession?.()) return null;
     try {
       const rows = await ensureSupabaseDataClient().select("machines", {
-        columns: "machine_id,snapshot,health,updated_at",
+        columns: "machine_id,snapshot,health,updated_at,status",
         order: "updated_at.desc",
       });
       if (!Array.isArray(rows) || !rows.length) return null;
-      return rows.map((row) => ({
+      return rows
+        // The machines table is really a PRODUCERS table: telemetry_event has a
+        // foreign key to it, so anything that writes events needs a row --
+        // including Cursor's cloud sandbox, whose hostname is literally
+        // "cursor". Those are not Jared's computers and must not be listed as
+        // machines. The git fallback below never showed them (it reads
+        // Tools/machines/*.json, and they have no file), so filtering here is
+        // what keeps the two paths agreeing.
+        .filter((row) => !row?.status?.producerOnly)
+        .map((row) => ({
         ...(row.snapshot || {}),
         hostname: row.machine_id,
         health: row.health || (row.snapshot || {}).health || null,
