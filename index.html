@@ -13014,8 +13014,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return !!(CONFIG.url && CONFIG.anonKey);
   }
 
+  // Two different questions wear the same word, and conflating them has now
+  // cost real behaviour twice.
+  //
+  // signedIn() answers "do we hold a GitHub token" — it is provider_token, and
+  // GoTrue returns that ONLY on the initial sign-in, never on a refresh. So it
+  // goes false on the next visit even though the session is perfectly alive.
+  // That is the right question for repo access, and the wrong one for
+  // everything else.
   function signedIn() {
     return !!session?.provider_token;
+  }
+
+  // hasSession() answers "is there a live Supabase session" — the access token,
+  // which does survive a refresh. Anything talking to PostgREST wants this one.
+  function hasSession() {
+    return !!session?.access_token;
   }
 
   /** The GitHub user-to-server token, or "" when not signed in. */
@@ -13229,6 +13243,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     configured,
     lastAuthError,
     signedIn,
+    hasSession,
     githubToken,
     accessToken,
     config,
@@ -15752,7 +15767,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.23";
+  const WB_VERSION = "2026-08-08.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16338,7 +16353,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     } catch (error) {
       return (gate("refresh failed", { error: String(error?.message || error) }), byGitPath);
     }
-    if (!auth.accessToken?.()) {
+    if (!auth.hasSession?.()) {
       return (
         gate("no Supabase session — signed out, or connected with a PAT rather than Sign in with GitHub", {
           hasProviderToken: !!auth.githubToken?.(),
@@ -23190,7 +23205,7 @@ function SimpleView({
   }, /*#__PURE__*/React.createElement("span", null, displayText(pub.syncMessage, 180))) : null), /*#__PURE__*/React.createElement(Card, {
     title: "Account"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [["Supabase sign-in", window.WBSupabaseAuth?.configured?.() ? window.WBSupabaseAuth?.signedIn?.() ? 'signed in' : 'not signed in' : 'not configured in this build'], ["Captures", window.WBSupabaseAuth?.signedIn?.() ? 'syncing' : 'queued on this device until you sign in']]
+    items: [["Supabase sign-in", window.WBSupabaseAuth?.configured?.() ? window.WBSupabaseAuth?.hasSession?.() ? 'signed in' : 'not signed in' : 'not configured in this build'], ["Captures", window.WBSupabaseAuth?.hasSession?.() ? 'syncing' : 'queued on this device until you sign in']]
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Loose notes are stored in Supabase, not the repo, so they need this sign-in as well as repo access. A GitHub token alone authenticates the repo and will leave captures stuck in the outbox."), /*#__PURE__*/React.createElement(Cluster, {
@@ -23198,7 +23213,7 @@ function SimpleView({
     style: {
       flexWrap: 'wrap'
     }
-  }, window.WBSupabaseAuth?.signedIn?.() ? /*#__PURE__*/React.createElement(Button, {
+  }, window.WBSupabaseAuth?.hasSession?.() ? /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => {
       window.WBSupabaseAuth.signOut();
@@ -27653,7 +27668,11 @@ window.__WBReactRender = function () {
     // specific project (deliveryMode "project-task"/"intake") are unaffected
     // -- they still write into that project's tasks.json, per #16.
     const Auth = window.WBSupabaseAuth;
-    if (!Auth?.signedIn?.()) {
+    // hasSession(), not signedIn(): flushing the outbox talks to PostgREST and
+    // needs the Supabase access token, which survives a refresh. signedIn() is
+    // provider_token and goes false on the next visit, which is what left
+    // captures queued on-device since the first refresh.
+    if (!Auth?.hasSession?.()) {
       throw new Error("Sign in again to sync captures.");
     }
     await Auth.ensureFresh();
@@ -28316,7 +28335,7 @@ window.__WBReactRender = function () {
     const cached = await idb.get(CAPTURES_CACHE_KEY).catch(() => null);
     if (Array.isArray(cached)) state.captures = cached;
     const Auth = window.WBSupabaseAuth;
-    if (!Auth?.signedIn?.()) {
+    if (!Auth?.hasSession?.()) {
       // Not signed in is an expected state, not a failure -- stay quiet and
       // let the file-based sources below carry the inbox.
       setDataHealth(sourceKey, {
@@ -29496,7 +29515,7 @@ window.__WBReactRender = function () {
     const Auth = window.WBSupabaseAuth;
     // Returning from GitHub: swallow the fragment before anything renders.
     const justSignedIn = Auth ? await Auth.consumeRedirect() : false;
-    if (Auth?.signedIn?.()) await Auth.ensureFresh();
+    if (Auth?.hasSession?.()) await Auth.ensureFresh();
 
     let cfg = await ghLoadConfig();
     if (!cfg && Auth?.signedIn?.()) {
