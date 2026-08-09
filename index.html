@@ -15752,7 +15752,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.22";
+  const WB_VERSION = "2026-08-08.23";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16312,7 +16312,21 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   async function loadMigratedProjectsByGitPath() {
     const byGitPath = new Map();
     const auth = window.WBSupabaseAuth;
-    if (!auth?.configured?.()) return byGitPath;
+    // The fallback to tasks.json is deliberately silent, which made a real
+    // misconfiguration indistinguishable from "nothing is migrated" — it cost
+    // two rounds of guessing. Every exit below now says which one it took, on
+    // the console and on window.__WBTaskGate, so the answer is one look rather
+    // than a hypothesis.
+    const gate = (reason, extra) => {
+      const state = { reason, at: new Date().toISOString(), ...extra };
+      window.__WBTaskGate = state;
+      console.info("[WB task gate]", reason, extra || "");
+      return state;
+    };
+    if (!auth) return (gate("no auth module on the page"), byGitPath);
+    if (!auth.configured?.()) {
+      return (gate("Supabase not configured — no url/anonKey in this build"), byGitPath);
+    }
     // Deliberately NOT signedIn(): that returns !!session.provider_token, the
     // GitHub token — and #17 recorded that provider_token comes back only on
     // initial sign-in and never on refresh. Guarding on it meant every
@@ -16321,10 +16335,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     // Supabase access token, which does survive a refresh.
     try {
       await auth.ensureFresh();
-    } catch {
-      return byGitPath;
+    } catch (error) {
+      return (gate("refresh failed", { error: String(error?.message || error) }), byGitPath);
     }
-    if (!auth.accessToken?.()) return byGitPath;
+    if (!auth.accessToken?.()) {
+      return (
+        gate("no Supabase session — signed out, or connected with a PAT rather than Sign in with GitHub", {
+          hasProviderToken: !!auth.githubToken?.(),
+        }),
+        byGitPath
+      );
+    }
     try {
       const rows = await ensureSupabaseDataClient().select("projects", {
         columns: "id,git_path",
@@ -16332,9 +16353,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       for (const row of rows || []) {
         if (row?.git_path) byGitPath.set(row.git_path, row);
       }
+      gate("ok", { migrated: [...byGitPath.keys()] });
     } catch (error) {
       // Offline/401/500/etc -- log once and treat every project as
       // unmigrated for this scan rather than failing it.
+      gate("projects query failed", { error: String(error?.message || error) });
       console.warn(
         "Supabase projects query failed; reading every project from tasks.json this scan.",
         error,
