@@ -15,7 +15,7 @@
 
    Escape hatch: load any page with ?nosw=1 to unregister and drop all caches.
 */
-const VERSION = '2026-08-09.27';
+const VERSION = '2026-08-09.30';
 const CACHE = 'workbench-shell-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
@@ -79,4 +79,50 @@ self.addEventListener('fetch', (event) => {
   if (url.searchParams.has('nosw')) return;
 
   event.respondWith(staleWhileRevalidate(req));
+});
+
+// --- Web Push (issue #33) ----------------------------------------------------
+//
+// The push carries NO payload, deliberately. A body would have to be encrypted
+// per subscription and would route the health detail through Apple's push
+// service to get here; instead the banner says something needs attention and
+// the dashboard says what. That is also more honest: a pushed payload is a
+// snapshot that can already be stale when it is read, while opening the page
+// fetches current state.
+//
+// This only ever fires for a fault that is silently broken AND costing money or
+// correctness -- targeted well under one a day, against a measured tolerance of
+// three to five. A channel that cries wolf gets muted, and half the users who
+// mute a feature's notifications abandon it.
+self.addEventListener('push', (event) => {
+  event.waitUntil(
+    self.registration.showNotification('Workbench needs attention', {
+      body: 'A check is failing. Open the dashboard to see which.',
+      // A stable tag means a second alert REPLACES the first rather than
+      // stacking. Three banners for one ongoing fault is how a channel earns
+      // a mute.
+      tag: 'workbench-health',
+      renotify: false,
+      requireInteraction: false,
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const target = new URL('./?view=machines', self.location.origin + self.location.pathname).href;
+  event.waitUntil(
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      // Focus an open tab rather than piling up new ones.
+      for (const client of windows) {
+        if (client.url.startsWith(self.location.origin) && 'focus' in client) {
+          await client.focus();
+          if ('navigate' in client) await client.navigate(target);
+          return;
+        }
+      }
+      if (self.clients.openWindow) await self.clients.openWindow(target);
+    })(),
+  );
 });
