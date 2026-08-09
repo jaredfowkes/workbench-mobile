@@ -15794,7 +15794,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.25";
+  const WB_VERSION = "2026-08-08.26";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -25464,6 +25464,44 @@ window.__WBReactRender = function () {
   // seat costs the same whether it runs one session or a thousand, so the only
   // defensible per-session figure is its share of the month's tracked plan
   // tokens: the shares sum to the fee and never exceed what was paid.
+  // Port of usage_cost.projected_month_tokens(). Keep the two in step: this
+  // mirror never got the projection when Python gained it, so every Cost card
+  // divided the seat fee by tokens observed *so far* while Python divided by a
+  // projected full month. On 8 August the denominators were 3.40B here against
+  // 4.77B there -- the same session read $1.17 on screen and $0.83 in the
+  // terminal, roughly 40% high, every day of every month.
+  //
+  // A completed month divides by what it actually used. The current month
+  // cannot: on day 2 the observed total is a fraction of what the month will
+  // hold, so dividing by it front-loads the whole fee onto the first sessions.
+  // Converges by construction -- as days remaining goes to zero the projection
+  // becomes the observed total.
+  function projectedMonthTokens(observed, month, priorMonths, nowMs) {
+    const at = new Date(nowMs);
+    const key = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, "0")}`;
+    if (month !== key) return observed;
+    const daysInMonth = new Date(at.getFullYear(), at.getMonth() + 1, 0).getDate();
+    const elapsed = Math.min(daysInMonth, Math.max(0.5, at.getDate() - 1 + at.getHours() / 24));
+    const remainingFraction = Math.max(0, (daysInMonth - elapsed) / daysInMonth);
+    const history = Object.entries(priorMonths)
+      .filter(([m, v]) => m !== month && v > 0)
+      .map(([, v]) => v)
+      .sort((a, b) => a - b);
+    let projected;
+    if (history.length) {
+      // A naive run rate is unusable early: 1.5 days into August it
+      // extrapolated 4.6x over July's actual. History first, run rate only as
+      // the fallback when there is none.
+      const mid = Math.floor(history.length / 2);
+      const typical =
+        history.length % 2 ? history[mid] : Math.floor((history[mid - 1] + history[mid]) / 2);
+      projected = observed + Math.floor(typical * remainingFraction);
+    } else {
+      projected = Math.floor((observed * daysInMonth) / elapsed);
+    }
+    return Math.max(observed, projected);
+  }
+
   function planShareMap(rows, allRows) {
     // Per calendar month, and always against the full store rather than the
     // display window: only the current month used to get a fee at all, and a
@@ -25485,6 +25523,14 @@ window.__WBReactRender = function () {
       if (!byAccount.has(slug)) byAccount.set(slug, []);
       byAccount.get(slug).push([r, tokens]);
     }
+    // Plan-lane totals by month, deliberately NOT split by seat: account
+    // tagging only began 2026-08-02, so a per-seat history would be empty in
+    // exactly the month that needs it. Mirrors usage_cost.plan_share_costs.
+    const monthHistory = {};
+    for (const [key, entries] of byAccount) {
+      const m = key.split("\u0000")[1];
+      monthHistory[m] = (monthHistory[m] || 0) + entries.reduce((a, [, t]) => a + t, 0);
+    }
     const shares = new Map();
     for (const [key, entries] of byAccount) {
       const [slug, month] = key.split("\u0000");
@@ -25497,7 +25543,9 @@ window.__WBReactRender = function () {
         price += Math.max(0, Number(wallet?.spend || 0));
       }
       if (price <= 0) continue; // no configured fee allocates nothing
-      const total = entries.reduce((a, [, t]) => a + t, 0);
+      const observed = entries.reduce((a, [, t]) => a + t, 0);
+      if (observed <= 0) continue;
+      const total = projectedMonthTokens(observed, month, monthHistory, Date.now());
       if (total <= 0) continue;
       for (const [r, tokens] of entries) {
         if (wanted.has(r)) shares.set(r, (price * tokens) / total);
