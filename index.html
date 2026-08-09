@@ -15752,7 +15752,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.21";
+  const WB_VERSION = "2026-08-08.22";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16311,7 +16311,20 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // project reads from the index, exactly like today.
   async function loadMigratedProjectsByGitPath() {
     const byGitPath = new Map();
-    if (!window.WBSupabaseAuth?.signedIn?.()) return byGitPath;
+    const auth = window.WBSupabaseAuth;
+    if (!auth?.configured?.()) return byGitPath;
+    // Deliberately NOT signedIn(): that returns !!session.provider_token, the
+    // GitHub token — and #17 recorded that provider_token comes back only on
+    // initial sign-in and never on refresh. Guarding on it meant every
+    // restored session read as signed out, so the gate never fired and every
+    // project silently fell back to tasks.json. What this needs is the
+    // Supabase access token, which does survive a refresh.
+    try {
+      await auth.ensureFresh();
+    } catch {
+      return byGitPath;
+    }
+    if (!auth.accessToken?.()) return byGitPath;
     try {
       const rows = await ensureSupabaseDataClient().select("projects", {
         columns: "id,git_path",
