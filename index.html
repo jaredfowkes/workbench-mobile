@@ -15794,7 +15794,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-08.27";
+  const WB_VERSION = "2026-08-09.20";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -22250,6 +22250,14 @@ function MachinesView() {
     const tone = dataHealthTone(status);
     return tone === 'bad' ? 'unfavorable' : tone === 'ok' ? 'favorable' : 'warning';
   };
+  // Stale outranks whatever the file claims: a supervisor that stopped
+  // reporting says "fine" forever by omission (issue #33).
+  const subsystemRows = subsystemHealthRows();
+  const subsystemBad = subsystemRows.filter(r => r.status === 'failing').length;
+  const subsystemStale = subsystemRows.filter(r => r.status === 'stale' || r.status === 'unknown').length;
+  const subsystemTone = subsystemBad ? 'unfavorable' : subsystemStale ? 'warning' : 'favorable';
+  const subsystemLabel = subsystemBad ? `${subsystemBad} failing` : subsystemStale ? `${subsystemStale} not reporting` : 'steady';
+  const subsystemSummary = subsystemRows.length ? subsystemBad || subsystemStale ? 'A check that stopped running is not a check that passed.' : 'Every machine reporting, every check passing.' : 'No machine has published subsystem health yet.';
   const statusCounts = [['ok', coverage.ok || 0, 'favorable'], ['stale', coverage.stale || 0, 'warning'], ['missing', coverage.missing || 0, 'warning'], ['malformed', coverage.malformed || 0, 'unfavorable'], ['unreachable', coverage.unreachable || 0, 'unfavorable']].filter(([, count]) => count > 0);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
@@ -22369,6 +22377,27 @@ function MachinesView() {
   }))) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No recent actions",
     description: "Request a refresh to verify the local action queue end-to-end."
+  }))), /*#__PURE__*/React.createElement(Card, {
+    title: "Subsystem health",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: subsystemTone
+    }, subsystemLabel)
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement("p", {
+    style: muted
+  }, subsystemSummary), subsystemRows.length ? /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, subsystemRows.map(row => /*#__PURE__*/React.createElement(ListItem, {
+    key: row.key,
+    title: row.name,
+    description: `${row.summary}${row.quiet.length ? ' · not run: ' + row.quiet.join(', ') : ''}`,
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: row.status === 'failing' ? 'unfavorable' : row.status === 'ok' ? 'favorable' : 'warning'
+    }, row.status)
+  }))) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No supervisor reporting",
+    description: "Machines publish subsystem health with their heartbeat."
   }))), /*#__PURE__*/React.createElement(Card, {
     title: "Structured data health",
     action: /*#__PURE__*/React.createElement(Badge, {
@@ -25168,6 +25197,57 @@ window.__WBReactRender = function () {
   function currentUsageRows() {
     return usageRows((state.sessionMetrics?.sessions || []).filter(Boolean));
   }
+  // The 60s supervisor tick's own verdict, per machine (issue #33). It used to
+  // land only in a gitignored file, so this surface -- which reads the
+  // committed repo -- could never show it. It now rides Tools/machines/<host>.json.
+  //
+  // Three states, and the third is the one that matters: healthy, failing, and
+  // STALE. A supervisor that stopped reporting says "ok" forever by omission,
+  // which is how a permanently false rollup alarm went unnoticed. Stale outranks
+  // whatever the file claims.
+  function subsystemHealthRows() {
+    const rows = [];
+    for (const m of state.machines || []) {
+      const key = m.hostname || m.machine || "unknown";
+      const health = m.health;
+      if (!health || health.available === false) {
+        rows.push({
+          key,
+          name: machineName(key),
+          status: "unknown",
+          summary: "No supervisor on this machine.",
+          failing: [],
+          quiet: [],
+        });
+        continue;
+      }
+      const watchers = health.watchers || {};
+      const failing = Object.entries(watchers)
+        .filter(([, v]) => v && v.ok === false)
+        .map(([name]) => name)
+        .sort();
+      // A watcher whose action says it never executed is not passing; it is
+      // absent. Named separately so "nothing is wrong" cannot be read off a
+      // check that has not run.
+      const quiet = Object.entries(watchers)
+        .filter(([, v]) => v && /^skipped/.test(String(v.action || "")))
+        .map(([name]) => name)
+        .sort();
+      const status = health.stale ? "stale" : failing.length ? "failing" : "ok";
+      const summary = health.stale
+        ? `Supervisor last reported ${health.ageMs ? shortAge(Date.now() - health.ageMs) : "unknown"} ago.`
+        : failing.length
+          ? `${failing.length} check${failing.length === 1 ? "" : "s"} failing: ${failing.join(", ")}.`
+          : `${Object.keys(watchers).length} checks passing.`;
+      rows.push({ key, name: machineName(key), status, summary, failing, quiet, health });
+    }
+    return rows.sort((a, b) => {
+      const rank = { failing: 0, stale: 1, unknown: 2, ok: 3 };
+      const d = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+      return d !== 0 ? d : String(a.name).localeCompare(String(b.name));
+    });
+  }
+
   function dataHealthForMachinesView() {
     const rows = dataHealthRows();
     const coverage = state.dataHealth?.coverage || {
