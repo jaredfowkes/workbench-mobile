@@ -15828,7 +15828,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-09.30";
+  const WB_VERSION = "2026-08-09.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18544,6 +18544,45 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     }
     return [...map.values()];
   }
+  // Live sessions from the database (#26). The rows have been current to the
+  // minute for a week; the git files duplicate them. Field names differ between
+  // the two shapes, so the mapping is explicit rather than a spread -- a silent
+  // rename here would empty the sessions strip with no error anywhere.
+  async function loadSessionsFromSupabase() {
+    if (!window.WBSupabaseAuth?.hasSession?.()) return null;
+    try {
+      const rows = await ensureSupabaseDataClient().select("sessions", {
+        columns:
+          "session_uid,session_short,session_full,machine_id,cwd,ide,editor,backend,model," +
+          "status,live_state,latest_prompt,started_at,updated_at,todo_counts,active_todo",
+        order: "updated_at.desc",
+        limit: 400,
+      });
+      if (!Array.isArray(rows) || !rows.length) return null;
+      return rows.map((row) => ({
+        machine: row.machine_id,
+        session: row.session_short || String(row.session_uid || "").slice(0, 8),
+        sessionFull: row.session_full || row.session_uid,
+        cwd: row.cwd,
+        ide: row.ide,
+        editor: row.editor,
+        backend: row.backend,
+        model: row.model,
+        // `live_state` is the richer of the two and what the strip reads for
+        // activity; `status` is the coarse rollup.
+        status: row.live_state || row.status,
+        prompt: row.latest_prompt,
+        started: Date.parse(row.started_at) || 0,
+        updated: Date.parse(row.updated_at) || 0,
+        todoCounts: row.todo_counts,
+        activeTodo: row.active_todo,
+        _path: `supabase:sessions/${row.session_uid}`,
+      }));
+    } catch {
+      return null;
+    }
+  }
+
   async function loadSessions() {
     const out = [];
     let failed = false;
@@ -18557,13 +18596,24 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       stale: 0,
     };
 
-    let tree;
-    try {
-      tree = await ghGetTree();
-    } catch {
-      failed = true;
-      coverage.unreachable += 1;
-      tree = [];
+    const dbSessions = await loadSessionsFromSupabase();
+    if (dbSessions) {
+      out.push(...dbSessions);
+      coverage.expected = dbSessions.length;
+      coverage.found = dbSessions.length;
+      coverage.ok = dbSessions.length;
+    }
+    state.sessionsSource = dbSessions ? "supabase" : "git";
+
+    let tree = [];
+    if (!dbSessions) {
+      try {
+        tree = await ghGetTree();
+      } catch {
+        failed = true;
+        coverage.unreachable += 1;
+        tree = [];
+      }
     }
     await batch(
       tree.filter((p) => /^Tools\/sessions\/[^/]+\.json$/.test(p)),
