@@ -4906,7 +4906,24 @@ function NavList({
   defaultOpenId,
   style = {}
 }) {
-  const [openId, setOpenId] = React.useState(defaultOpenId || null);
+  // Which group holds the item currently being viewed. Read off the caller's
+  // own `active` flags rather than matching ids, because a detail route
+  // ("project") is a different id from the nav entry that owns it ("projects").
+  const groupOfActive = () => {
+    const hit = items.find(it => (it.children || []).some(c => c.active));
+    return hit ? hit.id : null;
+  };
+  const [openId, setOpenId] = React.useState(groupOfActive() || defaultOpenId || null);
+  // Only one group opens at a time, so navigating into another group collapses
+  // the one you came from -- and nothing brought it back. Land on Machines &
+  // sync and Projects is simply gone from the sidebar, which reads as a missing
+  // feature rather than a closed accordion. Re-open the group that owns the
+  // current view whenever it changes; a group the user collapsed by hand stays
+  // collapsed until they navigate, because this only fires on a view change.
+  const activeGroup = groupOfActive();
+  React.useEffect(() => {
+    if (activeGroup && activeGroup !== openId) setOpenId(activeGroup);
+  }, [activeGroup]);
   const wrapRef = React.useRef(null);
   const lastRow = React.useRef(null);
   const [hi, setHi] = React.useState({
@@ -15794,7 +15811,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-09.21";
+  const WB_VERSION = "2026-08-09.26";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
