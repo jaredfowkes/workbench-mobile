@@ -16201,7 +16201,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-13.24";
+  const WB_VERSION = "2026-08-13.25";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21043,7 +21043,7 @@ const refreshData = async () => {
   }
 };
 const commitAndPush = async () => {
-  if (state.backend === 'github') return toast('Edits save straight to GitHub â€” nothing to push.');
+  if (state.backend === 'github') return toast('Edits save straight to GitHub — nothing to push.');
   try {
     await helperPost('/sync');
     toast('Synced.', 'success');
@@ -21066,7 +21066,7 @@ function cleanSessionHeadline(text, r) {
   if (low.startsWith('ran into an error running')) return 'Tool error recovery';
   t = t.replace(/^(please\s+)?(can you|could you|would you)\s+/i, '').replace(/^i\s+need\s+help\s+/i, '').replace(/^help\s+me\s+/i, '').replace(/^continue\s+from\s+where\s+you\s+left\s+off\.?\s*/i, 'Continue previous work').replace(/^go\s+ahead\s+and\s+/i, '').replace(/^execute\s+this\s+plan\.?\s*/i, 'Implement approved plan');
   t = t.replace(/\b(my|the)\s+outlook\s+email\s+inbox\b/i, 'Outlook email inbox').replace(/^triaging\s+/i, 'Triage ').replace(/^triage\s+my\s+/i, 'Triage ');
-  if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, '') + 'â€¦';
+  if (t.length > 82) t = t.slice(0, 82).replace(/\s+\S*$/, '') + '…';
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 const sessionHeadline = r => {
@@ -21291,7 +21291,7 @@ function TopStatusStrip({
         size: 28,
         thickness: 4,
         color: color,
-        label: p == null ? 'â€”' : p + '%'
+        label: p == null ? '—' : p + '%'
       }));
     }
     return /*#__PURE__*/React.createElement("button", {
@@ -21317,7 +21317,7 @@ function TopStatusStrip({
       size: 24,
       thickness: 4,
       color: color,
-      label: p == null ? 'â€”' : p + '%'
+      label: p == null ? '—' : p + '%'
     }), /*#__PURE__*/React.createElement("span", {
       style: {
         display: 'grid',
@@ -21352,7 +21352,7 @@ function TopStatusStrip({
   } : worstItems[0]);
   const tone = primary ? primary.state === 'bad' ? 'unfavorable' : 'warning' : 'favorable';
   const fullMessage = primary ? primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? 'Safe to read; ' + primary.value + ' changes need push' : primary.value ? primary.label + ': ' + primary.value : primary.label : 'All clear';
-  const shortMessage = primary ? healthWarning ? displayText(String(primary.value || primary.label), mobile ? 24 : 38) : String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync Â·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), mobile ? 22 : 34) : 'All clear';
+  const shortMessage = primary ? healthWarning ? displayText(String(primary.value || primary.label), mobile ? 24 : 38) : String(primary.value || primary.label).includes('incorrect old value') || String(primary.label).startsWith('Sync ·') ? 'Mac sync failed' : primary.label === 'Sync status' && String(primary.value).includes('unsynced') ? String(primary.value) + ' changes' : displayText(String(primary.value || primary.label), mobile ? 22 : 34) : 'All clear';
   return /*#__PURE__*/React.createElement(Cluster, {
     gap: mobile ? 1 : 3,
     style: {
@@ -21437,7 +21437,7 @@ function ActionListItem({
 }) {
   return /*#__PURE__*/React.createElement(ListItem, {
     title: displayText(a.text, 150),
-    description: projectTitle(a.p) + ' Â· ' + (a.g && a.g.name || 'Project handoff') + ' Â· ' + actionWhy(a),
+    description: projectTitle(a.p) + ' · ' + (a.g && a.g.name || 'Project handoff') + ' · ' + actionWhy(a),
     leading: statusDotNode(a.kind === 'blocked' ? 'bad' : a.kind === 'doing' ? 'live' : 'idle'),
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
@@ -21466,7 +21466,7 @@ function captureRecordLabel(record) {
   // This used to default to 'Workbench', which labelled every loose note
   // as though it belonged to the Workbench project.
   const project = record.project?.projectName || record.project?.dirName || '';
-  return project ? `${project} Â· ${text}` : text;
+  return project ? `${project} · ${text}` : text;
 }
 
 // What this capture is on its way to becoming. The outbox previously
@@ -21501,7 +21501,7 @@ function CaptureOutboxPanel({
       const record = await retryCaptureOutbox(captureId);
       if (record?.state === 'submitted') toast('Capture submitted.', 'success');else toast(record?.lastError || 'Capture is still waiting to submit.', 'warning');
     } catch (error) {
-      toast(error.message || 'Retry failed â€” the capture remains in the outbox.', 'danger');
+      toast(error.message || 'Retry failed — the capture remains in the outbox.', 'danger');
     }
   };
   const retryAll = async () => {
@@ -21509,7 +21509,7 @@ function CaptureOutboxPanel({
       const result = await retryAllFailedCaptures();
       if (result?.errors?.length) toast(`${result.errors.length} capture${result.errors.length === 1 ? '' : 's'} still failed.`, 'warning');else toast('Failed captures submitted.', 'success');
     } catch (error) {
-      toast(error.message || 'Retry failed â€” captures remain in the outbox.', 'danger');
+      toast(error.message || 'Retry failed — captures remain in the outbox.', 'danger');
     }
   };
   if (!visible.length) return /*#__PURE__*/React.createElement(EmptyState, {
@@ -21534,7 +21534,7 @@ function CaptureOutboxPanel({
   }, visible.map(record => /*#__PURE__*/React.createElement(ListItem, {
     key: record.captureId,
     title: captureRecordLabel(record),
-    description: `${captureDestinationLabel(record)} Â· ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' Â· ' + displayText(record.lastError, 120) : ''}`,
+    description: `${captureDestinationLabel(record)} · ${record.attemptCount || 0} attempt${record.attemptCount === 1 ? '' : 's'}${record.lastError ? ' · ' + displayText(record.lastError, 120) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, /*#__PURE__*/React.createElement(Badge, {
@@ -21642,7 +21642,7 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement(List, null, recentActivity().slice(0, 5).map((r, i) => /*#__PURE__*/React.createElement(ListItem, {
     key: i,
     title: projectTitle(r.p),
-    description: r.ts + ' Â· ' + r.text,
+    description: r.ts + ' · ' + r.text,
     onClick: () => openProject(r.p),
     trailing: /*#__PURE__*/React.createElement(Icon, {
       name: "chevronRight",
@@ -21736,7 +21736,7 @@ function ProjectsView() {
       forceRender();
     },
     count: rows.length,
-    placeholder: "Filter projectsâ€¦"
+    placeholder: "Filter projects…"
   })), /*#__PURE__*/React.createElement(Grid, {
     min: 280,
     gap: 4
@@ -21816,7 +21816,7 @@ function ProjectRoomView() {
       size: 16
     })
   }, "Back to projects"), /*#__PURE__*/React.createElement(PageHeader, {
-    eyebrow: 'Project room Â· ' + p.section,
+    eyebrow: 'Project room · ' + p.section,
     title: projectTitle(p),
     lede: p.data.tagline || '',
     action: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
@@ -21918,7 +21918,7 @@ function ProjectRoomView() {
     key: r.idx,
     leading: statusDotNode(r.it.status),
     title: displayText(r.it.text, 150),
-    description: r.g.name + (r.it.completed ? ' Â· completed ' + r.it.completed : ''),
+    description: r.g.name + (r.it.completed ? ' · completed ' + r.it.completed : ''),
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, statusBadge(r.it.status), /*#__PURE__*/React.createElement(Button, {
@@ -21961,7 +21961,7 @@ function ProjectRoomView() {
   }, /*#__PURE__*/React.createElement(List, null, related.map(e => /*#__PURE__*/React.createElement(ListItem, {
     key: e.path || e.fileName,
     title: e.title,
-    description: e.sub + ' Â· ' + (e.summary || ''),
+    description: e.sub + ' · ' + (e.summary || ''),
     onClick: () => openEntry(e.section + '/' + e.sub + '/' + e.fileName)
   })), !related.length && /*#__PURE__*/React.createElement(EmptyState, {
     title: "No direct KB links",
@@ -22022,7 +22022,7 @@ function IntakeView() {
   }, /*#__PURE__*/React.createElement(List, null, items.map((it, i) => /*#__PURE__*/React.createElement(ListItem, {
     key: i,
     title: displayText(it.text, 150),
-    description: (it.kind || 'capture') + ' Â· unverified until triaged' + (it.capturedAt ? ' Â· captured ' + shortAge(it.capturedAt) : ''),
+    description: (it.kind || 'capture') + ' · unverified until triaged' + (it.capturedAt ? ' · captured ' + shortAge(it.capturedAt) : ''),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "warning"
     }, "needs triage")
@@ -22079,8 +22079,8 @@ function UsageMixCard({
     title: title
   }, rows.length ? rows.map(r => {
     const share = totalTokens ? Math.round(r.tokens / totalTokens * 100) : totalMs ? Math.round(r.ms / totalMs * 100) : 0;
-    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} work episodes Â· ${fmtDuration(r.ms)}`;
-    const extra = r.cost ? `${base} Â· ${fmtCostMaybe(r.cost)}` : base;
+    const base = r.tokens ? `${r.tokens.toLocaleString()} tokens` : r.requests ? `${r.requests} requests` : `${r.count} work episodes · ${fmtDuration(r.ms)}`;
+    const extra = r.cost ? `${base} · ${fmtCostMaybe(r.cost)}` : base;
     return /*#__PURE__*/React.createElement("div", {
       className: "mix-row",
       key: r.label
@@ -22129,11 +22129,11 @@ function UsageLaneTable({
       className: "session-summary"
     }, r.sessions || 0, " work episode", r.sessions === 1 ? '' : 's')), /*#__PURE__*/React.createElement("span", {
       "data-label": "Tokens"
-    }, r.tokens == null ? 'â€”' : fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
+    }, r.tokens == null ? '—' : fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
       "data-label": "Cache"
-    }, r.cache == null ? 'â€”' : fmtTokens(r.cache)), /*#__PURE__*/React.createElement("span", {
+    }, r.cache == null ? '—' : fmtTokens(r.cache)), /*#__PURE__*/React.createElement("span", {
       "data-label": "Requests"
-    }, r.requests == null ? 'â€”' : r.requests), /*#__PURE__*/React.createElement("span", {
+    }, r.requests == null ? '—' : r.requests), /*#__PURE__*/React.createElement("span", {
       "data-label": "Cost"
     }, info ? /*#__PURE__*/React.createElement("button", {
       type: "button",
@@ -22150,7 +22150,7 @@ function UsageLaneTable({
 
 // Replaced the "Claude spend attribution" card on 2026-08-02. That card
 // subtracted hooked-session estimates from `state.usage.spend` and called
-// the remainder "outside workbench" â€” but that figure is the extra-usage
+// the remainder "outside workbench" — but that figure is the extra-usage
 // wallet, not the account's spend, so it compared two unrelated numbers.
 // Each seat now leads with whatever actually runs out for it.
 function ClaudePlanPanels() {
@@ -22173,15 +22173,15 @@ function ClaudePlanPanels() {
     const surfaceLabel = SURFACE_LABELS[surface];
     // A seat with no windows is not window-rationed at all: the Disney
     // seat reports only a contracted cap, and that cap is what runs out.
-    const headline = binding ? windowExpired(binding) ? 'â€”' : `${binding.percent}%` : wallet.limit != null ? `${money(wallet.spend)} / ${money(wallet.limit)}` : 'no data';
+    const headline = binding ? windowExpired(binding) ? '—' : `${binding.percent}%` : wallet.limit != null ? `${money(wallet.spend)} / ${money(wallet.limit)}` : 'no data';
     const notional = claudePlanNotional(slug);
     return /*#__PURE__*/React.createElement(Card, {
       key: slug,
-      eyebrow: `Claude ${label} Â· plan usage${active ? surfaceLabel ? ` Â· signed in on the ${surfaceLabel}` : '' : ' Â· idle'}`,
+      eyebrow: `Claude ${label} · plan usage${active ? surfaceLabel ? ` · signed in on the ${surfaceLabel}` : '' : ' · idle'}`,
       title: headline
     }, /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, binding ? `${binding.label || binding.kind} window` : wallet.limit != null ? 'extra usage cap â€” this seat reports no rate-limit windows' : 'no rate-limit windows and no usage cap reported', " Â· ", ageLabel(snap.updated)), limits.map(row => {
+    }, binding ? `${binding.label || binding.kind} window` : wallet.limit != null ? 'extra usage cap — this seat reports no rate-limit windows' : 'no rate-limit windows and no usage cap reported', " · ", ageLabel(snap.updated)), limits.map(row => {
       const expired = windowExpired(row);
       const pct = expired ? 0 : Math.max(0, Math.min(100, Number(row.percent) || 0));
       return /*#__PURE__*/React.createElement("div", {
@@ -22191,7 +22191,7 @@ function ClaudePlanPanels() {
         className: "mix-label"
       }, row.label || row.kind), /*#__PURE__*/React.createElement("div", {
         className: "mix-sub"
-      }, expired ? `window rolled over unread${row.percent != null ? ` Â· was ${row.percent}%` : ''}` : row.resetsAt ? `resets ${new Date(row.resetsAt).toLocaleString(undefined, {
+      }, expired ? `window rolled over unread${row.percent != null ? ` · was ${row.percent}%` : ''}` : row.resetsAt ? `resets ${new Date(row.resetsAt).toLocaleString(undefined, {
         weekday: 'short',
         hour: 'numeric',
         minute: '2-digit'
@@ -22203,14 +22203,14 @@ function ClaudePlanPanels() {
         }
       })), /*#__PURE__*/React.createElement("span", {
         className: "credit-amt"
-      }, expired ? 'â€”' : `${pct}%`));
+      }, expired ? '—' : `${pct}%`));
     }), binding && wallet.limit != null ? /*#__PURE__*/React.createElement("div", {
       className: "mix-row"
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
       className: "mix-label"
     }, "Extra usage billed"), /*#__PURE__*/React.createElement("div", {
       className: "mix-sub"
-    }, "pay-as-you-go overage â€” the only real charge on this seat")), /*#__PURE__*/React.createElement("span", {
+    }, "pay-as-you-go overage — the only real charge on this seat")), /*#__PURE__*/React.createElement("span", {
       className: "creditbar"
     }, /*#__PURE__*/React.createElement("i", {
       style: {
@@ -22224,11 +22224,11 @@ function ClaudePlanPanels() {
       className: "mix-label"
     }, "Workbench sessions this month"), /*#__PURE__*/React.createElement("div", {
       className: "mix-sub"
-    }, notional.sessions, " hooked session", notional.sessions === 1 ? '' : 's', " Â· API list-price equivalent, not billed")), /*#__PURE__*/React.createElement("span", {
+    }, notional.sessions, " hooked session", notional.sessions === 1 ? '' : 's', " · API list-price equivalent, not billed")), /*#__PURE__*/React.createElement("span", {
       className: "credit-amt cost-notional"
-    }, "â‰ˆ", fmtCostMaybe(notional.cost))) : null, /*#__PURE__*/React.createElement("p", {
+    }, "≈", fmtCostMaybe(notional.cost))) : null, /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, binding ? 'Plan seats ration session and weekly windows, not dollars.' : 'This seat reports no rate-limit windows â€” its extra-usage cap is what runs out, and it is billed.', ' ', "Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.", active ? '' : ' No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.'));
+    }, binding ? 'Plan seats ration session and weekly windows, not dollars.' : 'This seat reports no rate-limit windows — its extra-usage cap is what runs out, and it is billed.', ' ', "Token cost for these sessions is shown as an equivalent so lanes stay comparable; it is never spend.", active ? '' : ' No Claude Code surface is signed into this seat right now, so the figure is frozen at its last read.'));
   });
 }
 function UsageWindowPicker() {
@@ -22295,13 +22295,13 @@ function UsageProjectPanel({
     "data-label": "Plan share"
   }, r.planShare ? fmtCostMaybe(r.planShare) : /*#__PURE__*/React.createElement("span", {
     style: muted
-  }, "â€”")), /*#__PURE__*/React.createElement("span", {
+  }, "—")), /*#__PURE__*/React.createElement("span", {
     "data-label": "Saved"
   }, r.saved ? /*#__PURE__*/React.createElement("span", {
     className: "cost-savings"
   }, fmtCostMaybe(r.saved)) : /*#__PURE__*/React.createElement("span", {
     style: muted
-  }, "â€”")))) : /*#__PURE__*/React.createElement("p", {
+  }, "—")))) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No tokenized sessions yet.")));
 }
@@ -22334,13 +22334,13 @@ function UsageEfficiencyPanel({
     style: muted
   }, "No aggregate trends in the current sample."), Object.keys(ctx.availability || {}).length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, Object.entries(ctx.availability).map(([k, v]) => `${k}: ${v}`).join(' Â· ')) : null) : /*#__PURE__*/React.createElement("p", {
+  }, Object.entries(ctx.availability).map(([k, v]) => `${k}: ${v}`).join(' · ')) : null) : /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ctx.meta?.message || 'Context-efficiency summary unavailable â€” rebuild telemetry rollups when ready.')), /*#__PURE__*/React.createElement(Card, {
+  }, ctx.meta?.message || 'Context-efficiency summary unavailable — rebuild telemetry rollups when ready.')), /*#__PURE__*/React.createElement(Card, {
     title: "Session methodology"
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Work sessions group related technical sessions by work episode. Technical sessions are one hooked beacon each; costs aggregate once per technical identity. Cost states: actual (provider/billing), estimated (model pricing), local-zero (on-device), pending (live without usage), untracked (ended without telemetry).", diag.rollup ? ` Rollup v${diag.version || '?'}: ${diag.rollup.technicalSessions} technical â†’ ${diag.rollup.count} work sessions.` : '', diag.fallback ? ' Showing live-beacon fallback â€” historical rollup missing.' : '')), /*#__PURE__*/React.createElement(Card, {
+  }, "Work sessions group related technical sessions by work episode. Technical sessions are one hooked beacon each; costs aggregate once per technical identity. Cost states: actual (provider/billing), estimated (model pricing), local-zero (on-device), pending (live without usage), untracked (ended without telemetry).", diag.rollup ? ` Rollup v${diag.version || '?'}: ${diag.rollup.technicalSessions} technical → ${diag.rollup.count} work sessions.` : '', diag.fallback ? ' Showing live-beacon fallback — historical rollup missing.' : '')), /*#__PURE__*/React.createElement(Card, {
     title: "AI-efficiency tips",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "subtle",
@@ -22373,7 +22373,7 @@ function LocalDelegationSummaryCard({
 }) {
   const summary = localDelegationSummary(rows);
   if (!summary.attempts) return null;
-  const rate = summary.acceptanceRate != null ? `${Math.round(summary.acceptanceRate * 100)}%` : 'â€”';
+  const rate = summary.acceptanceRate != null ? `${Math.round(summary.acceptanceRate * 100)}%` : '—';
   return /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Local delegation",
     title: `${summary.attempts} attempt${summary.attempts === 1 ? '' : 's'}`
@@ -22399,14 +22399,14 @@ function LocalDelegationSummaryCard({
     tone: "neutral"
   }, "avg ", fmtDuration(summary.avgLatencyMs)) : null), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, summary.savingsTotal != null ? `${fmtCostMaybe(summary.savingsTotal)} avoided cloud spend from ${summary.savingsCount} accepted attempt${summary.savingsCount === 1 ? '' : 's'} only` : 'No accepted savings in this window â€” failed/partial attempts never count.', summary.comparators.length ? ` Â· Comparator: ${summary.comparators.join(', ')}` : '', summary.pricingVersions.length ? ` Â· Pricing ${summary.pricingVersions.join(', ')}` : '', summary.cloudFallback === 'forbidden' ? ' Â· Cloud fallback forbidden' : ''));
+  }, summary.savingsTotal != null ? `${fmtCostMaybe(summary.savingsTotal)} avoided cloud spend from ${summary.savingsCount} accepted attempt${summary.savingsCount === 1 ? '' : 's'} only` : 'No accepted savings in this window — failed/partial attempts never count.', summary.comparators.length ? ` · Comparator: ${summary.comparators.join(', ')}` : '', summary.pricingVersions.length ? ` · Pricing ${summary.pricingVersions.join(', ')}` : '', summary.cloudFallback === 'forbidden' ? ' · Cloud fallback forbidden' : ''));
 }
 function WorkSessionTechnicalRow({
   r
 }) {
   return /*#__PURE__*/React.createElement("div", {
     className: "work-session-tech-row"
-  }, /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended), " Â· ", machineName(r.machine || r.host || 'Unknown'), " Â· ", sessionModelLabel(r), " Â· ", backendLane(r)), /*#__PURE__*/React.createElement(Cluster, {
+  }, /*#__PURE__*/React.createElement("span", null, fmtStamp(r.started || r.ended), " · ", machineName(r.machine || r.host || 'Unknown'), " · ", sessionModelLabel(r), " · ", backendLane(r)), /*#__PURE__*/React.createElement(Cluster, {
     gap: 1
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: costStateBadgeTone(costStateLabel(r))
@@ -22414,7 +22414,7 @@ function WorkSessionTechnicalRow({
     tone: "neutral"
   }, fmtTokens(cacheInclusiveTokens(r))), /*#__PURE__*/React.createElement(Badge, {
     tone: sessionCost(r) == null ? 'warning' : isNotionalRow(r) ? 'neutral' : 'accent'
-  }, isNotionalRow(r) ? `â‰ˆ${fmtCostMaybe(sessionCost(r))}` : fmtCostMaybe(sessionCost(r)))));
+  }, isNotionalRow(r) ? `≈${fmtCostMaybe(sessionCost(r))}` : fmtCostMaybe(sessionCost(r)))));
 }
 function WorkSessionList({
   groups,
@@ -22435,7 +22435,7 @@ function WorkSessionList({
     className: "work-session-headline"
   }, /*#__PURE__*/React.createElement("strong", null, g.headline), /*#__PURE__*/React.createElement("span", {
     className: "muted"
-  }, fmtStamp(g.started || g.ended), g.machines.length ? ` Â· ${g.machines.map(machineName).join(', ')}` : '', g.projects.length ? ` Â· ${g.projects.slice(0, 3).join(', ')}` : '')), /*#__PURE__*/React.createElement(Cluster, {
+  }, fmtStamp(g.started || g.ended), g.machines.length ? ` · ${g.machines.map(machineName).join(', ')}` : '', g.projects.length ? ` · ${g.projects.slice(0, 3).join(', ')}` : '')), /*#__PURE__*/React.createElement(Cluster, {
     gap: 1
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
@@ -22443,7 +22443,7 @@ function WorkSessionList({
     tone: "neutral"
   }, fmtTokens(g.tokens)), /*#__PURE__*/React.createElement(Badge, {
     tone: costStateBadgeTone(g.costState)
-  }, g.cost == null ? g.costState : g.costState === 'notional' ? `â‰ˆ${fmtCostMaybe(g.cost)}` : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
+  }, g.cost == null ? g.costState : g.costState === 'notional' ? `≈${fmtCostMaybe(g.cost)}` : fmtCostMaybe(g.cost)))), !compact ? /*#__PURE__*/React.createElement("div", {
     className: "work-session-drill"
   }, g.technical.map((r, i) => /*#__PURE__*/React.createElement(WorkSessionTechnicalRow, {
     key: r.session_uid || r.session || i,
@@ -22463,7 +22463,7 @@ function AzureFoundryPanel() {
     title: fmtCostMaybe(projected)
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, fmtCostMaybe(posted), " posted Â· ", pending == null ? 'pending estimate unavailable' : `${fmtCostMaybe(pending)} pending estimate`, " Â· ", c?.settledThrough ? `posted through ${c.settledThrough}` : 'settlement pending', Number(c?.unallocatedActual || 0) > 0 ? ` Â· ${fmtCostMaybe(c.unallocatedActual)} unallocated` : '', " Â· ", c?.confidence || 'baseline', " confidence Â· ", ageLabel(c?.updated || b.updated)));
+  }, fmtCostMaybe(posted), " posted · ", pending == null ? 'pending estimate unavailable' : `${fmtCostMaybe(pending)} pending estimate`, " · ", c?.settledThrough ? `posted through ${c.settledThrough}` : 'settlement pending', Number(c?.unallocatedActual || 0) > 0 ? ` · ${fmtCostMaybe(c.unallocatedActual)} unallocated` : '', " · ", c?.confidence || 'baseline', " confidence · ", ageLabel(c?.updated || b.updated)));
 }
 function AzureModelReconciliationPanel() {
   const reconciliation = azureModelReconciliation();
@@ -22482,7 +22482,7 @@ function AzureModelReconciliationPanel() {
     className: "usage-table"
   }, /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row head"
-  }, /*#__PURE__*/React.createElement("span", null, "Model"), /*#__PURE__*/React.createElement("span", null, "Estimated"), /*#__PURE__*/React.createElement("span", null, "Actual"), /*#__PURE__*/React.createElement("span", null, "Est. âˆ’ actual"), /*#__PURE__*/React.createElement("span", null, "Sessions")), reconciliation.models.map(row => /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "Model"), /*#__PURE__*/React.createElement("span", null, "Estimated"), /*#__PURE__*/React.createElement("span", null, "Actual"), /*#__PURE__*/React.createElement("span", null, "Est. − actual"), /*#__PURE__*/React.createElement("span", null, "Sessions")), reconciliation.models.map(row => /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row",
     key: row.label
   }, /*#__PURE__*/React.createElement("span", {
@@ -22495,11 +22495,11 @@ function AzureModelReconciliationPanel() {
     "data-label": "Actual"
   }, fmtCostMaybe(row.actualSpend)), /*#__PURE__*/React.createElement("span", {
     "data-label": "Variance"
-  }, row.delta == null ? 'â€”' : `${row.delta >= 0 ? '+' : 'âˆ’'}${fmtCostMaybe(Math.abs(row.delta))}`), /*#__PURE__*/React.createElement("span", {
+  }, row.delta == null ? '—' : `${row.delta >= 0 ? '+' : '−'}${fmtCostMaybe(Math.abs(row.delta))}`), /*#__PURE__*/React.createElement("span", {
     "data-label": "Sessions"
   }, row.sessions || 0)))), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, reconciliation.period || 'Current billing month', " Â· estimated ", fmtCostMaybe(reconciliation.estimatedSpend), " Â· actual ", fmtCostMaybe(reconciliation.actualSpend))));
+  }, reconciliation.period || 'Current billing month', " · estimated ", fmtCostMaybe(reconciliation.estimatedSpend), " · actual ", fmtCostMaybe(reconciliation.actualSpend))));
 }
 function UsageView() {
   const allRows = (state.sessionMetrics && state.sessionMetrics.sessions || []).filter(Boolean);
@@ -22561,7 +22561,7 @@ function UsageView() {
     laneClass: "cursor"
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` Â· resets ${state.cursorUsage.resetLabel}` : '')), /*#__PURE__*/React.createElement(AzureFoundryPanel, null), /*#__PURE__*/React.createElement(AzureModelReconciliationPanel, null), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
+  }, ageLabel(state.cursorUsage?.updated), state.cursorUsage?.resetLabel ? ` · resets ${state.cursorUsage.resetLabel}` : '')), /*#__PURE__*/React.createElement(AzureFoundryPanel, null), /*#__PURE__*/React.createElement(AzureModelReconciliationPanel, null), savedLocal != null && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Local lane savings",
     title: fmtCostMaybe(savedLocal)
   }, /*#__PURE__*/React.createElement("p", {
@@ -22573,7 +22573,7 @@ function UsageView() {
     }, fmtCostMaybe(wastedTier))
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up â€” never a saving) in this time frame. Only sessions with a role-attributed model breakdown are included.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
+  }, "Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up — never a saving) in this time frame. Only sessions with a role-attributed model breakdown are included.")), /*#__PURE__*/React.createElement(LocalDelegationSummaryCard, {
     rows: rows
   })), /*#__PURE__*/React.createElement(UsageLaneTable, {
     rows: laneRows
@@ -22603,7 +22603,7 @@ function UsageView() {
   })), tab === 'projects' && /*#__PURE__*/React.createElement(UsageProjectPanel, {
     rows: rows
   }), tab === 'sessions' && /*#__PURE__*/React.createElement(Card, {
-    title: `Work sessions Â· ${usageWindowLabel()}`,
+    title: `Work sessions · ${usageWindowLabel()}`,
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "ghost",
       size: "sm",
@@ -22640,11 +22640,11 @@ function SessionsView() {
         forceRender();
       },
       count: filteredGroups.length,
-      placeholder: "Search work sessions, projectsâ€¦",
+      placeholder: "Search work sessions, projects…",
       minWidth: 280
     }), diag.rollup ? /*#__PURE__*/React.createElement("p", {
       style: muted
-    }, diag.rollup.technicalSessions, " technical â†’ ", diag.rollup.count, " work sessions", diag.fallback ? ' Â· live fallback' : '') : null, filteredGroups.length ? /*#__PURE__*/React.createElement(WorkSessionList, {
+    }, diag.rollup.technicalSessions, " technical → ", diag.rollup.count, " work sessions", diag.fallback ? ' · live fallback' : '') : null, filteredGroups.length ? /*#__PURE__*/React.createElement(WorkSessionList, {
       groups: filteredGroups,
       onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
     }) : /*#__PURE__*/React.createElement(EmptyState, {
@@ -22671,7 +22671,7 @@ function SessionsView() {
       forceRender();
     },
     count: filteredGroups.length,
-    placeholder: "Search work sessions, projects, machinesâ€¦",
+    placeholder: "Search work sessions, projects, machines…",
     minWidth: 360
   }), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
@@ -22681,7 +22681,7 @@ function SessionsView() {
     }
   }, "Usage summary")), diag.rollup ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, diag.rollup.technicalSessions, " technical sessions â†’ ", diag.rollup.count, " work sessions Â· cost states: actual, estimated, local-zero, pending, untracked") : null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(WorkSessionList, {
+  }, diag.rollup.technicalSessions, " technical sessions → ", diag.rollup.count, " work sessions · cost states: actual, estimated, local-zero, pending, untracked") : null, /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(WorkSessionList, {
     groups: filteredGroups,
     onOpen: r => window.__WBOpenSession && window.__WBOpenSession(r)
   }))));
@@ -22712,13 +22712,13 @@ function MachineRoutePanel({
     tone: summary.savedRouteKey === key ? 'accent' : 'neutral'
   }, label))), pickerEntries.length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Azure native picker: ", pickerEntries.map(([k, v]) => `${k}â†’${v}`).join(' Â· ')) : null, router.installed != null ? /*#__PURE__*/React.createElement("p", {
+  }, "Azure native picker: ", pickerEntries.map(([k, v]) => `${k}→${v}`).join(' · ')) : null, router.installed != null ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Router ", router.running ? 'running' : router.configured ? 'configured' : 'offline', router.detail ? ` Â· ${router.detail}` : '', summary.reloadRequired ? ' Â· reload required' : '') : null, local.supported || local.installedModelIds?.length ? /*#__PURE__*/React.createElement("p", {
+  }, "Router ", router.running ? 'running' : router.configured ? 'configured' : 'offline', router.detail ? ` · ${router.detail}` : '', summary.reloadRequired ? ' · reload required' : '') : null, local.supported || local.installedModelIds?.length ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Local ", local.lane || 'runtime', ": ", local.installedModelIds?.length || 0, " installed Â· resident ", local.residentModel || 'â€”', " Â· context ", local.contextLimit ? fmtTokens(local.contextLimit) : 'â€”', " Â· workers ", local.workerLimit ?? 'â€”', local.concurrencyCalibrated === false ? ' (serial)' : local.concurrencyCalibrated ? ' (calibrated)' : '', local.cacheBytes ? ` Â· cache ${fmtBytes(local.cacheBytes)}` : '', disk.freeBytes != null ? ` Â· free ${fmtBytes(disk.freeBytes)}` : '', local.lowDiskWarning || disk.lowDiskWarning ? ' Â· low disk warning' : '') : null, telem.latestShardMs ? /*#__PURE__*/React.createElement("p", {
+  }, "Local ", local.lane || 'runtime', ": ", local.installedModelIds?.length || 0, " installed · resident ", local.residentModel || '—', " · context ", local.contextLimit ? fmtTokens(local.contextLimit) : '—', " · workers ", local.workerLimit ?? '—', local.concurrencyCalibrated === false ? ' (serial)' : local.concurrencyCalibrated ? ' (calibrated)' : '', local.cacheBytes ? ` · cache ${fmtBytes(local.cacheBytes)}` : '', disk.freeBytes != null ? ` · free ${fmtBytes(disk.freeBytes)}` : '', local.lowDiskWarning || disk.lowDiskWarning ? ' · low disk warning' : '') : null, telem.latestShardMs ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Telemetry ", telem.fresh ? 'fresh' : 'stale', " Â· shard ", shortAge(telem.latestShardMs), telem.ageMs != null ? ` (${Math.round(telem.ageMs / 1000)}s)` : '') : /*#__PURE__*/React.createElement("p", {
+  }, "Telemetry ", telem.fresh ? 'fresh' : 'stale', " · shard ", shortAge(telem.latestShardMs), telem.ageMs != null ? ` (${Math.round(telem.ageMs / 1000)}s)` : '') : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Telemetry freshness unknown")));
 }
@@ -22810,7 +22810,7 @@ function MachinesView() {
     unsupported: 'unavailable'
   }[pushKind];
   const pushBlurb = {
-    on: 'This device will be told when something is silently broken and costing money. Nothing else â€” under one alert a day.',
+    on: 'This device will be told when something is silently broken and costing money. Nothing else — under one alert a day.',
     off: 'Get told on your phone when a check fails and the dashboard cannot reach you, because sync itself is the fault.',
     blocked: 'Notifications are blocked for this site. Turn them back on in Settings, then reload.',
     unsupported: 'This browser cannot receive push. On iPhone, add the dashboard to your Home Screen first.'
@@ -22858,14 +22858,14 @@ function MachinesView() {
     gap: 3
   }, liveQuota && liveQuota.state && liveQuota.state !== 'ok' ? /*#__PURE__*/React.createElement(Banner, {
     variant: liveQuota.state === 'critical' ? 'warn' : 'info'
-  }, /*#__PURE__*/React.createElement("span", null, "Supabase budget ", liveQuota.state, ": ", Math.round((liveQuota.utilization || 0) * 100), "% of soft limits Â· ", liveQuota.eventsMonth || 0, " events this month")) : null, /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("span", null, "Supabase budget ", liveQuota.state, ": ", Math.round((liveQuota.utilization || 0) * 100), "% of soft limits · ", liveQuota.eventsMonth || 0, " events this month")) : null, /*#__PURE__*/React.createElement("p", {
     style: muted
   }, liveSummary), liveSessions.length ? /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, liveSessions.map(s => /*#__PURE__*/React.createElement(ListItem, {
     key: s.session_uid || s.sessionFull || s.session,
     title: sessionHeadline(s),
-    description: `${liveStateLabel(s)} Â· ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' Â· ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' Â· â—‰ ' + displayText(s.activeTodo.content, 72) : ''}`,
+    description: `${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: attentionTone(s.attentionLevel)
     }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
@@ -22881,7 +22881,7 @@ function MachinesView() {
   }, /*#__PURE__*/React.createElement(List, null, machineStatusRows().map(r => /*#__PURE__*/React.createElement(ListItem, {
     key: r.key,
     title: r.name,
-    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' Â· longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' Â· helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' Â· Live ' + (r.liveDataSource || 'Git fallback') : ''),
+    description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' · longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' · helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' · Live ' + (r.liveDataSource || 'Git fallback') : ''),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: r.state === 'active' ? 'favorable' : r.state === 'idle' ? 'warning' : 'unfavorable'
     }, r.state)
@@ -22937,8 +22937,8 @@ function MachinesView() {
     bordered: true
   }, actionRows.map(a => /*#__PURE__*/React.createElement(ListItem, {
     key: a.action_id,
-    title: `${String(a.kind || 'action').replace(/_/g, ' ')} Â· ${machineName(a.machine_id)}`,
-    description: `${String(a.status || a.outboxState || 'queued').replace(/_/g, ' ')}${a.requested_at ? ' Â· requested ' + shortAge(a.requested_at) : ''}${a.lastError ? ' Â· ' + displayText(a.lastError, 96) : ''}`,
+    title: `${String(a.kind || 'action').replace(/_/g, ' ')} · ${machineName(a.machine_id)}`,
+    description: `${String(a.status || a.outboxState || 'queued').replace(/_/g, ' ')}${a.requested_at ? ' · requested ' + shortAge(a.requested_at) : ''}${a.lastError ? ' · ' + displayText(a.lastError, 96) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
     }, a.outboxState === 'failed' ? /*#__PURE__*/React.createElement(Button, {
@@ -22985,7 +22985,7 @@ function MachinesView() {
   }, subsystemRows.map(row => /*#__PURE__*/React.createElement(ListItem, {
     key: row.key,
     title: row.name,
-    description: `${row.summary}${row.quiet.length ? ' Â· not run: ' + row.quiet.join(', ') : ''}`,
+    description: `${row.summary}${row.quiet.length ? ' · not run: ' + row.quiet.join(', ') : ''}`,
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: row.status === 'failing' ? 'unfavorable' : row.status === 'ok' ? 'favorable' : 'warning'
     }, row.status)
@@ -23013,7 +23013,7 @@ function MachinesView() {
   }, rows.map(row => /*#__PURE__*/React.createElement(ListItem, {
     key: row.source,
     title: row.label || row.source,
-    description: `${displayText(row.message || row.path || 'No detail available.', 160)}${row.updatedMs ? ' Â· checked ' + shortAge(row.updatedMs) : ''}${row.staleAfterMs ? ' Â· stale after ' + fmtDuration(row.staleAfterMs) : ''}`,
+    description: `${displayText(row.message || row.path || 'No detail available.', 160)}${row.updatedMs ? ' · checked ' + shortAge(row.updatedMs) : ''}${row.staleAfterMs ? ' · stale after ' + fmtDuration(row.staleAfterMs) : ''}`,
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: toneForStatus(row.status)
     }, row.status)
@@ -23114,7 +23114,7 @@ function ModelsView() {
       y: height - 8,
       fill: "var(--text-muted)",
       fontSize: "11"
-    }, "Avg wall time (s) â†’ slower"), /*#__PURE__*/React.createElement("text", {
+    }, "Avg wall time (s) → slower"), /*#__PURE__*/React.createElement("text", {
       x: 8,
       y: pad.t + 8,
       fill: "var(--text-muted)",
@@ -23145,7 +23145,7 @@ function ModelsView() {
         fill: familyColors[row.family] || familyColors.Other,
         stroke: active ? 'var(--text-strong)' : 'var(--surface-card)',
         strokeWidth: active ? 2 : 1.5
-      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic Â· ' + row.avgWallS + 's avg Â· ' + (row.avgTps || 'â€”') + ' tok/s'));
+      }), /*#__PURE__*/React.createElement("title", null, row.id + ': ' + Math.round((row.agenticPassRate || 0) * 100) + '% agentic · ' + row.avgWallS + 's avg · ' + (row.avgTps || '—') + ' tok/s'));
     })), /*#__PURE__*/React.createElement(Legend, {
       items: Object.entries(familyColors).filter(([fam]) => rows.some(r => r.family === fam)).map(([label, color]) => ({
         label,
@@ -23156,9 +23156,9 @@ function ModelsView() {
   const tableRows = benchmarked.map(m => ({
     ...m,
     machineNames: (m.machines || []).map(machineLabel).join(', '),
-    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : 'â€”',
-    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : 'â€”',
-    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : 'â€”'
+    toolPct: m.toolReliability != null ? Math.round(m.toolReliability * 100) + '%' : '—',
+    agenticPct: m.agenticPassRate != null ? Math.round(m.agenticPassRate * 100) + '%' : '—',
+    score: m.compositeScore != null ? m.compositeScore.toFixed(1) : '—'
   }));
   const columns = [{
     key: 'id',
@@ -23205,18 +23205,18 @@ function ModelsView() {
     header: 'Tok/s',
     align: 'right',
     numeric: true,
-    render: v => v != null ? v.toFixed(1) : 'â€”'
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
     key: 'avgWallS',
     header: 'Wall (s)',
     align: 'right',
     numeric: true,
-    render: v => v != null ? v.toFixed(1) : 'â€”'
+    render: v => v != null ? v.toFixed(1) : '—'
   }, {
     key: 'context64kOk',
     header: '64K ctx',
     align: 'center',
-    render: v => v == null ? 'â€”' : v ? /*#__PURE__*/React.createElement(Badge, {
+    render: v => v == null ? '—' : v ? /*#__PURE__*/React.createElement(Badge, {
       tone: "favorable"
     }, "OK") : /*#__PURE__*/React.createElement(Badge, {
       tone: "warning"
@@ -23227,7 +23227,7 @@ function ModelsView() {
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
     eyebrow: "Models",
     title: "Benchmarked models across machines",
-    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards â€” grounded in your own test runs.",
+    lede: "Local bake-off scores from oMLX and Ollama harnesses, plus cloud fleet inventory and live session traffic. Inspired by public leaderboards — grounded in your own test runs.",
     action: /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -23288,11 +23288,11 @@ function ModelsView() {
     deltaNote: policyTasks.length ? policyTasks.length + ' task classes' : 'needs v2 receipts'
   }), /*#__PURE__*/React.createElement(KpiStat, {
     label: "Best agentic",
-    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : 'â€”',
+    value: bestAgentic ? Math.round((bestAgentic.agenticPassRate || 0) * 100) + '%' : '—',
     deltaNote: bestAgentic ? displayText(bestAgentic.id, 24) : ''
   }), /*#__PURE__*/React.createElement(KpiStat, {
     label: "Best tools",
-    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : 'â€”',
+    value: bestTools ? Math.round((bestTools.toolReliability || 0) * 100) + '%' : '—',
     deltaNote: bestTools ? displayText(bestTools.id, 24) : ''
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: mobile ? 1 : 2,
@@ -23338,7 +23338,7 @@ function ModelsView() {
     return /*#__PURE__*/React.createElement(ListItem, {
       key: taskClass,
       title: String(taskClass).replace(/-/g, ' '),
-      description: best ? displayText(best.modelId || 'no candidate', 36) + ' Â· ' + (best.samples || 0) + ' samples Â· lower bound ' + (best.wilsonLower95 != null ? Math.round(best.wilsonLower95 * 100) + '%' : 'â€”') : 'No candidate',
+      description: best ? displayText(best.modelId || 'no candidate', 36) + ' · ' + (best.samples || 0) + ' samples · lower bound ' + (best.wilsonLower95 != null ? Math.round(best.wilsonLower95 * 100) + '%' : '—') : 'No candidate',
       trailing: /*#__PURE__*/React.createElement(Badge, {
         tone: best && best.eligible ? 'favorable' : 'warning'
       }, best && best.eligible ? 'eligible' : 'shadow')
@@ -23385,7 +23385,7 @@ function ModelsView() {
     cols: mobile ? 1 : 3,
     gap: 3
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || 'â€”'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : 'â€”'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : 'â€”'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : 'â€”'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : 'â€”'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : 'â€”'], ['64K context', selected.context64kOk == null ? 'â€”' : selected.context64kOk ? 'Pass' : 'Fail'], ['Capability receipts', selectedCard ? selectedCard.evidence.samples : 'â€”'], ['Verified task ctx', selectedCard && selectedCard.contextCapacity.highestVerifiedTaskTokens ? selectedCard.contextCapacity.highestVerifiedTaskTokens.toLocaleString() : 'â€”'], ['Peak memory p95', selectedCard && selectedCard.resources.peakMemoryBytes.p95 ? Math.round(selectedCard.resources.peakMemoryBytes.p95 / (1024 * 1024 * 1024)) + ' GB' : 'â€”']]
+    items: [['Family', selected.family], ['Lane', selected.lane], ['Machines', (selected.machines || []).map(machineLabel).join(', ') || '—'], ['Composite score', selected.compositeScore != null ? selected.compositeScore.toFixed(1) : '—'], ['Agentic', selected.agenticPassed != null ? selected.agenticPassed + '/' + selected.agenticTotal : '—'], ['Tools', selected.toolReliability != null ? Math.round(selected.toolReliability * 100) + '%' : '—'], ['Avg tok/s', selected.avgTps != null ? selected.avgTps.toFixed(1) : '—'], ['Avg wall', selected.avgWallS != null ? selected.avgWallS.toFixed(1) + 's' : '—'], ['64K context', selected.context64kOk == null ? '—' : selected.context64kOk ? 'Pass' : 'Fail'], ['Capability receipts', selectedCard ? selectedCard.evidence.samples : '—'], ['Verified task ctx', selectedCard && selectedCard.contextCapacity.highestVerifiedTaskTokens ? selectedCard.contextCapacity.highestVerifiedTaskTokens.toLocaleString() : '—'], ['Peak memory p95', selectedCard && selectedCard.resources.peakMemoryBytes.p95 ? Math.round(selectedCard.resources.peakMemoryBytes.p95 / (1024 * 1024 * 1024)) + ' GB' : '—']]
   }), /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("div", {
@@ -23401,10 +23401,10 @@ function ModelsView() {
   }, Object.entries(selectedCard.taskCapabilities || {}).map(([taskClass, cap]) => /*#__PURE__*/React.createElement(ListItem, {
     key: taskClass,
     title: String(taskClass).replace(/-/g, ' '),
-    description: (cap.successes || 0) + '/' + (cap.samples || 0) + ' pass Â· median ' + (cap.wallMs && cap.wallMs.median ? Math.round(cap.wallMs.median / 1000) + 's' : 'â€”'),
+    description: (cap.successes || 0) + '/' + (cap.samples || 0) + ' pass · median ' + (cap.wallMs && cap.wallMs.median ? Math.round(cap.wallMs.median / 1000) + 's' : '—'),
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: (cap.wilsonLower95 || 0) >= 0.7 ? 'favorable' : 'warning'
-    }, cap.wilsonLower95 != null ? Math.round(cap.wilsonLower95 * 100) + '%' : 'â€”')
+    }, cap.wilsonLower95 != null ? Math.round(cap.wilsonLower95 * 100) + '%' : '—')
   }))) : /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "No v2 capability card yet; legacy runs are display-only for routing.")), /*#__PURE__*/React.createElement(Stack, {
@@ -23423,7 +23423,7 @@ function ModelsView() {
     totalMs: usageModels.reduce((a, r) => a + (r.ms || 0), 0)
   }) : /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "No close session-traffic match this window. Cloud attribution lives under Usage â†’ Models.")))), /*#__PURE__*/React.createElement(Card, {
+  }, "No close session-traffic match this window. Cloud attribution lives under Usage → Models.")))), /*#__PURE__*/React.createElement(Card, {
     title: "Benchmark catalog",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
@@ -23444,8 +23444,8 @@ function ModelsView() {
     bordered: true
   }, (selected.runs || []).slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.runId + run.kind,
-    title: run.runId + ' Â· ' + run.kind,
-    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' Â· ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' Â· tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
+    title: run.runId + ' · ' + run.kind,
+    description: machineLabel(run.machine) + (run.agenticPassed != null ? ' · ' + run.agenticPassed + '/' + run.agenticTotal + ' tasks' : '') + (run.toolsPassed != null ? ' · tools ' + run.toolsPassed + '/' + run.toolsTotal : ''),
     trailing: run.winner ? /*#__PURE__*/React.createElement(Badge, {
       tone: "favorable"
     }, "winner") : /*#__PURE__*/React.createElement(Badge, {
@@ -23459,7 +23459,7 @@ function ModelsView() {
   }, runs.slice().reverse().map(run => /*#__PURE__*/React.createElement(ListItem, {
     key: run.id,
     title: run.id,
-    description: (run.date || 'unknown date') + ' Â· ' + machineLabel(run.machine) + ' Â· ' + run.lane + ' Â· ' + Object.keys(run.models || {}).length + ' models',
+    description: (run.date || 'unknown date') + ' · ' + machineLabel(run.machine) + ' · ' + run.lane + ' · ' + Object.keys(run.models || {}).length + ' models',
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: run.kind === 'agentic' ? 'accent' : 'info'
     }, run.kind)
@@ -23497,7 +23497,7 @@ function ModelsView() {
     description: d.lifecycle || 'unknown',
     trailing: /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
-    }, d.verified || 'â€”')
+    }, d.verified || '—')
   }))))))));
 }
 function SimpleView({
@@ -23574,7 +23574,7 @@ function SimpleView({
         forceRender();
       },
       count: entries.length,
-      placeholder: "Search knowledgeâ€¦"
+      placeholder: "Search knowledge…"
     }), /*#__PURE__*/React.createElement(SegmentedControl, {
       value: state.karea,
       onChange: v => {
@@ -23912,7 +23912,7 @@ function SimpleView({
     className: "input",
     id: "liveDashboardToken",
     type: "password",
-    placeholder: liveDashboardToken() ? 'Saved token â€” leave blank to keep' : 'dashboard bearer token'
+    placeholder: liveDashboardToken() ? 'Saved token — leave blank to keep' : 'dashboard bearer token'
   })), /*#__PURE__*/React.createElement("p", {
     style: muted
   }, "Token stays on this device only. Helpers use WB_LIVE_MACHINE_TOKEN on each machine; never put service-role keys here."), /*#__PURE__*/React.createElement(Cluster, {
@@ -23986,7 +23986,7 @@ const speakerInitials = name => {
   return parts.filter(p => p && /[a-z]/i.test(p[0])).map(p => p[0].toUpperCase()).slice(0, 2).join('') || '?';
 };
 // The face Teams showed next to the caption, or their initials when no
-// photo was captured â€” which is what Teams itself falls back to.
+// photo was captured — which is what Teams itself falls back to.
 function SpeakerAvatar({
   name,
   src,
@@ -24122,7 +24122,7 @@ function SharedScreenStrip({
       scrollSnapType: 'x mandatory'
     }
   }, shots.map(shot => {
-    const label = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} Â· ${clock(shot.time)}`;
+    const label = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} · ${clock(shot.time)}`;
     const url = urls[shot.file];
     return /*#__PURE__*/React.createElement("figure", {
       key: shot.file,
@@ -24155,7 +24155,7 @@ function SharedScreenStrip({
         color: '#6b7280',
         fontSize: 12
       }
-    }, "Loadingâ€¦"), /*#__PURE__*/React.createElement("figcaption", {
+    }, "Loading…"), /*#__PURE__*/React.createElement("figcaption", {
       style: {
         fontSize: 11,
         color: 'var(--text-muted)',
@@ -24187,7 +24187,7 @@ function SharedScreenShot({
       setBusy(false);
     }
   };
-  const caption = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} Â· ${clock(shot.time)}`;
+  const caption = `${shot.presenter ? shot.presenter + ' shared this' : 'Shared screen'} · ${clock(shot.time)}`;
   return /*#__PURE__*/React.createElement("div", {
     style: {
       background: '#111116',
@@ -24218,7 +24218,7 @@ function SharedScreenShot({
     variant: "ghost",
     onClick: show,
     disabled: busy
-  }, busy ? 'Loadingâ€¦' : failed ? 'Try again' : 'Show shared screen'), failed ? /*#__PURE__*/React.createElement("span", {
+  }, busy ? 'Loading…' : failed ? 'Try again' : 'Show shared screen'), failed ? /*#__PURE__*/React.createElement("span", {
     style: {
       color: '#e8a0a0',
       fontSize: 12
@@ -24308,7 +24308,7 @@ function TranscriptsView() {
     }
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tgq || '',
-    placeholder: "Search across every meetingâ€¦",
+    placeholder: "Search across every meeting…",
     onChange: v => {
       state.tgq = v;
       forceRender();
@@ -24316,7 +24316,7 @@ function TranscriptsView() {
   })), /*#__PURE__*/React.createElement(Button, {
     onClick: runGlobalSearch,
     disabled: searching
-  }, searching ? 'Searchingâ€¦' : 'Search all'), globalHits ? /*#__PURE__*/React.createElement(Button, {
+  }, searching ? 'Searching…' : 'Search all'), globalHits ? /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: () => {
       setGlobalHits(null);
@@ -24335,7 +24335,7 @@ function TranscriptsView() {
       state.tdq = state.tgq;
       forceRender();
     },
-    eyebrow: `${r.entry.date} Â· ${r.total} match${r.total === 1 ? '' : 'es'}`,
+    eyebrow: `${r.entry.date} · ${r.total} match${r.total === 1 ? '' : 'es'}`,
     title: r.entry.title
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 1
@@ -24365,7 +24365,7 @@ function TranscriptsView() {
     gap: 3
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tq || '',
-    placeholder: "Search this listâ€¦",
+    placeholder: "Search this list…",
     count: list.length,
     onChange: v => {
       state.tq = v;
@@ -24412,7 +24412,7 @@ function TranscriptsView() {
     description: "Choose a meeting on the left to read its transcript."
   }) : loading ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Loading transcriptâ€¦") : data?.failed || data?.missing ? /*#__PURE__*/React.createElement(EmptyState, {
+  }, "Loading transcript…") : data?.failed || data?.missing ? /*#__PURE__*/React.createElement(EmptyState, {
     title: "Transcript data unavailable",
     description: "The reader file is in the repo but its data file could not be read."
   }) : /*#__PURE__*/React.createElement(Stack, {
@@ -24429,7 +24429,7 @@ function TranscriptsView() {
     }
   }, /*#__PURE__*/React.createElement(SearchField, {
     value: state.tdq || '',
-    placeholder: "Search in this transcriptâ€¦",
+    placeholder: "Search in this transcript…",
     count: lines.length,
     onChange: v => {
       state.tdq = v;
@@ -24486,7 +24486,7 @@ function TranscriptsView() {
     style: {
       margin: '3px 0'
     }
-  }, action.item, " â€” ", action.owner ? /*#__PURE__*/React.createElement("strong", {
+  }, action.item, " — ", action.owner ? /*#__PURE__*/React.createElement("strong", {
     style: {
       color: 'var(--text-strong)'
     }
@@ -24836,7 +24836,7 @@ function OverlayHost() {
     commands: commands,
     open: paletteOpen,
     onOpenChange: setPaletteOpen,
-    placeholder: "Jump to project, note, skill, or actionâ€¦"
+    placeholder: "Jump to project, note, skill, or action…"
   }), /*#__PURE__*/React.createElement(MoreDrawer, {
     open: moreOpen,
     onClose: () => setMoreOpen(false)
@@ -25084,9 +25084,9 @@ function CaptureDialog({
       onClose();
       if (result?.mode === 'outbox' && result.record?.deliveryMode === 'intake') {
         const owner = result.record.ownerContext || {};
-        toast(`${projectTitle(project)} is checked out by ${owner.ide || 'an agent'} @ ${machineName(owner.machine || '')} â€” capture submitted to neutral intake.`, 'success');
+        toast(`${projectTitle(project)} is checked out by ${owner.ide || 'an agent'} @ ${machineName(owner.machine || '')} — capture submitted to neutral intake.`, 'success');
       } else {
-        const destination = type === 'note' ? 'notes inbox' : type === 'kb' ? 'knowledge base' : type === 'project' ? 'new project seed' : `${projectTitle(project)} Â· ${type === 'idea' ? 'Ideas' : 'Tasks'}`;
+        const destination = type === 'note' ? 'notes inbox' : type === 'kb' ? 'knowledge base' : type === 'project' ? 'new project seed' : `${projectTitle(project)} · ${type === 'idea' ? 'Ideas' : 'Tasks'}`;
         toast(`Capture submitted to ${destination}.`, 'success');
       }
       render();
@@ -25131,7 +25131,7 @@ function CaptureDialog({
   }, /*#__PURE__*/React.createElement(Textarea, {
     value: text,
     onChange: setText,
-    placeholder: "Captureâ€¦",
+    placeholder: "Capture…",
     maxHeight: 220
   })), isTask && /*#__PURE__*/React.createElement(Stack, {
     gap: 3
@@ -25268,11 +25268,11 @@ function SessionDialog({
   }, session.summary)), (session.latestPrompt || session.approvedTitle || session.initialPromptTitle) && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Title context"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Display title', sessionHeadline(session)], ['Source', sessionTitleSourceLabel(session)], ['Confidence', session.titleConfidence != null ? String(Math.round(Number(session.titleConfidence) * 100)) + '%' : 'unknown'], ['Approved title', session.approvedTitle || 'â€”'], ['Initial prompt title', session.initialPromptTitle || 'â€”'], ['Latest prompt', session.latestPrompt || 'â€”'], ['Locked', session.titleLocked ? 'yes' : 'no']]
+    items: [['Display title', sessionHeadline(session)], ['Source', sessionTitleSourceLabel(session)], ['Confidence', session.titleConfidence != null ? String(Math.round(Number(session.titleConfidence) * 100)) + '%' : 'unknown'], ['Approved title', session.approvedTitle || '—'], ['Initial prompt title', session.initialPromptTitle || '—'], ['Latest prompt', session.latestPrompt || '—'], ['Locked', session.titleLocked ? 'yes' : 'no']]
   })), (session.todoCounts || session.activeTodo) && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Todo snapshot"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Summary', todoSummaryText(session.todoCounts) || 'â€”'], ['Active task', session.activeTodo?.content || session.activeTodo?.activeForm || 'â€”'], ['Live state', liveStateLabel(session)], ['Attention', String(session.attentionLevel || 'monitor').replace(/_/g, ' ')]]
+    items: [['Summary', todoSummaryText(session.todoCounts) || '—'], ['Active task', session.activeTodo?.content || session.activeTodo?.activeForm || '—'], ['Live state', liveStateLabel(session)], ['Attention', String(session.attentionLevel || 'monitor').replace(/_/g, ' ')]]
   })), /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
@@ -25304,13 +25304,13 @@ function SessionDialog({
     title: "No changed files recorded",
     description: "Older sessions and read-only sessions may not include file lists."
   })))), modelBuckets.length ? /*#__PURE__*/React.createElement(Card, {
-    title: `Per-model usage Â· ${modelBuckets.length} model${modelBuckets.length === 1 ? '' : 's'}`
+    title: `Per-model usage · ${modelBuckets.length} model${modelBuckets.length === 1 ? '' : 's'}`
   }, /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, modelBuckets.map(bucket => /*#__PURE__*/React.createElement(ListItem, {
     key: bucket.model,
     title: bucket.model,
-    description: `${fmtTokens(bucket.tokens)} tokens Â· ${fmtTokens(bucket.input)} input Â· ${fmtTokens(bucket.output)} output Â· ${fmtTokens(bucket.cacheRead + bucket.cacheCreation)} cache Â· ${bucket.requests} request${bucket.requests === 1 ? '' : 's'}`,
+    description: `${fmtTokens(bucket.tokens)} tokens · ${fmtTokens(bucket.input)} input · ${fmtTokens(bucket.output)} output · ${fmtTokens(bucket.cacheRead + bucket.cacheCreation)} cache · ${bucket.requests} request${bucket.requests === 1 ? '' : 's'}`,
     trailing: /*#__PURE__*/React.createElement(Cluster, {
       gap: 1,
       vertical: true
