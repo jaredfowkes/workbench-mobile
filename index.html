@@ -16178,8 +16178,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         });
       } else if (row.type === "voice-separation") {
         for (const change of row.changes || []) {
+          // Two caption lines finalized in the same poll cycle share a
+          // timestamp, so (time, was) alone can move the wrong one. Newer
+          // records carry the line's own text to settle it; older ones predate
+          // that and fall back to the first match, as the Python side does.
           const entry = entries.find(
-            (e) => e.time === change.time && e.speaker === change.was,
+            (e) =>
+              e.time === change.time &&
+              e.speaker === change.was &&
+              (change.text === undefined || e.text === change.text),
           );
           if (entry) entry.speaker = change.speaker;
         }
@@ -16194,7 +16201,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-13.23";
+  const WB_VERSION = "2026-08-13.24";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
