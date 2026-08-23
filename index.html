@@ -2645,7 +2645,7 @@ button.metric-card:hover {
   font-variant-numeric: tabular-nums;
 }
 /* Per-lane project cost. Markdown cannot make a column primary; CSS can, so
-   Cost gets real weight, size and colour here rather than the position-only
+   Cost gets real weight, size and color here rather than the position-only
    emphasis the terminal digest has to settle for. */
 .cost-lanes {
   display: flex;
@@ -16317,7 +16317,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-22.23";
+  const WB_VERSION = "2026-08-22.25";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -21579,7 +21579,7 @@ function outboxTone(status) {
 function captureRecordLabel(record) {
   const text = displayText(record.text || record.attachments?.[0]?.name || 'Attachment capture', 76);
   // Only a capture that actually targets a project gets a project prefix.
-  // This used to default to 'Workbench', which labelled every loose note
+  // This used to default to 'Workbench', which labeled every loose note
   // as though it belonged to the Workbench project.
   const project = record.project?.projectName || record.project?.dirName || '';
   return project ? `${project} · ${text}` : text;
@@ -27584,7 +27584,7 @@ window.__WBReactRender = function () {
     const hot = !expired && p >= 85;
     return `<div class="mix-row"><div><div class="mix-label">${esc(limit.label || limit.kind || "Window")}</div><div class="mix-sub">${esc(sub)}</div></div><span class="creditbar anthropic ${hot ? "hot" : ""}"><i style="width:${p}%"></i></span><span class="credit-amt">${expired ? "—" : `${p}%`}</span></div>`;
   }
-  // Notional, and labelled as such: what this account's hooked sessions would
+  // Notional, and labeled as such: what this account's hooked sessions would
   // have cost at API list price this month. It is the honest comparison figure
   // for a plan seat, and the one number that must never be added to spend.
   function claudePlanNotional(slug) {
