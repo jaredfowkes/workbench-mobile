@@ -4059,10 +4059,15 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 window.__DS = window.__DS || {};
 ;(function(){
 /**
+
  * KnowsMore Motion helpers — mirrored from the Vibe motion system at full
+
  * liveliness. usePressable(): hover = soft lift/pop with a small RANDOMIZED
+
  * tilt (so repeated interactions never feel mechanical), press = quick
+
  * compression, release = springy rebound. Disabled under prefers-reduced-motion.
+
  */
 
 function prefersReducedMotion() {
@@ -4122,8 +4127,11 @@ function riseIn(index = 0, step = 40) {
 }
 
 /**
+
  * usePresence(open, exitMs) — keeps a floating surface mounted for `exitMs`
+
  * after `open` goes false so it can animate closed. Returns { mounted, entered }.
+
  */
 function usePresence(open, exitMs = 160) {
   const [mounted, setMounted] = React.useState(open);
@@ -4148,9 +4156,13 @@ function usePresence(open, exitMs = 160) {
 }
 
 /**
+
  * Tactile icon/text press-split — the "Invite button" effect: on press an
+
  * icon and its adjacent label compress/move independently instead of as one
+
  * rigid block. Adds real liveliness to primary buttons.
+
  */
 function useTactilePress() {
   const [state, setState] = React.useState('rest');
@@ -4199,15 +4211,25 @@ function textPartStyle(state, {
 }
 
 /**
+
  * useRimLight() — the ONE button hover treatment, system-wide. A cursor-tracking
+
  * rim edge-light rides the border under the pointer. On light fills it's an accent
+
  * rim (reads great on white). On solid/dark fills (`light`) it's a three-part
+
  * treatment so it never blends into the fill: a faint always-on perimeter, a
+
  * bright white arc that catches under the cursor, and a subtle refraction in the
+
  * fill's own colour on the OPPOSITE edge (like glass catching light front and back).
+
  * Pair with a hover lift + press compress + spring rebound. `refractColor` sets the
+
  * fill hue for that opposite glow (defaults to the accent).
+
  * Returns { ref, hover, press, handlers, rim }.
+
  */
 function useRimLight({
   light = false,
@@ -4319,14 +4341,23 @@ function useRimLight({
 }
 
 /**
+
  * useSlideHighlight() — the ONE dropdown/list hover treatment, system-wide.
+
  * A single indicator element springs to the hovered row with a slight overshoot
+
  * and bounce (--ease-spring) instead of the fill disappearing and reappearing.
+
  * Rows call onItemEnter; the container calls onLeave. A row may set data-tone
+
  * ("danger" | "accent") to recolor the indicator. Render <span style={hiStyle}/>
+
  * as the first child of a position:relative container. moveTo(el) lets callers
+
  * drive it from the keyboard or the current selection.
+
  * Returns { containerRef, hiStyle, onItemEnter, onLeave, moveTo, box }.
+
  */
 function useSlideHighlight({
   tone = 'hover'
@@ -4383,8 +4414,11 @@ function useSlideHighlight({
 }
 
 /**
+
  * flyArc() — send a glyph along a parabola from one element into another and
+
  * resolve when it lands. The commit gesture behind the date picker's day-select.
+
  */
 function flyArc(fromEl, toEl, text, opt = {}) {
   return new Promise(res => {
@@ -4440,12 +4474,16 @@ Object.assign(window.__DS,{prefersReducedMotion,randTilt,usePressable,riseIn,use
 })();
 ;(function(){
 /* Resolve a gap/size prop: a number 0–13 maps to the --space-N ramp; anything
+
    else (string like "12px", "2rem", or a var()) passes through untouched. */
 const sp = v => typeof v === 'number' ? v >= 0 && v <= 13 ? `var(--space-${v})` : v + 'px' : v;
 
 /**
+
  * Stack — vertical rhythm. Children flow top-to-bottom with a consistent gap.
+
  * The default vertical layout primitive. gap defaults to --stack-gap.
+
  */
 function Stack({
   gap,
@@ -4471,8 +4509,11 @@ function Stack({
 }
 
 /**
+
  * Cluster — horizontal group that wraps. For button rows, tag/chip runs,
+
  * toolbars, meta lines. Uses gap (never margins) so it survives reordering.
+
  */
 function Cluster({
   gap = 2,
@@ -4499,9 +4540,13 @@ function Cluster({
 }
 
 /**
+
  * Grid — responsive auto-grid. By default cards gain columns instead of
+
  * stretching (repeat(auto-fill, minmax(min, 1fr))). Pass `cols` for a fixed
+
  * column count instead.
+
  */
 function Grid({
   min = 'var(--col-min)',
@@ -4528,9 +4573,13 @@ function Grid({
 }
 
 /**
+
  * Container — OPT-IN bounded width for reading/marketing/auth layouts. Product
+
  * surfaces should stay fluid; use size="fluid" (default padding only) for those.
+
  * size: sm | md | lg | xl | fluid, or an explicit max width.
+
  */
 function Container({
   size = 'lg',
@@ -4564,8 +4613,11 @@ function Container({
 }
 
 /**
+
  * Split — a fixed-width side column beside a fluid main column (the sidebar
+
  * layout). side="start"|"end"; collapses to a stack below `at` (px).
+
  */
 function Split({
   side = 'start',
@@ -4599,8 +4651,11 @@ function Split({
 }
 
 /**
+
  * Center — center a block horizontally and cap its reading measure so prose
+
  * never runs to fatiguing line lengths. measure: 'narrow' | 'body' | 'wide'.
+
  */
 function Center({
   measure = 'body',
@@ -4654,8 +4709,11 @@ function Spacer({
 }
 
 /**
+
  * Divider — hairline separator, horizontal (default) or vertical, with an
+
  * optional centered label ("OR", "MORE").
+
  */
 function Divider({
   vertical = false,
@@ -4716,9 +4774,13 @@ function Divider({
 }
 
 /**
+
  * Box — generic surface: token-driven padding, background, radius, border,
+
  * shadow. The escape hatch for one-off containers so pages stop hand-rolling
+
  * the same card div. `bg`/`radius`/`shadow` take token step names.
+
  */
 function Box({
   p,
@@ -5217,10 +5279,15 @@ function ContextRail({
 }
 
 /**
+
  * AppShell — the canonical three-zone frame: optional Sidebar, sticky TopBar,
+
  * fully-fluid content column, optional ContextRail. Compose with the slot
+
  * components above. Content NEVER gets a fixed max-width (product surfaces are
+
  * fluid); cap reading blocks inside with <Center> instead.
+
  */
 function AppShell({
   sidebar,
@@ -5263,8 +5330,11 @@ Object.assign(window.__DS,{NavList,Sidebar,TopBar,ContextRail,AppShell});
 })();
 ;(function(){
 /**
+
  * Signed, directional finance value. Auto-colors by sign (favorable = under/positive,
+
  * unfavorable = over/negative) unless tone is forced. Tabular figures always.
+
  */
 function VarianceValue({
   value,
@@ -5392,8 +5462,11 @@ Object.assign(window.__DS,{Avatar});
 })();
 ;(function(){
 /* Curated Lucide-style path set (1.75px stroke, 24×24). The house icon
+
    vocabulary, vendored so the system has no CDN dependency. Pass a name from
+
    this set, or a custom `path` (string) / `paths` (string[]) for anything else.
+
    Keep new glyphs in the Lucide line style so the set stays coherent. */
 const ICONS = {
   home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -5485,21 +5558,37 @@ Object.assign(window.__DS,{Icon,ICONS});
 })();
 ;(function(){
 /**
+
  * KnowsMore data grid — the center of gravity. Column-config driven, tabular
+
  * figures on numeric columns, hairline dividers, sticky header, hover row
+
  * highlight, and a totals footer. Cells render any node (VarianceValue, Badge,
+
  * TraceStamp) via column.render(value, row, isSubtotal).
+
  *
+
  * Two looks:
+
  *  - default: a bordered card (self-contained widget).
+
  *  - `report`: FRAMELESS — no outer box, no card fill, transparent header;
+
  *    hairlines do all the structural work. This is the light, whitespace-
+
  *    forward look for a full budget/ledger surface.
+
  *
+
  * Special rows: `{_group: 'Section title'}` renders a section header spanning
+
  * all columns; `{_subtotal: true, ...}` renders a subtotal row (top rule on
+
  * numeric cells, no hover). Column extras: `indent`, `margin` (left rule +
+
  * inset), `wrap` (multi-line cell), `strong`, `muted`, `mono`, `numeric`.
+
  */
 function DataTable({
   columns = [],
@@ -5660,10 +5749,15 @@ Object.assign(window.__DS,{DataTable});
 })();
 ;(function(){
 /**
+
  * Traceability stamp: who changed what and when, with staleness. The face is the
+
  * UI sans (Avenir Next) at micro size with tabular figures — names and relative
+
  * times ("2h ago") are human-readable, not codes, so mono is reserved for true
+
  * IDs/PO numbers. Muted; the backbone of KnowsMore's trust language.
+
  */
 function TraceStamp({
   owner,
@@ -5717,9 +5811,13 @@ const DV = ['var(--dv-1)', 'var(--dv-2)', 'var(--dv-3)', 'var(--dv-4)', 'var(--d
 const fmt = n => Math.abs(n) >= 1000 ? (n / 1000).toFixed(n % 1000 ? 1 : 0) + 'k' : '' + n;
 
 /**
+
  * BarChart — restrained vertical bars on the data-viz ramp. data: [{label,value,
+
  * color?}] or [number]. The accent bar can be highlighted via `highlight` index.
+
  * Bars grow from zero on mount (the house motion), reduced-motion aware.
+
  */
 function BarChart({
   data = [],
@@ -5799,9 +5897,13 @@ function BarChart({
 }
 
 /**
+
  * LineChart / Sparkline — a single trend line with an optional area fill. data:
+
  * [number] or [{value}]. Set `area` for a filled sparkline; `dots` to mark
+
  * points. Scales to its container width via viewBox.
+
  */
 function LineChart({
   data = [],
@@ -5864,8 +5966,11 @@ function Sparkline(props) {
 }
 
 /**
+
  * Donut — a single ratio as a ring (e.g. % of budget committed). value 0–1.
+
  * Shows the percentage in the middle unless `label` overrides.
+
  */
 function Donut({
   value = 0,
@@ -6433,8 +6538,11 @@ function ListItem({
 }
 
 /**
+
  * DescriptionList — aligned key/value pairs (semantic dl/dt/dd). `items` is
+
  * [[key, value], …] or [{ term, detail }]. layout: 'rows' (default) | 'inline'.
+
  */
 function DescriptionList({
   items = [],
@@ -6754,10 +6862,15 @@ Object.assign(window.__DS,{Tag});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Banner — an inline, in-flow message that scopes to a section (not a
+
  * transient toast). Tone-tinted: `warn` (attention), `fav` (positive/on-track),
+
  * `info` (neutral). Dismissible via `onDismiss`. Use for standing conditions:
+
  * "estimate is stale", "pacing is under plan".
+
  */
 function Banner({
   variant = 'info',
@@ -6821,10 +6934,15 @@ Object.assign(window.__DS,{Banner});
 })();
 ;(function(){
 /**
+
  * KnowsMore Breadcrumb — shows where a value sits in the LOB → year → forecast →
+
  * line hierarchy and walks back up. The last crumb is the current location (bold,
+
  * non-interactive); ancestors are links. `items` is an array of strings, or
+
  * { label, href, onClick } objects. Deep paths can collapse the middle upstream.
+
  */
 function Breadcrumb({
   items = [],
@@ -6926,10 +7044,15 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore CommandPalette — the ⌘K launcher. A frosted scrim, a field that
+
  * autofocuses, and results that stagger in; ↑/↓ move the highlight and ↵ runs.
+
  * Self-manages the ⌘K / Escape hotkeys by default (`hotkey`), and can also be
+
  * driven with `open` + `onOpenChange`. Each command: {icon,title,subtitle,onRun}.
+
  */
 function CommandPalette({
   commands = [],
@@ -7149,10 +7272,15 @@ Object.assign(window.__DS,{CommandPalette});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * ConfirmDialog — decision modal for confirming an action. Self-contained (own
+
  * scrim + panel, no external deps). `variant="danger"` frames destructive
+
  * actions in the unfavorable red; `hold` requires a deliberate press-and-hold
+
  * to confirm (irreversible actions), matching the destructive-action pattern.
+
  */
 function ConfirmDialog({
   open,
@@ -7502,10 +7630,15 @@ function usePresence(open, exitMs = 240) {
 }
 
 /**
+
  * KnowsMore Drawer — a side rail that slides in over a scrim for context and
+
  * detail without leaving the page (line detail, filters, activity). Slides from
+
  * the right by default with a soft settle (`km-drawer-in`); Escape and scrim
+
  * click close it. Controlled via `open` + `onClose`.
+
  */
 function Drawer({
   open,
@@ -7667,11 +7800,17 @@ const uploadIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore Dropzone — a drag-and-drop import target. The frame lifts + lights
+
  * accent on drag-over; on drop it shows a progress bar, then a favorable "done"
+
  * card with a Replace affordance. Wire real uploads with `uploadFn(files,
+
  * onProgress) => Promise`; omit it and the zone simulates progress (useful for
+
  * demos). `onFiles` fires with the chosen FileList either way.
+
  */
 function Dropzone({
   onFiles,
@@ -7872,9 +8011,13 @@ Object.assign(window.__DS,{Dropzone});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore EmptyState — a centered, low-key prompt for a zero-data view. A
+
  * quiet framed icon, a plain-spoken title, one line of guidance, and a single
+
  * next action. Never a dead end: always give the user the one thing to do next.
+
  */
 function EmptyState({
   icon,
@@ -7963,13 +8106,21 @@ const linkIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore ImageInput — add an image three ways: drop / browse a file, paste
+
  * an image URL, or paste from the clipboard (⌘V) anywhere over the control. The
+
  * frame lifts + lights accent on drag-over; once an image is set it shows a
+
  * preview with its source and a Replace / Remove pair. Files read to a data URL
+
  * locally (no upload) unless you wire `uploadFn(file) => Promise<url>`.
+
  * `onChange(src)` fires with the resolved src either way. Controlled (`value`)
+
  * or uncontrolled (`defaultValue`).
+
  */
 function ImageInput({
   value,
@@ -8291,10 +8442,15 @@ Object.assign(window.__DS,{ImageInput});
 })();
 ;(function(){
 /**
+
  * KnowsMore Pagination — numbered pager with an accent-tint indicator that
+
  * slides between pages. Controlled (`page`) or uncontrolled (`defaultPage`).
+
  * Prev/next chevrons clamp at the ends. Keeps figures tabular so widths don't
+
  * jitter as you move.
+
  */
 function Pagination({
   total,
@@ -8412,11 +8568,17 @@ Object.assign(window.__DS,{Pagination});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Popover — the generic anchored floating panel that sits under Select,
+
  * Combobox, Menu and DatePicker, exposed on its own for detail-on-demand. Anchors
+
  * to its trigger with a caret, springs open, collapses back toward the trigger on
+
  * close, and dismisses on outside-click or Escape. `trigger` is the anchor node;
+
  * `children` is the panel body. Controlled (open/onOpenChange) or uncontrolled.
+
  */
 function Popover({
   trigger,
@@ -8493,11 +8655,17 @@ Object.assign(window.__DS,{Popover});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Progress — one accent-driven progress primitive in four shapes,
+
  * chosen by context: `linear` (inline/upload), `circular` (compact tiles),
+
  * `indeterminate` (unknown total), `segmented` (discrete steps). `value` is
+
  * 0–1. All fill with the live --accent and collapse to a static bar under
+
  * reduced motion.
+
  */
 function Progress({
   variant = 'linear',
@@ -8643,10 +8811,15 @@ Object.assign(window.__DS,{Progress});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Skeleton — a quiet shimmer placeholder that holds layout while data
+
  * loads. Use as a single bar/block (`width`/`height`/`circle`) or pass `lines`
+
  * (an array of widths) for a stacked text placeholder. The shimmer uses sunken
+
  * surface tokens so it re-themes automatically; reduced-motion holds it static.
+
  */
 function Skeleton({
   width = '100%',
@@ -8862,10 +9035,15 @@ function Check({
 }
 
 /**
+
  * KnowsMore Toast — a transient confirmation that rises from the bottom center
+
  * on a dark ink surface. `success` shows a spring ✓. Auto-dismisses after
+
  * `duration` (0 keeps it up); an optional `action` (Undo / View) keeps it
+
  * actionable. Controlled via `open` + `onClose`.
+
  */
 function Toast({
   open,
@@ -9045,10 +9223,15 @@ Object.assign(window.__DS,{Tooltip});
 })();
 ;(function(){
 /**
+
  * KnowsMore Tree — a browsable hierarchy (nav rail or roll-up explorer). Rows
+
  * disclose with a spring caret; each branch can carry a `meta` value (e.g. a
+
  * subtotal) so structure and numbers read together. `nodes` is a nested array of
+
  * { label, meta?, defaultOpen?, children?: [...] }.
+
  */
 function TreeNode({
   node,
@@ -9166,12 +9349,19 @@ function Check({
 }
 
 /**
+
  * KnowsMore VerticalStepper — a longer / detail-heavy flow than the horizontal
+
  * Wizard. Each step expands in place to reveal its own content; the connector
+
  * fills as steps complete; done + current dots both carry the brand hero accent
+
  * (done = ✓, current = number with a focus ring) — never green. Click any dot to
+
  * jump. steps: [{ title, desc, detail | render(i) }]. Controlled via value/onChange
+
  * or uncontrolled via defaultValue.
+
  */
 function VerticalStepper({
   steps = [],
@@ -9334,11 +9524,17 @@ function Check({
 }
 
 /**
+
  * KnowsMore Wizard — a horizontal stepper for a short, ordered task (scope →
+
  * allocate → review). Completed steps flip to a favorable ✓ and their connector
+
  * fills; the active step wears the accent. Controlled (`current`) or
+
  * uncontrolled (`defaultCurrent`); renders `children` as the current step body
+
  * and, unless `controls={false}`, a Back / Continue row.
+
  */
 function Wizard({
   steps = [],
@@ -9506,12 +9702,19 @@ function Check({
 }
 
 /**
+
  * KnowsMore AsyncButton — a commit action that carries its own
+
  * idle → saving → done lifecycle so the user always knows their action landed.
+
  * Press compresses; on success the label morphs into a ✓ and the fill flips to
+
  * the favorable green, then resets. Use for the ONE value-committing action on
+
  * a view (Approve & save, Lock close). `onAction` may return a Promise; the
+
  * spinner holds until it resolves.
+
  */
 function AsyncButton({
   children = 'Approve & save',
@@ -9617,12 +9820,19 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Button — the primary action primitive.
+
  * Restrained, tactile: a cursor-tracking **rim edge-light** rides the border
+
  * under the pointer on hover (a thin bright ring masked to the cursor, tapering
+
  * along the rim), the button lifts on hover and compresses on press. Accent-
+
  * driven so it reorients under any [data-lob] scope. Reduced-motion → plain
+
  * state changes only.
+
  */
 function Button({
   children,
@@ -9886,7 +10096,9 @@ function Check({
 }
 
 /** Searchable combo box — type to filter, click to select. On hover the highlight
+
  *  slides to the pointer's row with a slight overshoot (system dropdown behavior);
+
  *  the picked row flashes an accent ✓ before the popover collapses. Options: {value,label,hint}. */
 function Combobox({
   options = [],
@@ -10085,13 +10297,21 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore CommittedSearch — a search field that RUNS on Enter or the Search
+
  * button, not on every keystroke. Unlike SearchField (live in-page filter),
+
  * this is for queries that hit a service or reload a table: the button lights
+
  * accent while the query differs from the last run, dims once results match,
+
  * and shows a spinner while `onSearch` is in flight (return a Promise). Focus
+
  * lights the field + glyph accent and lifts it 1px. Controlled (`value`) or
+
  * uncontrolled (`defaultValue`).
+
  */
 function CommittedSearch({
   value,
@@ -10261,10 +10481,15 @@ Object.assign(window.__DS,{CommittedSearch});
 })();
 ;(function(){
 /**
+
  * KnowsMore CurrencyStepper — a ± stepper for a single bounded number
+
  * (extra investment, unit counts). Each committed value rolls up or down in
+
  * place (digit-roll), and the buttons compress on press. Controlled (`value`)
+
  * or uncontrolled (`defaultValue`). Figures are tabular so the width is stable.
+
  */
 function CurrencyStepper({
   value,
@@ -10395,10 +10620,15 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /**
+
  * KnowsMore DatePicker — calendar popover. On select the chosen day flies on an
+
  * arc out of the grid and drops into the field, bumping the month left and the
+
  * year right before it nestles into place (the signature commit gesture). Reduced
+
  * motion collapses straight to the value. value/onChange use YYYY-MM-DD strings.
+
  */
 function DatePicker({
   value,
@@ -10661,11 +10891,17 @@ Object.assign(window.__DS,{DatePicker});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore FilterBar — a row of active filter chips plus a dashed "add filter"
+
  * affordance. Adding a filter springs the chip in and slides the add button
+
  * right to make room; removing one (or clearing all, chip by chip) collapses its
+
  * width so the row slides left to close the gap. Options are `{key,label}`; the
+
  * active set is the list of keys. Controlled (`value`) or uncontrolled (`defaultValue`).
+
  */
 function Chip({
   label,
@@ -10916,7 +11152,9 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Square icon-only button. Ghost by default; used in toolbars, grid rows, rails.
+
  *  Carries the same system button interaction as Button: a cursor-tracking rim
+
  *  edge-light on hover, a hover lift, and a press-compress + spring pop. */
 function IconButton({
   icon,
@@ -11047,15 +11285,25 @@ function applyCase(s, mode) {
 }
 
 /**
+
  * KnowsMore InlineEdit — click a value to edit it in place. Numbers group with
+
  * commas + fixed decimals LIVE as you type, and per the house rule negatives
+
  * render in parentheses, never with a minus (type '-' anywhere to toggle sign).
+
  * Text can auto-case on commit ('title' | 'sentence'). On commit: the value
+
  * pops (`km-value-pop`), the field flashes accent (`km-cell-flash`) and a ✓
+
  * confirms. Controlled (`value`) or uncontrolled (`defaultValue`).
+
  *
+
  * Layout: pass `label` for a full label⇄value row; omit it for a bare editable
+
  * value you can drop into your own row/table.
+
  */
 function InlineEdit({
   value,
@@ -11286,8 +11534,11 @@ Object.assign(window.__DS,{InlineEdit});
 })();
 ;(function(){
 /**
+
  * Text input with editorial label, optional prefix (e.g. $), helper/error text,
+
  * and an optional trace line for "who last changed this".
+
  */
 function Input({
   label,
@@ -11418,9 +11669,13 @@ let _id = 0;
 const useId = given => React.useMemo(() => given || 'fld-' + ++_id, [given]);
 
 /**
+
  * Field — the label + control + help/error wrapper every form control composes
+
  * into. Wires htmlFor / aria-describedby / aria-invalid to the child control by
+
  * cloning it, so accessibility is automatic. Pass any control as the child.
+
  */
 function Field({
   label,
@@ -11515,8 +11770,11 @@ function Field({
 }
 
 /**
+
  * FormRow — horizontal label / control layout for settings-style forms: label
+
  * (+ description) on the left, control on the right. Stacks under `at` px.
+
  */
 function FormRow({
   label,
@@ -11618,8 +11876,11 @@ function Fieldset({
 }
 
 /**
+
  * FormError — a submit-time summary that lists the fields that failed, so the
+
  * user sees everything wrong at once. `errors` is [{ label, message, href? }].
+
  */
 function FormError({
   title = 'Please fix the following',
@@ -11685,10 +11946,15 @@ function pulse(el) {
 }
 
 /**
+
  * Dropdown menu — a trigger + popover list of actions. Animates in/out. On hover
+
  * the highlight slides to the pointer's row with a slight overshoot + bounce
+
  * (the system dropdown behavior via useSlideHighlight), turning red over a
+
  * destructive item. items: {label, icon?, onClick?, danger?, disabled?} or {divider:true}.
+
  */
 function Menu({
   trigger,
@@ -11875,6 +12141,7 @@ function RadioItem({
 }
 
 /** Vertical radio group with springy dot + ring pulse on select. Re-picking the
+
  *  already-selected option re-fires the same micro-animation. Options: strings or {value,label,hint,disabled}. */
 function RadioGroup({
   options = [],
@@ -11912,9 +12179,13 @@ Object.assign(window.__DS,{RadioGroup});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * RangeSlider — dual-thumb range selector. value is [low, high]; controlled via
+
  * value/onChange or uncontrolled via defaultValue. Accent fill spans the range;
+
  * thumbs pop on grab. Shows the two values unless showValues is false.
+
  */
 function RangeSlider({
   min = 0,
@@ -12037,11 +12308,17 @@ Object.assign(window.__DS,{RangeSlider});
 })();
 ;(function(){
 /**
+
  * KnowsMore SearchField — a text field for on-page filtering. On focus the
+
  * whole field and its glyph light up accent and it lifts 1px; a live result
+
  * count pill and the clear button spring in whenever there's a query. Pass
+
  * `count` to show a real match count (omit to hide the pill). Controlled
+
  * (`value`) or uncontrolled (`defaultValue`).
+
  */
 function SearchField({
   value,
@@ -12281,11 +12558,17 @@ function Check({
 }
 
 /**
+
  * KnowsMore Select — a custom popover dropdown (the native control never matched
+
  * the field styling). Opens a bordered menu; the highlight slides to the hovered
+
  * row with a slight overshoot + bounce (system dropdown behavior), and the picked
+
  * row confirms with an accent ✓ that pops before the menu collapses and the field
+
  * pulses. Controlled (`value` + `onChange`) or uncontrolled (`defaultValue`).
+
  */
 function Select({
   label,
@@ -12486,10 +12769,15 @@ Object.assign(window.__DS,{Select});
 })();
 ;(function(){
 /**
+
  * KnowsMore Slider — a labeled range for exploratory "what-if" inputs
+
  * ("if we invest more…"). The accent fills the track behind the thumb; the
+
  * readout pops while dragging and the thumb springs on release. Controlled or
+
  * uncontrolled. Renders a native range so keyboard + a11y come for free.
+
  */
 function Slider({
   value,
@@ -12659,13 +12947,21 @@ function Check({
 }
 
 /**
+
  * KnowsMore Textarea — an auto-growing note field. The box grows with its
+
  * content up to `maxHeight`, then scrolls. Pass `onSave` to enable the lock-in
+
  * workflow: while there are edits the field shows "Unsaved changes" and an
+
  * accent Save button; on save the field flashes favorable green, the border and
+
  * fill settle to a calm "Saved" state, and a transient "Saved · locked in"
+
  * confirms. Omit `onSave` for a plain auto-grow field (accent focus only).
+
  * Controlled (`value`) or uncontrolled (`defaultValue`).
+
  */
 function Textarea({
   value,
@@ -12809,11 +13105,17 @@ Object.assign(window.__DS,{Textarea});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore TokenInput — a multi-select chip field. Click to open the pool,
+
  * pick to add (the chip springs in with `km-chip-in`), press × to remove (the
+
  * chip scales out with `km-chip-out` before the value updates). Accent-driven,
+
  * so chips reorient under any [data-lob] scope. Controlled (`value`) or
+
  * uncontrolled (`defaultValue`).
+
  */
 function TokenInput({
   value,
@@ -16015,7 +16317,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-27.20";
+  const WB_VERSION = "2026-08-27.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
