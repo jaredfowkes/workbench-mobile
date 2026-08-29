@@ -15513,34 +15513,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     };
   }
 
-  // Every /agency gate still needing a human decision, across the whole fleet.
-  // Each machine's `status.pendingGates` (see Tools/workbench-live/refresh.py's
-  // pending_gates_for_local_runs()) is scoped to what THAT machine can see, so
-  // this flattens across machines and tags each gate with the machine id the
-  // phone needs to target when it sends the decision back -- Approve/Reject
-  // enqueues a "gate_decision" action at that same machine_id.
-  function extractPendingGates(machines) {
-    const out = [];
-    for (const m of machines || []) {
-      const gates = m?.status?.pendingGates;
-      if (!Array.isArray(gates)) continue;
-      for (const g of gates) {
-        if (!g || !g.gate_name || !g.run_id) continue;
-        out.push({
-          run_id: String(g.run_id),
-          gate_name: String(g.gate_name),
-          reason: String(g.reason || ""),
-          scope: String(g.scope || ""),
-          status: String(g.status || "pending"),
-          opened_at: Number(g.opened_at || 0),
-          machineId: String(m.machine_id || ""),
-        });
-      }
-    }
-    out.sort((a, b) => a.opened_at - b.opened_at);
-    return out;
-  }
-
   function buildStatusFromBundle(machines, sessions) {
     const liveSessions = (sessions || []).map(mapSessionRow);
     const newest = liveSessions.reduce(
@@ -15549,7 +15521,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     );
     const primaryMachine = (machines || [])[0] || null;
     return {
-      pendingGates: extractPendingGates(machines),
       helperUp: primaryMachine?.helper_up !== false,
       heartbeatAt: primaryMachine?.last_heartbeat_at
         ? Date.parse(primaryMachine.last_heartbeat_at)
@@ -15649,7 +15620,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     functionBaseUrl,
     request,
     mapSessionRow,
-    extractPendingGates,
     buildStatusFromBundle,
     fetchLiveBundle,
     mapActionRow,
@@ -16157,7 +16127,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-28.33";
+  const WB_VERSION = "2026-08-28.28";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -22846,19 +22816,6 @@ function MachinesView() {
   const liveSummary = workbenchLiveHelperSummary();
   const liveQuota = state.workbenchLive?.status?.quota || state.workbenchLive?.status?.supabase?.quota;
   const liveSessions = activeSessions().slice(0, 8);
-  const pendingGates = pendingGateRequests();
-  const [gateBusy, setGateBusy] = React.useState(null);
-  const decideGate = async (gate, decision) => {
-    const key = `${gate.run_id}::${gate.gate_name}::${decision}`;
-    setGateBusy(key);
-    try {
-      await requestGateDecision(gate, decision);
-    } catch (err) {
-      toast(String(err?.message || err));
-    } finally {
-      setGateBusy(null);
-    }
-  };
   const actionRows = mergedLiveActionRows(10);
   const actionOutbox = state.actionOutboxSummary || {};
   const actionOutboxActive = Number(actionOutbox.pending || 0) + Number(actionOutbox.submitting || 0) + Number(actionOutbox.failed || 0);
@@ -22942,47 +22899,7 @@ function MachinesView() {
     gap: 4
   }, warning && /*#__PURE__*/React.createElement(Banner, {
     variant: "warn"
-  }, /*#__PURE__*/React.createElement("span", null, warning.label, ": ", warning.value)), pendingGates.length ? /*#__PURE__*/React.createElement(Card, {
-    title: "Gate approvals",
-    action: /*#__PURE__*/React.createElement(Badge, {
-      tone: "unfavorable"
-    }, pendingGates.length, " waiting")
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 3
-  }, /*#__PURE__*/React.createElement("p", {
-    style: muted
-  }, "An /agency run paused before an irreversible action. It will not proceed until you approve or reject each one below."), /*#__PURE__*/React.createElement(List, {
-    bordered: true
-  }, pendingGates.map(g => {
-    const approveKey = `${g.run_id}::${g.gate_name}::approved`;
-    const rejectKey = `${g.run_id}::${g.gate_name}::rejected`;
-    const settled = g.status === 'rejected' || g.status === 'overridden';
-    return /*#__PURE__*/React.createElement(ListItem, {
-      key: `${g.run_id}::${g.gate_name}`,
-      title: g.gate_name,
-      description: /*#__PURE__*/React.createElement(Stack, {
-        gap: 1
-      }, /*#__PURE__*/React.createElement("span", {
-        style: {
-          whiteSpace: 'pre-wrap'
-        }
-      }, g.reason), /*#__PURE__*/React.createElement("span", {
-        style: muted
-      }, g.scope || '—', " · ", machineName(g.machineId), g.opened_at ? ' · opened ' + shortAge(g.opened_at) : '', settled ? ` · ${g.status.toUpperCase()}` : '')),
-      trailing: /*#__PURE__*/React.createElement(Cluster, {
-        gap: 1
-      }, /*#__PURE__*/React.createElement(Button, {
-        size: "sm",
-        variant: "secondary",
-        disabled: !!gateBusy,
-        onClick: () => decideGate(g, 'rejected')
-      }, gateBusy === rejectKey ? '…' : 'Reject'), /*#__PURE__*/React.createElement(Button, {
-        size: "sm",
-        disabled: !!gateBusy,
-        onClick: () => decideGate(g, 'approved')
-      }, gateBusy === approveKey ? '…' : 'Approve'))
-    });
-  })))) : null, /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement("span", null, warning.label, ": ", warning.value)), /*#__PURE__*/React.createElement(Card, {
     title: "Workbench Live",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: liveSource.includes('Local live') && !liveSource.includes('stale') ? 'favorable' : 'warning'
@@ -25181,7 +25098,6 @@ function OverlayHost() {
   const [statusRow, setStatusRow] = React.useState(null);
   const [sessionDetail, setSessionDetail] = React.useState(null);
   const [actionConfirm, setActionConfirm] = React.useState(null);
-  const [gateDecision, setGateDecision] = React.useState(null);
   React.useEffect(() => {
     window.__WBOpenPalette = () => setPaletteOpen(true);
     window.__WBOpenMore = () => setMoreOpen(true);
@@ -25191,9 +25107,6 @@ function OverlayHost() {
     window.__WBOpenActionConfirm = spec => {
       setActionConfirm(spec);
     };
-    window.__WBOpenGateDecision = spec => {
-      setGateDecision(spec);
-    };
     return () => {
       delete window.__WBOpenPalette;
       delete window.__WBOpenMore;
@@ -25201,7 +25114,6 @@ function OverlayHost() {
       delete window.__WBOpenStatusMenu;
       delete window.__WBOpenSession;
       delete window.__WBOpenActionConfirm;
-      delete window.__WBOpenGateDecision;
     };
   }, []);
   const commands = paletteItems().map(item => ({
@@ -25233,9 +25145,6 @@ function OverlayHost() {
   }), /*#__PURE__*/React.createElement(ActionConfirmDialog, {
     spec: actionConfirm,
     onClose: () => setActionConfirm(null)
-  }), /*#__PURE__*/React.createElement(GateDecisionDialog, {
-    spec: gateDecision,
-    onClose: () => setGateDecision(null)
   }));
 }
 function ActionConfirmDialog({
@@ -25270,97 +25179,6 @@ function ActionConfirmDialog({
   }), spec.sessionUid ? /*#__PURE__*/React.createElement(Banner, {
     variant: "info"
   }, /*#__PURE__*/React.createElement("span", null, "Session ", displayText(spec.sessionUid, 72))) : null));
-}
-
-// Approve/reject for a paused /agency run. Kept as its own dialog rather
-// than reusing ActionConfirmDialog: a reject needs a required reason
-// field, and the gate's own reason text must reach Jared in full --
-// truncating it here is exactly the failure mode that makes a phone
-// approval unsafe (Tools/Agency/contract.py's module docstring).
-function GateDecisionDialog({
-  spec,
-  onClose
-}) {
-  const [reason, setReason] = React.useState('');
-  React.useEffect(() => {
-    setReason('');
-  }, [spec?.gate?.gate_name, spec?.decision]);
-  if (!spec) return null;
-  const {
-    gate,
-    decision,
-    resolve
-  } = spec;
-  const approving = decision !== 'rejected';
-  const settle = value => {
-    if (typeof resolve === 'function') resolve(value);
-    onClose();
-  };
-  const confirmDisabled = !approving && !reason.trim();
-  return /*#__PURE__*/React.createElement(Dialog, {
-    open: !!spec,
-    onClose: () => settle(null),
-    eyebrow: approving ? 'Approve gate' : 'Reject gate',
-    title: gate?.gate_name || 'gate',
-    width: 560,
-    footer: /*#__PURE__*/React.createElement(Cluster, null, /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      onClick: () => settle(null)
-    }, "Cancel"), /*#__PURE__*/React.createElement(Button, {
-      variant: approving ? 'primary' : 'danger',
-      disabled: confirmDisabled,
-      onClick: () => settle(approving ? '' : reason.trim())
-    }, approving ? 'Approve' : 'Reject'))
-  }, /*#__PURE__*/React.createElement(Stack, {
-    gap: 3
-  }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [['Run', gate?.run_id || '—'], ['Scope', gate?.scope || '—'], ['Machine', machineName(gate?.machineId)]]
-  }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12,
-      fontWeight: 700,
-      color: 'var(--text-muted)',
-      textTransform: 'uppercase',
-      letterSpacing: 'var(--tracking-eyebrow)',
-      marginBottom: 4
-    }
-  }, "Why this gate is open"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 15,
-      lineHeight: 1.5,
-      whiteSpace: 'pre-wrap'
-    }
-  }, gate?.reason || '(no reason recorded)')), approving ? /*#__PURE__*/React.createElement(Banner, {
-    variant: "info"
-  }, /*#__PURE__*/React.createElement("span", null, "The run will proceed past this gate once approved. This cannot be undone from here.")) : /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("label", {
-    style: {
-      fontSize: 13,
-      fontWeight: 600,
-      display: 'block',
-      marginBottom: 6
-    }
-  }, "Why is this rejected? (required)"), /*#__PURE__*/React.createElement("textarea", {
-    autoFocus: true,
-    rows: 3,
-    value: reason,
-    onChange: e => setReason(e.target.value),
-    placeholder: "e.g. not comfortable dropping that table before the backup finishes",
-    style: {
-      width: '100%',
-      font: 'inherit',
-      fontSize: 15,
-      background: 'var(--surface-app)',
-      color: 'inherit',
-      border: '1px solid var(--border-subtle)',
-      borderRadius: 'var(--radius-sm, 6px)',
-      padding: 8
-    }
-  }), /*#__PURE__*/React.createElement("p", {
-    style: {
-      ...muted,
-      marginTop: 6
-    }
-  }, "A rejection is a decision, not a \"not yet\" — the run cannot simply retry past it."))));
 }
 function MoreDrawer({
   open,
@@ -29121,58 +28939,11 @@ window.__WBReactRender = function () {
   async function requestRefreshStatus(machineId) {
     return requestLiveAction("refresh_status", machineId);
   }
-  // Every /agency gate paused on a human decision, across the fleet -- see
-  // Tools/Agency/contract.py's module docstring on the phone channel and
-  // Tools/workbench-live/refresh.py's pending_gates_for_local_runs(). Empty
-  // whenever Workbench Live is not configured on this device (git-fallback
-  // mode never carries this data), same as sessions/actions.
-  function pendingGateRequests() {
-    return state.workbenchLive?.status?.pendingGates || [];
-  }
-  function confirmGateDecision(gate, decision) {
-    if (typeof window.__WBOpenGateDecision === "function") {
-      return new Promise((resolve) => {
-        window.__WBOpenGateDecision({ gate, decision, resolve });
-      });
-    }
-    // Fallback for a host with no OverlayHost mounted (should not happen in
-    // the PWA, kept for safety rather than throwing).
-    if (decision === "rejected") {
-      const reason = window.prompt(`Reject gate '${gate.gate_name}'? Say why:`);
-      return Promise.resolve(reason == null ? null : reason);
-    }
-    const ok = window.confirm(`Approve gate '${gate.gate_name}' on ${machineName(gate.machineId)}?\n\n${gate.reason || ""}`);
-    return Promise.resolve(ok ? "" : null);
-  }
-  async function requestGateDecision(gate, decision) {
-    const outcome = await confirmGateDecision(gate, decision);
-    if (outcome == null) return null;
-    const reason = decision === "rejected" ? String(outcome || "").trim() : "";
-    if (decision === "rejected" && !reason) {
-      toast("A reason is required to reject a gate.", "warn");
-      return null;
-    }
-    const record = await enqueueLiveAction({
-      machineId: gate.machineId,
-      kind: "gate_decision",
-      payload: { run_id: gate.run_id, gate_name: gate.gate_name, decision, reason },
-    });
-    toast(
-      `${decision === "approved" ? "Approved" : "Rejected"} gate '${gate.gate_name}' on ${machineName(gate.machineId)}.`,
-      "success",
-    );
-    return record;
-  }
   const LIVE_ACTION_META = {
     refresh_status: {
       label: "Refresh status",
       confirm: false,
       description: "Rebuild local Workbench Live status from beacons and transcripts.",
-    },
-    gate_decision: {
-      label: "Gate decision",
-      confirm: false,
-      description: "Record a human's approve/reject decision on a paused /agency run.",
     },
     request_handoff: {
       label: "Request handoff",
