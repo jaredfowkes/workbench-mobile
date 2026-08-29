@@ -14297,6 +14297,25 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return { text: next == null ? "" : next, data: null, changed: true };
   }
 
+  function applyJsonlAppendRow(currentText, operation) {
+    // Used for a transcript's own pending-edit row (see transcript-attribution.js
+    // and Call-Accessibility-Transcripts/files/apply_edits.py, which folds it
+    // in later): a plain append, never a rewrite of anything already there,
+    // so a stale read can never lose a line another tab or the local
+    // controller already wrote.
+    let text = normalizeText(currentText);
+    if (text == null) {
+      throw conflict("missing_source", "File does not exist.");
+    }
+    const row = operation.row;
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      throw conflict("invalid_operation", "jsonl.appendRow requires row.");
+    }
+    if (!text.endsWith("\n")) text += "\n";
+    text += JSON.stringify(row) + "\n";
+    return { text, data: null, changed: true };
+  }
+
   function applyTextOperation(currentText, operation) {
     if (!operation || typeof operation !== "object") {
       throw conflict("invalid_operation", "Mutation operation is required.");
@@ -14318,6 +14337,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         return applyTextCompareAndSwap(currentText, operation);
       case "text.safeCreate":
         return applyTextSafeCreate(currentText, operation);
+      case "jsonl.appendRow":
+        return applyJsonlAppendRow(currentText, operation);
       default:
         throw conflict(
           "invalid_operation",
@@ -15833,16 +15854,34 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
 
-  // Diarization labels, voice-separation reassignments, and crosstalk
-  // withdrawals are kept as their own JSONL rows rather than rewritten into
-  // the `segment` rows, so the file still shows both what was first heard and
+  // A line's identity that survives a rename or a text correction: (time,
+  // original text). Never itself the field an edit changes, unlike an array
+  // index -- which only ever means "this reader's own render," never "the
+  // same entries reconstructed by Python in apply_edits.py from the same
+  // file." The dashboard writes a `pending-edit` row without ever running
+  // apply_edits.py's own render pass, so identity has to be computable from
+  // the data alone. Keep in sync with apply_edits.py's `_line_key`.
+  function lineKey(entry) {
+    return JSON.stringify([entry.time, entry.text]);
+  }
+
+  // Diarization labels, voice-separation reassignments, crosstalk
+  // withdrawals, speaker renames, text corrections, and line deletions are
+  // all kept as their own JSONL rows rather than rewritten into the
+  // `segment` rows, so the file still shows both what was first heard and
   // what it was corrected to. A reader that only looks at segments therefore
   // hands every diarized line back its bare channel name ("Call audio" where
-  // the live run had worked out "Speaker 1") and shows echoed mic lines
-  // twice. This replays the three correction types in file order, mirroring
+  // the live run had worked out "Speaker 1"), shows echoed mic lines twice,
+  // and shows a deleted or since-merged line as if nothing had happened.
+  // This replays every correction type in file order, mirroring
   // reapply_attribution() and the withdrawn-segment handling in rebuild()
   // (Personal/Projects/Call-Accessibility-Transcripts/files/rebuild.py) --
-  // keep the two in sync.
+  // keep the two in sync. `speaker-renamed`/`segment-corrected`/
+  // `segment-deleted` are apply_edits.py's own audit trail for an edit
+  // already folded into the file; `pending-edit` is one not yet folded in --
+  // applying it here too is what makes an edit the dashboard just made show
+  // as already done, before the machine that owns the file has even pulled
+  // the commit that carries it.
   function applyCorrections(rows) {
     // A line the microphone picked up off the speakers is written as a
     // segment and then withdrawn once the call-audio copy of it arrives.
@@ -15862,6 +15901,33 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         channel: r.channel || "",
         engine: r.engine || "",
       }));
+    // Fixed once, before any rename/correction/deletion below can change the
+    // very fields the key is built from -- matching apply_edits.py's own
+    // `original_key = {id(entry): _line_key(entry) ...}` snapshot.
+    const originalKey = new Map(entries.map((e) => [e, lineKey(e)]));
+    const deleted = new Set();
+    const applyRename = (from, to) => {
+      let moved = 0;
+      for (const entry of entries) {
+        if (entry.speaker === from) {
+          entry.speaker = to;
+          moved += 1;
+        }
+      }
+      return moved;
+    };
+    const applyDeletions = (items) => {
+      for (const item of items || []) {
+        deleted.add(JSON.stringify([item.time, item.text]));
+      }
+    };
+    const applyCorrectionItems = (items) => {
+      for (const item of items || []) {
+        const key = JSON.stringify([item.time, item.text]);
+        const entry = entries.find((e) => originalKey.get(e) === key);
+        if (entry) entry.text = item.newText || "";
+      }
+    };
     for (const row of rows) {
       if (row.type === "speaker-labels") {
         const labels = Array.isArray(row.labels) ? row.labels : [];
@@ -15888,12 +15954,58 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           );
           if (entry) entry.speaker = change.speaker;
         }
+      } else if (row.type === "speaker-renamed") {
+        applyRename(row.from, row.to);
+      } else if (row.type === "segment-corrected") {
+        const entry = entries.find((e) => originalKey.get(e) === JSON.stringify([row.time, row.from]));
+        if (entry) entry.text = row.to || "";
+      } else if (row.type === "segment-deleted") {
+        deleted.add(JSON.stringify([row.time, row.text]));
+      } else if (row.type === "pending-edit") {
+        // Not yet folded into real segment mutations by apply_edits.py --
+        // applied here for immediate display only. Multiple pending rows (a
+        // second edit made before the first was picked up) are folded in
+        // the order they were written, same as apply_pending_edit_rows().
+        for (const [from, to] of Object.entries(row.renames || {})) {
+          if (to && to !== from) applyRename(from, to);
+        }
+        applyCorrectionItems(row.corrections);
+        applyDeletions(row.deletions);
       }
     }
-    return entries;
+    // Each line keeps its own pristine (time, text) identity even after a
+    // correction has changed what it displays -- a caller editing an
+    // already-corrected line again needs to submit a deletion/correction
+    // keyed on the *original* segment, the same thing apply_pending_edit_rows()
+    // matches against, not on whatever text happens to be on screen right now.
+    for (const entry of entries) {
+      const [time, text] = JSON.parse(originalKey.get(entry));
+      entry.original = { time, text };
+    }
+    return entries.filter((e) => !deleted.has(originalKey.get(e)));
   }
 
-  return { applyCorrections };
+  // The title as of the newest pending-edit row that named one, or
+  // `fallback` (normally the session-end row's own `title`) if none has.
+  // Mirrors apply_pending_edit_rows()'s "later title wins" folding rule.
+  function effectiveTitle(rows, fallback) {
+    let title = fallback;
+    for (const row of rows) {
+      if (row.type !== "pending-edit") continue;
+      const next = (row.title || "").trim();
+      if (next) title = next;
+    }
+    return title;
+  }
+
+  // Whether `rows` carries at least one pending-edit row apply_edits.py has
+  // not yet folded in -- for a small "syncing…" indicator in the reader
+  // rather than a save that silently looks identical to one already applied.
+  function hasPendingEdits(rows) {
+    return rows.some((r) => r.type === "pending-edit");
+  }
+
+  return { applyCorrections, effectiveTitle, hasPendingEdits, lineKey };
 });
 
 
@@ -16015,7 +16127,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-28.27";
+  const WB_VERSION = "2026-08-28.31";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -17676,7 +17788,101 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const j = await res.json();
     return j.encoding === "base64" ? decUtf8(j.content) : String(j.content || "");
   }
+  // Stay clear of the Contents API's ~1 MB write ceiling. Reads already
+  // recover from it via the Git Data blob endpoint (see ghGetFile/
+  // ghTextViaBlob above); writes had no equivalent until ghPutFileViaGitData
+  // below -- a real gap, since a long meeting's own .jsonl routinely passes
+  // 1 MB (one seen while building this: over 5 MB).
+  const CONTENTS_API_SAFE_BYTES = 900_000;
+
+  async function ghPutFileViaGitData(path, text, message) {
+    // Builds the same commit a Contents API PUT would have, one Git Data API
+    // call at a time (https://docs.github.com/en/rest/git): blob, tree
+    // (layered on the branch's current tree via base_tree, so every path
+    // this write doesn't touch needs no entry), commit, then a non-force ref
+    // update. GitHub refuses that last step with 422 if the branch moved
+    // since `parentCommitSha` was read -- normalized to 409 below so
+    // mutateWithCas's existing conflict check (`err?.status === 409`) treats
+    // it exactly like ghPutFile's own sha-mismatch conflict, without needing
+    // to know which write path produced it.
+    const cfg = ghConfig();
+    const branch = cfg.branch;
+    const baseRes = await ghFetch(`/commits/${encodeURIComponent(branch)}`);
+    if (!baseRes.ok) {
+      throw Object.assign(
+        new Error(`GitHub read failed (${baseRes.status}) resolving ${branch}`),
+        { status: baseRes.status },
+      );
+    }
+    const base = await baseRes.json();
+    const parentCommitSha = base.sha;
+    const baseTreeSha = base.commit?.tree?.sha;
+    if (!parentCommitSha || !baseTreeSha) {
+      throw new Error(`Could not resolve ${branch} to a commit and tree.`);
+    }
+
+    const blobRes = await ghFetch(`/git/blobs`, {
+      method: "POST",
+      body: JSON.stringify({ content: encUtf8(text), encoding: "base64" }),
+    });
+    if (!blobRes.ok) {
+      throw Object.assign(
+        new Error(`GitHub write failed (${blobRes.status}) creating a blob for ${path}`),
+        { status: blobRes.status },
+      );
+    }
+    const blobSha = (await blobRes.json()).sha;
+
+    const treeRes = await ghFetch(`/git/trees`, {
+      method: "POST",
+      body: JSON.stringify({
+        base_tree: baseTreeSha,
+        tree: [{ path, mode: "100644", type: "blob", sha: blobSha }],
+      }),
+    });
+    if (!treeRes.ok) {
+      throw Object.assign(
+        new Error(`GitHub write failed (${treeRes.status}) building a tree for ${path}`),
+        { status: treeRes.status },
+      );
+    }
+    const newTreeSha = (await treeRes.json()).sha;
+
+    const commitRes = await ghFetch(`/git/commits`, {
+      method: "POST",
+      body: JSON.stringify({ message, tree: newTreeSha, parents: [parentCommitSha] }),
+    });
+    if (!commitRes.ok) {
+      throw Object.assign(
+        new Error(`GitHub write failed (${commitRes.status}) creating a commit for ${path}`),
+        { status: commitRes.status },
+      );
+    }
+    const newCommitSha = (await commitRes.json()).sha;
+
+    const refRes = await ghFetch(`/git/refs/heads/${encodeURIComponent(branch)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ sha: newCommitSha, force: false }),
+    });
+    if (!refRes.ok) {
+      const status = refRes.status === 422 ? 409 : refRes.status;
+      throw Object.assign(
+        new Error(`GitHub write failed (${refRes.status}): ${branch} moved since this write started`),
+        { status },
+      );
+    }
+
+    ghShaCache.set(path, blobSha);
+    ghTreeShas[path] = blobSha;
+    idb.set("ghc:" + blobSha, text).catch(() => {});
+    patchTreeCache(path, blobSha);
+    return { content: { sha: blobSha } };
+  }
+
   async function ghPutFile(path, text, message, opts = {}) {
+    if (typeof TextEncoder !== "undefined" && new TextEncoder().encode(text).length > CONTENTS_API_SAFE_BYTES) {
+      return ghPutFileViaGitData(path, text, message);
+    }
     const cfg = ghConfig();
     let sha =
       Object.prototype.hasOwnProperty.call(opts, "sha")
@@ -18058,11 +18264,41 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
             durationSeconds: end.durationSeconds,
             source: start.detection_source,
           },
-          // Corrections (diarization, voice-separation, crosstalk withdrawal)
-          // live as their own rows rather than in the segments themselves --
-          // see transcript-attribution.js for why and for the replay logic.
+          // Corrections (diarization, voice-separation, crosstalk withdrawal,
+          // and this dashboard's own renames/deletions/text edits) live as
+          // their own rows rather than in the segments themselves -- see
+          // transcript-attribution.js for why and for the replay logic.
           lines: TranscriptAttribution.applyCorrections(rows),
+          // The title as of the newest not-yet-applied edit, so a rename
+          // shows immediately rather than waiting for the local controller to
+          // pull this commit and fold it in.
+          title: TranscriptAttribution.effectiveTitle(rows, end.title || entry.title),
+          // True while an edit made here has not yet reached the machine
+          // that owns this file and folded it into real segment mutations --
+          // shown as a small "saving…" state, not a silent gap.
+          pending: TranscriptAttribution.hasPendingEdits(rows),
+          dataPath: entry.dataPath,
         };
+      },
+      // Appends one `pending-edit` row (see transcript-attribution.js and
+      // Call-Accessibility-Transcripts/files/apply_edits.py, which folds it
+      // in) onto a transcript's own .jsonl. `edit` is any of
+      // {title, renames, deletions, corrections} -- the same shape the local
+      // HTML reader's own "Save to file" produces, just written straight to
+      // the repo instead of downloaded for a script to pick up.
+      async saveTranscriptEdit(entry, edit) {
+        if (!entry?.dataPath) throw new Error("No transcript selected.");
+        const row = {
+          type: "pending-edit",
+          source: "dashboard",
+          createdAt: new Date().toISOString(),
+          ...edit,
+        };
+        await ghMutateFile(
+          entry.dataPath,
+          { type: "jsonl.appendRow", row },
+          `Dashboard: edit "${entry.title}"`,
+        );
       },
       // Search inside every meeting. Bodies are cached by blob sha, so the first
       // query pays for the fetches and later ones do not.
@@ -24045,6 +24281,88 @@ function SharedScreenShot({
     }
   }, caption));
 }
+
+// One rename field per speaker actually shown, plus a two-speaker merge
+// (merging is just giving both the same name -- see transcript-attribution.js's
+// own comment on why this needs no separate code path). Mirrors the
+// local HTML reader's Speaker names / Merge speakers panel, minus the
+// per-speaker photo directory that reader has and this view already
+// shows inline instead.
+function SpeakerEditor({
+  names,
+  onRename,
+  onMerge
+}) {
+  const [from, setFrom] = React.useState(names[0] || '');
+  const [into, setInto] = React.useState(names[1] || names[0] || '');
+  React.useEffect(() => {
+    if (!names.includes(from)) setFrom(names[0] || '');
+    if (!names.includes(into)) setInto(names[1] || names[0] || '');
+  }, [names.join('\u0000')]);
+  return /*#__PURE__*/React.createElement(Card, {
+    title: "Speakers"
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 2
+  }, names.map(name => /*#__PURE__*/React.createElement("div", {
+    key: name,
+    style: {
+      display: 'grid',
+      gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+      gap: 8,
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      ...muted,
+      fontSize: 13
+    }
+  }, name), /*#__PURE__*/React.createElement("input", {
+    defaultValue: name,
+    "aria-label": `Name for ${name}`,
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.currentTarget.blur();
+    },
+    onBlur: e => onRename(name, e.target.value),
+    style: {
+      font: 'inherit',
+      fontSize: 13,
+      padding: '4px 8px',
+      minWidth: 0
+    }
+  })))), names.length > 1 ? /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap',
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement("select", {
+    value: from,
+    onChange: e => setFrom(e.target.value)
+  }, names.map(n => /*#__PURE__*/React.createElement("option", {
+    key: n,
+    value: n
+  }, n))), /*#__PURE__*/React.createElement("span", {
+    style: muted
+  }, "into"), /*#__PURE__*/React.createElement("select", {
+    value: into,
+    onChange: e => setInto(e.target.value)
+  }, names.map(n => /*#__PURE__*/React.createElement("option", {
+    key: n,
+    value: n
+  }, n))), /*#__PURE__*/React.createElement(Button, {
+    size: "sm",
+    onClick: () => onMerge(from, into),
+    disabled: !from || !into || from === into
+  }, "Merge")) : null, /*#__PURE__*/React.createElement("p", {
+    style: {
+      ...muted,
+      margin: 0,
+      fontSize: 12
+    }
+  }, "Renaming or merging here saves straight away — no download, no script to run.")));
+}
 function TranscriptsView() {
   const mobile = useViewport();
   const all = state.transcripts || [];
@@ -24053,6 +24371,10 @@ function TranscriptsView() {
   const [loading, setLoading] = React.useState(false);
   const [globalHits, setGlobalHits] = React.useState(null);
   const [searching, setSearching] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [editingTitle, setEditingTitle] = React.useState(false);
+  const [editingLine, setEditingLine] = React.useState(null);
+  const [showMerge, setShowMerge] = React.useState(false);
   React.useEffect(() => {
     if (!open) {
       setData(null);
@@ -24060,6 +24382,9 @@ function TranscriptsView() {
     }
     let live = true;
     setLoading(true);
+    setEditingTitle(false);
+    setEditingLine(null);
+    setShowMerge(false);
     Backends.github.loadTranscript(open).then(d => {
       if (live) setData(d);
     }).catch(() => {
@@ -24075,6 +24400,91 @@ function TranscriptsView() {
       live = false;
     };
   }, [open && open.path]);
+
+  // Every edit follows the same shape as setTaskStatus() elsewhere in
+  // this file: paint the change immediately, persist for real, and roll
+  // the paint back on failure rather than leave a lie on screen. The
+  // real persistence is one `pending-edit` row (transcript-attribution.js,
+  // apply_edits.py) -- the running controller on Jared's Mac folds it
+  // into the actual saved files within moments, whether or not this tab
+  // is still open.
+  async function submitEdit(edit, paint) {
+    if (!open || saving) return;
+    const before = data;
+    setData(d => d ? paint(d) : d);
+    setSaving(true);
+    try {
+      await Backends.github.saveTranscriptEdit(open, edit);
+    } catch (err) {
+      setData(before);
+      toast(err.message || "Could not save the change.", "danger");
+    } finally {
+      setSaving(false);
+    }
+  }
+  function renameTitle(newTitle) {
+    const value = String(newTitle || "").trim();
+    setEditingTitle(false);
+    if (!value || value === data?.title) return;
+    submitEdit({
+      title: value
+    }, d => ({
+      ...d,
+      title: value,
+      pending: true
+    }));
+  }
+  function deleteLine(line) {
+    submitEdit({
+      deletions: [{
+        time: line.original.time,
+        text: line.original.text
+      }]
+    }, d => ({
+      ...d,
+      lines: d.lines.filter(l => l !== line),
+      pending: true
+    }));
+  }
+  function correctLine(line, newText) {
+    const value = String(newText || "");
+    setEditingLine(null);
+    if (value === line.text) return;
+    submitEdit({
+      corrections: [{
+        time: line.original.time,
+        text: line.original.text,
+        newText: value
+      }]
+    }, d => ({
+      ...d,
+      lines: d.lines.map(l => l === line ? {
+        ...l,
+        text: value
+      } : l),
+      pending: true
+    }));
+  }
+  function renameSpeaker(from, to) {
+    const value = String(to || "").trim();
+    if (!value || value === from) return;
+    submitEdit({
+      renames: {
+        [from]: value
+      }
+    }, d => ({
+      ...d,
+      lines: d.lines.map(l => l.speaker === from ? {
+        ...l,
+        speaker: value
+      } : l),
+      pending: true
+    }));
+  }
+  function mergeSpeakers(from, into) {
+    if (!from || !into || from === into) return;
+    renameSpeaker(from, into);
+  }
   const runGlobalSearch = async () => {
     const q = String(state.tgq || '').trim();
     if (q.length < 2) {
@@ -24205,13 +24615,39 @@ function TranscriptsView() {
     title: "No meetings match",
     description: all.length ? 'Try a broader query.' : 'Transcripts appear here once they are committed to the repo.'
   })));
+  const currentTitle = data?.title || (open ? open.title : 'Transcript');
+  const titleNode = !open ? 'Transcript' : editingTitle ? /*#__PURE__*/React.createElement("input", {
+    autoFocus: true,
+    defaultValue: currentTitle,
+    onBlur: e => renameTitle(e.target.value),
+    onKeyDown: e => {
+      if (e.key === 'Enter') e.currentTarget.blur();
+      if (e.key === 'Escape') setEditingTitle(false);
+    },
+    style: {
+      font: 'inherit',
+      fontWeight: 700,
+      fontSize: 'inherit',
+      width: '100%',
+      minWidth: 0
+    }
+  }) : /*#__PURE__*/React.createElement("span", {
+    onClick: () => setEditingTitle(true),
+    title: "Click to rename this meeting",
+    style: {
+      cursor: 'text'
+    }
+  }, currentTitle);
+  const speakerNames = [...new Set((data?.lines || []).map(l => l.speaker))];
 
   // Reader styled after the Teams captions panel: dark, speaker-led rows.
   const viewer = /*#__PURE__*/React.createElement(Card, {
-    title: open ? open.title : 'Transcript',
+    title: titleNode,
     action: open ? /*#__PURE__*/React.createElement(Cluster, {
       gap: 1
-    }, /*#__PURE__*/React.createElement(Badge, {
+    }, data?.pending || saving ? /*#__PURE__*/React.createElement(Badge, {
+      tone: "info"
+    }, "saving…") : null, /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
     }, open.date), /*#__PURE__*/React.createElement(Button, {
       size: "sm",
@@ -24253,7 +24689,15 @@ function TranscriptsView() {
     tone: "neutral"
   }, (data?.lines || []).length, " lines"), data?.meta?.durationSeconds ? /*#__PURE__*/React.createElement(Badge, {
     tone: "neutral"
-  }, clock(data.meta.durationSeconds)) : null), brief && (brief.topic || (brief.discussed || []).length || (brief.actions || []).length) ? /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(Stack, {
+  }, clock(data.meta.durationSeconds)) : null, speakerNames.length ? /*#__PURE__*/React.createElement(Button, {
+    size: "sm",
+    variant: "ghost",
+    onClick: () => setShowMerge(v => !v)
+  }, showMerge ? 'Hide speakers' : 'Speakers') : null), showMerge ? /*#__PURE__*/React.createElement(SpeakerEditor, {
+    names: speakerNames,
+    onRename: renameSpeaker,
+    onMerge: mergeSpeakers
+  }) : null, brief && (brief.topic || (brief.discussed || []).length || (brief.actions || []).length) ? /*#__PURE__*/React.createElement(Card, null, /*#__PURE__*/React.createElement(Stack, {
     gap: 2
   }, /*#__PURE__*/React.createElement("h3", {
     style: {
@@ -24338,11 +24782,12 @@ function TranscriptsView() {
         onOpen: openImage
       }));
     }
+    const isEditingThisLine = editingLine === l;
     return before.concat(/*#__PURE__*/React.createElement("div", {
       key: i,
       style: {
         display: 'grid',
-        gridTemplateColumns: mobile ? '28px minmax(0, 1fr)' : '32px minmax(0, 1fr)',
+        gridTemplateColumns: mobile ? '28px minmax(0, 1fr) auto' : '32px minmax(0, 1fr) auto',
         gap: mobile ? 10 : 12,
         alignItems: 'start'
       }
@@ -24370,7 +24815,29 @@ function TranscriptsView() {
         fontVariantNumeric: 'tabular-nums',
         fontSize: 12
       }
-    }, clock(l.time))), /*#__PURE__*/React.createElement("div", {
+    }, clock(l.time))), isEditingThisLine ? /*#__PURE__*/React.createElement("textarea", {
+      autoFocus: true,
+      defaultValue: l.text,
+      rows: 2,
+      style: {
+        width: '100%',
+        font: 'inherit',
+        fontSize: mobile ? 15 : 16,
+        background: '#111114',
+        color: 'inherit',
+        border: '1px solid #3a3a40',
+        borderRadius: 6,
+        padding: 6
+      },
+      onKeyDown: e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          correctLine(l, e.currentTarget.value);
+        }
+        if (e.key === 'Escape') setEditingLine(null);
+      },
+      onBlur: e => correctLine(l, e.target.value)
+    }) : /*#__PURE__*/React.createElement("div", {
       style: {
         fontSize: mobile ? 15 : 16,
         lineHeight: 1.5
@@ -24378,7 +24845,19 @@ function TranscriptsView() {
     }, /*#__PURE__*/React.createElement(HighlightedText, {
       text: l.text,
       query: lineQuery
-    })))));
+    }))), /*#__PURE__*/React.createElement(Cluster, {
+      gap: 0
+    }, /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "ghost",
+      title: "Edit this line's text",
+      onClick: () => setEditingLine(l)
+    }, "✎"), /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "ghost",
+      title: "Delete this line",
+      onClick: () => deleteLine(l)
+    }, "🗑"))));
   }).concat(shots.slice(shotCursor.at).map(shot => /*#__PURE__*/React.createElement(SharedScreenShot, {
     key: 'shot' + shot.file,
     shot: shot,
