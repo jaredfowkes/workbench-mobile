@@ -15,7 +15,7 @@
 
    Escape hatch: load any page with ?nosw=1 to unregister and drop all caches.
 */
-const VERSION = '2026-08-28.28';
+const VERSION = '2026-08-29.21';
 const CACHE = 'workbench-shell-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
@@ -84,20 +84,24 @@ self.addEventListener('fetch', (event) => {
 // --- Web Push (issue #33) ----------------------------------------------------
 //
 // The push carries NO payload, deliberately. A body would have to be encrypted
-// per subscription and would route the health detail through Apple's push
-// service to get here; instead the banner says something needs attention and
-// the dashboard says what. That is also more honest: a pushed payload is a
+// per subscription and would route the detail through Apple's push service to
+// get here; instead the banner says something needs attention and the
+// dashboard says what. That is also more honest: a pushed payload is a
 // snapshot that can already be stale when it is read, while opening the page
 // fetches current state.
 //
-// This only ever fires for a fault that is silently broken AND costing money or
-// correctness -- targeted well under one a day, against a measured tolerance of
-// three to five. A channel that cries wolf gets muted, and half the users who
-// mute a feature's notifications abandon it.
+// Two independent things fire this same payload-less push -- a silently
+// broken health check AND Tools/Agency/contract.py's mid-run approval gate
+// reaching the phone (see that module's docstring). Neither the sender nor
+// this handler knows which one woke it, so the text below has to read true
+// for both rather than naming a specific check; "Open the dashboard" is
+// deliberately generic. This still fires well under one a day against a
+// measured tolerance of three to five -- a channel that cries wolf gets
+// muted, and half the users who mute a feature's notifications abandon it.
 self.addEventListener('push', (event) => {
   event.waitUntil(
-    self.registration.showNotification('Workbench needs attention', {
-      body: 'A check is failing. Open the dashboard to see which.',
+    self.registration.showNotification('Workbench needs you', {
+      body: 'Something is waiting on you -- open the dashboard to see what.',
       // A stable tag means a second alert REPLACES the first rather than
       // stacking. Three banners for one ongoing fault is how a channel earns
       // a mute.
