@@ -16157,7 +16157,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-29.27";
+  const WB_VERSION = "2026-08-29.30";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16305,6 +16305,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     backend: "github",
     connected: false,
     view: "overview",
+    pendingScrollTo: null,
     focusMode: "now",
     followMode: "waiting",
     inventoryTab: "projects",
@@ -22848,17 +22849,58 @@ function MachinesView() {
   const liveSessions = activeSessions().slice(0, 8);
   const pendingGates = pendingGateRequests();
   const [gateBusy, setGateBusy] = React.useState(null);
+  // A tap only ENQUEUES the decision. The gate keeps appearing in
+  // pendingGates until the target machine polls, executes it, and
+  // republishes its status -- up to 30 seconds away. Clearing the spinner
+  // on enqueue therefore snapped the card back to "waiting", which is why
+  // one gate got tapped twice and produced two decisions; the second was
+  // correctly refused as already-approved, but it read as a failure. So
+  // remember the decision locally and keep showing it until the fleet
+  // status stops listing the gate.
+  const [gateDecided, setGateDecided] = React.useState({});
+  const gateKeys = pendingGates.map(g => `${g.run_id}::${g.gate_name}`);
   const decideGate = async (gate, decision) => {
-    const key = `${gate.run_id}::${gate.gate_name}::${decision}`;
-    setGateBusy(key);
+    const gateKey = `${gate.run_id}::${gate.gate_name}`;
+    setGateBusy(`${gateKey}::${decision}`);
     try {
-      await requestGateDecision(gate, decision);
+      // null means nothing was enqueued -- cancelled at the confirm
+      // sheet, rejected with no reason, or Workbench Live unconfigured on
+      // this device. Each already told the user why, and marking the card
+      // decided would claim a decision that never left the phone.
+      const record = await requestGateDecision(gate, decision);
+      if (record) setGateDecided(prev => ({
+        ...prev,
+        [gateKey]: decision
+      }));
     } catch (err) {
       toast(String(err?.message || err));
     } finally {
       setGateBusy(null);
     }
   };
+  // Forget a remembered decision once its gate is gone, so a later run
+  // reusing the same name does not open pre-answered.
+  React.useEffect(() => {
+    const live = new Set(gateKeys);
+    setGateDecided(prev => {
+      const next = {};
+      for (const k of Object.keys(prev)) if (live.has(k)) next[k] = prev[k];
+      return Object.keys(next).length === Object.keys(prev).length ? prev : next;
+    });
+  }, [gateKeys.join('|')]);
+  // sw.js opens ?focus=gates on a notification tap. app.js parks that as
+  // state.pendingScrollTo before the first render, but the card does not
+  // exist until fleet status arrives, so the scroll has to be consumed
+  // here rather than at launch.
+  const gateCardRef = React.useRef(null);
+  React.useEffect(() => {
+    if (state.pendingScrollTo !== 'gate-approvals' || !gateCardRef.current) return;
+    state.pendingScrollTo = null;
+    gateCardRef.current.scrollIntoView({
+      block: 'start',
+      behavior: 'smooth'
+    });
+  }, [gateKeys.length]);
   const actionRows = mergedLiveActionRows(10);
   const actionOutbox = state.actionOutboxSummary || {};
   const actionOutboxActive = Number(actionOutbox.pending || 0) + Number(actionOutbox.submitting || 0) + Number(actionOutbox.failed || 0);
@@ -22942,7 +22984,9 @@ function MachinesView() {
     gap: 4
   }, warning && /*#__PURE__*/React.createElement(Banner, {
     variant: "warn"
-  }, /*#__PURE__*/React.createElement("span", null, warning.label, ": ", warning.value)), pendingGates.length ? /*#__PURE__*/React.createElement(Card, {
+  }, /*#__PURE__*/React.createElement("span", null, warning.label, ": ", warning.value)), pendingGates.length ? /*#__PURE__*/React.createElement("div", {
+    ref: gateCardRef
+  }, /*#__PURE__*/React.createElement(Card, {
     title: "Gate approvals",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: "unfavorable"
@@ -22954,11 +22998,26 @@ function MachinesView() {
   }, "An /agency run paused before an irreversible action. It will not proceed until you approve or reject each one below."), /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, pendingGates.map(g => {
-    const approveKey = `${g.run_id}::${g.gate_name}::approved`;
-    const rejectKey = `${g.run_id}::${g.gate_name}::rejected`;
+    const gateKey = `${g.run_id}::${g.gate_name}`;
     const settled = g.status === 'rejected' || g.status === 'overridden';
+    const decided = gateDecided[gateKey] || (settled ? g.status : null);
+    const busy = gateBusy === `${gateKey}::approved` || gateBusy === `${gateKey}::rejected`;
+    const trailing = decided ? /*#__PURE__*/React.createElement(Badge, {
+      tone: decided === 'approved' ? 'favorable' : 'neutral'
+    }, decided === 'approved' ? 'Approved · sending' : `${decided.charAt(0).toUpperCase()}${decided.slice(1)}`) : /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1
+    }, /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "secondary",
+      disabled: busy,
+      onClick: () => decideGate(g, 'rejected')
+    }, gateBusy === `${gateKey}::rejected` ? '…' : 'Reject'), /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      disabled: busy,
+      onClick: () => decideGate(g, 'approved')
+    }, gateBusy === `${gateKey}::approved` ? '…' : 'Approve'));
     return /*#__PURE__*/React.createElement(ListItem, {
-      key: `${g.run_id}::${g.gate_name}`,
+      key: gateKey,
       title: g.gate_name,
       description: /*#__PURE__*/React.createElement(Stack, {
         gap: 1
@@ -22968,21 +23027,10 @@ function MachinesView() {
         }
       }, g.reason), /*#__PURE__*/React.createElement("span", {
         style: muted
-      }, g.scope || '—', " · ", machineName(g.machineId), g.opened_at ? ' · opened ' + shortAge(g.opened_at) : '', settled ? ` · ${g.status.toUpperCase()}` : '')),
-      trailing: /*#__PURE__*/React.createElement(Cluster, {
-        gap: 1
-      }, /*#__PURE__*/React.createElement(Button, {
-        size: "sm",
-        variant: "secondary",
-        disabled: !!gateBusy,
-        onClick: () => decideGate(g, 'rejected')
-      }, gateBusy === rejectKey ? '…' : 'Reject'), /*#__PURE__*/React.createElement(Button, {
-        size: "sm",
-        disabled: !!gateBusy,
-        onClick: () => decideGate(g, 'approved')
-      }, gateBusy === approveKey ? '…' : 'Approve'))
+      }, g.scope || '—', " · ", machineName(g.machineId), g.opened_at ? ' · opened ' + shortAge(g.opened_at) : '', settled ? ` · ${g.status.toUpperCase()}` : '', gateDecided[gateKey] && !settled ? ' · waiting for that machine to pick it up' : '')),
+      trailing: trailing
     });
-  })))) : null, /*#__PURE__*/React.createElement(Card, {
+  }))))) : null, /*#__PURE__*/React.createElement(Card, {
     title: "Workbench Live",
     action: /*#__PURE__*/React.createElement(Badge, {
       tone: liveSource.includes('Local live') && !liveSource.includes('stale') ? 'favorable' : 'warning'
@@ -29850,6 +29898,31 @@ window.__WBReactRender = function () {
       total: 0,
     }));
   }
+  // Views a URL is allowed to open on launch. "project" is excluded on purpose:
+  // it needs state.proj set, and a bare ?view=project renders an empty shell.
+  const LAUNCH_VIEWS = new Set([
+    "today", "overview", "focus", "projects", "intake", "followups",
+    "transcripts", "knowledge", "ideas", "artifacts", "inventory", "skills",
+    "creative", "usage", "models", "sessions", "machines", "briefings",
+    "weekly", "preflight", "board", "instructions", "about",
+  ]);
+  // sw.js's notificationclick opens ./?view=machines&focus=gates. Nothing read
+  // that querystring until 2026-08-29, so every push tap since the feature
+  // shipped landed on Today regardless of the href -- the deep link was a
+  // string, not a behavior. Must run before the first render: once autoGithub()
+  // starts, state.view is only changed by user navigation.
+  function applyLaunchIntent() {
+    let params;
+    try {
+      params = new URLSearchParams(location.search);
+    } catch {
+      return;
+    }
+    const view = params.get("view");
+    if (view && LAUNCH_VIEWS.has(view))
+      state.view = view === "today" ? "overview" : view;
+    if (params.get("focus") === "gates") state.pendingScrollTo = "gate-approvals";
+  }
   function go(v) {
     if (!v) return;
     closeModal();
@@ -30843,6 +30916,7 @@ window.__WBReactRender = function () {
     document.documentElement.dataset.theme =
       localStorage.getItem("wb-theme") || "light";
     bindShell();
+    applyLaunchIntent();
     const Auth = window.WBSupabaseAuth;
     // Returning from GitHub: swallow the fragment before anything renders.
     const justSignedIn = Auth ? await Auth.consumeRedirect() : false;
