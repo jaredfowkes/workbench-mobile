@@ -16157,7 +16157,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-29.20";
+  const WB_VERSION = "2026-08-29.32";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16304,6 +16304,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     root: null,
     backend: "github",
     connected: false,
+    refreshing: false,
+    scanSnapshotAt: null,
+    launchedForGates: false,
     view: "overview",
     pendingScrollTo: null,
     focusMode: "now",
@@ -18553,12 +18556,14 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     );
     await Promise.allSettled(state.projects.map(enrichProject));
     state.connected = true;
+    state.refreshing = false;
     clearAutoconnectShell();
     updateShellForBackend();
     $("#landing").classList.add("hidden");
     $("#app").classList.remove("hidden");
     render();
     saveBootSnapshot();
+    saveScanSnapshot().catch(() => {});
     hydrate();
   }
   async function enrichProject(p) {
@@ -20287,6 +20292,56 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // known state instantly (with a "refreshing" chip) or a skeleton on a cold
   // start, plus a progress line as projects stream in.
   const BOOT_SNAP_KEY = "wb-boot-snapshot";
+  // Full-fidelity scan snapshot (IndexedDB, not localStorage -- Safari's 5 MB
+  // origin quota is the reason the old GH_TREE_KEY tree cache was discarded,
+  // see the comment at ghGetTree above; this payload is a similar 0.5-1.5 MB).
+  // Project data only -- never gate/Workbench Live data, which must always
+  // come from the network (a stale gate list could let Jared approve a
+  // decision already made).
+  const SCAN_SNAPSHOT_KEY = "wb-scan-snapshot";
+  async function saveScanSnapshot() {
+    if (state.backend !== "github") return;
+    const cfg = ghConfig();
+    if (!cfg?.owner || !cfg?.repo || !cfg?.branch) return;
+    await idb.set(SCAN_SNAPSHOT_KEY, {
+      v: 1,
+      at: Date.now(),
+      owner: cfg.owner,
+      repo: cfg.repo,
+      branch: cfg.branch,
+      projects: state.projects,
+    });
+  }
+  // Instant paint on a warm boot: restore the last scan's projects from
+  // IndexedDB and render before the network round-trip even starts. Guarded
+  // end to end so any failure here (missing snapshot, mismatched repo,
+  // IndexedDB unavailable) falls straight through to the ordinary cold-boot
+  // path in autoGithub().
+  async function restoreScanSnapshot(cfg) {
+    try {
+      const snap = await idb.get(SCAN_SNAPSHOT_KEY);
+      if (
+        !snap ||
+        snap.v !== 1 ||
+        snap.owner !== cfg?.owner ||
+        snap.repo !== cfg?.repo ||
+        snap.branch !== cfg?.branch ||
+        !Array.isArray(snap.projects) ||
+        !snap.projects.length
+      )
+        return;
+      state.projects = snap.projects;
+      state.backend = "github";
+      state.connected = true;
+      state.refreshing = true;
+      state.scanSnapshotAt = snap.at;
+      clearAutoconnectShell();
+      updateShellForBackend();
+      $("#landing")?.classList.add("hidden");
+      $("#app")?.classList.remove("hidden");
+      render();
+    } catch {}
+  }
   function saveBootSnapshot() {
     if (state.backend !== "github") return;
     try {
@@ -21444,7 +21499,10 @@ function TopStatusStrip({
       width: '100%',
       flex: '1 1 auto'
     }
-  }, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement("button", {
+  }, state.refreshing ? /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral",
+    title: "Showing the last scan while the latest data loads."
+  }, mobile ? '⟳' : 'Refreshing' + (state.scanSnapshotAt ? ' · as of ' + shortAge(state.scanSnapshotAt) : '')) : null, usageChip('anthropic', 'Anthropic', state.usage, 'var(--anthropic-focus)'), usageChip('cursor', 'Cursor', state.cursorUsage, 'var(--text-strong)'), /*#__PURE__*/React.createElement("button", {
     type: "button",
     title: fullMessage,
     onClick: () => primary ? setView('machines') : null,
@@ -29921,7 +29979,10 @@ window.__WBReactRender = function () {
     const view = params.get("view");
     if (view && LAUNCH_VIEWS.has(view))
       state.view = view === "today" ? "overview" : view;
-    if (params.get("focus") === "gates") state.pendingScrollTo = "gate-approvals";
+    if (params.get("focus") === "gates") {
+      state.pendingScrollTo = "gate-approvals";
+      state.launchedForGates = true;
+    }
   }
   function go(v) {
     if (!v) return;
@@ -30553,6 +30614,7 @@ window.__WBReactRender = function () {
       localStorage.removeItem(GH_TREE_KEY);
       localStorage.removeItem(BOOT_SNAP_KEY);
     } catch {}
+    idb.del(SCAN_SNAPSHOT_KEY);
     toast("Cleared cached data — reloading…");
     setTimeout(doReload, 200);
   }
@@ -30577,16 +30639,25 @@ window.__WBReactRender = function () {
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
-    showBoot("Fetching repository tree…");
+    // A warm boot already painted real project data from the snapshot (see
+    // restoreScanSnapshot). Re-showing the boot overlay here would hide that
+    // content behind a spinner again, defeating the whole point -- so this
+    // refresh runs silently and only speaks up on failure (below).
+    const warmStart = state.connected && state.refreshing;
+    if (!warmStart) showBoot("Fetching repository tree…");
     try {
       await ghGetTree(!!opts.forceTree);
-      updateBootProgress("Loading projects…");
+      if (!warmStart) updateBootProgress("Loading projects…");
       await scan();
     } catch (e) {
       if (!state.connected) {
         showLanding(
           e?.message || "GitHub connect failed. Reconnect below.",
         );
+      } else if (state.refreshing) {
+        state.refreshing = false;
+        toast(e?.message || "Refresh failed; showing cached data.", "danger");
+        render();
       }
       throw e;
     }
@@ -30612,7 +30683,8 @@ window.__WBReactRender = function () {
     if (rec) rec.textContent = gh ? "Reconnect GitHub" : "Reconnect";
   }
   async function autoGithub(cfg, attempt = 1) {
-    showBoot();
+    const warmStart = state.connected && state.refreshing;
+    if (!warmStart) showBoot();
     try {
       await connectGithub(cfg, {
         forceTree:
@@ -30620,6 +30692,13 @@ window.__WBReactRender = function () {
       });
       sessionStorage.removeItem("wb-force-tree");
     } catch (e) {
+      if (state.connected) {
+        // Already showing real data (a warm snapshot, or a scan that
+        // completed before this failed). connectGithub already surfaced the
+        // failure via toast; don't clobber a working view with cold-boot
+        // retry/landing/failure screens.
+        return;
+      }
       if (e.status === 401 || e.status === 403) {
         ghDisconnect();
         clearAutoconnectShell();
@@ -30929,8 +31008,22 @@ window.__WBReactRender = function () {
       cfg = { owner: "jaredfowkes", repo: "workbench", branch: "main" };
       ghSaveConfig(cfg);
     }
-    if (cfg && (Auth?.signedIn?.() || ghToken())) autoGithub(cfg);
-    else showLanding(Auth?.lastAuthError?.() || (justSignedIn ? "Sign-in did not complete. Try again." : undefined));
+    if (cfg && (Auth?.signedIn?.() || ghToken())) {
+      // Paint from the last scan before touching the network at all.
+      await restoreScanSnapshot(cfg);
+      // A push tap for a gate approval must not wait on the GitHub scan:
+      // fetch live status independently and render as soon as it lands,
+      // whether or not a snapshot (or the scan below) has landed yet.
+      if (state.launchedForGates) {
+        loadWorkbenchLiveStatus()
+          .then(() => {
+            if (!state.connected) state.connected = true;
+            render();
+          })
+          .catch(() => {});
+      }
+      autoGithub(cfg);
+    } else showLanding(Auth?.lastAuthError?.() || (justSignedIn ? "Sign-in did not complete. Try again." : undefined));
   })();
 })();
 
