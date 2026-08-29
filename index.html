@@ -16157,7 +16157,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-08-29.20";
+  const WB_VERSION = "2026-08-29.21";
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -29145,6 +29145,17 @@ window.__WBReactRender = function () {
     return Promise.resolve(ok ? "" : null);
   }
   async function requestGateDecision(gate, decision) {
+    // gate_decision MUST reach the machine over the authenticated Supabase
+    // path, never the git-visible request file the outbox falls back to when
+    // Workbench Live is not configured (Tools/workbench-live/actions.py's
+    // GIT_REQUESTABLE_KINDS deliberately excludes it and would silently drop
+    // a file written that way). Refuse loudly here rather than letting the
+    // tap look like it worked while the machine never sees it -- a broken
+    // channel must read as broken, not as an accidental no-op approval.
+    if (!LiveApi?.enabled?.()) {
+      toast("Workbench Live is not configured on this device -- gate decisions need the authenticated channel, not the Git fallback. Set it up under About.", "warn");
+      return null;
+    }
     const outcome = await confirmGateDecision(gate, decision);
     if (outcome == null) return null;
     const reason = decision === "rejected" ? String(outcome || "").trim() : "";
