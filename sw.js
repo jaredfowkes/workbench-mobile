@@ -15,7 +15,7 @@
 
    Escape hatch: load any page with ?nosw=1 to unregister and drop all caches.
 */
-const VERSION = '2026-08-29.27';
+const VERSION = '2026-08-29.30';
 const CACHE = 'workbench-shell-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
@@ -98,13 +98,28 @@ self.addEventListener('fetch', (event) => {
 // deliberately generic. This still fires well under one a day against a
 // measured tolerance of three to five -- a channel that cries wolf gets
 // muted, and half the users who mute a feature's notifications abandon it.
+// A gate push cannot be made Time Sensitive from here, and no amount of code
+// in this file will change that. Checked 2026-08-29 against the Notifications
+// spec, the WebKit Declarative Web Push explainer, and Apple's own web push
+// docs: `interruptionLevel` exists only in native UserNotifications, the
+// declarative payload has no equivalent field, and the RFC 8030 `Urgency`
+// header webpush.py already sends governs APNs delivery priority, never Focus
+// passthrough. Time Sensitive on Apple platforms additionally requires an
+// entitlement issued only to native App IDs.
+//
+// So a Focus mode CAN hold an approval gate back overnight, which is exactly
+// when a blocked run needs it. The only lever is on the device:
+//   Settings > Focus > Sleep > Apps > Allow Notifications From > add Workbench.
+// That is all-or-nothing per app -- there is no per-notification override to
+// build against. Do not re-solve this in code; confirm the setting instead.
 self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification('Workbench needs you', {
       body: 'Something is waiting on you -- open the dashboard to see what.',
-      // A stable tag means a second alert REPLACES the first rather than
-      // stacking. Three banners for one ongoing fault is how a channel earns
-      // a mute.
+      // One stable tag, so an ongoing fault re-alerting does not stack three
+      // banners -- that is how a channel earns a mute. It also means a gate
+      // push and a health push are indistinguishable here, which is fine:
+      // both resolve to the same Machines screen.
       tag: 'workbench-health',
       renotify: false,
       requireInteraction: false,
@@ -112,9 +127,17 @@ self.addEventListener('push', (event) => {
   );
 });
 
+// `?view=` is read by app.js's applyLaunchIntent() before the first render.
+// It was not read by anything until 2026-08-29, so every tap landed on Today
+// no matter what this href said. `focus=gates` additionally scrolls the Gate
+// approvals card into view once machine status has loaded.
+//
+// Machines is the right target for both senders: a health fault and an
+// approval gate are both reported there, and the push cannot tell us which
+// one it was.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = new URL('./?view=machines', self.location.origin + self.location.pathname).href;
+  const target = new URL('./?view=machines&focus=gates', self.location.origin + self.location.pathname).href;
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
