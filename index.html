@@ -1673,6 +1673,17 @@ button.tag:hover {
 .status-dot.idea {
   border-style: dashed;
 }
+/* Quiet presence marker for a project's intent.md -- not a status, so it
+   stays on the muted text color rather than any status hue. */
+.intent-marker {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: var(--text-secondary);
+  opacity: 0.6;
+}
 /* Pure-CSS donut: track --subtle, fill --brand via --p */
 .donut {
   width: 16px;
@@ -16157,7 +16168,12 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-01.22";
+  const WB_VERSION = "2026-09-01.24";
+  // Build-time list of project base paths ("Personal/Projects/Foo") that carry
+  // an intent.md, computed by build-dashboard.py walking the project folders
+  // directly -- see intent_project_bases() there. Not part of the GitHub tree
+  // index, so it is baked in at build time rather than looked up per project.
+  const WB_INTENT_PROJECTS = new Set(JSON.parse('[]'));
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -18078,6 +18094,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
             logo:
               LOGO_NAMES.map((n) => `${base}/${n}`).find((x) => set.has(x)) ||
               null,
+            hasIntent: WB_INTENT_PROJECTS.has(base),
             _shotPaths: tree
               .filter(
                 (t) =>
@@ -21886,7 +21903,13 @@ function ProjectsView() {
       interactive: true,
       onClick: () => openProject(p),
       eyebrow: p.section,
-      title: projectTitle(p)
+      title: /*#__PURE__*/React.createElement("span", null, projectTitle(p), p.hasIntent && /*#__PURE__*/React.createElement("span", {
+        className: "intent-marker",
+        title: "intent.md present",
+        style: {
+          marginLeft: 6
+        }
+      }))
     }, /*#__PURE__*/React.createElement(Stack, {
       gap: 3
     }, /*#__PURE__*/React.createElement("p", {
