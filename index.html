@@ -3674,6 +3674,213 @@ button.metric-card:hover {
   padding-top: 0;
 }
 
+/* ============ Session control: transcript, composer, AskUserQuestion ============
+   Agency 20260903-d7c4 -- the session dialog's transcript pane and reply
+   composer (react-dashboard.jsx's SessionDialog/AskUserQuestionComposer/
+   StartSessionDialog), reusing the existing muted palette tokens rather
+   than introducing new colors. */
+.wb-transcript-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 2px 2px 4px;
+}
+.wb-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 88%;
+}
+.wb-turn--user {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+.wb-turn--assistant {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+.wb-turn-role {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow, 0.04em);
+  color: var(--text-muted);
+}
+.wb-turn-time {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-muted);
+}
+.wb-turn-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+.wb-turn-text {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--surface-sunken, var(--muted-surface));
+  color: var(--text-body, var(--text));
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.wb-turn--user .wb-turn-text {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface-card, var(--raised)));
+}
+.wb-block-collapse {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card, var(--raised));
+  font-size: 12.5px;
+}
+.wb-block-collapse summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 6px 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.wb-block-collapse summary::-webkit-details-marker {
+  display: none;
+}
+.wb-block-collapse[open] summary {
+  border-bottom: 1px solid var(--border-subtle);
+}
+.wb-block-raw {
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 220px;
+  overflow: auto;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-secondary, var(--text-2));
+}
+
+.wb-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.wb-composer-textarea {
+  flex: 1 1 auto;
+  min-height: 40px;
+  max-height: 140px;
+  resize: vertical;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card, var(--raised));
+  color: var(--text-strong, var(--text));
+  font: inherit;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+.wb-composer-textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring, 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent));
+}
+.wb-composer-textarea:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.wb-composer-notice {
+  font-size: 12px;
+  color: var(--warning, var(--text-muted));
+}
+
+.wb-askq {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wb-askq-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wb-askq-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-eyebrow, 0.04em);
+  color: var(--text-muted);
+}
+.wb-askq-question {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-strong, var(--text));
+}
+.wb-askq-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wb-option-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-pill, 999px);
+  background: var(--surface-card, var(--raised));
+  color: var(--text-strong, var(--text));
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--motion-fast, 120ms), border-color var(--motion-fast, 120ms), color var(--motion-fast, 120ms);
+}
+.wb-option-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.wb-option-btn.is-selected {
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-card, var(--raised)));
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.wb-option-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.wb-option-btn--other {
+  font-weight: 500;
+  color: var(--text-muted);
+  border-style: dashed;
+}
+.wb-option-desc {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: normal;
+  text-align: left;
+}
+
+@media (max-width: 900px) {
+  .wb-transcript-pane {
+    max-height: 40vh;
+  }
+  .wb-turn {
+    max-width: 96%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -15422,6 +15629,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   const CONFIG_KEY = "wb-live-config";
   const TOKEN_KEY = "wb-live-dashboard-token";
   const STALE_MS = 5 * 60 * 1000;
+  // A daemon that hasn't posted in this long reads as not live -- the
+  // composer/start-session UI refuses to send rather than queue an action
+  // nothing will ever claim. Matches the 15-minute figure in the
+  // 2026-09-03 web-session-control plan.
+  const DAEMON_STALE_MS = 15 * 60 * 1000;
 
   function getConfig() {
     try {
@@ -15648,10 +15860,50 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return request("/v1/health");
   }
 
+  // Incremental transcript read for the session dialog: GET
+  // /v1/events?session_uid=&kind=ax_transcript_event&since_observed_at=.
+  // `sinceObservedAt` is optional/falsy for the first load (full recent
+  // window); session-transcript.js's createSessionPoller supplies it on
+  // every subsequent tick from its own cursor. Raw rows are returned
+  // as-is -- session-transcript.js (dashboard-side, not this file) owns
+  // turning them into ordered turns.
+  async function fetchTranscript(sessionUid, sinceObservedAt) {
+    const params = new URLSearchParams();
+    params.set("session_uid", String(sessionUid || ""));
+    params.set("kind", "ax_transcript_event");
+    if (sinceObservedAt) params.set("since_observed_at", String(sinceObservedAt));
+    const out = await request(`/v1/events?${params.toString()}`);
+    return {
+      events: out.events || [],
+      loadedAt: Date.now(),
+    };
+  }
+
+  // `daemonLastSeenAt` is precomputed server-side (handleMachinesList in the
+  // relay) straight from the `daemon_seen_at` column -- an ISO timestamp or
+  // null when no Session-Bridge daemon has ever reported for that machine.
+  function daemonLastSeenAtMs(machine) {
+    const raw = machine && machine.daemonLastSeenAt;
+    if (!raw) return null;
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : null;
+  }
+
+  // Whether that machine's daemon has reported within DAEMON_STALE_MS. A
+  // machine with no daemon liveness at all (never reported, or this row
+  // came from a source other than the live machines list) reads as not
+  // live -- the composer disables rather than guessing.
+  function isDaemonLive(machine, nowMs) {
+    const now = Number.isFinite(nowMs) ? nowMs : Date.now();
+    const seenAt = daemonLastSeenAtMs(machine);
+    return seenAt != null && now - seenAt <= DAEMON_STALE_MS;
+  }
+
   return {
     CONFIG_KEY,
     TOKEN_KEY,
     STALE_MS,
+    DAEMON_STALE_MS,
     getConfig,
     getToken,
     saveConfig,
@@ -15666,8 +15918,462 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     mapActionRow,
     fetchActions,
     createAction,
+    fetchTranscript,
+    daemonLastSeenAtMs,
+    isDaemonLive,
     ping,
   };
+});
+
+
+// Pure mapping from relay `ax_transcript_event` rows into ordered turns for
+// the dashboard's session dialog, plus a visibility/open-gated poll
+// scheduler. No DOM/fetch dependency here -- `workbench-live-api.js` owns
+// the network call (fetchTranscript); this module only shapes what comes
+// back and decides when to ask for more. See
+// Personal/Projects/Workbench-Dashboard/files/web-session-control-plan-2026-09-03.md.
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.SessionTranscript = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Block types that read as machinery rather than something Jared or the
+  // assistant said -- collapsed by default in the transcript pane. An
+  // AskUserQuestion tool_use is deliberately excluded even though its type
+  // is "tool_use": it's the one piece of tool plumbing that IS the content
+  // (see collapsedByDefault below).
+  const COLLAPSIBLE_TYPES = new Set(["tool_use", "tool_result", "thinking"]);
+
+  function isAskUserQuestionBlock(type, name) {
+    return type === "tool_use" && name === "AskUserQuestion";
+  }
+
+  // Normalizes one raw block from a rich `{role, blocks}` payload -- mirrors
+  // Session-Bridge's own TranscriptBlock.swift parsing so the dashboard and
+  // the iOS app read the same wire shape the same way. Returns null for
+  // anything without a `type` (defensive against a malformed block).
+  function normalizeBlock(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const type = typeof raw.type === "string" ? raw.type : null;
+    if (!type) return null;
+    const name = typeof raw.name === "string" ? raw.name : null;
+    return {
+      type,
+      text: typeof raw.text === "string" ? raw.text : null,
+      name,
+      input: raw.input && typeof raw.input === "object" ? raw.input : null,
+      isError: Boolean(raw.is_error),
+      id: typeof raw.id === "string" ? raw.id : null,
+      toolUseId: typeof raw.tool_use_id === "string" ? raw.tool_use_id : null,
+      collapsedByDefault: COLLAPSIBLE_TYPES.has(type) && !isAskUserQuestionBlock(type, name),
+    };
+  }
+
+  // Parses one event row's `payload` into `{role, blocks}`. Pre-existing
+  // rows can still carry the old flat shape (`{"text": "..."}`, no
+  // `role`/`blocks` at all) -- synthesized as a single plain text block, not
+  // collapsed. A missing role defaults to "assistant": every legacy
+  // flat-shape row is a scrape of the assistant's own pane, never Jared's
+  // (same convention TranscriptView.swift's dedupRole uses).
+  function parsePayload(payload) {
+    const p = payload && typeof payload === "object" ? payload : {};
+    const role = typeof p.role === "string" && p.role ? p.role : "assistant";
+    if (Array.isArray(p.blocks)) {
+      return { role, blocks: p.blocks.map(normalizeBlock).filter(Boolean) };
+    }
+    const legacyText = typeof p.text === "string" ? p.text : null;
+    const blocks = legacyText
+      ? [{ type: "text", text: legacyText, name: null, input: null, isError: false, id: null, toolUseId: null, collapsedByDefault: false }]
+      : [];
+    return { role, blocks };
+  }
+
+  function observedAtMs(row) {
+    const ms = row && row.observed_at ? Date.parse(row.observed_at) : NaN;
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  // Ordering key: observed_at first (the relay's own sort), then
+  // source_seq, then event_id as a last, fully deterministic tie-break --
+  // two events can share the same observed_at millisecond (confirmed live,
+  // see handleEventsList's since_observed_at comment in the relay).
+  function compareRows(a, b) {
+    const oa = observedAtMs(a);
+    const ob = observedAtMs(b);
+    if (oa !== ob) return oa - ob;
+    const sa = Number(a && a.source_seq) || 0;
+    const sb = Number(b && b.source_seq) || 0;
+    if (sa !== sb) return sa - sb;
+    const ea = String((a && a.event_id) || "");
+    const eb = String((b && b.event_id) || "");
+    return ea < eb ? -1 : ea > eb ? 1 : 0;
+  }
+
+  // Dedupes raw rows by event_id and returns them sorted oldest-first. This
+  // is what absorbs the `since_observed_at` overlap: the relay's query is
+  // `.gte`, so a poll re-fetches whatever shares the boundary timestamp with
+  // the client's last-seen row, and this collapses the repeat back down to
+  // one copy per event_id.
+  function dedupeAndSortRows(rows) {
+    const byId = new Map();
+    for (const row of rows || []) {
+      if (!row || typeof row !== "object") continue;
+      const id = row.event_id != null ? String(row.event_id) : null;
+      if (!id) continue;
+      byId.set(id, row);
+    }
+    return Array.from(byId.values()).sort(compareRows);
+  }
+
+  // Merges a fresh page of rows into an already-deduped/sorted cache -- the
+  // shape a poll loop carries across ticks (see createSessionPoller below).
+  function mergeTranscriptRows(existingRows, newRows) {
+    return dedupeAndSortRows([...(existingRows || []), ...(newRows || [])]);
+  }
+
+  // The ISO observed_at to pass as the NEXT poll's since_observed_at: the
+  // newest row's own timestamp. The relay's `.gte` will hand it back again
+  // next time; dedupeAndSortRows absorbs the repeat.
+  function nextSinceObservedAt(rows) {
+    if (!rows || !rows.length) return null;
+    let newest = null;
+    let newestMs = -Infinity;
+    for (const row of rows) {
+      const ms = observedAtMs(row);
+      if (ms >= newestMs) {
+        newestMs = ms;
+        newest = row.observed_at;
+      }
+    }
+    return newest || null;
+  }
+
+  // Maps raw rows (any order, possibly with duplicate event_ids) into
+  // ordered turns for rendering: one turn per event_id, oldest first, each
+  // with a normalized role and blocks. Non-transcript kinds (if a caller's
+  // query wasn't already scoped to ax_transcript_event) are dropped.
+  function mapTranscriptEvents(rows) {
+    return dedupeAndSortRows(rows)
+      .filter((row) => !row.kind || row.kind === "ax_transcript_event")
+      .map((row) => {
+        // The real relay row always carries the `{role, blocks}` (or legacy
+        // `{text}`) shape under `payload` (events.payload is the jsonb
+        // column -- see handleEventsList in the relay). A row with no
+        // `payload` object at all but `role`/`text` at its own top level is
+        // a flatter test-fixture shape (see
+        // fixtures/smoke/session-control.transcript-events.json); fall
+        // back to reading the row itself so both feed the same mapper.
+        const payloadSource = row.payload && typeof row.payload === "object" ? row.payload : row;
+        const { role, blocks } = parsePayload(payloadSource);
+        const hasText = blocks.some((b) => b.type === "text" && b.text && b.text.trim());
+        const isToolOnly = blocks.length > 0 && blocks.every((b) => b.type === "tool_use" || b.type === "tool_result");
+        return {
+          id: String(row.event_id),
+          sessionUid: row.session_uid || null,
+          observedAt: row.observed_at || null,
+          role,
+          blocks,
+          hasText,
+          isToolOnly,
+        };
+      });
+  }
+
+  // Parses an AskUserQuestion tool_use block's `input` into the shape
+  // Claude Code's own tool takes: `{questions: [{question, header?,
+  // options: [{label, description?}], multiSelect?}]}` (matches
+  // AskUserQuestionPrompt.swift). Returns null for anything that doesn't
+  // match -- defensive against a malformed or future tool input shape.
+  function parseAskUserQuestionInput(input) {
+    const questionsRaw = Array.isArray(input && input.questions) ? input.questions : null;
+    if (!questionsRaw || !questionsRaw.length) return null;
+    const questions = questionsRaw
+      .map((q) => {
+        const optionsRaw = Array.isArray(q && q.options) ? q.options : [];
+        const options = optionsRaw
+          .map((o) =>
+            o && typeof o.label === "string" && o.label
+              ? { label: o.label, description: typeof o.description === "string" ? o.description : null }
+              : null,
+          )
+          .filter(Boolean);
+        return {
+          question: typeof (q && q.question) === "string" ? q.question : "",
+          header: typeof (q && q.header) === "string" ? q.header : null,
+          options,
+          multiSelect: Boolean(q && q.multiSelect),
+        };
+      })
+      .filter((q) => q.question || q.options.length);
+    return questions.length ? { questions } : null;
+  }
+
+  // The pending AskUserQuestion at the very end of the transcript, if any.
+  // "Pending" here means it's on the LATEST turn: anything that resolved it
+  // would have to be posted after, and by definition nothing is after the
+  // latest turn yet. Returns null when the latest turn isn't an
+  // AskUserQuestion tool_use, or its input doesn't parse.
+  function latestAskUserQuestion(turns) {
+    const last = turns && turns.length ? turns[turns.length - 1] : null;
+    if (!last || !last.blocks) return null;
+    for (const block of last.blocks) {
+      if (block.type !== "tool_use" || block.name !== "AskUserQuestion") continue;
+      const prompt = parseAskUserQuestionInput(block.input);
+      if (prompt) return { turnId: last.id, toolUseId: block.id, questions: prompt.questions };
+    }
+    return null;
+  }
+
+  // Visibility/open-gated poll scheduler. `fetchSince(cursor)` is called no
+  // more often than `intervalMs` (floored at 5000ms -- the 2026-09-03 quota
+  // incident, 312% of the free tier from 2-second polling), and ONLY while
+  // both `isOpen()` and `isVisible()` read true at tick time. Either going
+  // false halts the loop outright -- the internal timer chain does not
+  // reschedule itself, so nothing keeps ticking in the background waiting
+  // to resume; the caller calls start() again (e.g. from a
+  // visibilitychange listener, or on dialog reopen).
+  //
+  // `fetchSince` may return `{sinceObservedAt}` to become the cursor for the
+  // next call; this is transcript-flavored naming but the scheduler itself
+  // is generic -- a caller can ignore the cursor argument entirely (e.g.
+  // polling an action's status) and just return `{}`.
+  function createSessionPoller(opts) {
+    const {
+      fetchSince,
+      intervalMs = 5000,
+      isVisible = () => true,
+      isOpen = () => true,
+      onResult = () => {},
+      onError = () => {},
+      setTimeoutFn = (fn, ms) => setTimeout(fn, ms),
+      clearTimeoutFn = (id) => clearTimeout(id),
+    } = opts || {};
+    if (typeof fetchSince !== "function") {
+      throw new Error("createSessionPoller requires fetchSince");
+    }
+    const FLOOR_MS = 5000;
+    const effectiveIntervalMs = Math.max(FLOOR_MS, Number(intervalMs) || FLOOR_MS);
+    let cursor = null;
+    let timerId = null;
+    let running = false;
+    let busy = false;
+
+    function clearTimer() {
+      if (timerId != null) {
+        clearTimeoutFn(timerId);
+        timerId = null;
+      }
+    }
+
+    async function tick() {
+      timerId = null;
+      if (!running) return;
+      if (!isOpen() || !isVisible()) {
+        running = false; // stop outright -- see doc comment above
+        return;
+      }
+      if (busy) return; // never overlap an in-flight poll
+      busy = true;
+      try {
+        const result = await fetchSince(cursor);
+        if (result && result.sinceObservedAt) cursor = result.sinceObservedAt;
+        onResult(result);
+      } catch (err) {
+        onError(err);
+      } finally {
+        busy = false;
+      }
+      if (running) {
+        timerId = setTimeoutFn(tick, effectiveIntervalMs);
+      }
+    }
+
+    return {
+      start() {
+        if (running) return;
+        if (!isOpen() || !isVisible()) return; // refuse to start into a closed/hidden state
+        running = true;
+        tick();
+      },
+      stop() {
+        running = false;
+        clearTimer();
+      },
+      get isRunning() {
+        return running;
+      },
+      get cursor() {
+        return cursor;
+      },
+    };
+  }
+
+  return {
+    dedupeAndSortRows,
+    mergeTranscriptRows,
+    nextSinceObservedAt,
+    mapTranscriptEvents,
+    parseAskUserQuestionInput,
+    latestAskUserQuestion,
+    createSessionPoller,
+  };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WorkbenchPendingActions = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Pure payload shaping for POST /v1/pending-actions (the Session-Bridge
+  // relay route the iOS app already writes through -- see
+  // Tools/workbench-live/supabase/functions/workbench-live/index.ts's
+  // handlePendingActionCreate). No fetch here: app.js sends the body this
+  // module builds through the same LiveApi.request() auth/base-URL path
+  // requestGateDecision uses, and owns the network call.
+
+  function resolveUuidv7() {
+    if (
+      typeof globalThis !== "undefined" &&
+      typeof globalThis.WorkbenchUuidV7?.uuidv7 === "function"
+    ) {
+      return globalThis.WorkbenchUuidV7.uuidv7;
+    }
+    if (typeof require === "function") {
+      try {
+        return require("./uuidv7.js").uuidv7;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+  // Resolved once at module load, same as capture-outbox.js -- the browser
+  // bundle always loads uuidv7.js first, and Node test runs resolve it via
+  // the sibling `require`.
+  const defaultUuidv7 = resolveUuidv7();
+
+  function mintId(options) {
+    const uuidv7 = typeof options?.uuidv7 === "function" ? options.uuidv7 : defaultUuidv7;
+    if (typeof uuidv7 !== "function") {
+      throw new Error("pending-actions requires a uuidv7 id minter (uuidv7.js not loaded).");
+    }
+    return uuidv7();
+  }
+
+  function requireString(value, label) {
+    const s = typeof value === "string" ? value.trim() : "";
+    if (!s) throw new Error(`${label} is required.`);
+    return s;
+  }
+
+  function requireNonEmptyString(value, label) {
+    if (typeof value !== "string" || !value.trim()) {
+      throw new Error(`${label} is required.`);
+    }
+    return value;
+  }
+
+  // Builds the top-level POST body every pending_action kind shares:
+  // { kind, machine_id, session_uid, client_request_id, payload,
+  //   requested_by }. `requested_by: "dashboard"` distinguishes browser
+  // writes from the iOS app's "ios_app" default in the relay's row insert.
+  function buildBody(kind, { machineId, sessionUid, payload, options }) {
+    return {
+      kind,
+      machine_id: machineId,
+      session_uid: sessionUid,
+      client_request_id: mintId(options),
+      requested_by: "dashboard",
+      payload,
+    };
+  }
+
+  // reply: { sessionUid, machineId, title, text, model?, attachments? }
+  function reply(input = {}, options) {
+    const machineId = requireString(input.machineId, "machineId");
+    const sessionUid = requireString(input.sessionUid, "sessionUid");
+    const title = requireNonEmptyString(input.title, "title");
+    const text = requireNonEmptyString(input.text, "text");
+    const payload = { title, text };
+    if (input.model !== undefined) payload.model = String(input.model);
+    if (input.attachments !== undefined) {
+      if (!Array.isArray(input.attachments)) {
+        throw new Error("attachments must be an array.");
+      }
+      payload.attachments = input.attachments;
+    }
+    return buildBody("reply", { machineId, sessionUid, payload, options });
+  }
+
+  const ANSWER_KEYS = ["option_label", "option_labels", "other_text"];
+
+  // answerQuestion: { sessionUid, machineId, title, answer } where `answer`
+  // is exactly one of { option_label } | { option_labels: [...] } |
+  // { other_text } -- anything else (none present, more than one present,
+  // or a wrong-shaped value) throws rather than sending an ambiguous
+  // answer the daemon might misapply to the wrong AskUserQuestion option.
+  function answerQuestion(input = {}, options) {
+    const machineId = requireString(input.machineId, "machineId");
+    const sessionUid = requireString(input.sessionUid, "sessionUid");
+    const title = requireNonEmptyString(input.title, "title");
+    const answer = input.answer;
+    if (!answer || typeof answer !== "object" || Array.isArray(answer)) {
+      throw new Error(
+        "answer must be an object with exactly one of option_label, option_labels, or other_text.",
+      );
+    }
+    const present = ANSWER_KEYS.filter((key) =>
+      Object.prototype.hasOwnProperty.call(answer, key),
+    );
+    if (present.length !== 1) {
+      throw new Error(
+        `answer must include exactly one of option_label, option_labels, or other_text (got ${present.length}).`,
+      );
+    }
+    const key = present[0];
+    const value = answer[key];
+    const payload = { title };
+    if (key === "option_label") {
+      payload.option_label = requireNonEmptyString(value, "answer.option_label");
+    } else if (key === "option_labels") {
+      if (
+        !Array.isArray(value) ||
+        value.length === 0 ||
+        !value.every((v) => typeof v === "string" && v.trim())
+      ) {
+        throw new Error("answer.option_labels must be a non-empty array of non-empty strings.");
+      }
+      payload.option_labels = value;
+    } else {
+      if (typeof value !== "string") {
+        throw new Error("answer.other_text must be a string.");
+      }
+      payload.other_text = value;
+    }
+    return buildBody("answer_question", { machineId, sessionUid, payload, options });
+  }
+
+  // startSession: { machineId, prompt, model, cwd? }. There is no existing
+  // session yet, so no title to re-verify -- the daemon mints the real
+  // session_uid; this synthetic "new:<uuid>" is only how the caller
+  // correlates the pending_action to whatever session shows up (same
+  // convention the iOS app uses).
+  function startSession(input = {}, options) {
+    const machineId = requireString(input.machineId, "machineId");
+    const prompt = requireNonEmptyString(input.prompt, "prompt");
+    const model = requireNonEmptyString(input.model, "model");
+    const sessionUid = `new:${mintId(options)}`;
+    const payload = { prompt, model };
+    if (input.cwd !== undefined) payload.cwd = requireNonEmptyString(input.cwd, "cwd");
+    return buildBody("start_session", { machineId, sessionUid, payload, options });
+  }
+
+  return { reply, answerQuestion, startSession, ANSWER_KEYS };
 });
 
 
@@ -16168,12 +16874,12 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-03.24";
+  const WB_VERSION = "2026-09-03.36";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
   // index, so it is baked in at build time rather than looked up per project.
-  const WB_INTENT_PROJECTS = new Set(JSON.parse('["Personal/Projects/Workbench-Dashboard"]'));
+  const WB_INTENT_PROJECTS = new Set(JSON.parse('["Work/Projects/Marketing-Platform", "Work/Projects/Scrooge", "Personal/Projects/Workbench-Dashboard", "Personal/Projects/Workbench-OS"]'));
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -16628,6 +17334,24 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   function liveDashboardToken() {
     return LiveApi?.getToken?.() || "";
   }
+  // Bearer token for authenticated Workbench Live calls made through
+  // liveApiRequest() below: prefer the signed-in dashboard identity's
+  // Supabase session JWT (session.access_token -- see supabase-auth.js's
+  // accessToken(), verified server-side against WB_LIVE_ALLOWED_LOGINS) over
+  // the static shared token, which remains the fallback for a device that
+  // has never signed in. hasSession() (not signedIn()/provider_token, which
+  // only survives the initial sign-in) is the right liveness check here --
+  // same distinction supabase-auth.js's own comment draws. Does not touch
+  // how the static token is stored or entered (still liveDashboardToken()
+  // reading LiveApi's own localStorage key via the Settings/About form).
+  function liveApiBearerToken() {
+    const Auth = window.WBSupabaseAuth;
+    if (Auth?.hasSession?.()) {
+      const jwt = Auth.accessToken?.() || "";
+      if (jwt) return jwt;
+    }
+    return liveDashboardToken();
+  }
   async function saveWorkbenchLiveSettings() {
     const url = document.getElementById("liveSupabaseUrl")?.value?.trim();
     const fn =
@@ -16714,6 +17438,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   const TranscriptAttribution = globalThis.WorkbenchTranscriptAttribution;
   if (!TranscriptAttribution) {
     throw new Error("WorkbenchTranscriptAttribution module missing. Rebuild dashboard bundle.");
+  }
+  const PendingActions = globalThis.WorkbenchPendingActions;
+  if (!PendingActions) {
+    throw new Error("WorkbenchPendingActions module missing. Rebuild dashboard bundle.");
   }
   let captureOutbox = null;
   let actionOutbox = null;
@@ -21057,10 +21785,12 @@ const {
   FilterBar,
   SegmentedControl,
   Select,
+  Input,
   Textarea,
   Field,
   FormRow,
   Fieldset,
+  Accordion,
   Card,
   KpiStat,
   Badge,
@@ -22920,6 +23650,7 @@ function CapabilityMatrixPanel() {
   }, cell.family, cell.blocked ? ' blocked' : `: ${cell.read}${cell.write ? '/' + cell.write : ''}`)))))));
 }
 function MachinesView() {
+  const [startTarget, setStartTarget] = React.useState(null);
   const health = dataHealthForMachinesView();
   const rows = health.rows || [];
   const coverage = health.coverage || {};
@@ -23144,10 +23875,22 @@ function MachinesView() {
     key: r.key,
     title: r.name,
     description: (r.state === 'active' ? r.active.length + ' active session' + (r.active.length === 1 ? '' : 's') + ' · longest ' + fmtDuration(r.longest) : 'Last seen ' + shortAge(r.last) + ' · helper ' + (r.machine && r.machine.helperUp ? 'up' : 'unknown/down')) + (r.liveHelper ? ' · Live ' + (r.liveDataSource || 'Git fallback') : ''),
-    trailing: /*#__PURE__*/React.createElement(Badge, {
+    trailing: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 1,
+      style: {
+        alignItems: 'center'
+      }
+    }, /*#__PURE__*/React.createElement(Badge, {
       tone: r.state === 'active' ? 'favorable' : r.state === 'idle' ? 'warning' : 'unfavorable'
-    }, r.state)
-  })))), /*#__PURE__*/React.createElement(Card, {
+    }, r.state), /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      variant: "ghost",
+      onClick: () => setStartTarget(r)
+    }, "Start session"))
+  })))), /*#__PURE__*/React.createElement(StartSessionDialog, {
+    target: startTarget,
+    onClose: () => setStartTarget(null)
+  }), /*#__PURE__*/React.createElement(Card, {
     title: "Sync"
   }, /*#__PURE__*/React.createElement(List, null, syncItems().map(i => /*#__PURE__*/React.createElement(ListItem, {
     key: i.label,
@@ -25807,14 +26550,266 @@ function StatusDialog({
     onClick: () => choose(status)
   })))));
 }
+
+// ---- Session control seam (window.__WBSessionControl) -------------
+// The write slice (app.js) implements sendReply/answerQuestion/
+// startSession/actionStatus on window.__WBSessionControl -- this file
+// only calls it, the same way SessionDialog already calls
+// requestGateDecision for gate taps. Looked up through `window.` at
+// call time (never destructured at module scope) so a build where the
+// write slice hasn't loaded yet fails one call with a clear toast
+// instead of a ReferenceError at parse time.
+function sessionControlSeam() {
+  return typeof window !== 'undefined' ? window.__WBSessionControl : null;
+}
+
+// The live (Supabase-sourced) machine row for a machineId, carrying
+// daemonLastSeenAt -- distinct from state.machines, which is the
+// git-tracked status-file listing and never has that field. Null when
+// Workbench Live isn't configured, or that machine hasn't reported.
+function liveMachineRow(machineId) {
+  if (!machineId) return null;
+  const rows = state.workbenchLive?.machines || [];
+  return rows.find(m => m.machine_id === machineId) || null;
+}
+
+// "daemon not live on <machine>" gating, shared by the composer and
+// the start-session form: refuse loudly when Live itself isn't
+// configured (requestGateDecision's own pattern), else disable with
+// the machine-scoped reason when that machine's daemon hasn't
+// reported within the 15-minute floor.
+function composerBlockedReason(machineId, machineLabel) {
+  if (!LiveApi?.enabled?.()) return 'Workbench Live is not configured on this device.';
+  if (!LiveApi.isDaemonLive(liveMachineRow(machineId))) return `daemon not live on ${machineLabel}`;
+  return null;
+}
+function actionStatusTonePill(status) {
+  if (status === 'done') return 'favorable';
+  if (status === 'failed') return 'unfavorable';
+  if (status === 'claimed') return 'accent';
+  return 'neutral'; // queued
+}
+
+// Model choices for the reply/start-session model selects, drawn from
+// the already-loaded model benchmark catalog rather than a hardcoded
+// list -- the fleet's model roster moves (intent.md: "keep up with
+// ... new models", not calcify around a fixed set).
+function liveModelSelectOptions() {
+  const ids = new Set();
+  for (const m of state.modelBenchmarks?.models || []) {
+    if (m && typeof m.id === 'string' && m.id) ids.add(m.id);
+  }
+  return [{
+    value: '',
+    label: 'Daemon default'
+  }, ...Array.from(ids).sort().map(id => ({
+    value: id,
+    label: id
+  }))];
+}
+
+// Polls window.__WBSessionControl.actionStatus(actionId) at the same
+// 5-second floor as the transcript poller (SessionTranscript.
+// createSessionPoller is generic -- fetchSince's cursor argument is
+// simply unused here), stopping itself once the action reaches a
+// terminal state. `onStatus(status, record)` fires on every poll.
+function useActionStatusPoll(actionId, onStatus) {
+  React.useEffect(() => {
+    if (!actionId) return undefined;
+    let alive = true;
+    const poller = SessionTranscript.createSessionPoller({
+      fetchSince: async () => {
+        const seam = sessionControlSeam();
+        if (typeof seam?.actionStatus !== 'function') {
+          poller.stop();
+          return {};
+        }
+        const record = await seam.actionStatus(actionId);
+        const status = String(record?.status || 'queued');
+        if (alive) onStatus(status, record);
+        if (status === 'done' || status === 'failed') poller.stop();
+        return {};
+      },
+      isOpen: () => alive,
+      isVisible: () => typeof document === 'undefined' || document.visibilityState === 'visible',
+      onError: () => {}
+    });
+    poller.start();
+    return () => {
+      alive = false;
+      poller.stop();
+    };
+  }, [actionId]);
+}
+
+// One AskUserQuestion tool call rendered as tappable option buttons
+// (single-select taps and submits immediately; multiSelect needs a
+// Submit tap), plus an "Other" free-text path -- see
+// session-transcript.js's latestAskUserQuestion for the shape and the
+// pending/resolved rule. `onSubmit` receives exactly one of
+// {option_label}/{option_labels}/{other_text}, matching
+// window.__WBSessionControl.answerQuestion's contract.
+function AskUserQuestionComposer({
+  prompt,
+  disabled,
+  onSubmit
+}) {
+  const [selectedByQ, setSelectedByQ] = React.useState({});
+  const [otherMode, setOtherMode] = React.useState(false);
+  const [otherText, setOtherText] = React.useState('');
+  React.useEffect(() => {
+    setSelectedByQ({});
+    setOtherMode(false);
+    setOtherText('');
+  }, [prompt.turnId]);
+  const toggle = (qi, label) => {
+    setSelectedByQ(prev => {
+      const set = new Set(prev[qi] || []);
+      if (set.has(label)) set.delete(label);else set.add(label);
+      return {
+        ...prev,
+        [qi]: set
+      };
+    });
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "wb-askq"
+  }, prompt.questions.map((q, qi) => /*#__PURE__*/React.createElement("div", {
+    className: "wb-askq-block",
+    key: qi
+  }, q.header ? /*#__PURE__*/React.createElement("div", {
+    className: "wb-askq-eyebrow"
+  }, q.header) : null, /*#__PURE__*/React.createElement("div", {
+    className: "wb-askq-question"
+  }, q.question), /*#__PURE__*/React.createElement("div", {
+    className: "wb-askq-options"
+  }, q.options.map(opt => {
+    const active = Boolean((selectedByQ[qi] || new Set()).has(opt.label));
+    return /*#__PURE__*/React.createElement("button", {
+      key: opt.label,
+      type: "button",
+      className: `wb-option-btn${active ? ' is-selected' : ''}`,
+      disabled: disabled,
+      onClick: () => q.multiSelect ? toggle(qi, opt.label) : onSubmit({
+        option_label: opt.label
+      })
+    }, /*#__PURE__*/React.createElement("span", null, opt.label), opt.description ? /*#__PURE__*/React.createElement("span", {
+      className: "wb-option-desc"
+    }, opt.description) : null);
+  })), q.multiSelect ? /*#__PURE__*/React.createElement(Button, {
+    size: "sm",
+    variant: "secondary",
+    disabled: disabled || !(selectedByQ[qi] && selectedByQ[qi].size),
+    onClick: () => onSubmit({
+      option_labels: Array.from(selectedByQ[qi] || [])
+    })
+  }, "Submit selection") : null)), otherMode ? /*#__PURE__*/React.createElement("div", {
+    className: "wb-composer"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    className: "wb-composer-textarea",
+    value: otherText,
+    onChange: e => setOtherText(e.target.value),
+    placeholder: "Type your own answer…",
+    disabled: disabled,
+    rows: 2
+  }), /*#__PURE__*/React.createElement(Button, {
+    size: "sm",
+    disabled: disabled || !otherText.trim(),
+    onClick: () => onSubmit({
+      other_text: otherText.trim()
+    })
+  }, "Send")) : /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "wb-option-btn wb-option-btn--other",
+    disabled: disabled,
+    onClick: () => setOtherMode(true)
+  }, "Other…"));
+}
+
+// One transcript turn: role-aligned, tool_use/tool_result/thinking
+// blocks collapsed behind a <details> (session-transcript.js already
+// decided collapsedByDefault per block -- an AskUserQuestion tool_use
+// is deliberately left expanded there).
+function TranscriptTurnRow({
+  turn
+}) {
+  const isUser = turn.role === 'user';
+  return /*#__PURE__*/React.createElement("div", {
+    className: `wb-turn wb-turn--${isUser ? 'user' : 'assistant'}`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "wb-turn-role"
+  }, isUser ? 'You' : 'Assistant', turn.observedAt ? /*#__PURE__*/React.createElement("span", {
+    className: "wb-turn-time"
+  }, shortAge(Date.parse(turn.observedAt))) : null), /*#__PURE__*/React.createElement("div", {
+    className: "wb-turn-blocks"
+  }, turn.blocks.length === 0 ? /*#__PURE__*/React.createElement("span", {
+    className: "muted"
+  }, "(no content)") : turn.blocks.map((block, i) => block.collapsedByDefault ? /*#__PURE__*/React.createElement("details", {
+    key: i,
+    className: "wb-block-collapse"
+  }, /*#__PURE__*/React.createElement("summary", null, block.type === 'tool_use' ? `Tool: ${block.name || 'unknown'}` : block.type === 'tool_result' ? `Tool result${block.isError ? ' (error)' : ''}` : 'Thinking'), /*#__PURE__*/React.createElement("pre", {
+    className: "wb-block-raw"
+  }, block.text || (block.input ? JSON.stringify(block.input, null, 2) : ''))) : block.text ? /*#__PURE__*/React.createElement("p", {
+    key: i,
+    className: "wb-turn-text"
+  }, block.text) : null)));
+}
 function SessionDialog({
   session,
   onClose
 }) {
+  const sessionUid = session ? session.session_uid || session.sessionFull || session.session : null;
+  const machineId = session ? sessionMachine(session) : null;
+  const mobile = useViewport();
+  const [turns, setTurns] = React.useState([]);
+  const [composerText, setComposerText] = React.useState('');
+  const [sending, setSending] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState(null);
+  const rawRowsRef = React.useRef([]);
+
+  // Transcript load + visibility/open-gated polling, 5-second floor.
+  // Re-runs whenever the open session changes (including closing,
+  // sessionUid -> null, which tears the poller down via the cleanup).
+  React.useEffect(() => {
+    rawRowsRef.current = [];
+    setTurns([]);
+    setComposerText('');
+    setPendingAction(null);
+    if (!sessionUid || !LiveApi?.enabled?.()) return undefined;
+    let alive = true;
+    const poller = SessionTranscript.createSessionPoller({
+      fetchSince: async since => {
+        const out = await LiveApi.fetchTranscript(sessionUid, since || '');
+        rawRowsRef.current = SessionTranscript.mergeTranscriptRows(rawRowsRef.current, out.events);
+        if (alive) setTurns(SessionTranscript.mapTranscriptEvents(rawRowsRef.current));
+        return {
+          sinceObservedAt: SessionTranscript.nextSinceObservedAt(rawRowsRef.current)
+        };
+      },
+      isOpen: () => alive,
+      isVisible: () => typeof document === 'undefined' || document.visibilityState === 'visible',
+      onError: err => toast(String(err?.message || err), 'warn')
+    });
+    poller.start();
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') poller.start();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      alive = false;
+      poller.stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [sessionUid]);
+  useActionStatusPoll(pendingAction?.actionId, (status, record) => {
+    setPendingAction(prev => prev ? {
+      ...prev,
+      status,
+      error: record?.error_code || null
+    } : prev);
+  });
   if (!session) return null;
   const machine = machineName(session.machine || session.host || session.hostname || session.machineId || 'Unknown');
-  const machineId = sessionMachine(session);
-  const sessionUid = session.session_uid || session.sessionFull || session.session;
   const files = sessionFiles(session);
   const started = fmtFullStamp(session.started);
   const ended = session.ended ? fmtFullStamp(session.ended) : 'still running';
@@ -25835,35 +26830,69 @@ function SessionDialog({
       toast(String(err?.message || err));
     }
   };
-  return /*#__PURE__*/React.createElement(Dialog, {
-    open: !!session,
-    onClose: onClose,
-    eyebrow: "Session detail",
-    title: sessionHeadline(session),
-    width: 760,
-    footer: /*#__PURE__*/React.createElement(Cluster, {
-      gap: 2,
-      style: {
-        flexWrap: 'wrap'
-      }
-    }, /*#__PURE__*/React.createElement(Button, {
-      variant: "secondary",
-      size: "sm",
-      onClick: () => runAction('request_handoff')
-    }, "Handoff"), /*#__PURE__*/React.createElement(Button, {
-      variant: "secondary",
-      size: "sm",
-      onClick: () => runAction('request_wrap_draft')
-    }, "Wrap draft"), /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => runAction('refresh_status')
-    }, "Refresh"), /*#__PURE__*/React.createElement(Button, {
-      variant: "ghost",
-      size: "sm",
-      onClick: () => runAction('dismiss')
-    }, "Dismiss"))
-  }, /*#__PURE__*/React.createElement(Stack, {
+  const askQuestion = SessionTranscript.latestAskUserQuestion(turns);
+  const blockedReason = composerBlockedReason(machineId, machine);
+  const composerDisabled = sending || !!blockedReason;
+  const submitAnswer = async answer => {
+    if (!LiveApi?.enabled?.()) {
+      toast('Workbench Live is not configured on this device -- answering needs the authenticated channel. Set it up under About.', 'warn');
+      return;
+    }
+    const seam = sessionControlSeam();
+    if (typeof seam?.answerQuestion !== 'function') {
+      toast('Session control is not available on this build.', 'warn');
+      return;
+    }
+    setSending(true);
+    try {
+      const record = await seam.answerQuestion({
+        sessionUid,
+        machineId,
+        title: sessionHeadline(session),
+        answer
+      });
+      if (record?.actionId) setPendingAction({
+        actionId: record.actionId,
+        status: 'queued'
+      });
+    } catch (err) {
+      toast(String(err?.message || err), 'warn');
+    } finally {
+      setSending(false);
+    }
+  };
+  const sendReply = async () => {
+    if (!LiveApi?.enabled?.()) {
+      toast('Workbench Live is not configured on this device -- sending needs the authenticated channel. Set it up under About.', 'warn');
+      return;
+    }
+    const seam = sessionControlSeam();
+    if (typeof seam?.sendReply !== 'function') {
+      toast('Session control is not available on this build.', 'warn');
+      return;
+    }
+    const text = composerText.trim();
+    if (!text) return;
+    setSending(true);
+    try {
+      const record = await seam.sendReply({
+        sessionUid,
+        machineId,
+        title: sessionHeadline(session),
+        text
+      });
+      setComposerText('');
+      if (record?.actionId) setPendingAction({
+        actionId: record.actionId,
+        status: 'queued'
+      });
+    } catch (err) {
+      toast(String(err?.message || err), 'warn');
+    } finally {
+      setSending(false);
+    }
+  };
+  const metadata = /*#__PURE__*/React.createElement(Stack, {
     gap: 4
   }, session.summary && /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Summary"
@@ -25923,7 +26952,217 @@ function SessionDialog({
     }, bucket.cost == null ? 'unpriced' : `${fmtCostMaybe(bucket.cost)} est.`), bucket.pricingVersion ? /*#__PURE__*/React.createElement(Badge, {
       tone: "neutral"
     }, bucket.pricingVersion) : null)
-  })))) : null));
+  })))) : null);
+  return /*#__PURE__*/React.createElement(Dialog, {
+    open: !!session,
+    onClose: onClose,
+    eyebrow: "Session detail",
+    title: sessionHeadline(session),
+    width: 760,
+    footer: /*#__PURE__*/React.createElement(Stack, {
+      gap: 2,
+      style: {
+        width: '100%'
+      }
+    }, pendingAction && /*#__PURE__*/React.createElement(Cluster, {
+      gap: 2,
+      style: {
+        alignItems: 'center'
+      }
+    }, /*#__PURE__*/React.createElement(Badge, {
+      tone: actionStatusTonePill(pendingAction.status)
+    }, pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
+      className: "muted",
+      style: {
+        fontSize: 12
+      }
+    }, pendingAction.error) : null), blockedReason && /*#__PURE__*/React.createElement("span", {
+      className: "wb-composer-notice"
+    }, blockedReason), askQuestion ? /*#__PURE__*/React.createElement(AskUserQuestionComposer, {
+      prompt: askQuestion,
+      disabled: composerDisabled,
+      onSubmit: submitAnswer
+    }) : /*#__PURE__*/React.createElement("div", {
+      className: "wb-composer"
+    }, /*#__PURE__*/React.createElement("textarea", {
+      className: "wb-composer-textarea",
+      value: composerText,
+      onChange: e => setComposerText(e.target.value),
+      placeholder: "Reply to this session…",
+      disabled: composerDisabled,
+      rows: 2
+    }), /*#__PURE__*/React.createElement(Button, {
+      onClick: sendReply,
+      disabled: composerDisabled || !composerText.trim()
+    }, sending ? 'Sending…' : 'Send')), /*#__PURE__*/React.createElement(Cluster, {
+      gap: 2,
+      style: {
+        flexWrap: 'wrap'
+      }
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: () => runAction('request_handoff')
+    }, "Handoff"), /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: () => runAction('request_wrap_draft')
+    }, "Wrap draft"), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => runAction('refresh_status')
+    }, "Refresh"), /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: () => runAction('dismiss')
+    }, "Dismiss")))
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Transcript",
+    title: "Latest turns"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "wb-transcript-pane"
+  }, !LiveApi?.enabled?.() ? /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Workbench Live not configured",
+    description: "Turn it on under About to read this session's transcript."
+  }) : turns.length ? turns.slice(-40).map(turn => /*#__PURE__*/React.createElement(TranscriptTurnRow, {
+    key: turn.id,
+    turn: turn
+  })) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No transcript yet",
+    description: "Turns will appear here once the session posts activity."
+  }))), /*#__PURE__*/React.createElement(Accordion, {
+    items: [{
+      title: 'Session details',
+      content: metadata
+    }],
+    defaultOpen: mobile ? -1 : 0
+  })));
+}
+
+// "Start session" entry from the Machines page: folder, model, and a
+// starting prompt, sent through the same window.__WBSessionControl
+// seam and actionStatus polling as the reply/answer composer above.
+function StartSessionDialog({
+  target,
+  onClose
+}) {
+  const machineId = target?.key || null;
+  const machineLabel = target?.name || (machineId ? machineName(machineId) : '');
+  const [cwd, setCwd] = React.useState('');
+  const [model, setModel] = React.useState('');
+  const [prompt, setPrompt] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+  const [pendingAction, setPendingAction] = React.useState(null);
+  React.useEffect(() => {
+    setCwd('');
+    setModel('');
+    setPrompt('');
+    setBusy(false);
+    setPendingAction(null);
+  }, [machineId]);
+  useActionStatusPoll(pendingAction?.actionId, (status, record) => {
+    setPendingAction(prev => prev ? {
+      ...prev,
+      status,
+      error: record?.error_code || null
+    } : prev);
+  });
+  const blockedReason = composerBlockedReason(machineId, machineLabel);
+  const start = async () => {
+    if (!LiveApi?.enabled?.()) {
+      toast('Workbench Live is not configured on this device -- starting a session needs the authenticated channel. Set it up under About.', 'warn');
+      return;
+    }
+    const seam = sessionControlSeam();
+    if (typeof seam?.startSession !== 'function') {
+      toast('Session control is not available on this build.', 'warn');
+      return;
+    }
+    const trimmedPrompt = prompt.trim();
+    if (!trimmedPrompt) {
+      toast('A starting prompt is required.', 'warn');
+      return;
+    }
+    setBusy(true);
+    try {
+      const record = await seam.startSession({
+        machineId,
+        prompt: trimmedPrompt,
+        model: model || undefined,
+        cwd: cwd.trim() || undefined
+      });
+      toast(`Starting a session on ${machineLabel}…`, 'success');
+      setPrompt('');
+      if (record?.actionId) setPendingAction({
+        actionId: record.actionId,
+        status: 'queued'
+      });
+    } catch (err) {
+      toast(String(err?.message || err), 'warn');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return /*#__PURE__*/React.createElement(Dialog, {
+    open: !!target,
+    onClose: onClose,
+    eyebrow: "New session",
+    title: machineLabel ? `Start a session on ${machineLabel}` : 'Start a session',
+    width: 520,
+    footer: /*#__PURE__*/React.createElement(Cluster, {
+      gap: 2
+    }, /*#__PURE__*/React.createElement(Button, {
+      variant: "ghost",
+      size: "sm",
+      onClick: onClose
+    }, "Close"), /*#__PURE__*/React.createElement(Button, {
+      size: "sm",
+      onClick: start,
+      disabled: busy || !!blockedReason || !prompt.trim()
+    }, busy ? 'Starting…' : 'Start session'))
+  }, /*#__PURE__*/React.createElement(Stack, {
+    gap: 3
+  }, blockedReason && /*#__PURE__*/React.createElement(Banner, {
+    variant: "warn"
+  }, /*#__PURE__*/React.createElement("span", null, blockedReason)), pendingAction && /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      alignItems: 'center'
+    }
+  }, /*#__PURE__*/React.createElement(Badge, {
+    tone: actionStatusTonePill(pendingAction.status)
+  }, pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
+    className: "muted",
+    style: {
+      fontSize: 12
+    }
+  }, pendingAction.error) : null), /*#__PURE__*/React.createElement(Input, {
+    label: "Folder",
+    value: cwd,
+    onChange: e => setCwd(e.target.value),
+    placeholder: "Optional — defaults to the daemon's own default folder",
+    disabled: busy
+  }), /*#__PURE__*/React.createElement(Select, {
+    label: "Model",
+    value: model,
+    onChange: e => setModel(e.target.value),
+    options: liveModelSelectOptions(),
+    disabled: busy
+  }), /*#__PURE__*/React.createElement(Field, {
+    label: "Prompt"
+  }, /*#__PURE__*/React.createElement("textarea", {
+    className: "wb-composer-textarea",
+    style: {
+      width: '100%'
+    },
+    value: prompt,
+    onChange: e => setPrompt(e.target.value),
+    placeholder: "What should it work on?",
+    disabled: busy || !!blockedReason,
+    rows: 4
+  }))));
 }
 function App() {
   const mobile = useViewport();
@@ -29303,6 +30542,95 @@ window.__WBReactRender = function () {
     );
     return record;
   }
+  // Session control write path: window.__WBSessionControl is the named seam
+  // the JSX session dialog calls to send a reply, answer an AskUserQuestion,
+  // start a session on a chosen machine, and read an action back -- all
+  // through POST/GET /v1/pending-actions, the same Session-Bridge relay
+  // route the iOS app already writes through. pending-actions.js shapes the
+  // body; liveApiRequest() below carries it, sending the JWT-preferring
+  // bearer from liveApiBearerToken() rather than LiveApi.request()'s own
+  // static-token-only header -- workbench-live-api.js is not this file's to
+  // change, so the auth-header swap for this route lives here instead of
+  // there. Every other LiveApi.* caller (gate decisions, actions,
+  // sessions/machines polling) is untouched and keeps the static token.
+  //
+  // Unlike requestGateDecision (toast + null), these refuse loudly by
+  // throwing: a tap that silently no-ops must not look like it worked, and
+  // the composer/dialog is expected to catch and surface the message rather
+  // than swallow it.
+  function sessionControlAvailable() {
+    return Boolean(LiveApi?.functionBaseUrl?.() && liveApiBearerToken());
+  }
+  function requireLiveApiForSessionControl() {
+    if (!sessionControlAvailable()) {
+      throw new Error(
+        "Workbench Live is not configured on this device -- session control needs the authenticated channel, not the Git fallback. Set it up under About.",
+      );
+    }
+  }
+  // Mirrors LiveApi.request()'s own body/error handling (workbench-live-api.js)
+  // but resolves the Authorization header through liveApiBearerToken() so a
+  // signed-in dashboard sends its Supabase JWT instead of the static token.
+  async function liveApiRequest(path, { method = "GET", body = null } = {}) {
+    const base = LiveApi?.functionBaseUrl?.();
+    const token = liveApiBearerToken();
+    if (!base || !token) throw new Error("Workbench Live is not configured.");
+    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+    const init = { method, headers };
+    if (body != null) {
+      headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(body);
+    }
+    const res = await fetch(`${base}${path}`, init);
+    const text = await res.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Workbench Live API returned invalid JSON.");
+      }
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `Workbench Live API failed (${res.status}).`);
+    }
+    return data;
+  }
+  function pendingActionResult(data) {
+    const action = (data && data.pending_action) || data || {};
+    const actionId = action.pending_action_id ?? action.id ?? null;
+    return { actionId, deduped: Boolean(data?.deduped) };
+  }
+  async function postPendingAction(body) {
+    const data = await liveApiRequest("/v1/pending-actions", {
+      method: "POST",
+      body,
+    });
+    return pendingActionResult(data);
+  }
+  async function sendReply(input) {
+    requireLiveApiForSessionControl();
+    return postPendingAction(PendingActions.reply(input));
+  }
+  async function answerQuestion(input) {
+    requireLiveApiForSessionControl();
+    return postPendingAction(PendingActions.answerQuestion(input));
+  }
+  async function startSession(input) {
+    requireLiveApiForSessionControl();
+    return postPendingAction(PendingActions.startSession(input));
+  }
+  // GET /v1/pending-actions/:id -- the relay slice adds this route; the
+  // dashboard's read-side poller owns calling it on a schedule, this just
+  // shapes the one-off lookup. Expected shape:
+  // { id, status, result, claimed_at, completed_at }.
+  async function actionStatus(actionId) {
+    requireLiveApiForSessionControl();
+    const id = String(actionId || "").trim();
+    if (!id) throw new Error("actionId is required.");
+    return liveApiRequest(`/v1/pending-actions/${encodeURIComponent(id)}`);
+  }
+  window.__WBSessionControl = { sendReply, answerQuestion, startSession, actionStatus };
   const LIVE_ACTION_META = {
     refresh_status: {
       label: "Refresh status",
