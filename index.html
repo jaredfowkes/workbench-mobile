@@ -15861,20 +15861,30 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   // Incremental transcript read for the session dialog: GET
-  // /v1/events?session_uid=&kind=ax_transcript_event&since_observed_at=.
-  // `sinceObservedAt` is optional/falsy for the first load (full recent
-  // window); session-transcript.js's createSessionPoller supplies it on
-  // every subsequent tick from its own cursor. Raw rows are returned
-  // as-is -- session-transcript.js (dashboard-side, not this file) owns
-  // turning them into ordered turns.
+  // /v1/events?session_uid=&kind=&since_observed_at=. Live-verified
+  // 2026-09-04: the actual rows a running session posts carry kind
+  // "transcript_message" (payload.role/payload.text), not
+  // "ax_transcript_event" -- that kind is real in the relay (push-dedup,
+  // activity tracking) but wasn't what a live browser round trip found for
+  // transcript content. Both kinds are fetched in parallel and merged so a
+  // row from either write path renders; session-transcript.js dedupes by
+  // event_id and accepts both payload shapes.
+  const TRANSCRIPT_KINDS = ["transcript_message", "ax_transcript_event"];
+
   async function fetchTranscript(sessionUid, sinceObservedAt) {
-    const params = new URLSearchParams();
-    params.set("session_uid", String(sessionUid || ""));
-    params.set("kind", "ax_transcript_event");
-    if (sinceObservedAt) params.set("since_observed_at", String(sinceObservedAt));
-    const out = await request(`/v1/events?${params.toString()}`);
+    const uid = String(sessionUid || "");
+    const since = sinceObservedAt ? String(sinceObservedAt) : "";
+    const pages = await Promise.all(
+      TRANSCRIPT_KINDS.map((kind) => {
+        const params = new URLSearchParams();
+        params.set("session_uid", uid);
+        params.set("kind", kind);
+        if (since) params.set("since_observed_at", since);
+        return request(`/v1/events?${params.toString()}`);
+      }),
+    );
     return {
-      events: out.events || [],
+      events: pages.flatMap((out) => out.events || []),
       loadedAt: Date.now(),
     };
   }
@@ -15919,6 +15929,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     fetchActions,
     createAction,
     fetchTranscript,
+    TRANSCRIPT_KINDS,
     daemonLastSeenAtMs,
     isDaemonLive,
     ping,
@@ -15926,8 +15937,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 });
 
 
-// Pure mapping from relay `ax_transcript_event` rows into ordered turns for
-// the dashboard's session dialog, plus a visibility/open-gated poll
+// Pure mapping from relay transcript-kind rows ("transcript_message", the
+// kind a live session actually posts; "ax_transcript_event" kept as a
+// fallback) into ordered turns for the dashboard's session dialog, plus a
+// visibility/open-gated poll
 // scheduler. No DOM/fetch dependency here -- `workbench-live-api.js` owns
 // the network call (fetchTranscript); this module only shapes what comes
 // back and decides when to ask for more. See
@@ -16050,13 +16063,22 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return newest || null;
   }
 
+  // Kinds that carry transcript content. "transcript_message" is what a
+  // live session actually posts (payload.role/payload.text, confirmed
+  // 2026-09-04 against a running session); "ax_transcript_event" is a real
+  // relay kind used elsewhere (push-dedup, activity tracking) kept as a
+  // fallback in case an older write path still uses it. workbench-live-
+  // api.js's fetchTranscript queries both and merges; this filter accepts
+  // either so nothing gets silently dropped regardless of which kind wrote
+  // it, or if a caller's query wasn't scoped to a transcript kind at all.
+  const TRANSCRIPT_ROW_KINDS = new Set(["transcript_message", "ax_transcript_event"]);
+
   // Maps raw rows (any order, possibly with duplicate event_ids) into
   // ordered turns for rendering: one turn per event_id, oldest first, each
-  // with a normalized role and blocks. Non-transcript kinds (if a caller's
-  // query wasn't already scoped to ax_transcript_event) are dropped.
+  // with a normalized role and blocks.
   function mapTranscriptEvents(rows) {
     return dedupeAndSortRows(rows)
-      .filter((row) => !row.kind || row.kind === "ax_transcript_event")
+      .filter((row) => !row.kind || TRANSCRIPT_ROW_KINDS.has(row.kind))
       .map((row) => {
         // The real relay row always carries the `{role, blocks}` (or legacy
         // `{text}`) shape under `payload` (events.payload is the jsonb
@@ -16211,6 +16233,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   return {
+    TRANSCRIPT_ROW_KINDS,
     dedupeAndSortRows,
     mergeTranscriptRows,
     nextSinceObservedAt,
@@ -16874,7 +16897,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-04.28";
+  const WB_VERSION = "2026-09-04.30";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -26565,19 +26588,32 @@ function sessionControlSeam() {
 
 // The live (Supabase-sourced) machine row for a machineId, carrying
 // daemonLastSeenAt -- distinct from state.machines, which is the
-// git-tracked status-file listing and never has that field. Null when
-// Workbench Live isn't configured, or that machine hasn't reported.
+// git-tracked status-file listing and never has that field. Matches on
+// EITHER machine_id or hostname: callers hand this function whatever
+// identifier they have on hand, and those aren't always the same
+// string -- a session row's machine field is machine_id (see
+// mapSessionRow), but the Machines page's per-row key (machineStatus
+// Rows' `r.key`) comes from the git-tracked machine listing and is
+// hostname-first. The live /v1/machines row itself carries both
+// fields, so matching either side avoids a silent lookup miss (found
+// live 2026-09-04: the Start-session daemon-liveness check was always
+// missing because target.key is a hostname, not a machine_id).
+// Null when Workbench Live isn't configured, or nothing matches.
 function liveMachineRow(machineId) {
   if (!machineId) return null;
+  const needle = String(machineId);
   const rows = state.workbenchLive?.machines || [];
-  return rows.find(m => m.machine_id === machineId) || null;
+  return rows.find(m => m && (m.machine_id === needle || m.hostname === needle)) || null;
 }
 
 // "daemon not live on <machine>" gating, shared by the composer and
 // the start-session form: refuse loudly when Live itself isn't
-// configured (requestGateDecision's own pattern), else disable with
-// the machine-scoped reason when that machine's daemon hasn't
-// reported within the 15-minute floor.
+// configured (requestGateDecision's own pattern), else the
+// machine-scoped reason when that machine's daemon hasn't reported
+// within the 15-minute floor. Callers surface this via a toast INSIDE
+// their submit handler (never only through a disabled prop) -- a bug
+// in this computation must never make the button a silent no-op; see
+// SessionDialog.sendReply/submitAnswer and StartSessionDialog.start.
 function composerBlockedReason(machineId, machineLabel) {
   if (!LiveApi?.enabled?.()) return 'Workbench Live is not configured on this device.';
   if (!LiveApi.isDaemonLive(liveMachineRow(machineId))) return `daemon not live on ${machineLabel}`;
@@ -26590,22 +26626,29 @@ function actionStatusTonePill(status) {
   return 'neutral'; // queued
 }
 
-// Model choices for the reply/start-session model selects, drawn from
-// the already-loaded model benchmark catalog rather than a hardcoded
-// list -- the fleet's model roster moves (intent.md: "keep up with
-// ... new models", not calcify around a fixed set).
+// Model choices for the start-session model select: exactly the
+// Claude Desktop picker tiers the daemon matches by first word, not
+// the local/Azure benchmark catalog (Qwen/GLM/gpt-oss/... -- wrong
+// universe entirely, found live 2026-09-04). The daemon parses the
+// leading word out of whatever string it receives, so the value sent
+// is the label verbatim.
 function liveModelSelectOptions() {
-  const ids = new Set();
-  for (const m of state.modelBenchmarks?.models || []) {
-    if (m && typeof m.id === 'string' && m.id) ids.add(m.id);
-  }
   return [{
     value: '',
     label: 'Daemon default'
-  }, ...Array.from(ids).sort().map(id => ({
-    value: id,
-    label: id
-  }))];
+  }, {
+    value: 'Fable 5.1',
+    label: 'Fable 5.1'
+  }, {
+    value: 'Opus 5',
+    label: 'Opus 5'
+  }, {
+    value: 'Sonnet 5',
+    label: 'Sonnet 5'
+  }, {
+    value: 'Haiku 4.5',
+    label: 'Haiku 4.5'
+  }];
 }
 
 // Polls window.__WBSessionControl.actionStatus(actionId) at the same
@@ -26832,7 +26875,13 @@ function SessionDialog({
   };
   const askQuestion = SessionTranscript.latestAskUserQuestion(turns);
   const blockedReason = composerBlockedReason(machineId, machine);
-  const composerDisabled = sending || !!blockedReason;
+
+  // Every refusal here is a toast, and the reason a control might be
+  // blocked is ALSO checked inside the handler, not only via a
+  // `disabled` prop -- a bug in composerBlockedReason (or anything
+  // upstream of it) must read as a visible message, never as a
+  // button that quietly does nothing when tapped (found live
+  // 2026-09-04 on the Start-session form's Start button).
   const submitAnswer = async answer => {
     if (!LiveApi?.enabled?.()) {
       toast('Workbench Live is not configured on this device -- answering needs the authenticated channel. Set it up under About.', 'warn');
@@ -26841,6 +26890,10 @@ function SessionDialog({
     const seam = sessionControlSeam();
     if (typeof seam?.answerQuestion !== 'function') {
       toast('Session control is not available on this build.', 'warn');
+      return;
+    }
+    if (blockedReason) {
+      toast(blockedReason, 'warn');
       return;
     }
     setSending(true);
@@ -26871,8 +26924,15 @@ function SessionDialog({
       toast('Session control is not available on this build.', 'warn');
       return;
     }
+    if (blockedReason) {
+      toast(blockedReason, 'warn');
+      return;
+    }
     const text = composerText.trim();
-    if (!text) return;
+    if (!text) {
+      toast('A reply is required.', 'warn');
+      return;
+    }
     setSending(true);
     try {
       const record = await seam.sendReply({
@@ -26980,7 +27040,7 @@ function SessionDialog({
       className: "wb-composer-notice"
     }, blockedReason), askQuestion ? /*#__PURE__*/React.createElement(AskUserQuestionComposer, {
       prompt: askQuestion,
-      disabled: composerDisabled,
+      disabled: sending,
       onSubmit: submitAnswer
     }) : /*#__PURE__*/React.createElement("div", {
       className: "wb-composer"
@@ -26989,11 +27049,11 @@ function SessionDialog({
       value: composerText,
       onChange: e => setComposerText(e.target.value),
       placeholder: "Reply to this session…",
-      disabled: composerDisabled,
+      disabled: sending,
       rows: 2
     }), /*#__PURE__*/React.createElement(Button, {
       onClick: sendReply,
-      disabled: composerDisabled || !composerText.trim()
+      disabled: sending
     }, sending ? 'Sending…' : 'Send')), /*#__PURE__*/React.createElement(Cluster, {
       gap: 2,
       style: {
@@ -27070,6 +27130,17 @@ function StartSessionDialog({
     } : prev);
   });
   const blockedReason = composerBlockedReason(machineId, machineLabel);
+
+  // The Start button stays clickable whenever we're not literally
+  // mid-request (disabled={busy} only, below) -- every refusal
+  // (not configured, daemon stale, empty prompt) is checked HERE and
+  // surfaced as a toast, not folded into the disabled prop. A
+  // computed-disabled button that silently eats clicks with no
+  // console error and no notice is exactly the bug found live
+  // 2026-09-04: `disabled={busy || !!blockedReason || !prompt.trim()}`
+  // meant nothing happened on tap and there was nothing to debug from
+  // the outside -- window.__WBSessionControl.startSession itself
+  // worked fine when called directly.
   const start = async () => {
     if (!LiveApi?.enabled?.()) {
       toast('Workbench Live is not configured on this device -- starting a session needs the authenticated channel. Set it up under About.', 'warn');
@@ -27078,6 +27149,10 @@ function StartSessionDialog({
     const seam = sessionControlSeam();
     if (typeof seam?.startSession !== 'function') {
       toast('Session control is not available on this build.', 'warn');
+      return;
+    }
+    if (blockedReason) {
+      toast(blockedReason, 'warn');
       return;
     }
     const trimmedPrompt = prompt.trim();
@@ -27120,7 +27195,7 @@ function StartSessionDialog({
     }, "Close"), /*#__PURE__*/React.createElement(Button, {
       size: "sm",
       onClick: start,
-      disabled: busy || !!blockedReason || !prompt.trim()
+      disabled: busy
     }, busy ? 'Starting…' : 'Start session'))
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 3
@@ -27160,7 +27235,7 @@ function StartSessionDialog({
     value: prompt,
     onChange: e => setPrompt(e.target.value),
     placeholder: "What should it work on?",
-    disabled: busy || !!blockedReason,
+    disabled: busy,
     rows: 4
   }))));
 }
