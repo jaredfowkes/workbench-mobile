@@ -16897,7 +16897,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-04.35";
+  const WB_VERSION = "2026-09-05.21";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -17146,7 +17146,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // at a time before this existed.
   let ghIndexTexts = {};
   const WB_INDEX_PATH = "Tools/Dashboard/dashboard-index.json";
-  const WB_INDEX_TEXTS_PATH = "Tools/Dashboard/dashboard-index-texts.json";
   // When the tree was cached (ms epoch) - lets the UI stamp GitHub-backend
   // reads as "as of Xm ago" instead of presenting a cached tree as live.
   let ghTreeCacheAt = null;
@@ -18312,28 +18311,44 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     // for ~332; caching it also meant a 4.74 MB localStorage write that blows
     // Safari's 5 MB origin quota, so the cache was discarded and every boot
     // refetched the whole thing. The index carries the same paths and shas in
-    // ~258 KB and inlines each project's tasks.json besides.
+    // ~180 KB and points at numbered part files for tasks and inlined text
+    // bodies, each kept under the Contents API's 1 MB cap by the build.
     let tree = null;
     if (!force) {
       try {
-        const [idx, txt] = await Promise.all([
-          ghGetFile(WB_INDEX_PATH, { allowMissing: true }),
-          ghGetFile(WB_INDEX_TEXTS_PATH, { allowMissing: true }).catch(() => null),
-        ]);
+        const idx = await ghGetFile(WB_INDEX_PATH, { allowMissing: true });
         if (idx?.text) {
           const parsed = JSON.parse(idx.text);
           if (parsed?.generated && Array.isArray(parsed.paths)) {
             tree = parsed.paths;
             ghTreeShas = parsed.shas || {};
-            ghIndexTasks = parsed.tasks || {};
-            // Split out because the Contents API caps a single file at 1 MB.
-            // Missing bodies are not fatal: every reader falls through to a
-            // direct fetch.
-            try {
-              const t = txt?.text ? JSON.parse(txt.text) : null;
-              ghIndexTexts = t?.generated ? t.texts || {} : {};
-            } catch {
-              ghIndexTexts = {};
+            // Each part is its own Contents API fetch, capped at 1 MB raw by
+            // the build; a missing or malformed part is not fatal -- every
+            // reader falls through to a direct fetch for anything it can't
+            // find inlined.
+            const tasksParts = await Promise.all(
+              (parsed.taskParts || []).map((p) =>
+                ghGetFile(p, { allowMissing: true }).catch(() => null),
+              ),
+            );
+            ghIndexTasks = {};
+            for (const part of tasksParts) {
+              try {
+                const t = part?.text ? JSON.parse(part.text) : null;
+                if (t?.generated) Object.assign(ghIndexTasks, t.tasks || {});
+              } catch {}
+            }
+            const textsParts = await Promise.all(
+              (parsed.textParts || []).map((p) =>
+                ghGetFile(p, { allowMissing: true }).catch(() => null),
+              ),
+            );
+            ghIndexTexts = {};
+            for (const part of textsParts) {
+              try {
+                const t = part?.text ? JSON.parse(part.text) : null;
+                if (t?.generated) Object.assign(ghIndexTexts, t.texts || {});
+              } catch {}
             }
           }
         }
