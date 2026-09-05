@@ -13914,6 +13914,78 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return deriveState(task, { dependencies, tasksById }).state === "actionable";
   }
 
+  // ---------------------------------------------------------------------------
+  // Personal to-do grouping (dashboard's To-do view)
+  //
+  // `kind = 'personal'` rows have neither project_id nor stage_id (the
+  // migration's check constraint forbids the former), so none of the
+  // project-shaped helpers above (locatorFor, toProjectData, rank against
+  // projectsById) apply to them -- this is a separate, flat grouping, not a
+  // degenerate case of the hierarchy ones.
+  // ---------------------------------------------------------------------------
+
+  function isoDateOnly(value) {
+    const d = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+
+  // Four buckets, checked in an order that matters:
+  // 1. Today outranks everything else, including a task's own when_bucket --
+  //    a deadline that has arrived or passed is Today's business regardless
+  //    of what was planned when the task was filed.
+  // 2. Someday is checked next so a someday task that happens to carry a
+  //    stale/incidental deadline doesn't get pulled into Upcoming ahead of
+  //    tasks Jared actually scheduled.
+  // 3. Upcoming covers anything with a real date to show -- scheduled (or
+  //    this_week, which the schema allows even though today's Things feed
+  //    never sets it) with a when_date, or a future deadline.
+  // 4. Anytime is the true catch-all: no bucket, no deadline, nothing said.
+  function groupPersonalTasks(tasks, { now = Date.now } = {}) {
+    const todayStr = isoDateOnly(typeof now === "function" ? now() : now) || isoDateOnly(Date.now());
+    const groups = { today: [], upcoming: [], anytime: [], someday: [] };
+
+    for (const task of tasks || []) {
+      const deadlineStr = task?.deadline ? String(task.deadline).slice(0, 10) : null;
+      const overdueOrDueToday = !!deadlineStr && deadlineStr <= todayStr;
+
+      if (overdueOrDueToday || task?.when_bucket === "today") {
+        groups.today.push(task);
+      } else if (task?.when_bucket === "someday") {
+        groups.someday.push(task);
+      } else if (task?.when_bucket === "scheduled" || task?.when_bucket === "this_week" || deadlineStr) {
+        groups.upcoming.push(task);
+      } else {
+        groups.anytime.push(task);
+      }
+    }
+
+    // Position is the caller's own manual order (per the migration); date
+    // groups additionally sort by the date being shown, date first, so
+    // Upcoming reads soonest-first rather than in filing order.
+    const byPosition = (a, b) => (a.position || 0) - (b.position || 0);
+    groups.today.sort(byPosition);
+    groups.someday.sort(byPosition);
+    groups.anytime.sort(byPosition);
+    groups.upcoming.sort((a, b) => {
+      const aKey = a.when_date || (a.deadline ? String(a.deadline).slice(0, 10) : "");
+      const bKey = b.when_date || (b.deadline ? String(b.deadline).slice(0, 10) : "");
+      if (aKey !== bKey) return aKey < bKey ? -1 : 1;
+      return byPosition(a, b);
+    });
+
+    return groups;
+  }
+
+  // Recently-done (per the dashboard's small "done" section): closed within
+  // the trailing window, newest first -- status_changed_at is trigger-kept
+  // (see the migration), so this never reads a stale completion date.
+  function recentlyDone(tasks, { now = Date.now, withinDays = 7 } = {}) {
+    const cutoff = (typeof now === "function" ? now() : now) - withinDays * 24 * 60 * 60 * 1000;
+    return (tasks || [])
+      .filter((t) => t?.status === "done" && t.status_changed_at && Date.parse(t.status_changed_at) >= cutoff)
+      .sort((a, b) => Date.parse(b.status_changed_at) - Date.parse(a.status_changed_at));
+  }
+
   // No real deadline / no project priority both sort last, not first --
   // Number.POSITIVE_INFINITY loses every ascending comparison against a real
   // value on either axis.
@@ -14227,6 +14299,24 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return toProjectData({ project, stages, tasks });
     }
 
+    // The dashboard's To-do view: `kind = 'personal'` rows only (the
+    // migration forbids project_id on those), one round trip for both the
+    // open groups and the recently-done strip -- a second query filtering
+    // on status_changed_at server-side would save nothing at this row
+    // count and would need its own cutoff math duplicated against
+    // recentlyDone()'s.
+    async function loadPersonalTasks({ now = Date.now, withinDays = 7 } = {}) {
+      const rows = await client.select("tasks", {
+        filters: { kind: "eq.personal", project_id: "is.null", status: "in.(open,done)" },
+        order: "position.asc",
+      });
+      const open = rows.filter((t) => t.status === "open");
+      return {
+        groups: groupPersonalTasks(open, { now }),
+        done: recentlyDone(rows, { now, withinDays }),
+      };
+    }
+
     return {
       loadHierarchy,
       listTasks,
@@ -14238,6 +14328,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       setWhen,
       setWaiting,
       loadProjectData,
+      loadPersonalTasks,
     };
   }
 
@@ -14252,6 +14343,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     toLegacyStatus,
     fromLegacyStatus,
     toProjectData,
+    groupPersonalTasks,
+    recentlyDone,
     createTaskStore,
   };
 });
@@ -16897,12 +16990,12 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-05.21";
+  const WB_VERSION = "2026-09-05.24";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
   // index, so it is baked in at build time rather than looked up per project.
-  const WB_INTENT_PROJECTS = new Set(JSON.parse('["Work/Projects/Marketing-Platform", "Work/Projects/Scrooge", "Personal/Projects/Workbench-Dashboard", "Personal/Projects/Workbench-OS"]'));
+  const WB_INTENT_PROJECTS = new Set(JSON.parse('["Work/Projects/Marketing-Platform", "Work/Projects/Scrooge", "Personal/Projects/Media-Server", "Personal/Projects/Workbench-Dashboard", "Personal/Projects/Workbench-OS"]'));
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -17077,6 +17170,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     skillsLock: null,
     skillsWiki: null,
     skillCatalog: null,
+    // kind='personal' Supabase rows mirrored from Things (Tools/Things/things_sync.py);
+    // shape matches groupPersonalTasks()/loadPersonalTasks() in supabase-tasks.js.
+    personalTasks: { groups: { today: [], upcoming: [], anytime: [], someday: [] }, done: [] },
     boardPool: null,
     mobileVersion: null,
     mobileSourceVersion: null,
@@ -19682,6 +19778,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           staleAfterMs: 24 * 60 * 60 * 1000,
         });
       }),
+      ensureSupabaseTaskStore()
+        .loadPersonalTasks()
+        .then((v) => (state.personalTasks = v))
+        .catch(() => null),
       loadSessions().then((v) => (state.sessions = v)),
       loadMachines().then((v) => (state.machines = v)),
       loadWorkbenchLiveStatus().then(() => null),
@@ -22084,6 +22184,10 @@ function navItems() {
       label: 'Projects',
       active: state.view === 'projects' || state.view === 'project'
     }, {
+      id: 'todo',
+      label: 'To-do',
+      active: state.view === 'todo'
+    }, {
       id: 'intake',
       label: 'Intake',
       active: state.view === 'intake'
@@ -22960,6 +23064,126 @@ function IntakeView() {
     title: "No raw captures",
     description: "No intake is waiting right now."
   })))));
+}
+
+// A single personal to-do row: checkbox, title, deadline chip if any.
+// No onClick on the row itself -- the checkbox is the only control, so
+// a stray tap elsewhere in the row can never silently complete a task.
+function TodoRow({
+  task,
+  done
+}) {
+  const [busy, setBusy] = React.useState(false);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: 12,
+      padding: '10px 14px',
+      borderTop: '1px solid var(--border-subtle)'
+    }
+  }, /*#__PURE__*/React.createElement("input", {
+    type: "checkbox",
+    checked: done,
+    disabled: busy,
+    "aria-label": done ? `Reopen ${task.title}` : `Mark ${task.title} done`,
+    onChange: async () => {
+      setBusy(true);
+      try {
+        await setPersonalTaskDone(task, !done);
+      } finally {
+        setBusy(false);
+      }
+    },
+    style: {
+      width: 18,
+      height: 18,
+      marginTop: 2,
+      flex: 'none',
+      cursor: busy ? 'default' : 'pointer'
+    }
+  }), /*#__PURE__*/React.createElement("div", {
+    style: {
+      flex: 1,
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: 'var(--text-strong)',
+      textDecoration: done ? 'line-through' : 'none',
+      opacity: done ? 0.6 : 1
+    }
+  }, task.title), task.notes && /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: 'var(--text-muted)',
+      marginTop: 1
+    }
+  }, displayText(task.notes, 140))), task.deadline && !done && dueBadge(task.deadline));
+}
+function TodoGroup({
+  title,
+  tasks
+}) {
+  if (!tasks.length) return null;
+  return /*#__PURE__*/React.createElement(Card, {
+    title: title,
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "neutral"
+    }, tasks.length)
+  }, /*#__PURE__*/React.createElement("div", null, tasks.map(t => /*#__PURE__*/React.createElement(TodoRow, {
+    key: t.id,
+    task: t,
+    done: false
+  }))));
+}
+function ToDoView() {
+  const data = state.personalTasks || {
+    groups: {
+      today: [],
+      upcoming: [],
+      anytime: [],
+      someday: []
+    },
+    done: []
+  };
+  const g = data.groups || {};
+  const totalOpen = (g.today || []).length + (g.upcoming || []).length + (g.anytime || []).length + (g.someday || []).length;
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
+    eyebrow: "To-do",
+    title: "Personal to-do",
+    lede: "Mirrored from Things, grouped by when it's due or planned."
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, totalOpen ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(TodoGroup, {
+    title: "Today",
+    tasks: g.today || []
+  }), /*#__PURE__*/React.createElement(TodoGroup, {
+    title: "Upcoming",
+    tasks: g.upcoming || []
+  }), /*#__PURE__*/React.createElement(TodoGroup, {
+    title: "Anytime",
+    tasks: g.anytime || []
+  }), /*#__PURE__*/React.createElement(TodoGroup, {
+    title: "Someday",
+    tasks: g.someday || []
+  })) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Nothing on the list",
+    description: "Everything's cleared for now."
+  }), (data.done || []).length ? /*#__PURE__*/React.createElement(Card, {
+    title: "Recently done",
+    action: /*#__PURE__*/React.createElement(Badge, {
+      tone: "favorable"
+    }, data.done.length)
+  }, /*#__PURE__*/React.createElement("div", null, data.done.map(t => /*#__PURE__*/React.createElement(TodoRow, {
+    key: t.id,
+    task: t,
+    done: true
+  })))) : null));
 }
 function UsageBrandLabel({
   label
@@ -25906,6 +26130,7 @@ function Content() {
   if (state.view === 'projects') return /*#__PURE__*/React.createElement(ProjectsView, null);
   if (state.view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
   if (state.view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
+  if (state.view === 'todo') return /*#__PURE__*/React.createElement(ToDoView, null);
   if (state.view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
   if (state.view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
   if (state.view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
@@ -26276,7 +26501,7 @@ function MoreDrawer({
   open,
   onClose
 }) {
-  const groups = [['Work', [['followups', 'Follow-ups', 'check']]], ['Memory', [['transcripts', 'Meetings', 'list'], ['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['models', 'Models', 'star'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
+  const groups = [['Work', [['todo', 'To-do', 'check'], ['followups', 'Follow-ups', 'check']]], ['Memory', [['transcripts', 'Meetings', 'list'], ['knowledge', 'Knowledge base', 'file'], ['ideas', 'Ideas', 'bell'], ['artifacts', 'Artifacts', 'grid'], ['inventory', 'Inventory', 'list'], ['skills', 'Skills', 'star'], ['creative', 'Creative studio', 'edit']]], ['Systems', [['usage', 'Usage', 'chart'], ['models', 'Models', 'star'], ['sessions', 'Sessions', 'list'], ['machines', 'Machines & sync', 'settings']]], ['Review', [['briefings', 'Briefings', 'file'], ['weekly', 'Weekly review', 'calendar'], ['preflight', 'Preflight', 'check'], ['board', 'Board of Advisors', 'users'], ['instructions', 'Instructions', 'info'], ['about', 'About', 'info']]]];
   return /*#__PURE__*/React.createElement(Drawer, {
     open: open,
     onClose: onClose,
@@ -31547,6 +31772,30 @@ window.__WBReactRender = function () {
       r.it.status = prev.status;
       if (prev.completed) r.it.completed = prev.completed;
       else delete r.it.completed;
+      render();
+      toast(err.message || "Could not save the change.", "danger");
+    }
+  }
+  // Personal (Things-mirrored) to-do rows. These carry no project_id, so
+  // they never touch saveProject()'s checkout guard or its
+  // tasks.setStatus/fromLegacyStatus translation -- setStatus() on the task
+  // store already writes the real open/done value directly, and the
+  // migration's own trigger stamps status_changed_at, so there is nothing
+  // left here to patch by hand.
+  async function setPersonalTaskDone(task, done) {
+    const prevStatus = task.status;
+    const prevChangedAt = task.status_changed_at;
+    task.status = done ? "done" : "open";
+    task.status_changed_at = new Date().toISOString();
+    render();
+    try {
+      await ensureSupabaseTaskStore().setStatus(task.id, task.status);
+      state.personalTasks = await ensureSupabaseTaskStore().loadPersonalTasks();
+      render();
+      toast(`Now ${task.status} · ${displayText(task.title, 40)}`, "success");
+    } catch (err) {
+      task.status = prevStatus;
+      task.status_changed_at = prevChangedAt;
       render();
       toast(err.message || "Could not save the change.", "danger");
     }
