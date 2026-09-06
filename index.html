@@ -16990,7 +16990,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-05.26";
+  const WB_VERSION = "2026-09-05.27";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -18123,6 +18123,41 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   function liveStateLabel(row) {
     return String(row?.liveState || row?.status || "unknown").replace(/_/g, " ");
+  }
+  // Compact route label for a live session row — reads routeState (from
+  // refresh.py enrichment or Supabase route_state column) or falls back to
+  // the routeLabel shortcut that refresh.py also attaches.
+  // Returns null when no routing information is available.
+  function sessionRouteLabel(s) {
+    // Direct shortcut written by refresh.py
+    if (s && typeof s.routeLabel === "string" && s.routeLabel) return s.routeLabel;
+    // Decode from routeState (Supabase-backed or refresh-enriched)
+    const rs = s?.routeState || s?.route_state;
+    if (!rs || typeof rs !== "object") return null;
+    const lane = String(rs.canonicalLane || "");
+    const upstream = String(rs.activeUpstream || "");
+    if (lane === "cursor") return "Cursor";
+    if (lane === "automatic") {
+      if (upstream === "anthropic")    return "Automatic \xb7 Anthropic";
+      if (upstream === "azure-claude") return "Automatic \xb7 Azure Claude";
+      if (upstream === "gpt-6")        return "Automatic \xb7 GPT-6";
+      return "Automatic";
+    }
+    if (lane === "anthropic")    return "Anthropic";
+    if (lane === "azure-claude") return "Azure Claude";
+    if (lane === "azure")        return "Azure";
+    if (lane === "local")        return "Local";
+    if (lane.startsWith("openrouter")) return "OpenRouter";
+    return null;
+  }
+  // IDE badge label for a session row — "Cursor" when the session's
+  // canonicalLane is cursor or raw ide field contains "cursor".
+  function sessionIdeBadge(s) {
+    const rs = s?.routeState || s?.route_state;
+    if (rs?.canonicalLane === "cursor") return "Cursor";
+    const ide = String(s?.ide || "").toLowerCase();
+    if (ide.includes("cursor")) return "Cursor";
+    return "Claude";
   }
   function attentionTone(level) {
     if (level === "needs_jared_now") return "unfavorable";
@@ -24117,15 +24152,19 @@ function MachinesView() {
     style: muted
   }, liveSummary), liveSessions.length ? /*#__PURE__*/React.createElement(List, {
     bordered: true
-  }, liveSessions.map(s => /*#__PURE__*/React.createElement(ListItem, {
-    key: s.session_uid || s.sessionFull || s.session,
-    title: sessionHeadline(s),
-    description: `${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
-    trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: attentionTone(s.attentionLevel)
-    }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
-    onClick: () => window.__WBOpenSession && window.__WBOpenSession(s)
-  }))) : /*#__PURE__*/React.createElement(EmptyState, {
+  }, liveSessions.map(s => {
+    const routeLbl = sessionRouteLabel(s);
+    const ideBadge = sessionIdeBadge(s);
+    return /*#__PURE__*/React.createElement(ListItem, {
+      key: s.session_uid || s.sessionFull || s.session,
+      title: sessionHeadline(s),
+      description: `${ideBadge !== 'Claude' ? ideBadge + ' · ' : ''}${routeLbl ? routeLbl + ' · ' : ''}${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
+      trailing: /*#__PURE__*/React.createElement(Badge, {
+        tone: attentionTone(s.attentionLevel)
+      }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
+      onClick: () => window.__WBOpenSession && window.__WBOpenSession(s)
+    });
+  })) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No live sessions",
     description: "Active beacons will appear here with attention sorting and todo snapshots when available."
   }))), /*#__PURE__*/React.createElement(Grid, {
@@ -27216,7 +27255,7 @@ function SessionDialog({
   })), /*#__PURE__*/React.createElement(Card, {
     title: "Usage"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [["Backend", normalizeBackend(session.backend)], ["Editor", normalizeEditor(session)], ["Harness", normalizeHarness(session.harness || session.ide)], ["Model", sessionModelLabel(session)], ["Tokens", `${fmtTokens(cacheInclusiveTokens(session))} cache-inclusive`], ["Cache read / creation", `${fmtTokens(session.cacheReadTokens || 0)} / ${fmtTokens(session.cacheCreationTokens || 0)}`], ["Cost", cost == null ? 'untracked' : `${fmtCostMaybe(cost)}${session.costSource === 'actual-billing' ? '' : ' estimated'}`], ["Requests", session.requests || 0]]
+    items: [["Backend", normalizeBackend(session.backend)], ["IDE", sessionIdeBadge(session)], ["Route", sessionRouteLabel(session) || normalizeHarness(session.harness || session.ide)], ["Editor", normalizeEditor(session)], ["Model", sessionModelLabel(session)], ["Tokens", `${fmtTokens(cacheInclusiveTokens(session))} cache-inclusive`], ["Cache read / creation", `${fmtTokens(session.cacheReadTokens || 0)} / ${fmtTokens(session.cacheCreationTokens || 0)}`], ["Cost", cost == null ? 'untracked' : `${fmtCostMaybe(cost)}${session.costSource === 'actual-billing' ? '' : ' estimated'}`], ["Requests", session.requests || 0]]
   })), /*#__PURE__*/React.createElement(Card, {
     title: "Attribution",
     action: /*#__PURE__*/React.createElement(Badge, {
