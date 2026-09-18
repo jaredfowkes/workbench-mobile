@@ -17047,15 +17047,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       // A canonical path is stronger than a display name, including on Windows.
       const path = [...canonical.keys()].find((id) => key === id || key.endsWith("/" + id)
         || (cwd && (key.startsWith(id + "/") || key.includes("/" + id + "/"))));
-      const matches = aliases.get(cwd ? key.split("/").pop() : key);
+      const explicitProjectPath = /(?:^|\/)(?:personal|work)\/projects\//.test(key);
+      const matches = aliases.get(cwd && !explicitProjectPath ? key.split("/").pop() : key);
       const id = path || (matches?.size === 1 ? [...matches][0] : null);
       return id ? canonical.get(id) : { id: "unattributed:" + key, label: String(value).trim(), known: false };
     }
     return { resolve };
   }
 
-  function allocations(row, projects) {
-    const { resolve } = catalog(projects);
+  function allocations(row, projects, resolver) {
+    const resolve = resolver || catalog(projects).resolve;
     const weights = row?.projectWeights;
     const weighted = new Map();
     if (weights && typeof weights === "object" && !Array.isArray(weights)) {
@@ -17086,9 +17087,17 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       fraction: 1, basis: "working folder" }];
   }
 
-  function forProject(row, project, projects) {
+  function forProject(row, project, projects, resolver) {
     const id = projectId(project);
-    return allocations(row, projects).find((entry) => entry.known && entry.id === id)?.fraction || 0;
+    return allocations(row, projects, resolver).find((entry) => entry.known && entry.id === id)?.fraction || 0;
+  }
+
+  function createAllocator(projects) {
+    const { resolve } = catalog(projects);
+    return {
+      allocations: (row) => allocations(row, projects, resolve),
+      forProject: (row, project) => forProject(row, project, projects, resolve),
+    };
   }
 
   function sum(entries, costForRow, tokensForRow) {
@@ -17102,7 +17111,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   const note = "Project allocation is estimated from recorded weights, or split equally across recorded projects; the working folder is a fallback. Saved and notional amounts are excluded from spend.";
-  return { allocations, forProject, projectId, sum, note };
+  return { allocations, forProject, createAllocator, projectId, sum, note };
 });
 
 
@@ -17386,7 +17395,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-18.27";
+  const WB_VERSION = "2026-09-18.28";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -21146,11 +21155,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
   function projectCostSummary(p) {
     const allRows = uniqueSessionRows((state.sessionMetrics?.sessions || []).filter(Boolean));
+    const allocator = WorkbenchProjectUsage.createAllocator(state.projects);
     const entries = usageRows(allRows).map((row) => ({ row,
-      fraction: WorkbenchProjectUsage.forProject(row, p, state.projects),
+      fraction: allocator.forProject(row, p),
     })).filter((entry) => entry.fraction > 0);
     const rows = entries.map((entry) => entry.row);
-    const triple = WorkbenchProjectUsage.sum(entries, (row) => costTriple([row], allRows), cacheInclusiveTokens);
+    const shares = planShareMap(rows, allRows);
+    const triple = WorkbenchProjectUsage.sum(entries, (row) => ({
+      billed: billedCost(row), planShare: shares.get(row) || 0,
+      saved: savedCost(row), notional: notionalCost(row),
+    }), cacheInclusiveTokens);
     const unpriced = rows.filter((row) => sessionCost(row) == null).length;
     return {
       ...triple, rows, fractions: new Map(entries.map(({ row, fraction }) => [row, fraction])),
@@ -24208,7 +24222,7 @@ function UsageProjectPanel({
     key: r.cwd
   }, /*#__PURE__*/React.createElement("span", {
     "data-label": "Project"
-  }, r.cwd.split('/').filter(Boolean).pop() || r.cwd), /*#__PURE__*/React.createElement("span", {
+  }, r.cwd), /*#__PURE__*/React.createElement("span", {
     "data-label": "Tokens"
   }, fmtTokens(r.tokens)), /*#__PURE__*/React.createElement("span", {
     "data-label": "Lane"
@@ -29567,7 +29581,8 @@ window.__WBReactRender = function () {
         normalizeBackend(r.backend) === "Anthropic" && r.accountSlug
           ? `Anthropic ${r.accountSlug}${basis === "subscription" ? " (plan)" : ""}`
           : backendLane(r);
-      const cur = lanes.get(lane) || { lane, model: sessionModelLabel(r), metered: 0, cost: 0 };
+      const cur = lanes.get(lane) || { lane, model: sessionModelLabel(r), metered: 0, cost: 0, unpriced: false };
+      cur.unpriced = cur.unpriced || sessionCost(r) == null;
       const cost = billedCost(r);
       const metered =
         basis === "subscription"
@@ -29581,12 +29596,14 @@ window.__WBReactRender = function () {
       lanes.set(lane, cur);
     }
     return [...lanes.values()]
-      .map((l) => ({ ...l, saved: Math.max(0, l.metered - l.cost) }))
-      .sort((a, b) => b.cost - a.cost || b.metered - a.metered);
+      .map((l) => ({ ...l, knownCost: l.cost, cost: l.unpriced ? null : l.cost,
+        metered: l.unpriced ? null : l.metered,
+        saved: l.unpriced ? null : Math.max(0, l.metered - l.cost) }))
+      .sort((a, b) => b.knownCost - a.knownCost);
   }
   function costTripleHTML(c, subline) {
     const lanes = projectLaneRows(c.rows || [], c.fractions);
-    const money2 = (v) => "$" + Number(v || 0).toFixed(2);
+    const money2 = (v) => v == null ? "—" : "$" + Number(v).toFixed(2);
     const body = lanes
       .map(
         (l) =>
@@ -29597,6 +29614,9 @@ window.__WBReactRender = function () {
       (a, l) => ({ metered: a.metered + l.metered, saved: a.saved + l.saved, cost: a.cost + l.cost }),
       { metered: 0, saved: 0, cost: 0 },
     );
+    if (lanes.some((lane) => lane.unpriced)) {
+      totals.metered = totals.saved = totals.cost = null;
+    }
     const provisional = lanes.some((l) => l.lane.includes("(plan)"));
     return `<h3>${c.unpriced ? "Known cost" : "Cost"}</h3><div class="cost-lanes"><div class="cost-lane head"><span>Lane</span><span>Model</span><span class="cost-lane-num">Metered</span><span class="cost-lane-num">Saved</span><span class="cost-lane-num cost">Cost</span></div>${body || '<p class="muted">No tokenized sessions yet.</p>'}${lanes.length ? `<div class="cost-lane total"><span>Total</span><span></span><span class="cost-lane-num">${esc(money2(totals.metered))}</span><span class="cost-lane-num saved">${totals.saved > 0.005 ? esc(money2(totals.saved)) : ""}</span><span class="cost-lane-num cost">${esc(money2(totals.cost))}</span></div>` : ""}</div>${subline ? `<p class="muted">${esc(subline)}</p>` : ""}${provisional ? '<p class="tiny muted">Plan share settles when the month closes.</p>' : ""}`;
   }
@@ -31363,11 +31383,12 @@ window.__WBReactRender = function () {
   }
   function projectBreakdown(rows) {
     const map = new Map();
+    const allocator = WorkbenchProjectUsage.createAllocator(state.projects);
     const unique = uniqueSessionRows(rows);
     const allRows = uniqueSessionRows((state.sessionMetrics?.sessions || []).filter(Boolean));
     const shares = planShareMap(unique, allRows);
     for (const row of unique) {
-      for (const allocation of WorkbenchProjectUsage.allocations(row, state.projects)) {
+      for (const allocation of allocator.allocations(row)) {
         const { id, label, fraction } = allocation;
         const cur = map.get(id) || { cwd: label, count: 0, input: 0, output: 0, cache: 0,
           tokens: 0, requests: 0, billed: 0, planShare: 0, saved: 0, notional: 0,
@@ -31401,7 +31422,7 @@ window.__WBReactRender = function () {
 
   function projectBreakdownHTML(rows) {
     const list = projectBreakdown(rows);
-    return `<div class="usage-card"><h3>Cost and tokens by project</h3><p class="tiny muted">${esc(WorkbenchProjectUsage.note)} Unavailable pricing is shown as —.</p><div class="usage-table project-cost-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Lane</span><span>Billed</span><span>Plan share</span><span>Saved</span></div>${list.map((r) => `<div class="usage-table-row"><span data-label="Project">${esc(r.cwd.split("/").filter(Boolean).pop() || r.cwd)}</span><span data-label="Tokens">${fmtTokens(r.tokens)}</span><span data-label="Lane">${brandLabel(r.lane || "Unknown")}</span><span data-label="Billed">${esc(fmtCostMaybe(r.billed))}</span><span data-label="Plan share">${r.planShare ? esc(fmtCostMaybe(r.planShare)) : '<span class="muted">—</span>'}</span><span data-label="Saved">${r.saved ? `<span class="cost-savings">${esc(fmtCostMaybe(r.saved))}</span>` : '<span class="muted">—</span>'}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
+    return `<div class="usage-card"><h3>Cost and tokens by project</h3><p class="tiny muted">${esc(WorkbenchProjectUsage.note)} Unavailable pricing is shown as —.</p><div class="usage-table project-cost-table"><div class="usage-table-row head"><span>Project/folder</span><span>Tokens</span><span>Lane</span><span>Billed</span><span>Plan share</span><span>Saved</span></div>${list.map((r) => `<div class="usage-table-row"><span data-label="Project">${esc(r.cwd)}</span><span data-label="Tokens">${fmtTokens(r.tokens)}</span><span data-label="Lane">${brandLabel(r.lane || "Unknown")}</span><span data-label="Billed">${esc(fmtCostMaybe(r.billed))}</span><span data-label="Plan share">${r.planShare ? esc(fmtCostMaybe(r.planShare)) : '<span class="muted">—</span>'}</span><span data-label="Saved">${r.saved ? `<span class="cost-savings">${esc(fmtCostMaybe(r.saved))}</span>` : '<span class="muted">—</span>'}</span></div>`).join("") || '<p class="muted">No tokenized sessions yet.</p>'}</div></div>`;
   }
   function efficiencyTips(rows) {
     const tips = [];
