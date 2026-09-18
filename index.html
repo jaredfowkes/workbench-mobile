@@ -15764,17 +15764,32 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // nothing will ever claim. Matches the 15-minute figure in the
   // 2026-09-03 web-session-control plan.
   const DAEMON_STALE_MS = 15 * 60 * 1000;
+  let refreshInFlight = null;
 
   function getConfig() {
     try {
-      return JSON.parse(localStorage.getItem(CONFIG_KEY) || "null");
+      const saved = JSON.parse(localStorage.getItem(CONFIG_KEY) || "null");
+      if (saved?.supabaseUrl) return saved;
     } catch {
-      return null;
+      // Private storage can be unavailable while the login lives in memory.
     }
+    const url = globalThis.WBSupabaseAuth?.config?.()?.url;
+    return url ? { supabaseUrl: url, functionName: 'workbench-live' } : null;
   }
 
   function getToken() {
-    return localStorage.getItem(TOKEN_KEY) || "";
+    try { return localStorage.getItem(TOKEN_KEY) || ""; } catch { return ''; }
+  }
+
+  function bearerToken() {
+    const auth = globalThis.WBSupabaseAuth;
+    // Never disclose a signed-in JWT to a manually configured other host.
+    const url = value => String(value || '').replace(/\/$/, '');
+    if (auth?.hasSession?.() && url(getConfig()?.supabaseUrl) === url(auth.config?.()?.url)) {
+      const jwt = auth.accessToken?.();
+      if (jwt) return jwt;
+    }
+    return getToken();
   }
 
   function saveConfig(cfg, token) {
@@ -15793,7 +15808,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   function enabled() {
     const cfg = getConfig();
-    return Boolean(cfg?.supabaseUrl && getToken());
+    return Boolean(cfg?.supabaseUrl && bearerToken());
   }
 
   function functionBaseUrl() {
@@ -15805,7 +15820,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
   async function request(path, { method = "GET", body = null } = {}) {
     const base = functionBaseUrl();
-    const token = getToken();
+    const auth = globalThis.WBSupabaseAuth;
+    const normalized = value => String(value || '').replace(/\/$/, '');
+    if (auth?.hasSession?.() && normalized(getConfig()?.supabaseUrl) === normalized(auth.config?.()?.url)
+        && typeof auth.ensureFresh === 'function') {
+      if (!refreshInFlight) refreshInFlight = Promise.resolve().then(() => auth.ensureFresh())
+        .finally(() => { refreshInFlight = null; });
+      if (!await refreshInFlight) throw new Error('Workbench sign-in expired. Sign in again to reconnect.');
+    }
+    const token = bearerToken();
     if (!base || !token) throw new Error("Workbench Live is not configured.");
     const headers = {
       Authorization: `Bearer ${token}`,
@@ -16036,7 +16059,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   function isDaemonLive(machine, nowMs) {
     const now = Number.isFinite(nowMs) ? nowMs : Date.now();
     const seenAt = daemonLastSeenAtMs(machine);
-    return seenAt != null && now - seenAt <= DAEMON_STALE_MS;
+    return seenAt != null && now - seenAt >= -60000 && now - seenAt <= DAEMON_STALE_MS;
   }
 
   return {
@@ -16046,6 +16069,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     DAEMON_STALE_MS,
     getConfig,
     getToken,
+    bearerToken,
     saveConfig,
     forgetConfig,
     enabled,
@@ -16760,7 +16784,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     { id: 'm2-macbook-pro', label: 'M2 Pro', role: 'Mac workstation', aliases: ['m2-macbook-pro', 'jareds-macbook-pro'] },
     { id: 'wx-5cg6143t8x', label: 'ZBook', role: 'Windows workstation', aliases: ['wx-5cg6143t8x'] },
     { id: 'ax-pf5qch3r', label: 'Carbon', role: 'Windows workstation', aliases: ['ax-pf5qch3r'] },
-    { id: 'w10-vdi-wdw4603', label: 'VDI', role: 'Virtual workstation', aliases: ['w10-vdi-wdw4603', 'vdi-1'] },
+    { id: 'w10-vdi-wdw4603', label: 'VDI', role: 'Virtual workstation', aliases: ['w10-vdi-wdw4603', 'wx-vdi-wdw0017', 'vdi-1'] },
   ];
   const CLOSED = new Set(['done', 'completed', 'ended', 'cancelled', 'canceled', 'skipped', 'archived']);
   function timestamp(value) {
@@ -16872,6 +16896,43 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return { month, recent, monthlyRecurringEstimate: recent.reduce((n,r)=>n+r.monthlyEstimate,0) };
   }
   return { validate, summary };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.WorkbenchModelLabels = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  function model(value) {
+    const raw = String(value || 'unspecified').toLowerCase();
+    if (raw === 'mixed') return 'Mixed';
+    if (['unspecified', 'null', 'unknown'].includes(raw)) return 'Unspecified';
+    const oss = raw.match(/gpt-oss-(\d+)b?/);
+    if (oss) return `GPT-OSS ${oss[1]}B`;
+    const astra = raw.match(/gpt-6-astra(?:$|[-/])/);
+    if (astra) return 'GPT-6-Astra';
+    for (const tier of ['luna', 'terra', 'sol']) {
+      if (raw.includes(`gpt-5.6-${tier}`)) return `GPT-5.6-${tier[0].toUpperCase() + tier.slice(1)}`;
+    }
+    if (raw.includes('gpt-5.4-nano')) return 'GPT-5.4-Nano';
+    if (raw.includes('gpt-5.1-codex-mini')) return 'GPT-5.1-Codex-Mini';
+    if (raw.includes('gpt-5.3-codex')) return 'GPT-5.3-codex';
+    if (raw.includes('gpt-5.5')) return 'GPT-5.5';
+    // A harness is not a model, and GPT-OSS sizes are not interchangeable.
+    if (raw === 'codex') return 'Codex (model unspecified)';
+    for (const family of ['opus', 'sonnet', 'haiku', 'fable']) {
+      if (raw.includes(family)) return raw.replace(/^claude-/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+    return String(value || 'Unspecified');
+  }
+  function ccr(value) {
+    const label = model(value);
+    return /^GPT-(?:6-Astra|5\.6-(?:Sol|Terra|Luna)|5\.4-Nano|5\.1-Codex-Mini|5\.3-codex|5\.5)$/.test(label)
+      ? label : 'Unattributed';
+  }
+  return { model, ccr };
 });
 
 
@@ -17155,7 +17216,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-18.23";
+  const WB_VERSION = "2026-09-18.25";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -17618,23 +17679,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   function liveDashboardToken() {
     return LiveApi?.getToken?.() || "";
   }
-  // Bearer token for authenticated Workbench Live calls made through
-  // liveApiRequest() below: prefer the signed-in dashboard identity's
-  // Supabase session JWT (session.access_token -- see supabase-auth.js's
-  // accessToken(), verified server-side against WB_LIVE_ALLOWED_LOGINS) over
-  // the static shared token, which remains the fallback for a device that
-  // has never signed in. hasSession() (not signedIn()/provider_token, which
-  // only survives the initial sign-in) is the right liveness check here --
-  // same distinction supabase-auth.js's own comment draws. Does not touch
-  // how the static token is stored or entered (still liveDashboardToken()
-  // reading LiveApi's own localStorage key via the Settings/About form).
+  // Every Live API surface shares the same login and host-scoped bearer.
   function liveApiBearerToken() {
-    const Auth = window.WBSupabaseAuth;
-    if (Auth?.hasSession?.()) {
-      const jwt = Auth.accessToken?.() || "";
-      if (jwt) return jwt;
-    }
-    return liveDashboardToken();
+    return LiveApi?.bearerToken?.() || '';
   }
   async function saveWorkbenchLiveSettings() {
     const url = document.getElementById("liveSupabaseUrl")?.value?.trim();
@@ -29029,27 +29076,8 @@ window.__WBReactRender = function () {
       isLocalLabel(r.model)
     );
   }
-  // CCR (claude-code-router) sessions are shown split by model. Map any CCR
-  // model id to a visible lane; default unknown/blank to GPT-5.5 (the legacy
-  // router's general lane).
-  function ccrModelLabel(model) {
-    const normalized = normalizeModel(model);
-    if (
-      [
-        "GPT-5.3-codex",
-        "GPT-5.1-Codex-Mini",
-        "GPT-5.4-Nano",
-        "GPT-5.5",
-        "GPT-5.6-Sol",
-        "GPT-5.6-Terra",
-        "GPT-5.6-Luna",
-      ].includes(normalized)
-    )
-      return normalized;
-    if (["Mixed", "Unspecified", "Unknown"].includes(normalized))
-      return "Unattributed";
-    return "GPT-5.5";
-  }
+  // Preserve measured model identity; missing attribution stays unknown.
+  function ccrModelLabel(model) { return window.WorkbenchModelLabels.ccr(model); }
   // Billing lane a row belongs to for spend/traffic grouping - on-device rows
   // roll up under "Local", and CCR rows split into their model lane
   // (GPT-5.5 / GPT-5.3-codex) rather than a single provider lane.
@@ -29069,36 +29097,7 @@ window.__WBReactRender = function () {
     if (v.includes("codex")) return "Codex";
     return v ? v.replace(/\b\w/g, (c) => c.toUpperCase()) : "Unknown";
   }
-  function normalizeModel(v) {
-    v = String(v || "unspecified").toLowerCase();
-    if (v.includes("gpt-oss")) return "GPT-OSS 20B";
-    if (v === "mixed") return "Mixed";
-    if (v.includes("gpt-5.6-luna") || (v.includes("luna") && v.includes("gpt")))
-      return "GPT-5.6-Luna";
-    if (v.includes("gpt-5.6-terra") || (v.includes("terra") && v.includes("gpt")))
-      return "GPT-5.6-Terra";
-    if (v.includes("gpt-5.6-sol") || (v.includes("sol") && v.includes("gpt")))
-      return "GPT-5.6-Sol";
-    if (v.includes("gpt-5.4-nano") || (v.includes("nano") && v.includes("gpt")))
-      return "GPT-5.4-Nano";
-    if (
-      v.includes("gpt-5.1-codex-mini") ||
-      v.includes("codex-mini") ||
-      v.includes("codexmini")
-    )
-      return "GPT-5.1-Codex-Mini";
-    if (v.includes("gpt-5.3") || v.includes("codex")) return "GPT-5.3-codex";
-    if (v.includes("gpt-5.5")) return "GPT-5.5";
-    if (v.includes("opus")) return "Opus";
-    if (v.includes("sonnet")) return "Sonnet";
-    if (v.includes("haiku")) return "Haiku";
-    if (v.includes("fable")) return "Fable";
-    if (v === "unspecified" || v === "null") return "Unspecified";
-    return v
-      .replace(/^claude-/, "")
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  }
+  function normalizeModel(v) { return window.WorkbenchModelLabels.model(v); }
   function sessionIdentity(r) {
     const machine = String(
       r.machine || r.host || r.hostname || r.machineId || "",
@@ -31683,22 +31682,8 @@ window.__WBReactRender = function () {
     );
     return record;
   }
-  // Session control write path: window.__WBSessionControl is the named seam
-  // the JSX session dialog calls to send a reply, answer an AskUserQuestion,
-  // start a session on a chosen machine, and read an action back -- all
-  // through POST/GET /v1/pending-actions, the same Session-Bridge relay
-  // route the iOS app already writes through. pending-actions.js shapes the
-  // body; liveApiRequest() below carries it, sending the JWT-preferring
-  // bearer from liveApiBearerToken() rather than LiveApi.request()'s own
-  // static-token-only header -- workbench-live-api.js is not this file's to
-  // change, so the auth-header swap for this route lives here instead of
-  // there. Every other LiveApi.* caller (gate decisions, actions,
-  // sessions/machines polling) is untouched and keeps the static token.
-  //
-  // Unlike requestGateDecision (toast + null), these refuse loudly by
-  // throwing: a tap that silently no-ops must not look like it worked, and
-  // the composer/dialog is expected to catch and surface the message rather
-  // than swallow it.
+  // Session controls and fleet reads share WorkbenchLiveApi's current login.
+  // The relay remains authoritative for session ownership and action receipts.
   function sessionControlAvailable() {
     return Boolean(LiveApi?.functionBaseUrl?.() && liveApiBearerToken());
   }
@@ -31709,33 +31694,8 @@ window.__WBReactRender = function () {
       );
     }
   }
-  // Mirrors LiveApi.request()'s own body/error handling (workbench-live-api.js)
-  // but resolves the Authorization header through liveApiBearerToken() so a
-  // signed-in dashboard sends its Supabase JWT instead of the static token.
-  async function liveApiRequest(path, { method = "GET", body = null } = {}) {
-    const base = LiveApi?.functionBaseUrl?.();
-    const token = liveApiBearerToken();
-    if (!base || !token) throw new Error("Workbench Live is not configured.");
-    const headers = { Authorization: `Bearer ${token}`, Accept: "application/json" };
-    const init = { method, headers };
-    if (body != null) {
-      headers["Content-Type"] = "application/json";
-      init.body = JSON.stringify(body);
-    }
-    const res = await fetch(`${base}${path}`, init);
-    const text = await res.text();
-    let data = {};
-    if (text) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error("Workbench Live API returned invalid JSON.");
-      }
-    }
-    if (!res.ok) {
-      throw new Error(data.error || `Workbench Live API failed (${res.status}).`);
-    }
-    return data;
+  async function liveApiRequest(path, options = {}) {
+    return LiveApi.request(path, options);
   }
   function pendingActionResult(data) {
     const action = (data && data.pending_action) || data || {};
