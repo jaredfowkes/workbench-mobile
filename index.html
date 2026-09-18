@@ -3920,6 +3920,15 @@ button.metric-card:hover {
   }
 }
 
+.money-summary { display: flex; gap: 24px; flex-wrap: wrap; padding: 24px 0; }
+.money-summary small { display: block; color: var(--text-secondary); margin-bottom: 10px; }
+.money-summary strong { font-size: 28px; color: var(--text-strong); }
+.money-scenario { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+.money-scenario label { display: grid; gap: 10px; color: var(--text-secondary); font-size: 14px; }
+.money-scenario input { min-height: 44px; max-width: 220px; background: var(--surface-card); color: var(--text-strong); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 8px; }
+.money-scenario input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.money-scenario output { font-size: 20px; color: var(--text-strong); }
+
   </style>
 </head>
 <body>
@@ -16837,6 +16846,35 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 });
 
 
+(function(root, factory) {
+  const api = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.WorkbenchFinance = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function() {
+  'use strict';
+  function validate(value) {
+    const fail = () => { throw new Error('This is not a supported Workbench finance snapshot.'); };
+    if (!value || value.kind !== 'workbench-finance' || value.schemaVersion !== 1 || value.currency !== 'USD') fail();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value.asOf || '') || !value.coverage || !Number.isInteger(value.coverage.transactionCount) || value.coverage.transactionCount < 0) fail();
+    for (const key of ['months','categories','recurring']) if (!Array.isArray(value[key]) || value[key].length > 5000) fail();
+    const amount = n => typeof n === 'number' && Number.isFinite(n) && n >= 0;
+    const label = s => typeof s === 'string' && s.length > 0 && s.length <= 500;
+    if (value.months.some(m => !m || !/^\d{4}-(0[1-9]|1[0-2])$/.test(m.month) || !['inflows','purchases','outflows','transfersOut'].every(k=>amount(m[k])))) fail();
+    if (new Set(value.months.map(m=>m.month)).size !== value.months.length) fail();
+    if (value.categories.some(c => !c || !label(c.name) || !amount(c.amount))) fail();
+    if (value.recurring.some(r => !r || !label(r.merchant) || !amount(r.monthlyEstimate) || !['recent','historical'].includes(r.status))) fail();
+    return value;
+  }
+  function summary(value) {
+    validate(value);
+    const month = value.months.find(m => m.month === value.asOf.slice(0,7)) || null;
+    const recent = value.recurring.filter(r=>r.status === 'recent');
+    return { month, recent, monthlyRecurringEstimate: recent.reduce((n,r)=>n+r.monthlyEstimate,0) };
+  }
+  return { validate, summary };
+});
+
+
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -17117,7 +17155,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-18.21";
+  const WB_VERSION = "2026-09-18.23";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -21654,18 +21692,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     if (el) el.textContent = text;
   }
   function overviewHTML() {
-    const st = globalStats(), acts = actionItems(), top = acts[0];
-    state._acts = acts;
-    const second = acts.find((a) => top && actionKey(a) !== actionKey(top));
-    const insight = top
-      ? `The cleanest next move is ${top.p.data.project}: ${displayText(top.text, 130)}`
-      : "Everything is quiet enough for review, cleanup, or a new capture.";
-    const note = st.blocked
-      ? `${st.blocked} blocker${st.blocked === 1 ? "" : "s"} should be cleared before adding more work.`
-      : st.doing
-        ? `${st.doing} item${st.doing === 1 ? "" : "s"} already in flight; finish before widening the queue.`
-        : `${st.open} open items remain across the workbench, with ${st.week} completed this week.`;
-    return `<section class="page reveal today-page"><div class="hero editorial-hero"><div><div class="kicker">Today</div><h1>${greeting()}, Jared.</h1><p class="lede">A calm operating brief from the repo.</p></div><div class="trace-stamp">${esc(today())} · ${state.backend === "github" ? "GitHub" : "local folder"}</div></div>${intakeBannerHTML()}<div class="today-grid"><article class="card editorial-card"><div class="kicker">Operating note</div><h2>${esc(insight)}</h2><p class="muted">${esc(note)}</p><div class="trace-row"><span class="chip">${st.open} open</span><span class="chip">${st.doing} in flight</span><span class="chip ${st.blocked ? "bad" : "ok"}">${st.blocked ? `${st.blocked} blocked` : "No blockers"}</span><span class="chip">${st.week} done this week</span></div>${top ? `<div class="action-tools"><button type="button" class="btn primary" data-open-direct="${esc(top.p.dirName)}">Open project</button><button type="button" class="btn" data-copy-action="${esc(actionKey(top))}">Copy agent prompt</button><button type="button" class="btn tertiary" data-snooze-action="${esc(actionKey(top))}">Snooze</button></div>` : ""}</article><aside class="card reading-card"><div class="kicker">Today's read</div><h3>${second ? esc(second.p.data.project) : "Workbench"}</h3><p class="muted">${second ? esc(displayText(second.text, 220)) : "Review recent activity or capture the next idea without forcing a decision yet."}</p>${second ? `<button class="btn tertiary" data-open-direct="${esc(second.p.dirName)}">Read project room</button>` : `<button class="btn tertiary" data-view="projects">Browse projects</button>`}</aside></div><div class="grid cols-2 below-fold"><div class="card compact"><div class="cardhead"><div><h3>Recent activity</h3><p class="section-note">Latest meaningful project log entries</p></div></div><div class="refined-list">${recentActivity().slice(0, 5).map((r) => `<div class="refined-row pressable" role="button" tabindex="0" data-open-project="${esc(r.p.dirName)}"><span><span class="refined-title">${esc(r.p.data.project)}</span><span class="refined-sub">${esc(r.ts)} · ${esc(r.text)}</span></span><span aria-hidden="true">›</span></div>`).join("") || '<div class="empty-state">No recent activity yet.</div>'}</div></div><div class="card momentum-card">${momentumPanelHTML(st)}</div></div></section>`;
+    const acts = actionItems(); state._acts = acts;
+    const hub = window.WorkbenchHub.build({ personalTasks: state.personalTasks, actions: acts,
+      sessions: state.workbenchLive?.status?.liveSessions || state.sessions,
+      machines: state.workbenchLive?.machines, gates: pendingGateRequests() });
+    return `<section class="page hub-page"><h1>${esc(greeting())}, Jared.</h1><h2>Personal, before it slips</h2>
+      ${state.personalTasksHealth?.status !== "ok" ? '<p>Personal tasks could not be refreshed. This is not a complete agenda.</p>' : ''}
+      ${hub.personal.slice(0,6).map(({task,overdue})=>`<p>${esc(task.title)}${overdue?' · Overdue':''}</p>`).join('')}
+      <p>Calendar and meeting commitments are not connected to this view yet.</p><h2>Move something forward</h2>
+      ${hub.projects.slice(0,5).map(a=>`<button class="hub-row" data-open-direct="${esc(a.p.dirName)}">${esc(a.text)}</button>`).join('')}
+      <h2>Your machines</h2>${hub.fleet.map(host=>`<p>${esc(host.label)} · ${esc(host.presence)} · ${esc(host.control)}</p>`).join('')}</section>`;
   }
 
   function focusHTML() {
@@ -22489,6 +22525,10 @@ function navItems() {
       label: 'To-do',
       active: state.view === 'todo'
     }, {
+      id: 'money',
+      label: 'Money',
+      active: state.view === 'money'
+    }, {
       id: 'intake',
       label: 'Intake',
       active: state.view === 'intake'
@@ -22913,9 +22953,9 @@ function TodayView() {
   const personalReady = state.personalTasksHealth?.status === 'ok';
   const sessions = hub.sessions.slice(0, 5);
   const personal = hub.personal.slice(0, 6);
-  const projects = hub.projects.slice(0, 5);
+  const projects = hub.projects;
   const [scope, setScope] = React.useState('all');
-  const selected = projects.filter(a => scope === 'all' || a.p?.section?.toLowerCase() === scope);
+  const selected = projects.filter(a => scope === 'all' || a.p?.section?.toLowerCase() === scope).slice(0, 5);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad,
     className: "today-page hub-page"
@@ -22957,7 +22997,7 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "check",
     size: 20
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machine_id || ''), " · Waiting for you")), /*#__PURE__*/React.createElement(Icon, {
+  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machineId || gate.machine_id || ''), " · Waiting for you")), /*#__PURE__*/React.createElement(Icon, {
     name: "chevronRight",
     size: 18
   }))) : /*#__PURE__*/React.createElement("p", {
@@ -23084,7 +23124,122 @@ function TodayView() {
   }, "Session totals, project attribution, model mix, and billing evidence."), /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
     onClick: () => setView('usage')
-  }, "Review AI usage")))));
+  }, "Review AI usage"), " ", /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    onClick: () => setView('money')
+  }, "Open Money")))));
+}
+function MoneyView() {
+  const [data, setData] = React.useState(window.__WBFinanceSnapshot || null);
+  const [error, setError] = React.useState('');
+  const [monthly, setMonthly] = React.useState('');
+  const [cut, setCut] = React.useState(10);
+  const input = React.useRef(null);
+  const summary = data ? window.WorkbenchFinance.summary(data) : null;
+  const current = summary?.month;
+  const load = async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > 2 * 1024 * 1024) throw new Error('Choose a finance snapshot smaller than 2 MB.');
+      const parsed = window.WorkbenchFinance.validate(JSON.parse(await file.text()));
+      window.__WBFinanceSnapshot = parsed;
+      setData(parsed);
+      setError('');
+    } catch (err) {
+      setError(err.message || 'Could not read that snapshot.');
+    }
+    e.target.value = '';
+  };
+  const savings = Math.max(0, Number(monthly) || 0) * cut / 100;
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad,
+    className: "hub-page"
+  }, /*#__PURE__*/React.createElement(PageHeader, {
+    title: "Your money, in view",
+    lede: "A private workspace for spending, recurring charges, and decisions worth making.",
+    action: /*#__PURE__*/React.createElement(Button, {
+      onClick: () => input.current?.click()
+    }, "Import finance snapshot")
+  }), /*#__PURE__*/React.createElement("input", {
+    type: "file",
+    accept: "application/json,.json",
+    ref: input,
+    onChange: load,
+    hidden: true,
+    "aria-label": "Import finance snapshot"
+  }), error && /*#__PURE__*/React.createElement(Banner, {
+    variant: "warn"
+  }, error), !data ? /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "Start with your existing ledger"), /*#__PURE__*/React.createElement("p", {
+    className: "hub-empty"
+  }, "Import the private Tower finance snapshot exported by Spend Optimizer. It brings purchase totals, category breakdowns, and recurring-charge evidence into this view."), /*#__PURE__*/React.createElement("p", {
+    className: "hub-source"
+  }, "The snapshot stays in this page's memory until you close or reload it. This view does not upload financial records or connect to bank accounts."), /*#__PURE__*/React.createElement(Button, {
+    variant: "secondary",
+    onClick: () => input.current?.click()
+  }, "Choose snapshot")) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(Banner, {
+    variant: "info"
+  }, "Snapshot as of ", data.asOf, " · ", data.coverage.transactionCount.toLocaleString(), " transactions · latest transaction ", data.coverage.latestTransaction || 'unknown', ". Bank sync and account completeness are unverified."), /*#__PURE__*/React.createElement("div", {
+    className: "hub-layout"
+  }, /*#__PURE__*/React.createElement("main", null, /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "Month to date"), /*#__PURE__*/React.createElement("div", {
+    className: "money-summary"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("small", null, "Purchase spending"), /*#__PURE__*/React.createElement("strong", null, current ? money(current.purchases) : 'No data')), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("small", null, "Credits and inflows"), /*#__PURE__*/React.createElement("strong", null, current ? money(current.inflows) : 'No data')), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("small", null, "All recorded outflows"), /*#__PURE__*/React.createElement("strong", null, current ? money(current.outflows) : 'No data'))), /*#__PURE__*/React.createElement("p", {
+    className: "hub-source"
+  }, "Purchases exclude transfers and debt payments. Inflows can include refunds; they are not verified income. These figures do not establish available cash.")), /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "Where purchases went"), data.categories.length ? data.categories.slice(0, 15).map(c => /*#__PURE__*/React.createElement("div", {
+    className: "hub-row",
+    key: c.name
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, c.name)), /*#__PURE__*/React.createElement("strong", null, money(c.amount)))) : /*#__PURE__*/React.createElement("p", {
+    className: "hub-empty"
+  }, "No categories for the snapshot month.")), /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "Monthly purchase history"), data.months.slice(-12).reverse().map(m => /*#__PURE__*/React.createElement("div", {
+    className: "hub-row",
+    key: m.month
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, m.month, m.month === data.asOf.slice(0, 7) ? ' · partial month' : '')), /*#__PURE__*/React.createElement("strong", null, money(m.purchases)))), /*#__PURE__*/React.createElement("p", {
+    className: "hub-source"
+  }, "A partial month and a complete month are different periods. A lower total alone is not evidence of savings."))), /*#__PURE__*/React.createElement("aside", null, /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "Recurring charges to review"), /*#__PURE__*/React.createElement("p", {
+    className: "hub-empty"
+  }, money(summary.monthlyRecurringEstimate), " estimated monthly from recent patterns."), summary.recent.map((r, i) => /*#__PURE__*/React.createElement("div", {
+    className: "hub-row",
+    key: r.merchant + i
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, r.merchant), /*#__PURE__*/React.createElement("small", null, "Last seen ", r.lastSeen, " · ", r.evidenceCount, " observations")), /*#__PURE__*/React.createElement("strong", null, money(r.monthlyEstimate)))), !summary.recent.length && /*#__PURE__*/React.createElement("p", {
+    className: "hub-empty"
+  }, "No recent recurring patterns established."), /*#__PURE__*/React.createElement("p", {
+    className: "hub-source"
+  }, "Confirm each contract before treating it as an active bill or cancellation opportunity.")))), /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    onClick: () => {
+      delete window.__WBFinanceSnapshot;
+      setData(null);
+    }
+  }, "Clear finance snapshot")), /*#__PURE__*/React.createElement("section", {
+    className: "hub-section"
+  }, /*#__PURE__*/React.createElement("h2", null, "What would one change be worth?"), /*#__PURE__*/React.createElement("p", {
+    className: "hub-empty"
+  }, "Choose a discretionary monthly amount and a reduction to explore. This is a scenario, not a forecast."), /*#__PURE__*/React.createElement("div", {
+    className: "money-scenario"
+  }, /*#__PURE__*/React.createElement("label", null, "Monthly amount to review ($)", /*#__PURE__*/React.createElement("input", {
+    type: "number",
+    min: "0",
+    step: "10",
+    value: monthly,
+    onChange: e => setMonthly(e.target.value)
+  })), /*#__PURE__*/React.createElement("label", null, "Reduction · ", cut, "%", /*#__PURE__*/React.createElement("input", {
+    type: "range",
+    min: "0",
+    max: "50",
+    step: "5",
+    value: cut,
+    onChange: e => setCut(Number(e.target.value))
+  })), /*#__PURE__*/React.createElement("output", null, money(savings), " / month · ", money(savings * 12), " / year"))));
 }
 function FocusView() {
   const mobile = useViewport();
@@ -26801,6 +26956,7 @@ function Content() {
   if (state.view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
   if (state.view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
   if (state.view === 'todo') return /*#__PURE__*/React.createElement(ToDoView, null);
+  if (state.view === 'money') return /*#__PURE__*/React.createElement(MoneyView, null);
   if (state.view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
   if (state.view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
   if (state.view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
