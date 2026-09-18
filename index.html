@@ -15819,7 +15819,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   async function request(path, { method = "GET", body = null } = {}) {
-    const base = functionBaseUrl();
     const auth = globalThis.WBSupabaseAuth;
     const normalized = value => String(value || '').replace(/\/$/, '');
     if (auth?.hasSession?.() && normalized(getConfig()?.supabaseUrl) === normalized(auth.config?.()?.url)
@@ -15828,6 +15827,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         .finally(() => { refreshInFlight = null; });
       if (!await refreshInFlight) throw new Error('Workbench sign-in expired. Sign in again to reconnect.');
     }
+    const base = functionBaseUrl();
     const token = bearerToken();
     if (!base || !token) throw new Error("Workbench Live is not configured.");
     const headers = {
@@ -15874,11 +15874,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       summary: row.summary,
       titleSource: row.title_source,
       titleLocked: row.title_locked,
+      desktopTitle: row.desktop_title,
+      desktopTitleAt: row.desktop_title_at,
       cwd: row.cwd,
       ide: row.ide,
       editor: row.editor,
       backend: row.backend,
       model: row.model,
+      harness: row.harness,
+      capabilities: row.capabilities || row.control_capabilities || null,
       todoSnapshot: row.todo_snapshot,
       todoCounts: row.todo_counts,
       activeTodo: row.active_todo,
@@ -16402,6 +16406,77 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WorkbenchSessionCapabilities = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  const NAMES = ["transcript_read", "open_resume", "send_steer", "interrupt", "model_change", "route_change"];
+  const HARNESS_LABELS = {
+    codex: "Codex", cursor: "Cursor", claude: "Claude Code", claude_code: "Claude Code", "claude-code": "Claude Code",
+  };
+
+  function harnessOf(session) {
+    const raw = String(session?.harness || session?.ide || session?.editor || session?.backend || "").trim().toLowerCase();
+    return { key: raw.replace(/\s+/g, "_"), label: HARNESS_LABELS[raw.replace(/\s+/g, "_")] || (raw ? raw : "Unknown harness") };
+  }
+
+  function sourceOf(session) {
+    const value = session?.capabilities ?? session?.control_capabilities ?? session?.controlCapabilities;
+    return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+  }
+
+  function explicitValue(source, name) {
+    if (!source || !Object.prototype.hasOwnProperty.call(source, name)) return null;
+    const raw = source[name];
+    if (raw === true) return { allowed: true, reason: "Reported by the session adapter." };
+    if (raw && typeof raw === "object" && raw.supported === true) return { allowed: true, reason: String(raw.reason || "Reported by the session adapter.") };
+    if (raw && typeof raw === "object" && typeof raw.reason === "string") return { allowed: false, reason: raw.reason };
+    return { allowed: false, reason: "Adapter reported this control as unsupported." };
+  }
+
+  function machineContract(session, machine) {
+    // These machine capabilities belong to the Claude Desktop watcher, not
+    // every harness on the host. Desktop title fields are written by that
+    // daemon's correlated sidebar/store path and survive ordinary upserts.
+    const harness = harnessOf(session).key;
+    if (/codex|cursor|opencode/.test(harness)) return null;
+    const desktopTitle = session?.desktopTitle ?? session?.desktop_title;
+    const desktopAt = Date.parse(session?.desktopTitleAt ?? session?.desktop_title_at ?? "");
+    const sidebarSource = (session?.titleSource ?? session?.title_source) === "desktop_sidebar";
+    if (!sidebarSource && !(typeof desktopTitle === "string" && desktopTitle.trim() && Number.isFinite(desktopAt))) return null;
+    const raw = machine?.capabilities;
+    if (!Array.isArray(raw)) return null;
+    const names = new Set(raw.map((value) => String(value || "").toLowerCase()));
+    const out = {};
+    if (names.has("reply") || names.has("answer_question")) out.send_steer = true;
+    if (names.has("stop_turn")) out.interrupt = true;
+    return out;
+  }
+
+  function derive(session, machine, now = Date.now()) {
+    const harness = harnessOf(session);
+    const source = sourceOf(session) || machineContract(session, machine);
+    const live = Boolean(machine?.daemonLastSeenAt) && Number.isFinite(Date.parse(machine.daemonLastSeenAt))
+      && now - Date.parse(machine.daemonLastSeenAt) >= -60000
+      && now - Date.parse(machine.daemonLastSeenAt) <= 15 * 60 * 1000;
+    const capabilities = {};
+    for (const name of NAMES) {
+      const explicit = explicitValue(source, name);
+      const storedTranscript = name === "transcript_read" && Boolean(session?.session_uid || session?.sessionFull || session?.session);
+      capabilities[name] = explicit || (storedTranscript ? { allowed: true, reason: "Stored server transcript events are readable." } : null)
+        || { allowed: false, reason: live ? "Capability not reported by this adapter." : "Target machine daemon is offline or stale." };
+      if (explicit && !live && name !== "transcript_read") capabilities[name] = { allowed: false, reason: "Target machine daemon is offline or stale." };
+    }
+    return { harness, live, capabilities, reported: Boolean(source) };
+  }
+
+  return { NAMES, derive };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.WorkbenchPendingActions = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
@@ -16550,7 +16625,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return buildBody("start_session", { machineId, sessionUid, payload, options });
   }
 
-  return { reply, answerQuestion, startSession, ANSWER_KEYS };
+  // stopTurn: { sessionUid, machineId }. The daemon applies this to the
+  // currently targeted session; the relay validates the empty payload.
+  function stopTurn(input = {}, options) {
+    const machineId = requireString(input.machineId, "machineId");
+    const sessionUid = requireString(input.sessionUid, "sessionUid");
+    return buildBody("stop_turn", { machineId, sessionUid, payload: {}, options });
+  }
+
+  return { reply, answerQuestion, startSession, stopTurn, ANSWER_KEYS };
 });
 
 
@@ -17216,7 +17299,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-18.25";
+  const WB_VERSION = "2026-09-18.26";
   // Build-time list of project base paths ("Personal/Projects/Foo") that carry
   // an intent.md, computed by build-dashboard.py walking the project folders
   // directly -- see intent_project_bases() there. Not part of the GitHub tree
@@ -27922,6 +28005,12 @@ function SessionDialog({
   const [sending, setSending] = React.useState(false);
   const [pendingAction, setPendingAction] = React.useState(null);
   const rawRowsRef = React.useRef([]);
+  const machineForSession = (state.workbenchLive?.machines || []).find(row => row && (row.machine_id === machineId || row.hostname === machineId));
+  const transcriptAllowed = !!window.WorkbenchSessionCapabilities?.derive(session, machineForSession).capabilities.transcript_read.allowed;
+  React.useEffect(() => {
+    setComposerText('');
+    setPendingAction(null);
+  }, [sessionUid, machineId]);
 
   // Transcript load + visibility/open-gated polling, 5-second floor.
   // Re-runs whenever the open session changes (including closing,
@@ -27929,13 +28018,15 @@ function SessionDialog({
   React.useEffect(() => {
     rawRowsRef.current = [];
     setTurns([]);
-    setComposerText('');
-    setPendingAction(null);
     if (!sessionUid || !LiveApi?.enabled?.()) return undefined;
+    if (!transcriptAllowed) return undefined;
     let alive = true;
     const poller = SessionTranscript.createSessionPoller({
       fetchSince: async since => {
         const out = await LiveApi.fetchTranscript(sessionUid, since || '');
+        if (!alive) return {
+          sinceObservedAt: since
+        };
         rawRowsRef.current = SessionTranscript.mergeTranscriptRows(rawRowsRef.current, out.events);
         if (alive) setTurns(SessionTranscript.mapTranscriptEvents(rawRowsRef.current));
         return {
@@ -27956,7 +28047,7 @@ function SessionDialog({
       poller.stop();
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [sessionUid]);
+  }, [sessionUid, machineId, transcriptAllowed]);
   useActionStatusPoll(pendingAction?.actionId, (status, record) => {
     setPendingAction(prev => prev ? {
       ...prev,
@@ -27988,6 +28079,20 @@ function SessionDialog({
   };
   const askQuestion = SessionTranscript.latestAskUserQuestion(turns);
   const blockedReason = composerBlockedReason(machineId, machine);
+  const capabilityApi = window.WorkbenchSessionCapabilities;
+  const capabilityView = capabilityApi?.derive(session, liveMachineRow(machineId)) || {
+    harness: {
+      label: 'Unknown harness'
+    },
+    live: false,
+    reported: false,
+    capabilities: Object.fromEntries(['transcript_read', 'open_resume', 'send_steer', 'interrupt', 'model_change', 'route_change'].map(name => [name, {
+      allowed: false,
+      reason: 'Capability model unavailable in this build.'
+    }]))
+  };
+  const sendCapability = capabilityView.capabilities.send_steer;
+  const interruptCapability = capabilityView.capabilities.interrupt;
 
   // Every refusal here is a toast, and the reason a control might be
   // blocked is ALSO checked inside the handler, not only via a
@@ -28007,6 +28112,10 @@ function SessionDialog({
     }
     if (blockedReason) {
       toast(blockedReason, 'warn');
+      return;
+    }
+    if (!sendCapability.allowed) {
+      toast(sendCapability.reason, 'warn');
       return;
     }
     setSending(true);
@@ -28041,6 +28150,10 @@ function SessionDialog({
       toast(blockedReason, 'warn');
       return;
     }
+    if (!sendCapability.allowed) {
+      toast(sendCapability.reason, 'warn');
+      return;
+    }
     const text = composerText.trim();
     if (!text) {
       toast('A reply is required.', 'warn');
@@ -28063,6 +28176,37 @@ function SessionDialog({
       toast(String(err?.message || err), 'warn');
     } finally {
       setSending(false);
+    }
+  };
+  const interruptSession = async () => {
+    if (!LiveApi?.enabled?.()) {
+      toast('Workbench Live is not configured on this device.', 'warn');
+      return;
+    }
+    const seam = sessionControlSeam();
+    if (typeof seam?.interruptSession !== 'function') {
+      toast('Interrupt control is not available on this build.', 'warn');
+      return;
+    }
+    if (blockedReason) {
+      toast(blockedReason, 'warn');
+      return;
+    }
+    if (!interruptCapability.allowed) {
+      toast(interruptCapability.reason, 'warn');
+      return;
+    }
+    try {
+      const record = await seam.interruptSession({
+        sessionUid,
+        machineId
+      });
+      if (record?.actionId) setPendingAction({
+        actionId: record.actionId,
+        status: 'queued'
+      });
+    } catch (err) {
+      toast(String(err?.message || err), 'warn');
     }
   };
   const metadata = /*#__PURE__*/React.createElement(Stack, {
@@ -28151,9 +28295,11 @@ function SessionDialog({
       }
     }, pendingAction.error) : null), blockedReason && /*#__PURE__*/React.createElement("span", {
       className: "wb-composer-notice"
-    }, blockedReason), askQuestion ? /*#__PURE__*/React.createElement(AskUserQuestionComposer, {
+    }, blockedReason), !blockedReason && !sendCapability.allowed && /*#__PURE__*/React.createElement("span", {
+      className: "wb-composer-notice"
+    }, "Sending disabled: ", sendCapability.reason), askQuestion ? /*#__PURE__*/React.createElement(AskUserQuestionComposer, {
       prompt: askQuestion,
-      disabled: sending,
+      disabled: sending || !sendCapability.allowed,
       onSubmit: submitAnswer
     }) : /*#__PURE__*/React.createElement("div", {
       className: "wb-composer"
@@ -28162,17 +28308,24 @@ function SessionDialog({
       value: composerText,
       onChange: e => setComposerText(e.target.value),
       placeholder: "Reply to this session…",
-      disabled: sending,
+      disabled: sending || !sendCapability.allowed,
       rows: 2
     }), /*#__PURE__*/React.createElement(Button, {
       onClick: sendReply,
-      disabled: sending
+      disabled: sending || !sendCapability.allowed,
+      title: sendCapability.reason
     }, sending ? 'Sending…' : 'Send')), /*#__PURE__*/React.createElement(Cluster, {
       gap: 2,
       style: {
         flexWrap: 'wrap'
       }
     }, /*#__PURE__*/React.createElement(Button, {
+      variant: "secondary",
+      size: "sm",
+      onClick: interruptSession,
+      disabled: !interruptCapability.allowed,
+      title: interruptCapability.reason
+    }, "Interrupt"), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
       onClick: () => runAction('request_handoff')
@@ -28192,6 +28345,18 @@ function SessionDialog({
   }, /*#__PURE__*/React.createElement(Stack, {
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Controls",
+    title: `${capabilityView.harness.label} capabilities`
+  }, /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, Object.entries(capabilityView.capabilities).map(([name, value]) => /*#__PURE__*/React.createElement(ListItem, {
+    key: name,
+    title: name.replace(/_/g, ' '),
+    description: value.reason,
+    trailing: /*#__PURE__*/React.createElement(Badge, {
+      tone: value.allowed ? 'favorable' : 'neutral'
+    }, value.allowed ? 'available' : 'disabled')
+  })))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Transcript",
     title: "Latest turns"
   }, /*#__PURE__*/React.createElement("div", {
@@ -28199,6 +28364,9 @@ function SessionDialog({
   }, !LiveApi?.enabled?.() ? /*#__PURE__*/React.createElement(EmptyState, {
     title: "Workbench Live not configured",
     description: "Turn it on under About to read this session's transcript."
+  }) : !capabilityView.capabilities.transcript_read.allowed ? /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Transcript read disabled",
+    description: capabilityView.capabilities.transcript_read.reason
   }) : turns.length ? turns.slice(-40).map(turn => /*#__PURE__*/React.createElement(TranscriptTurnRow, {
     key: turn.id,
     turn: turn
@@ -31721,6 +31889,10 @@ window.__WBReactRender = function () {
     requireLiveApiForSessionControl();
     return postPendingAction(PendingActions.startSession(input));
   }
+  async function interruptSession(input) {
+    requireLiveApiForSessionControl();
+    return postPendingAction(PendingActions.stopTurn(input));
+  }
   // GET /v1/pending-actions/:id -- the relay slice adds this route; the
   // dashboard's read-side poller owns calling it on a schedule, this just
   // shapes the one-off lookup. Expected shape:
@@ -31731,7 +31903,7 @@ window.__WBReactRender = function () {
     if (!id) throw new Error("actionId is required.");
     return liveApiRequest(`/v1/pending-actions/${encodeURIComponent(id)}`);
   }
-  window.__WBSessionControl = { sendReply, answerQuestion, startSession, actionStatus };
+  window.__WBSessionControl = { sendReply, answerQuestion, startSession, interruptSession, actionStatus };
   const LIVE_ACTION_META = {
     refresh_status: {
       label: "Refresh status",
