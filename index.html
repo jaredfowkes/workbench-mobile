@@ -24001,7 +24001,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-25.20";
+  const WB_VERSION = "2026-09-25.21";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -43530,6 +43530,186 @@ window.__WBReactRender = function () {
   })();
 })();
 
+  </script>
+  <!-- The daily review is a private view inside this signed-in Pages shell.
+       Its data comes only from owner-scoped Supabase tables after GitHub login. -->
+  <style>
+  html.wb-daily-review #app,html.wb-daily-review #landing,html.wb-daily-review #wbBootOverlay,
+  html.wb-daily-review #toast{display:none!important}
+  #wbDailyReview{position:relative;z-index:1000;min-height:100vh;background:#fff;color:#20232a;
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  #wbDailyReview *{box-sizing:border-box}
+  #wbDailyReview .daily-shell{max-width:980px;margin:auto;padding:30px 32px 70px}
+  #wbDailyReview .daily-mast{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #20232a;
+    padding-bottom:13px;font-size:12px;font-weight:650;letter-spacing:.05em}
+  #wbDailyReview .daily-intro{display:flex;justify-content:space-between;align-items:end;gap:25px;padding:40px 0 28px}
+  #wbDailyReview h1{font-size:38px;line-height:1.1;letter-spacing:-.025em;margin:0 0 12px}
+  #wbDailyReview h2{font-size:18px;margin:0}
+  #wbDailyReview p{margin:5px 0;color:#62666f}
+  #wbDailyReview button{font:inherit;cursor:pointer}
+  #wbDailyReview .daily-primary{min-height:44px;border:1px solid #20232a;border-radius:8px;
+    padding:9px 16px;background:#20232a;color:#fff;font-weight:650}
+  #wbDailyReview .daily-text{border:0;background:transparent;color:#275a91;font-weight:650;
+    min-height:44px;padding:8px 10px}
+  #wbDailyReview .daily-section{border-bottom:1px solid #20232a;padding:12px 0;display:flex;justify-content:space-between}
+  #wbDailyReview .daily-row{border-bottom:1px solid #e1e3e7;padding:15px 0}
+  #wbDailyReview .daily-row-head{display:flex;align-items:start;gap:14px;justify-content:space-between}
+  #wbDailyReview .daily-row-main{flex:1;min-width:0}
+  #wbDailyReview .daily-row strong{font-size:16px;line-height:1.4}
+  #wbDailyReview .daily-meta{font-size:13px;color:#62666f;margin-top:4px}
+  #wbDailyReview .daily-actions{display:flex;gap:4px}
+  #wbDailyReview .daily-form{display:grid;gap:10px;margin-top:12px;max-width:650px}
+  #wbDailyReview .daily-form label{font-size:13px;font-weight:650}
+  #wbDailyReview .daily-form input,#wbDailyReview .daily-form textarea{display:block;width:100%;font:inherit;
+    color:#20232a;background:#fff;border:1px solid #94969c;border-radius:7px;padding:10px 12px;margin-top:4px}
+  #wbDailyReview .daily-form textarea{resize:vertical}
+  #wbDailyReview .daily-add{margin-top:36px;border:1px solid #c7c9ce;border-radius:10px;padding:20px}
+  #wbDailyReview .daily-message{min-height:24px;color:#275a91;font-size:13px;font-weight:650}
+  #wbDailyReview button:focus-visible,#wbDailyReview input:focus-visible,#wbDailyReview textarea:focus-visible,
+  #wbDailyReview a:focus-visible{outline:3px solid #275a91;outline-offset:3px}
+  #wbDailyReview button:disabled{opacity:.55;cursor:wait}
+  @media(max-width:680px){#wbDailyReview .daily-shell{padding:18px 18px 50px}
+    #wbDailyReview .daily-intro{display:block;padding:32px 0 22px}
+    #wbDailyReview h1{font-size:32px}
+    #wbDailyReview .daily-intro .daily-primary{margin-top:20px;width:100%}
+    #wbDailyReview .daily-row-head{display:block}
+    #wbDailyReview .daily-actions{margin-top:5px}}
+  </style>
+  <script>
+  (function(){
+    const params=new URLSearchParams(location.search);
+    let returning=false;
+    try{returning=sessionStorage.getItem('wb-briefing-return')==='1'}catch{}
+    if(params.get('view')!=='daily-briefing'&&!returning)return;
+    if(returning){
+      try{sessionStorage.removeItem('wb-briefing-return')}catch{}
+      history.replaceState(null,'',location.pathname+'?view=daily-briefing');
+    }
+    document.documentElement.classList.add('wb-daily-review');
+    const root=document.createElement('main');root.id='wbDailyReview';
+    root.innerHTML='<div class="daily-shell"><header class="daily-mast"><span>Workbench Daily</span><a href="./">Back to dashboard</a></header><section class="daily-intro"><div><h1>Review before print</h1><p>Update the work list, then print the full briefing.</p></div><button id="dailyPrint" class="daily-primary" type="button" disabled>Print reviewed briefing</button></section><div id="dailyMessage" class="daily-message" role="status" aria-live="polite"></div><div id="dailyBody"></div></div>';
+    document.body.append(root);
+    const byId=id=>document.getElementById(id),auth=window.WBSupabaseAuth;
+    let source=null,rows=[],busy=false;
+    function node(tag,cls,value){const n=document.createElement(tag);if(cls)n.className=cls;if(value!=null)n.textContent=value;return n}
+    function say(value){byId('dailyMessage').textContent=value||''}
+    async function api(path,method='GET',body){
+      if(!auth?.hasSession?.()||!await auth.ensureFresh?.())throw Error('Sign in with GitHub to review the briefing.');
+      const cfg=auth.config(),headers={apikey:cfg.anonKey,Authorization:'Bearer '+auth.accessToken(),Accept:'application/json'};
+      if(body!==undefined){headers['Content-Type']='application/json';headers.Prefer='return=representation'}
+      const response=await fetch(cfg.url+'/rest/v1/'+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});
+      if(!response.ok)throw Error('Briefing review request failed ('+response.status+').');
+      return response.status===204?[]:await response.json();
+    }
+    function formField(label,value,max,required,multiline){
+      const wrap=node('label','',label),field=node(multiline?'textarea':'input');
+      field.value=value||'';field.maxLength=max;field.required=!!required;if(multiline)field.rows=2;
+      wrap.append(field);return{wrap,field};
+    }
+    function editForm(row,action){
+      document.querySelectorAll('#wbDailyReview .daily-row .daily-form').forEach(n=>n.remove());
+      const host=byId('daily-task-'+row.task_id);if(!host)return;
+      const form=node('form','daily-form');
+      const task=formField('Task',row.task,500,true,false),why=formField('Context',row.why,1000,false,true);
+      const reason=formField(action==='complete'?'Why is this complete?':'Why change it? (optional)','',1000,action==='complete',true);
+      if(action==='edit')form.append(task.wrap,why.wrap);
+      form.append(reason.wrap);
+      const buttons=node('div'),save=node('button','daily-primary',action==='complete'?'Mark complete':'Save change'),cancel=node('button','daily-text','Cancel');
+      save.type='submit';cancel.type='button';cancel.onclick=()=>form.remove();buttons.append(save,cancel);form.append(buttons);
+      form.onsubmit=async event=>{
+        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
+        try{
+          const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
+          const changes=action==='complete'?{status:'closed',review_reason:reason.field.value.trim()}:
+            {task:task.field.value.trim(),why:why.field.value.trim(),review_reason:reason.field.value.trim()||'Edited during briefing review'};
+          const result=await api(path,'PATCH',changes);
+          if(!result.length)throw Error('This list changed on another device. Reload and try again.');
+          await load();say('Saved. The correction is available for the next briefing audit.');
+        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
+      };
+      host.append(form);reason.field.focus();
+    }
+    async function reopen(row){
+      if(busy)return;busy=true;say('');
+      try{
+        const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
+        const result=await api(path,'PATCH',{status:'open',review_reason:'Reopened during briefing review'});
+        if(!result.length)throw Error('This list changed on another device. Reload and try again.');
+        await load();say('Task reopened.');
+      }catch(error){say(error.message)}finally{busy=false}
+    }
+    function taskRow(row,closed){
+      const outer=node('article','daily-row');outer.id='daily-task-'+row.task_id;
+      const head=node('div','daily-row-head'),main=node('div','daily-row-main'),actions=node('div','daily-actions');
+      main.append(node('strong','',row.task));
+      main.append(node('div','daily-meta',(row.source_kind==='project'?(row.project||'Project'):row.task_id)+(row.why?' · '+row.why:'')));
+      if(closed){if(row.review_reason)main.append(node('div','daily-meta','Completed: '+row.review_reason));
+        const reopenButton=node('button','daily-text','Reopen');reopenButton.onclick=()=>reopen(row);actions.append(reopenButton)}
+      else{const complete=node('button','daily-text','Complete'),edit=node('button','daily-text','Edit');
+        complete.onclick=()=>editForm(row,'complete');edit.onclick=()=>editForm(row,'edit');actions.append(complete,edit)}
+      head.append(main,actions);outer.append(head);return outer;
+    }
+    function render(){
+      const body=byId('dailyBody');body.replaceChildren();
+      const open=rows.filter(r=>r.status==='open'),closed=rows.filter(r=>r.status==='closed');
+      const heading=node('div','daily-section');heading.append(node('h2','','Outstanding work'),node('span','',open.length+' open'));body.append(heading);
+      if(!open.length)body.append(node('p','','No outstanding work. Add a task below if something is missing.'));
+      for(const row of open)body.append(taskRow(row,false));
+      const add=node('form','daily-form daily-add');add.append(node('h2','','Add missing work'));
+      const task=formField('Task','',500,true,false),why=formField('Context','',1000,false,true),reason=formField('Why was it missed? (optional)','',1000,false,false);
+      const save=node('button','daily-primary','Add to briefing');save.type='submit';add.append(task.wrap,why.wrap,reason.wrap,save);
+      add.onsubmit=async event=>{
+        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
+        try{
+          const row={owner_uid:auth.userId(),briefing_date:source.briefing_date,task_id:'R'+crypto.randomUUID().replace(/-/g,''),
+            source_kind:'manual',order_index:Math.max(-1,...rows.map(r=>r.order_index))+1,
+            task:task.field.value.trim(),why:why.field.value.trim(),status:'open',review_reason:reason.field.value.trim()||'Added during briefing review'};
+          await api('daily_briefing_tasks','POST',row);await load();say('Task added to the reviewed briefing.');
+        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
+      };body.append(add);
+      const done=node('div','daily-section');done.append(node('h2','','Completed in review'),node('span','',closed.length+' completed'));body.append(done);
+      for(const row of closed)body.append(taskRow(row,true));
+      body.append(node('p','daily-meta','Project task changes update this briefing. The correction audit checks their source plans separately.'));
+      byId('dailyPrint').disabled=false;
+    }
+    async function load(){
+      if(!auth?.hasSession?.()){
+        const body=byId('dailyBody');body.replaceChildren();const p=node('p','','Sign in with GitHub to review the private briefing.');
+        const button=node('button','daily-primary','Sign in with GitHub');
+        button.onclick=()=>{try{sessionStorage.setItem('wb-briefing-return','1')}catch{}auth.signIn()};
+        body.append(p,button);return;
+      }
+      say('Loading the private briefing…');
+      try{
+        const docs=await api('daily_briefing_documents?select=briefing_date,source_html&order=briefing_date.desc&limit=1');
+        if(!docs.length){byId('dailyBody').replaceChildren(node('p','','No daily briefing has been published for review yet.'));say('');return}
+        source=docs[0];rows=await api('daily_briefing_tasks?select=owner_uid,briefing_date,task_id,source_kind,project,order_index,task,why,status,review_reason,revision&briefing_date=eq.'+source.briefing_date+'&order=order_index.asc');
+        render();say('');
+      }catch(error){say(error.message);byId('dailyBody').replaceChildren(node('p','','Review is unavailable. Please try again.'))}
+    }
+    function printReviewed(){
+      if(!source)return;
+      const doc=new DOMParser().parseFromString(source.source_html,'text/html');
+      doc.querySelectorAll('script,iframe,object,embed').forEach(n=>n.remove());
+      const work=doc.querySelector('[data-briefing-work]'),list=work?.querySelector('ol');
+      if(!list){say('The printable briefing is missing its work section.');return}
+      for(const child of [...work.children])if(child!==list&&child.tagName!=='H2')child.remove();
+      list.replaceChildren();
+      for(const row of rows.filter(r=>r.status==='open')){
+        const li=doc.createElement('li'),box=doc.createElement('span'),p=doc.createElement('p'),label=doc.createElement('span'),meta=doc.createElement('span');
+        box.className='box';box.setAttribute('aria-hidden','true');p.className='task-text';
+        label.className='task-meta';label.textContent=row.source_kind==='project'?row.project||'':row.task_id;
+        meta.className='task-meta';meta.textContent=row.why||'';
+        p.append(label,doc.createTextNode(' '+row.task),meta);li.append(box,p);list.append(li);
+      }
+      const popup=window.open('','_blank');if(!popup){say('Allow pop-ups to open the print copy.');return}
+      popup.addEventListener('load',()=>popup.print(),{once:true});
+      popup.document.open();popup.document.write('<!doctype html>'+doc.documentElement.outerHTML);popup.document.close();
+    }
+    byId('dailyPrint').onclick=printReviewed;
+    window.addEventListener('workbench-auth-change',load);
+    load();
+  })();
   </script>
 </body>
 </html>
