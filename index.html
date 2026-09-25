@@ -3978,7 +3978,7 @@ button.metric-card:hover {
 .focus-split-coverage { margin: 12px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
 .focus-split-priority {
   display: grid;
-  grid-template-columns: 22px minmax(0, 1fr) 16px;
+  grid-template-columns: minmax(0, 1fr) 16px;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -3996,8 +3996,6 @@ button.metric-card:hover {
 .focus-split-priority strong { font-size: 14px; font-weight: 620; line-height: 1.35; }
 .focus-split-priority small { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
 .focus-split-priority > svg { color: var(--text-secondary); opacity: .45; transition: transform var(--focus-split-motion) var(--ease-out-soft), opacity var(--focus-split-motion) var(--ease-out-soft); }
-.focus-split-priority-mark { width: 20px; height: 20px; border: 1px solid var(--border-strong); border-radius: 50%; transition: transform var(--focus-split-motion) var(--ease-out-soft), background var(--focus-split-motion) var(--ease-out-soft); }
-.focus-split-priority:hover .focus-split-priority-mark, .focus-split-priority:focus-visible .focus-split-priority-mark { transform: translateX(3px); background: var(--surface-hover); }
 .focus-split-priority:hover > svg, .focus-split-priority:focus-visible > svg { transform: translateX(3px); opacity: 1; }
 .focus-split-priority:focus-visible, .focus-split-brief-footer button:focus-visible, .focus-split-nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .focus-split-brief-footer { display: flex; gap: 16px; flex-wrap: wrap; margin-top: auto; padding-top: 40px; }
@@ -4009,6 +4007,11 @@ button.metric-card:hover {
 .focus-split-nav button:hover, .focus-split-nav button[aria-current="page"] { color: var(--text-strong); }
 .focus-split-nav button[aria-current="page"] { font-weight: 650; }
 .focus-split-indicator { position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--text-strong); opacity: 0; pointer-events: none; transition: transform var(--focus-split-motion) var(--ease-out-soft), width var(--focus-split-motion) var(--ease-out-soft), opacity var(--focus-split-motion) ease; }
+.focus-split-return { display: flex; align-items: center; gap: 9px; min-height: 56px; margin: 0 28px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 13px; }
+.focus-split-return button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--text-strong); cursor: pointer; font: inherit; font-weight: 600; }
+.focus-split-return button:hover { color: var(--accent); }
+.focus-split-return button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.focus-split-return strong { color: var(--text-strong); font-weight: 600; }
 .focus-split-content { min-width: 0; }
 .focus-split-content .hub-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
 .focus-split-content .hub-aside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
@@ -4101,11 +4104,12 @@ button.metric-card:hover {
   }
   .focus-split-nav::-webkit-scrollbar { display: none; }
   .focus-split-nav button { min-height: 50px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .focus-split-return { min-height: 50px; margin: 0 12px; }
   .focus-split-content .hub-header h1 { font-size: 27px; }
   .focus-split-content .hub-aside { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .focus-split-indicator, .focus-split-priority-mark, .focus-split-priority > svg { transition-duration: 1ms; transform: none; }
+  .focus-split-indicator, .focus-split-priority > svg { transition-duration: 1ms; transform: none; }
   .focus-split-nav { scroll-behavior: auto; }
 }
 
@@ -23979,7 +23983,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-24.29";
+  const WB_VERSION = "2026-09-24.33";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -30036,6 +30040,7 @@ function TodayView() {
     gates: pendingGateRequests()
   });
   const personalReady = state.personalTasksHealth?.status === 'ok';
+  const gatesReady = (state.workbenchLive?.source === 'supabase-live' || state.workbenchLive?.source === 'local-live') && Array.isArray(state.workbenchLive?.status?.pendingGates);
   const sessions = hub.sessions.slice(0, 5);
   const personal = hub.personal.slice(0, 6);
   const projects = hub.projects;
@@ -30046,21 +30051,7 @@ function TodayView() {
     className: "today-page hub-page"
   }, /*#__PURE__*/React.createElement("header", {
     className: "hub-header"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "hub-date"
-  }, new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric'
-  })), /*#__PURE__*/React.createElement("h1", null, greeting(), ", Jared."), /*#__PURE__*/React.createElement("p", {
-    className: "hub-subtitle"
-  }, "Your day, your work, and the agents moving it forward.")), /*#__PURE__*/React.createElement(Button, {
-    onClick: openCaptureActual,
-    leftIcon: /*#__PURE__*/React.createElement(Icon, {
-      name: "plus",
-      size: 18
-    })
-  }, "Capture a thought")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h1", null, "The work ahead")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
     className: "hub-layout"
   }, /*#__PURE__*/React.createElement("main", {
     className: "hub-main"
@@ -30082,12 +30073,12 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "check",
     size: 20
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machineId || gate.machine_id || ''), " · Waiting for you")), /*#__PURE__*/React.createElement(Icon, {
+  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machineId || gate.machine_id || ''), " · ", gatesReady ? 'Waiting for you' : 'Last known; refresh to confirm')), /*#__PURE__*/React.createElement(Icon, {
     name: "chevronRight",
     size: 18
   }))) : /*#__PURE__*/React.createElement("p", {
     className: "hub-empty"
-  }, LiveApi?.enabled?.() ? 'No pending decisions in the latest fleet snapshot.' : 'Connect Workbench Live to see pending agent decisions.')), /*#__PURE__*/React.createElement("section", {
+  }, gatesReady ? 'No pending decisions in the latest fleet snapshot.' : 'Agent decisions are unavailable or stale. Reconnect Workbench Live to check.')), /*#__PURE__*/React.createElement("section", {
     className: "hub-section",
     "aria-labelledby": "hub-personal"
   }, /*#__PURE__*/React.createElement("div", {
@@ -36385,7 +36376,7 @@ function Content({
     kind: view
   });
 }
-const focusSplitViews = [['overview', 'Pulse'], ['sessions', 'Sessions'], ['todo', 'Tasks'], ['money', 'Money'], ['usage', 'Costs']];
+const focusSplitViews = [['overview', 'Pulse'], ['focus', 'Focus'], ['sessions', 'Sessions'], ['todo', 'Tasks'], ['money', 'Money'], ['usage', 'Costs']];
 function FocusSplitNav({
   activeView
 }) {
@@ -36464,10 +36455,13 @@ function FocusSplitBrief() {
     machines: state.workbenchLive?.machines,
     gates: pendingGateRequests()
   });
+  const personalReady = state.personalTasksHealth?.status === 'ok';
+  const liveSource = state.workbenchLive?.source;
+  const gatesReady = (liveSource === 'supabase-live' || liveSource === 'local-live') && Array.isArray(state.workbenchLive?.status?.pendingGates);
   const priorities = [...hub.gates.slice(0, 2).map(gate => ({
     key: `gate:${gate.run_id}:${gate.gate_name}`,
     title: gate.title || gate.gate_name || 'Agent decision',
-    detail: 'Waiting for your decision',
+    detail: gatesReady ? 'Waiting for your decision' : 'Last known; refresh to confirm',
     open: () => setView('machines')
   })), ...hub.personal.slice(0, 2).map(({
     task,
@@ -36483,19 +36477,21 @@ function FocusSplitBrief() {
     detail: projectTitle(item.p),
     open: () => openProject(item.p)
   }))].slice(0, 3);
-  const personalReady = state.personalTasksHealth?.status === 'ok';
-  const liveSource = state.workbenchLive?.source;
-  const gatesReady = (liveSource === 'supabase-live' || liveSource === 'local-live') && Array.isArray(state.workbenchLive?.status?.pendingGates);
   const partial = !personalReady || !gatesReady;
-  const sourceName = liveSource === 'supabase-live' ? 'Supabase Workbench Live' : liveSource === 'local-live' ? 'local Workbench Live' : 'Workbench Live not refreshed';
-  const sourceSummary = liveSource === 'supabase-live' ? 'Supabase Live' : liveSource === 'local-live' ? 'local Live' : 'Live unavailable';
+  const refreshedAt = Number(state.workbenchLive?.status?.refreshedAt || state.workbenchLive?.status?.heartbeatAt || 0);
+  const refreshedLabel = Number.isFinite(refreshedAt) && refreshedAt > 0 ? ` · Updated ${new Date(refreshedAt).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit'
+  })}` : '';
+  const sourceName = liveSource === 'supabase-live' ? 'Supabase Workbench Live' : liveSource === 'local-live' ? 'local Workbench Live' : liveSource === 'supabase-stale' ? 'stale Supabase snapshot' : liveSource === 'local-live-stale' ? 'stale local snapshot' : liveSource === 'cached-offline' ? 'cached offline snapshot' : 'Workbench Live not refreshed';
+  const sourceSummary = liveSource === 'supabase-live' ? 'Supabase Live' : liveSource === 'local-live' ? 'local Live' : liveSource === 'supabase-stale' || liveSource === 'local-live-stale' ? 'Live stale' : liveSource === 'cached-offline' ? 'Cached offline' : 'Live unavailable';
   return /*#__PURE__*/React.createElement("aside", {
     className: "focus-split-brief",
     "aria-label": "Today briefing",
     "data-expanded": mobile && briefingOpen ? 'true' : 'false'
   }, /*#__PURE__*/React.createElement("div", {
     className: "focus-split-mobile-summary"
-  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Today"), /*#__PURE__*/React.createElement("small", null, partial ? 'Partial' : 'Latest', " · Personal tasks · ", sourceSummary)), /*#__PURE__*/React.createElement("button", {
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Today"), /*#__PURE__*/React.createElement("small", null, partial ? 'Partial feeds' : 'Tasks and gates only', " · ", sourceSummary)), /*#__PURE__*/React.createElement("button", {
     type: "button",
     "aria-expanded": briefingOpen,
     "aria-controls": "focus-split-brief-details",
@@ -36516,19 +36512,18 @@ function FocusSplitBrief() {
     className: "focus-split-priorities"
   }, /*#__PURE__*/React.createElement("h2", null, "Needs your attention"), /*#__PURE__*/React.createElement("p", {
     className: "focus-split-source"
-  }, "Sources: Personal task refresh · Agent decisions from ", sourceName, "."), !personalReady ? /*#__PURE__*/React.createElement("p", {
+  }, "Sources: Personal task refresh · Agent decisions from ", sourceName, refreshedLabel, "."), !personalReady ? /*#__PURE__*/React.createElement("p", {
     className: "focus-split-coverage"
   }, "Personal tasks have not refreshed. This is a partial view.") : null, !gatesReady ? /*#__PURE__*/React.createElement("p", {
     className: "focus-split-coverage"
-  }, "Agent decisions are unavailable or stale. This is a partial view.") : null, priorities.length ? priorities.map(item => /*#__PURE__*/React.createElement("button", {
+  }, "Agent decisions are unavailable or stale. This is a partial view.") : null, /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-coverage"
+  }, "Calendar and meeting commitments are not connected to this briefing."), priorities.length ? priorities.map(item => /*#__PURE__*/React.createElement("button", {
     key: item.key,
     type: "button",
     className: "focus-split-priority",
     onClick: item.open
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "focus-split-priority-mark",
-    "aria-hidden": "true"
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, item.title), /*#__PURE__*/React.createElement("small", null, item.detail)), /*#__PURE__*/React.createElement(Icon, {
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, item.title), /*#__PURE__*/React.createElement("small", null, item.detail)), /*#__PURE__*/React.createElement(Icon, {
     name: "chevronRight",
     size: 16
   }))) : /*#__PURE__*/React.createElement("p", {
@@ -36551,28 +36546,49 @@ function FocusSplitBrief() {
 }
 function FocusSplitWorkspace() {
   const view = state.view;
-  if (!focusSplitViews.some(([id]) => id === view)) return /*#__PURE__*/React.createElement(Content, {
-    view: view
-  });
+  const inMainNav = focusSplitViews.some(([id]) => id === view);
+  const drilldownTitle = {
+    project: 'Project',
+    projects: 'Projects',
+    goals: 'Life goals',
+    machines: 'Machines',
+    home: 'Home',
+    intake: 'Intake',
+    weekly: 'Weekly review'
+  }[view] || 'Workspace';
+  const returnToPulse = () => {
+    setView('overview');
+    requestAnimationFrame(() => document.getElementById('focus-split-tab-overview')?.focus());
+  };
   return /*#__PURE__*/React.createElement("div", {
     className: "focus-split",
     "data-testid": "focus-split-workspace"
   }, /*#__PURE__*/React.createElement(FocusSplitBrief, null), /*#__PURE__*/React.createElement("section", {
     className: "focus-split-workspace",
     "aria-label": "Active workspace"
-  }, /*#__PURE__*/React.createElement(FocusSplitNav, {
+  }, inMainNav ? /*#__PURE__*/React.createElement(FocusSplitNav, {
     activeView: view
-  }), /*#__PURE__*/React.createElement("div", {
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-return"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: returnToPulse
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "arrowLeft",
+    size: 16
+  }), " Back to Pulse"), /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "/"), /*#__PURE__*/React.createElement("strong", null, drilldownTitle)), /*#__PURE__*/React.createElement("div", {
     className: "focus-split-content",
     id: "focus-split-panel",
-    role: "tabpanel",
-    "aria-labelledby": `focus-split-tab-${view}`
+    role: inMainNav ? 'tabpanel' : undefined,
+    "aria-labelledby": inMainNav ? `focus-split-tab-${view}` : undefined
   }, /*#__PURE__*/React.createElement(Content, {
     view: view
   }))));
 }
 function MobileShell() {
-  const tabs = [['overview', 'Today', 'home'], ['focus', 'Focus', 'trend'], ['projects', 'Projects', 'folder'], ['sessions', 'Sessions', 'list']];
+  const tabs = [['overview', 'Workspace', 'home'], ['projects', 'Projects', 'folder'], ['goals', 'Goals', 'trend']];
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: '100vh',
@@ -36654,7 +36670,8 @@ function MobileShell() {
       name: "plus",
       size: 18
     })
-  }, "Intake"), /*#__PURE__*/React.createElement("div", {
+  }, "Capture"), /*#__PURE__*/React.createElement("nav", {
+    "aria-label": "Main navigation",
     style: {
       position: 'fixed',
       left: 0,
@@ -36668,11 +36685,33 @@ function MobileShell() {
       borderTop: '1px solid var(--border-subtle)',
       zIndex: 'var(--z-nav)'
     }
-  }, tabs.map(([id, label, icon]) => /*#__PURE__*/React.createElement(Button, {
-    key: id,
-    variant: viewName() === id ? 'subtle' : 'ghost',
+  }, tabs.map(([id, label, icon]) => {
+    const active = id === 'overview' ? focusSplitViews.some(([view]) => view === state.view) : state.view === id;
+    return /*#__PURE__*/React.createElement(Button, {
+      key: id,
+      "aria-current": active ? 'page' : undefined,
+      variant: active ? 'subtle' : 'ghost',
+      size: "sm",
+      onClick: () => setView(id),
+      style: {
+        flexDirection: 'column',
+        gap: 2,
+        minHeight: 48,
+        padding: '5px 4px'
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: icon,
+      size: 17
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11
+      }
+    }, label));
+  }), /*#__PURE__*/React.createElement(Button, {
+    "aria-label": "More sections",
+    variant: "ghost",
     size: "sm",
-    onClick: () => setView(id),
+    onClick: openMoreActual,
     style: {
       flexDirection: 'column',
       gap: 2,
@@ -36680,13 +36719,13 @@ function MobileShell() {
       padding: '5px 4px'
     }
   }, /*#__PURE__*/React.createElement(Icon, {
-    name: icon,
+    name: "list",
     size: 17
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11
     }
-  }, label)))));
+  }, "More"))));
 }
 function DesktopShell() {
   return /*#__PURE__*/React.createElement(AppShell, {
