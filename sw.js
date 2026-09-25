@@ -8,14 +8,14 @@
    Two rules that must not be relaxed:
 
    1. Only same-origin GET requests are ever cached. Calls to api.github.com and
-      raw.githubusercontent.com carry Jared's PAT in an Authorization header and
+      raw.githubusercontent.com carry GitHub access in an Authorization header and
       must never be written to a cache the page can read back.
-   2. The shell is served stale-while-revalidate, never cache-only. A bad build
-      must age out on the next load rather than stranding the installed PWA.
+   2. Navigations try the network first, then the cached shell when offline.
+      A newly published sign-in flow must not show an older cached popup.
 
    Escape hatch: load any page with ?nosw=1 to unregister and drop all caches.
 */
-const VERSION = '2026-09-24.35';
+const VERSION = '2026-09-25.20';
 const CACHE = 'workbench-shell-' + VERSION;
 const SHELL = ['./', './index.html', './manifest.webmanifest'];
 
@@ -68,6 +68,25 @@ function staleWhileRevalidate(request) {
   );
 }
 
+function navigationNetworkFirst(request) {
+  // The OAuth callback can arrive with a one-use code in its query string.
+  // Cache only the canonical shell URL, never that callback URL.
+  const shell = new URL('./', self.location.href).href;
+  return caches.open(CACHE).then(async (cache) => {
+    try {
+      const res = await fetch(request);
+      if (res && res.ok && res.type === 'basic') {
+        // Storage pressure must not turn a successful network load into an
+        // apparent sign-in failure.
+        try { await cache.put(shell, res.clone()); } catch {}
+      }
+      return res;
+    } catch {
+      return (await cache.match(shell)) || Response.error();
+    }
+  });
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -78,6 +97,10 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
   if (url.searchParams.has('nosw')) return;
 
+  if (req.mode === 'navigate') {
+    event.respondWith(navigationNetworkFirst(req));
+    return;
+  }
   event.respondWith(staleWhileRevalidate(req));
 });
 
