@@ -1084,6 +1084,38 @@ html.wb-booting #app .mobile-tabs,
 html.wb-booting #view {
   visibility: hidden;
 }
+.auth-screen {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--canvas);
+}
+.auth-panel {
+  width: min(100%, 420px);
+  padding: 40px 0;
+}
+.auth-brand { margin-bottom: 56px; }
+.auth-panel h1 {
+  margin: 0 0 12px;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.auth-panel .lede {
+  max-width: 36ch;
+  margin-bottom: 28px;
+  color: var(--text-2);
+}
+.auth-submit { min-height: 44px; }
+.auth-footnote {
+  max-width: 40ch;
+  margin-top: 20px;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
 .wb-boot-card {
   width: min(360px, 100%);
   padding: 28px 24px 22px;
@@ -4123,28 +4155,15 @@ button.metric-card:hover {
       <div class="wb-boot-status" id="wbBootStatus">Starting…</div>
     </div>
   </div>
-  <section id="landing" class="modal-scrim">
-    <div class="modal-card" role="dialog" aria-labelledby="landingTitle">
-      <div class="modal-head" style="margin-bottom:0">
-        <div class="brand"><span class="wordmark">Workbench</span></div>
-        <button class="iconbtn" type="button" id="landingClose" aria-label="Close" title="Close">×</button>
-      </div>
-      <h1 id="landingTitle">Connect the workbench</h1>
-      <p class="lede" id="landingNote">Connect the private workbench repo to get started.</p>
-      <div class="grid" style="margin-top:20px">
-        <div class="card">
-          <h3>Sign in with GitHub</h3>
-          <p class="muted">One sign-in per device, no token to paste. Access is scoped by the workbench GitHub App to repository contents only.</p>
-          <button class="btn primary" id="sbSignIn">Sign in with GitHub</button>
-        </div>
-        <div class="card">
-          <h3>Use a token instead</h3>
-          <p class="muted">Fallback for a device where sign-in will not work. Paste a fine-grained PAT; it stays in this browser.</p>
-          <button class="btn" id="ghMode">Connect with a token</button>
-        </div>
-      </div>
+  <main id="landing" class="auth-screen" aria-labelledby="landingTitle">
+    <div class="auth-panel">
+      <div class="brand auth-brand"><span class="wordmark">Workbench</span></div>
+      <h1 id="landingTitle">Sign in to Workbench</h1>
+      <p class="lede" id="landingNote">Open your private workspace with GitHub. Workbench remembers your sign-in on this browser.</p>
+      <button class="btn primary auth-submit" id="sbSignIn">Continue with GitHub</button>
+      <p class="auth-footnote">Your repository stays private. You can sign out from Workbench at any time.</p>
     </div>
-  </section>
+  </main>
 
   <!-- React owns the connected shell (DesktopShell / MobileShell). Legacy markup
        here caused the mobile CSS frame to flash or persist when the React tree
@@ -4153,16 +4172,15 @@ button.metric-card:hover {
   <script>
   (function () {
     try {
-      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
-      var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
+      var saved = JSON.parse(localStorage.getItem("workbench-sb-session") || "null");
+      if (saved && saved.access_token && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
         if (landing) landing.classList.add("hidden");
         if (app) app.classList.remove("hidden");
         var status = document.getElementById("wbBootStatus");
-        if (status) status.textContent = "Connecting to GitHub…";
+        if (status) status.textContent = "Opening your workspace…";
       }
     } catch (e) {}
   })();
@@ -23983,7 +24001,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-24.33";
+  const WB_VERSION = "2026-09-24.35";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -24019,7 +24037,9 @@ void main() {
   const SUBS = ["Glossary", "Processes", "Decisions"];
   const HELPER = "http://127.0.0.1:7787";
   const GH_CONFIG_KEY = "workbench-gh-config";
+  // Removed during migration from the old hand-pasted PAT sign-in.
   const GH_TOKEN_KEY = "workbench-gh-token";
+  const GH_REAUTH_KEY = "workbench-github-reauth-at";
   const GH_TREE_KEY = "workbench-gh-tree-cache";
   const GH_TREE_TTL = 10 * 60 * 1000;
   const LIVE_ACTION_POLL_MS = 30 * 1000;
@@ -24461,18 +24481,13 @@ void main() {
   window.__WBFinanceIDB = idb;
   window.__WBFinanceScope = financeScope;
   function ghToken() {
-    // Supabase sign-in wins when present: that token comes from the GitHub App
-    // and is scoped to Contents + Metadata, where a pasted classic PAT is not.
-    // The PAT path stays as a fallback so an existing device keeps working.
-    const viaSupabase = window.WBSupabaseAuth?.githubToken?.() || "";
-    if (viaSupabase) return viaSupabase;
-    return localStorage.getItem(GH_TOKEN_KEY) || "";
+    return window.WBSupabaseAuth?.githubToken?.() || "";
   }
   function ghSaveConfig(cfg) {
     const { pat, ...safe } = cfg;
     localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(safe));
-    if (pat) localStorage.setItem(GH_TOKEN_KEY, pat);
-    idb.set("gh-config", { ...safe, ...(pat ? { pat } : {}) }).catch(() => {});
+    localStorage.removeItem(GH_TOKEN_KEY);
+    idb.set("gh-config", safe).catch(() => {});
     notifyFinanceScopeChanged();
   }
   async function ghDisconnect() {
@@ -24486,7 +24501,9 @@ void main() {
     localStorage.removeItem(GH_CONFIG_KEY);
     localStorage.removeItem(GH_TOKEN_KEY);
     localStorage.removeItem(GH_TREE_KEY);
+    localStorage.removeItem(BOOT_SNAP_KEY);
     idb.del("gh-config").catch(() => {});
+    await idb.del(SCAN_SNAPSHOT_KEY).catch(() => {});
     notifyFinanceScopeChanged();
     ghShaCache.clear();
     for (const url of binaryURLs.values()) URL.revokeObjectURL(url);
@@ -24536,14 +24553,13 @@ void main() {
   async function ghLoadConfig() {
     try {
       const saved = await idb.get("gh-config");
-      if (saved?.owner && saved?.repo && (saved.pat || ghToken())) {
+      if (saved?.owner && saved?.repo) {
         ghSaveConfig(saved);
-        return { ...saved, pat: saved.pat || ghToken() };
+        const { pat, ...safe } = saved;
+        return safe;
       }
     } catch {}
-    const cfg = ghConfig();
-    const tok = ghToken();
-    return cfg && tok ? { ...cfg, pat: tok } : null;
+    return ghConfig();
   }
   function b64FromBytes(bytes) {
     let bin = "";
@@ -25491,10 +25507,11 @@ void main() {
         if (rateLimited) {
           toast("GitHub rate limit hit — data may be stale for a bit.", "warning");
           setTimeout(() => (state._authPrompted = false), 5 * 60 * 1000);
+        } else if (res.status === 401) {
+          toast("Refreshing GitHub access…", "warning");
+          beginGitHubSignIn(true);
         } else {
-          toast("GitHub token expired or revoked — reconnect.", "danger");
-          dismissBootOverlay();
-          setTimeout(openGithubConnect, 700);
+          toast("GitHub access was denied. Check Workbench app access.", "danger");
         }
       }
     }
@@ -25530,14 +25547,17 @@ void main() {
   }
   async function ghGetTree(force = false) {
     const cfg = ghConfig();
+    const account = window.WBSupabaseAuth?.userId?.();
     if (!cfg?.owner || !cfg?.repo || !cfg?.branch) {
       throw new Error("Not connected to GitHub");
     }
+    if (!account) throw new Error("Authenticated owner is unavailable.");
     if (!force) {
       try {
         const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
         if (
           c &&
+          c.account === account &&
           c.owner === cfg.owner &&
           c.repo === cfg.repo &&
           c.branch === cfg.branch &&
@@ -25624,6 +25644,7 @@ void main() {
       localStorage.setItem(
         GH_TREE_KEY,
         JSON.stringify({
+          account,
           owner: cfg.owner,
           repo: cfg.repo,
           branch: cfg.branch,
@@ -25646,9 +25667,12 @@ void main() {
   function patchTreeCache(path, sha) {
     try {
       const cfg = ghConfig();
+      const account = window.WBSupabaseAuth?.userId?.();
       const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
       if (
         !c ||
+        !account ||
+        c.account !== account ||
         c.owner !== cfg.owner ||
         c.repo !== cfg.repo ||
         c.branch !== cfg.branch
@@ -28510,9 +28534,11 @@ void main() {
   async function saveScanSnapshot() {
     if (state.backend !== "github") return;
     const cfg = ghConfig();
-    if (!cfg?.owner || !cfg?.repo || !cfg?.branch) return;
+    const account = window.WBSupabaseAuth?.userId?.();
+    if (!account || !cfg?.owner || !cfg?.repo || !cfg?.branch) return;
     await idb.set(SCAN_SNAPSHOT_KEY, {
-      v: 1,
+      v: 2,
+      account,
       at: Date.now(),
       owner: cfg.owner,
       repo: cfg.repo,
@@ -28528,9 +28554,12 @@ void main() {
   async function restoreScanSnapshot(cfg) {
     try {
       const snap = await idb.get(SCAN_SNAPSHOT_KEY);
+      const account = window.WBSupabaseAuth?.userId?.();
       if (
         !snap ||
-        snap.v !== 1 ||
+        snap.v !== 2 ||
+        !account ||
+        snap.account !== account ||
         snap.owner !== cfg?.owner ||
         snap.repo !== cfg?.repo ||
         snap.branch !== cfg?.branch ||
@@ -28552,6 +28581,8 @@ void main() {
   }
   function saveBootSnapshot() {
     if (state.backend !== "github") return;
+    const account = window.WBSupabaseAuth?.userId?.();
+    if (!account) return;
     try {
       const st = globalStats();
       const projects = state.projects.slice(0, 12).map((p) => {
@@ -28565,7 +28596,7 @@ void main() {
       });
       localStorage.setItem(
         BOOT_SNAP_KEY,
-        JSON.stringify({ at: Date.now(), st, projects }),
+        JSON.stringify({ account, at: Date.now(), st, projects }),
       );
     } catch {}
   }
@@ -28574,6 +28605,7 @@ void main() {
     try {
       snap = JSON.parse(localStorage.getItem(BOOT_SNAP_KEY) || "null");
     } catch {}
+    if (snap?.account !== window.WBSupabaseAuth?.userId?.()) snap = null;
     const chip = `<span class="chip refreshing"><span class="spin" aria-hidden="true"></span>Refreshing${snap?.at ? ` · as of ${shortAge(snap.at)}` : ""}</span>`;
     const status = `<div class="boot-status tiny" id="bootStatus">${esc(progress || (snap ? "Fetching the latest…" : "Fetching the repo tree…"))}</div>`;
     if (snap && snap.st) {
@@ -28667,7 +28699,7 @@ void main() {
         sessionStorage.setItem("wb-force-tree", "1");
         location.reload();
       });
-      $("#wbBootReconnect")?.addEventListener("click", () => openGithubConnect());
+      $("#wbBootReconnect")?.addEventListener("click", () => beginGitHubSignIn());
       $("#wbBootReset")?.addEventListener("click", () => doReset());
     }
     $("#landing")?.classList.add("hidden");
@@ -41784,7 +41816,7 @@ window.__WBReactRender = function () {
     try {
       await ghDisconnect();
       clearPrivateLoadedState();
-      toast("GitHub token, finance recovery, and cached tree cleared.");
+      toast("Signed out and cleared private device data.");
       showLanding();
     } catch (error) {
       toast(error?.message || "Could not safely disconnect this account.", "danger");
@@ -41815,6 +41847,9 @@ window.__WBReactRender = function () {
       ? { account: previousOwner, owner: cfg.owner, repo: cfg.repo, branch: cfg.branch }
       : null;
     clearPrivateLoadedState();
+    localStorage.removeItem(GH_TREE_KEY);
+    localStorage.removeItem(BOOT_SNAP_KEY);
+    void idb.del(SCAN_SNAPSHOT_KEY).catch(() => {});
     showLanding();
     if (previousScope && window.WorkbenchFinance?.createPersistence) {
       void window.WorkbenchFinance.createPersistence(idb, previousScope)
@@ -43158,14 +43193,13 @@ window.__WBReactRender = function () {
     const owner = String(cfg?.owner || "").trim();
     const repo = String(cfg?.repo || "").trim();
     const branch = String(cfg?.branch || "main").trim() || "main";
-    const pat = String(cfg?.pat || "").trim() || ghToken();
     if (!owner || !repo) {
       throw new Error("Owner and repo are required.");
     }
-    if (!pat) {
-      throw new Error("GitHub personal access token is required.");
+    if (!ghToken()) {
+      throw new Error("Sign in with GitHub to open this workspace.");
     }
-    ghSaveConfig({ owner, repo, branch, pat });
+    ghSaveConfig({ owner, repo, branch });
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
@@ -43179,8 +43213,9 @@ window.__WBReactRender = function () {
       await ghGetTree(!!opts.forceTree);
       if (!warmStart) updateBootProgress("Loading projects…");
       await scan();
+      sessionStorage.removeItem(GH_REAUTH_KEY);
     } catch (e) {
-      if (!state.connected) {
+      if (!state.connected && e?.status !== 401) {
         showLanding(
           e?.message || "GitHub connect failed. Reconnect below.",
         );
@@ -43230,13 +43265,8 @@ window.__WBReactRender = function () {
         return;
       }
       if (e.status === 401 || e.status === 403) {
-        try { await ghDisconnect(); }
-        catch (clearError) {
-          showBootFailure(clearError?.message || "Could not safely clear local finance recovery before disconnecting.");
-          return;
-        }
-        clearAutoconnectShell();
-        showLanding("Saved GitHub token was rejected. Reconnect below.");
+        if (e.status === 401) beginGitHubSignIn(true);
+        else showBootFailure("GitHub denied repository access. Check the Workbench GitHub App connection, then reconnect.");
         return;
       }
       if (e.status === 404) {
@@ -43263,71 +43293,38 @@ window.__WBReactRender = function () {
     dismissBootOverlay();
     clearAutoconnectShell();
     msg ||=
-      "Connect the private workbench repo with a fine-grained personal access token.";
+      "Open your private workspace with GitHub. Workbench remembers your sign-in on this browser.";
     $("#landing").classList.remove("hidden");
     $("#app").classList.add("hidden");
     $("#landingNote").textContent = msg;
   }
-  function openGithubConnect() {
-    const cfg = ghConfig() || {
-      owner: "jaredfowkes",
-      repo: "workbench",
-      branch: "main",
-    };
-    modal(
-      "Connect via GitHub",
-      `<div class="capture-grid"><label class="form-row">Owner<input class="input" id="ghOwner" value="${esc(cfg.owner)}"></label><label class="form-row">Repo<input class="input" id="ghRepo" value="${esc(cfg.repo)}"></label><label class="form-row">Branch<input class="input" id="ghBranch" value="${esc(cfg.branch)}"></label><label class="form-row">Personal access token<input class="input" id="ghPat" type="password" placeholder="${ghToken() ? "Saved token — leave blank to keep" : "github_pat_…"}"></label><p class="muted">Token is stored only on this device in localStorage and IndexedDB. Use a fine-grained token with Contents read/write for this repo.</p><button class="btn primary" id="ghConnect">Connect</button><button class="btn danger" id="ghForget">Forget saved token</button></div>`,
-    );
-    $("#ghForget").onclick = async () => {
-      try {
-        await ghDisconnect();
-        toast("Saved GitHub connection and finance recovery cleared.");
-      } catch (error) {
-        toast(error?.message || "Could not safely clear the saved connection.", "danger");
-      }
-    };
-    $("#ghConnect").onclick = async () => {
-      const btn = $("#ghConnect");
-      const nextCfg = {
-        owner: $("#ghOwner").value.trim(),
-        repo: $("#ghRepo").value.trim(),
-        branch: $("#ghBranch").value.trim() || "main",
-        pat: $("#ghPat").value.trim() || ghToken(),
-      };
-      if (!nextCfg.owner || !nextCfg.repo) {
-        toast("Owner and repo are required.", "danger");
+  let githubSignInStarting = false;
+  function beginGitHubSignIn(automatic = false) {
+    const Auth = window.WBSupabaseAuth;
+    if (!Auth?.configured?.()) {
+      showLanding("GitHub sign-in is unavailable in this build.");
+      return;
+    }
+    if (githubSignInStarting) return;
+    if (automatic) {
+      const lastAttempt = Number(sessionStorage.getItem(GH_REAUTH_KEY) || 0);
+      if (Date.now() - lastAttempt < 60 * 1000) {
+        showLanding("GitHub could not restore repository access. Sign in again to retry.");
         return;
       }
-      if (!nextCfg.pat) {
-        toast("GitHub personal access token is required.", "danger");
-        return;
-      }
-      setLoading(btn, true, "Checking…");
-      try {
-        closeModal();
-        await connectGithub(nextCfg, { forceTree: true });
-      } catch (e) {
-        toast(e?.message || "GitHub connect failed.", "danger");
-      }
-    };
-  }
-  function hideLanding() {
-    $("#landing")?.classList.add("hidden");
+      sessionStorage.setItem(GH_REAUTH_KEY, String(Date.now()));
+    } else {
+      sessionStorage.removeItem(GH_REAUTH_KEY);
+    }
+    githubSignInStarting = true;
+    Auth.signIn().catch((error) => {
+      githubSignInStarting = false;
+      showLanding(error?.message || "GitHub sign-in could not start. Try again.");
+    });
   }
   function bindShell() {
     setupNavIndicator();
-    $("#landingClose")?.addEventListener("click", hideLanding);
-    $("#landing")?.addEventListener("click", (e) => {
-      if (e.target?.id === "landing") hideLanding();
-    });
-    $("#ghMode")?.addEventListener("click", openGithubConnect);
-    $("#sbSignIn")?.addEventListener("click", () => {
-      if (!window.WBSupabaseAuth?.configured?.()) {
-        toast("Supabase sign-in is not configured in this build.", "danger");
-        return;
-      }
-      window.WBSupabaseAuth.signIn();
-    });
+    $("#sbSignIn")?.addEventListener("click", () => beginGitHubSignIn());
     $("#themeBtn")?.addEventListener("click", () => {
       document.documentElement.dataset.theme =
         document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -43394,7 +43391,6 @@ window.__WBReactRender = function () {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if ($(".modal-scrim.dyn")) closeModal();
-        else if (!$("#landing")?.classList.contains("hidden")) hideLanding();
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -43546,7 +43542,11 @@ window.__WBReactRender = function () {
       cfg = { owner: "jaredfowkes", repo: "workbench", branch: "main" };
       ghSaveConfig(cfg);
     }
-    if (cfg && (Auth?.signedIn?.() || ghToken())) {
+    if (Auth?.hasSession?.() && !Auth?.signedIn?.() && !Auth?.lastAuthError?.()) {
+      beginGitHubSignIn(true);
+      return;
+    }
+    if (cfg && Auth?.signedIn?.()) {
       // Paint from the last scan before touching the network at all.
       await restoreScanSnapshot(cfg);
       // A push tap for a gate approval must not wait on the GitHub scan:
