@@ -24001,7 +24001,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-24.35";
+  const WB_VERSION = "2026-09-25.20";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -24498,6 +24498,8 @@ void main() {
       delete window.__WBFinanceSnapshot;
     }
     window.WBSupabaseAuth?.signOut?.();
+    // A legacy manually configured Live bearer must not outlive account sign-out.
+    LiveApi?.forgetConfig?.();
     localStorage.removeItem(GH_CONFIG_KEY);
     localStorage.removeItem(GH_TOKEN_KEY);
     localStorage.removeItem(GH_TREE_KEY);
@@ -34035,10 +34037,7 @@ function SimpleView({
       state.mobileVersion = await fetchMobileVersion();
       forceRender();
     }
-  }, "Re-check mobile version"), state.backend === 'github' ? /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    onClick: disconnectGithub
-  }, "Revoke GitHub token") : null, /*#__PURE__*/React.createElement(Button, {
+  }, "Re-check mobile version"), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: doReset
   }, "Clear cached tree")), pub.syncMessage ? /*#__PURE__*/React.createElement(Banner, {
@@ -34049,7 +34048,7 @@ function SimpleView({
     items: [["Supabase sign-in", window.WBSupabaseAuth?.configured?.() ? window.WBSupabaseAuth?.hasSession?.() ? 'signed in' : 'not signed in' : 'not configured in this build'], ["Captures", window.WBSupabaseAuth?.hasSession?.() ? 'syncing' : 'queued on this device until you sign in']]
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Loose notes are stored in Supabase, not the repo, so they need this sign-in as well as repo access. A GitHub token alone authenticates the repo and will leave captures stuck in the outbox."), /*#__PURE__*/React.createElement(Cluster, {
+  }, "Your GitHub sign-in connects the private workspace and its saved notes on this device."), /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap'
@@ -34078,51 +34077,16 @@ function SimpleView({
   }, "GitHub Pages can lag the raw workbench-mobile repo by minutes. Compare repo vs live version before assuming phone users see the latest build.")), /*#__PURE__*/React.createElement(Card, {
     title: "Workbench Live"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [["Live source", workbenchLiveDataSourceLabel()], ["Configured", LiveApi?.enabled?.() ? 'yes' : 'no']]
-  }), /*#__PURE__*/React.createElement(Stack, {
-    gap: 2,
-    style: {
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Supabase URL", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveSupabaseUrl",
-    defaultValue: LiveApi?.getConfig?.()?.supabaseUrl || '',
-    placeholder: "https://YOUR_PROJECT.supabase.co"
-  })), /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Function name", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveFunctionName",
-    defaultValue: LiveApi?.getConfig?.()?.functionName || 'workbench-live'
-  })), /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Dashboard token", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveDashboardToken",
-    type: "password",
-    placeholder: liveDashboardToken() ? 'Saved token — leave blank to keep' : 'dashboard bearer token'
-  })), /*#__PURE__*/React.createElement("p", {
+    items: [["Connection", LiveApi?.enabled?.() ? 'connected' : 'not connected'], ["Source", workbenchLiveDataSourceLabel()]]
+  }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Token stays on this device only. Helpers use WB_LIVE_MACHINE_TOKEN on each machine; never put service-role keys here."), /*#__PURE__*/React.createElement(Cluster, {
+  }, "Workbench Live can use your GitHub sign-in. Reset connection clears older manual settings; no token entry is needed."), /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap'
     }
   }, /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
-    onClick: async () => {
-      try {
-        await saveWorkbenchLiveSettings();
-        forceRender();
-      } catch (err) {
-        toast(String(err.message || err), 'danger');
-      }
-    }
-  }, "Save Live config"), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
     onClick: async () => {
       try {
         await testWorkbenchLiveSettings();
@@ -34136,7 +34100,7 @@ function SimpleView({
       forgetWorkbenchLiveSettings();
       forceRender();
     }
-  }, "Forget Live config")))), /*#__PURE__*/React.createElement(Card, {
+  }, "Reset connection"))), /*#__PURE__*/React.createElement(Card, {
     title: "Tracked"
   }, /*#__PURE__*/React.createElement(List, null, /*#__PURE__*/React.createElement(ListItem, {
     title: "Project files and task counts"
@@ -41841,6 +41805,7 @@ window.__WBReactRender = function () {
   }
   window.addEventListener('workbench-auth-change', event => {
     if (event?.detail?.source !== 'storage' || event.detail.ownerChanged !== true) return;
+    LiveApi?.forgetConfig?.();
     const previousOwner = event.detail.previousOwner;
     const cfg = ghConfig();
     const previousScope = previousOwner && cfg?.owner && cfg?.repo && cfg?.branch
