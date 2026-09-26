@@ -18084,7 +18084,35 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return buildBody("stop_turn", { machineId, sessionUid, payload: {}, options });
   }
 
-  return { reply, answerQuestion, startSession, stopTurn, createRetryCoordinator, ANSWER_KEYS };
+  // A completed pending_action records that the local session UI accepted
+  // the control. It is not a receipt for the assistant's resulting turn.
+  // Keep that boundary visible until the relay can link a response event to
+  // the exact submitted action.
+  function statusPresentation(kind, status) {
+    const current = String(status || "queued");
+    if (current !== "done") return { label: current, note: null };
+    const submitted = {
+      reply: {
+        label: "reply submitted",
+        note: "The target UI accepted the input; a resulting assistant reply is not linked to this request.",
+      },
+      answer_question: {
+        label: "answer submitted",
+        note: "The target UI accepted the answer; its follow-up is not linked to this request.",
+      },
+      start_session: {
+        label: "prompt submitted",
+        note: "The target UI accepted the prompt; its first reply is not linked to this request.",
+      },
+      stop_turn: {
+        label: "interrupt submitted",
+        note: "The action receipt does not confirm the target turn's final state.",
+      },
+    };
+    return submitted[kind] || { label: current, note: null };
+  }
+
+  return { reply, answerQuestion, startSession, stopTurn, createRetryCoordinator, statusPresentation, ANSWER_KEYS };
 });
 
 
@@ -24006,7 +24034,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-25.21";
+  const WB_VERSION = "2026-09-25.22";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -26245,6 +26273,10 @@ void main() {
         // One query for the whole scan (empty on sign-out or query failure --
         // see loadMigratedProjectsByGitPath), not one per project.
         const migratedProjects = await loadMigratedProjectsByGitPath();
+        const migrationGate = window.__WBTaskGate || {};
+        const migrationRegistryAvailable = migrationGate.reason === "ok";
+        let supabaseTaskReads = 0;
+        let supabaseTaskFallbacks = 0;
         // Shared by both paths into this scan: tasks.json inlined in the build
         // index, and tasks.json fetched individually when it was not.
         const addProject = async (section, name, path, data, supabaseProjectId) => {
@@ -26329,11 +26361,13 @@ void main() {
               const data = await ensureSupabaseTaskStore().loadProjectData(
                 migratedProject.id,
               );
+              supabaseTaskReads += 1;
               taskCoverage.found += 1;
               taskCoverage.ok += 1;
               await addProject(section, name, path, data, migratedProject.id);
               return;
             } catch (error) {
+              supabaseTaskFallbacks += 1;
               // This project only falls back to its tasks.json for this scan;
               // the other 35 (migrated or not) are unaffected.
               console.warn(
@@ -26388,14 +26422,67 @@ void main() {
           await addProject(section, name, path, parsed.value);
         });
 
+        const supabaseTaskSource = "scan.projects.tasks.supabase";
+        if (!migrationRegistryAvailable) {
+          const registryUnreachable = ["projects query failed", "refresh failed"].includes(
+            migrationGate.reason,
+          );
+          recordScanHealth(supabaseTaskSource, {
+            label: "Migrated project tasks",
+            path: "Supabase projects/tasks",
+            status: registryUnreachable ? "unreachable" : "stale",
+            coverage: {
+              expected: 1,
+              found: 0,
+              stale: registryUnreachable ? 0 : 1,
+              unreachable: registryUnreachable ? 1 : 0,
+            },
+            message:
+              "Supabase project registry unavailable; indexed tasks.json snapshots were used, so migrated-project freshness is unknown.",
+            detail: migrationGate.error || migrationGate.reason || "No task-gate result was recorded.",
+            updatedMs: Date.now(),
+            staleAfterMs: 30 * 60 * 1000,
+          });
+        } else if (
+          migratedProjects.size > 0 ||
+          supabaseTaskFallbacks > 0 ||
+          dataHealthSources.has(supabaseTaskSource)
+        ) {
+          recordScanHealth(supabaseTaskSource, {
+            label: "Migrated project tasks",
+            path: "Supabase projects/tasks",
+            status: supabaseTaskFallbacks ? "stale" : "ok",
+            coverage: {
+              expected: migratedProjects.size,
+              found: supabaseTaskReads,
+              ok: supabaseTaskReads,
+              stale: supabaseTaskFallbacks,
+            },
+            message: supabaseTaskFallbacks
+              ? `Supabase task reads failed for ${supabaseTaskFallbacks} migrated project(s); indexed tasks.json snapshots were used.`
+              : `Supabase task reads succeeded for ${supabaseTaskReads} migrated project(s).`,
+            updatedMs: Date.now(),
+            staleAfterMs: 30 * 60 * 1000,
+          });
+        }
+
+        const taskScanNotes = [];
+        if (taskCoverage.malformed) {
+          taskScanNotes.push(`${taskCoverage.malformed} malformed`);
+        }
+        if (taskCoverage.unreachable) {
+          taskScanNotes.push(`${taskCoverage.unreachable} unreachable`);
+        }
+        if (!migrationRegistryAvailable) {
+          taskScanNotes.push("Supabase migration coverage unknown");
+        }
         recordScanHealth("scan.projects.tasks.github", {
-          label: "Project scans (GitHub)",
+          label: "Project task files (GitHub)",
           path: "Work|Personal/Projects/*/tasks.json",
           coverage: taskCoverage,
-          message:
-            taskCoverage.malformed || taskCoverage.unreachable
-              ? `Project scan completed with ${taskCoverage.malformed} malformed and ${taskCoverage.unreachable} unreachable file(s).`
-              : `Project scan healthy across ${taskCoverage.ok} project files.`,
+          message: taskScanNotes.length
+            ? `Project task scan completed with ${taskScanNotes.join(", ")}.`
+            : `Project scan healthy across ${taskCoverage.ok} project files.`,
           updatedMs: Date.now(),
           staleAfterMs: 30 * 60 * 1000,
         });
@@ -37779,6 +37866,7 @@ function SessionDialog({
   };
   const sendCapability = capabilityView.capabilities.send_steer;
   const interruptCapability = capabilityView.capabilities.interrupt;
+  const pendingActionView = pendingAction ? window.WorkbenchPendingActions?.statusPresentation?.(pendingAction.kind, pendingAction.status) : null;
 
   // Every refusal here is a toast, and the reason a control might be
   // blocked is ALSO checked inside the handler, not only via a
@@ -37814,6 +37902,7 @@ function SessionDialog({
       });
       if (record?.actionId) setPendingAction({
         actionId: record.actionId,
+        kind: 'answer_question',
         status: 'queued'
       });
     } catch (err) {
@@ -37856,6 +37945,7 @@ function SessionDialog({
       setComposerText('');
       if (record?.actionId) setPendingAction({
         actionId: record.actionId,
+        kind: 'reply',
         status: 'queued'
       });
     } catch (err) {
@@ -37889,6 +37979,7 @@ function SessionDialog({
       });
       if (record?.actionId) setPendingAction({
         actionId: record.actionId,
+        kind: 'stop_turn',
         status: 'queued'
       });
     } catch (err) {
@@ -38004,12 +38095,18 @@ function SessionDialog({
       }
     }, /*#__PURE__*/React.createElement(Badge, {
       tone: actionStatusTonePill(pendingAction.status)
-    }, pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
+    }, pendingActionView?.label || pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
       className: "muted",
       style: {
         fontSize: 12
       }
-    }, pendingAction.error) : null), blockedReason && /*#__PURE__*/React.createElement("span", {
+    }, pendingAction.error) : null, pendingActionView?.note ? /*#__PURE__*/React.createElement("span", {
+      className: "muted",
+      role: "status",
+      style: {
+        fontSize: 12
+      }
+    }, pendingActionView.note) : null), blockedReason && /*#__PURE__*/React.createElement("span", {
       className: "wb-composer-notice"
     }, blockedReason), !blockedReason && !sendCapability.allowed && /*#__PURE__*/React.createElement("span", {
       className: "wb-composer-notice"
@@ -38166,6 +38263,7 @@ function StartSessionDialog({
     } : prev);
   });
   const blockedReason = composerBlockedReason(machineId, machineLabel);
+  const pendingActionView = pendingAction ? window.WorkbenchPendingActions?.statusPresentation?.(pendingAction.kind, pendingAction.status) : null;
 
   // The Start button stays clickable whenever we're not literally
   // mid-request (disabled={busy} only, below) -- every refusal
@@ -38208,6 +38306,7 @@ function StartSessionDialog({
       setPrompt('');
       if (record?.actionId) setPendingAction({
         actionId: record.actionId,
+        kind: 'start_session',
         status: 'queued'
       });
     } catch (err) {
@@ -38244,12 +38343,18 @@ function StartSessionDialog({
     }
   }, /*#__PURE__*/React.createElement(Badge, {
     tone: actionStatusTonePill(pendingAction.status)
-  }, pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
+  }, pendingActionView?.label || pendingAction.status), pendingAction.error ? /*#__PURE__*/React.createElement("span", {
     className: "muted",
     style: {
       fontSize: 12
     }
-  }, pendingAction.error) : null), /*#__PURE__*/React.createElement(Input, {
+  }, pendingAction.error) : null, pendingActionView?.note ? /*#__PURE__*/React.createElement("span", {
+    className: "muted",
+    role: "status",
+    style: {
+      fontSize: 12
+    }
+  }, pendingActionView.note) : null), /*#__PURE__*/React.createElement(Input, {
     label: "Folder",
     value: cwd,
     onChange: e => setCwd(e.target.value),
