@@ -16614,16 +16614,31 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return validateSessionChecklistResponse(await request(`/v1/session-checklists?${params}`, { requireSession: true }));
   }
 
-  function exactSessionMetricsMatch(session, rows, updatedAt, nowMs, staleAfterMs = 45 * 60 * 1000) {
+  function exactSessionMetricsMatch(session, rows, nowMs, staleAfterMs = 45 * 60 * 1000) {
     const sessionUid = String(session?.session_uid || session?.sessionFull || session?.session_full || '');
     if (!sessionUid || !Array.isArray(rows)) return { state: 'missing', row: null, asOfMs: null, ageMs: null };
     const matches = rows.filter(row => String(row?.session_uid || row?.sessionFull || row?.session_full || '') === sessionUid);
     if (matches.length > 1) return { state: 'ambiguous', row: null, asOfMs: null, ageMs: null };
     if (!matches.length) return { state: 'missing', row: null, asOfMs: null, ageMs: null };
-    const asOfMs = typeof updatedAt === 'number' ? updatedAt : Date.parse(String(updatedAt || ''));
-    if (!Number.isFinite(asOfMs) || asOfMs <= 0) return { state: 'unknown_freshness', row: matches[0], asOfMs: null, ageMs: null };
-    const ageMs = Number.isFinite(nowMs) ? Math.max(0, nowMs - asOfMs) : Math.max(0, Date.now() - asOfMs);
-    return { state: ageMs > staleAfterMs ? 'stale' : 'fresh', row: matches[0], asOfMs, ageMs };
+    const row = matches[0];
+    const timestampMs = value => {
+      if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : null;
+      if (typeof value !== 'string' || !value.trim()) return null;
+      const parsed = Date.parse(value);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+    };
+    // The report timestamp changes when any session row changes. Use only
+    // timestamps carried by this exact row so another session cannot make it
+    // look fresh. ended is the terminal/last-observed time for legacy rows.
+    const rowTimes = [timestampMs(row.updated), timestampMs(row.ended)].filter(Number.isFinite);
+    const asOfMs = rowTimes.length ? Math.max(...rowTimes) : null;
+    if (!Number.isFinite(asOfMs) || asOfMs <= 0) return { state: 'unknown_freshness', row, asOfMs: null, ageMs: null };
+    const referenceNowMs = Number.isFinite(nowMs) ? nowMs : Date.now();
+    if (asOfMs - referenceNowMs > 5 * 60 * 1000) {
+      return { state: 'unknown_freshness', row, asOfMs: null, ageMs: null };
+    }
+    const ageMs = Math.max(0, referenceNowMs - asOfMs);
+    return { state: ageMs > staleAfterMs ? 'stale' : 'fresh', row, asOfMs, ageMs };
   }
 
   const LIFE_GOAL_KEYS = ['schemaVersion','id','domain','title','purpose','desiredOutcome','status','priority','horizon','targetDate','checkpoints','progressEvidence','nextReview','links','version','updatedAt','completedAt'];
@@ -17468,11 +17483,28 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return Number.isFinite(ms) ? ms : 0;
   }
 
+  // Postgres emits timestamptz with up to six fractional digits. Preserve
+  // those microseconds for evidence ordering; Date.parse() truncates them.
+  function observedAtMicros(value) {
+    if (typeof value !== "string") return null;
+    const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.(\d{1,6}))?(Z|[+-]\d{2}:\d{2})$/.exec(value);
+    if (!match) return null;
+    const secondMs = Date.parse(`${match[1]}${match[3]}`);
+    if (!Number.isFinite(secondMs)) return null;
+    const fractionMicros = Number((match[2] || "").padEnd(6, "0") || "0");
+    return BigInt(secondMs) * 1000n + BigInt(fractionMicros);
+  }
+
   // Ordering key: observed_at first (the relay's own sort), then
   // source_seq, then event_id as a last, fully deterministic tie-break --
   // two events can share the same observed_at millisecond (confirmed live,
   // see handleEventsList's since_observed_at comment in the relay).
   function compareRows(a, b) {
+    const preciseA = observedAtMicros(a && a.observed_at);
+    const preciseB = observedAtMicros(b && b.observed_at);
+    if (preciseA !== null && preciseB !== null && preciseA !== preciseB) {
+      return preciseA < preciseB ? -1 : 1;
+    }
     const oa = observedAtMs(a);
     const ob = observedAtMs(b);
     if (oa !== ob) return oa - ob;
@@ -17692,16 +17724,206 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         const { role, blocks } = parsePayload(payloadSource);
         const hasText = blocks.some((b) => b.type === "text" && b.text && b.text.trim());
         const isToolOnly = blocks.length > 0 && blocks.every((b) => b.type === "tool_use" || b.type === "tool_result");
+        const pendingActionId = row.kind === "transcript_message" && role === "user" &&
+            typeof payloadSource.pending_action_id === "string" &&
+            payloadSource.pending_action_id.length > 0 && payloadSource.pending_action_id.length <= 191
+          ? payloadSource.pending_action_id
+          : null;
+        const sourceTurnId = row.kind === "transcript_message" &&
+            typeof payloadSource.source_turn_id === "string" &&
+            payloadSource.source_turn_id.length > 0 && payloadSource.source_turn_id.length <= 191
+          ? payloadSource.source_turn_id
+          : null;
+        const sourceItemId = row.kind === "transcript_message" &&
+            typeof payloadSource.source_item_id === "string" &&
+            payloadSource.source_item_id.trim().length > 0 && payloadSource.source_item_id.length <= 191
+          ? payloadSource.source_item_id
+          : null;
+        const sourceItemIdProvided = row.kind === "transcript_message" &&
+          Object.prototype.hasOwnProperty.call(payloadSource, "source_item_id");
+        const sourceParentItemId = row.kind === "transcript_message" &&
+            typeof payloadSource.source_parent_item_id === "string" &&
+            payloadSource.source_parent_item_id.trim().length > 0 && payloadSource.source_parent_item_id.length <= 191
+          ? payloadSource.source_parent_item_id
+          : null;
+        const sourceParentItemIdProvided = row.kind === "transcript_message" &&
+          Object.prototype.hasOwnProperty.call(payloadSource, "source_parent_item_id");
+        const sourcePhase = row.kind === "transcript_message" &&
+            typeof payloadSource.source_phase === "string" &&
+            /^[a-z][a-z0-9_-]{0,31}$/.test(payloadSource.source_phase)
+          ? payloadSource.source_phase
+          : null;
+        const sourceTimestampProvided = row.kind === "transcript_message" &&
+          Object.prototype.hasOwnProperty.call(payloadSource, "source_timestamp_ms");
+        const sourceTimestampMs = row.kind === "transcript_message" &&
+            Number.isSafeInteger(payloadSource.source_timestamp_ms) && payloadSource.source_timestamp_ms > 0
+          ? payloadSource.source_timestamp_ms
+          : null;
         return {
           id: String(row.event_id),
           sessionUid: row.session_uid || null,
           observedAt: row.observed_at || null,
           role,
+          pendingActionId,
+          sourceTurnId,
+          sourceItemId,
+          sourceItemIdInvalid: sourceItemIdProvided && !sourceItemId,
+          sourceParentItemId,
+          sourceParentItemIdInvalid: sourceParentItemIdProvided &&
+            payloadSource.source_parent_item_id !== null &&
+            payloadSource.source_parent_item_id !== undefined &&
+            !sourceParentItemId,
+          sourcePhase,
+          sourceTimestampMs,
+          sourceTimestampInvalid: sourceTimestampProvided && sourceTimestampMs === null,
           blocks,
           hasText,
           isToolOnly,
         };
       });
+  }
+
+  // A started reply's exact user transcript event carries pending_action_id.
+  // Prefer the native source turn ID when both ends carry it. A later assistant
+  // message in the same session is only a temporal sequence, not proof that a
+  // submitted reply caused it, so use that weaker path only for legacy rows.
+  function observeReplyResponse(action, turns, activeSessionUid) {
+    if (!action || action.kind !== "reply") return { state: "not_applicable" };
+    if (action.status !== "done") return { state: "waiting" };
+    const actionId = typeof action.actionId === "string" ? action.actionId : "";
+    const sessionUid = typeof activeSessionUid === "string" ? activeSessionUid : "";
+    if (!actionId || !sessionUid || action.sessionUid !== sessionUid) return { state: "waiting" };
+
+    const sameSession = (Array.isArray(turns) ? turns : []).filter((turn) => turn?.sessionUid === sessionUid);
+    const matches = [];
+    for (let index = 0; index < sameSession.length; index += 1) {
+      const turn = sameSession[index];
+      if (turn.role === "user" && turn.pendingActionId === actionId) matches.push(index);
+    }
+    if (matches.length !== 1) return { state: matches.length > 1 ? "ambiguous" : "waiting" };
+
+    const submittedIndex = matches[0];
+    const submitted = sameSession[submittedIndex];
+    if (submitted.sourceTurnId) {
+      const sameTurnUsers = sameSession.filter((turn) => turn.role === "user" &&
+        turn.sourceTurnId === submitted.sourceTurnId);
+      if (sameTurnUsers.length !== 1) return { state: "ambiguous" };
+      const exactFinals = sameSession.filter((turn) => turn.role === "assistant" &&
+        turn.sourceTurnId === submitted.sourceTurnId && turn.sourcePhase === "final" && turn.hasText);
+      if (exactFinals.length > 1) return { state: "ambiguous" };
+      if (exactFinals.length === 0) return { state: "waiting" };
+      const submittedAt = observedAtMicros(submitted.observedAt);
+      const exactFinalAt = observedAtMicros(exactFinals[0].observedAt);
+      if (submittedAt === null || exactFinalAt === null || exactFinalAt <= submittedAt) {
+        return { state: "ambiguous" };
+      }
+      return {
+        state: "observed",
+        submittedEventId: submitted.id,
+        assistantEventId: exactFinals[0].id,
+        correlation: "turn_id",
+      };
+    }
+    if (submitted.sourceItemIdInvalid) return { state: "ambiguous" };
+    if (submitted.sourceItemId) {
+      const lineageAt = (turn) => {
+        if (turn.sourceTimestampInvalid) return null;
+        if (turn.sourceTimestampMs !== null && turn.sourceTimestampMs !== undefined) {
+          return BigInt(turn.sourceTimestampMs) * 1000n;
+        }
+        return observedAtMicros(turn.observedAt);
+      };
+      const submittedAt = lineageAt(submitted);
+      if (!submitted.hasText || submittedAt === null) return { state: "ambiguous" };
+
+      // Native JSONL uuid/parentUuid is stronger than temporal proximity. A
+      // source ID must identify exactly one item in this session, and each
+      // parent edge must resolve uniquely all the way back to this exact user
+      // event. Duplicate or malformed identity evidence is never accepted.
+      const bySourceId = new Map();
+      for (const turn of sameSession) {
+        if (turn.sourceItemIdInvalid) return { state: "ambiguous" };
+        if (!turn.sourceItemId) continue;
+        const entries = bySourceId.get(turn.sourceItemId) || [];
+        entries.push(turn);
+        bySourceId.set(turn.sourceItemId, entries);
+      }
+      if (Array.from(bySourceId.values()).some((entries) => entries.length !== 1)) {
+        return { state: "ambiguous" };
+      }
+
+      const finalItems = sameSession.filter((turn) =>
+        turn.role === "assistant" && turn.sourcePhase === "final" && turn.hasText);
+      const matches = [];
+      for (const finalItem of finalItems) {
+        const reverseChain = [];
+        const seen = new Set();
+        let current = finalItem;
+        while (current && current.sourceItemId !== submitted.sourceItemId) {
+          // A complete chain rooted at another user is an unrelated turn,
+          // not evidence that the requested reply is ambiguous. Continue
+          // examining other final items in this same session.
+          if (current.role === "user") break;
+          if (current.role !== "assistant" || current.sourceItemIdInvalid ||
+              current.sourceParentItemIdInvalid || !current.sourceItemId) {
+            return { state: "ambiguous" };
+          }
+          if (seen.has(current.sourceItemId)) return { state: "ambiguous" };
+          seen.add(current.sourceItemId);
+          if (!current.sourceParentItemId) break;
+          reverseChain.push(current);
+          const parents = bySourceId.get(current.sourceParentItemId) || [];
+          if (parents.length > 1) return { state: "ambiguous" };
+          if (parents.length === 0) break;
+          current = parents[0];
+        }
+        if (!current || current.sourceItemId !== submitted.sourceItemId) continue;
+        if (current.id !== submitted.id || current.role !== "user") return { state: "ambiguous" };
+
+        const chain = reverseChain.reverse();
+        let parentId = submitted.sourceItemId;
+        let parentAt = submittedAt;
+        for (const item of chain) {
+          const itemAt = lineageAt(item);
+          if (item.sourceParentItemId !== parentId || itemAt === null || itemAt <= parentAt) {
+            return { state: "ambiguous" };
+          }
+          parentId = item.sourceItemId;
+          parentAt = itemAt;
+        }
+        const hasInterveningUser = sameSession.some((turn) => {
+          if (turn.id === submitted.id || turn.role !== "user") return false;
+          const at = lineageAt(turn);
+          return at === null || (at > submittedAt && at <= parentAt);
+        });
+        if (hasInterveningUser) return { state: "ambiguous" };
+        matches.push(finalItem);
+      }
+      if (matches.length > 1) return { state: "ambiguous" };
+      if (matches.length === 0) return { state: "waiting" };
+      return {
+        state: "observed",
+        submittedEventId: submitted.id,
+        assistantEventId: matches[0].id,
+        correlation: "item_lineage",
+      };
+    }
+    const submittedAt = observedAtMicros(submitted.observedAt);
+    if (!submitted.hasText || submittedAt === null) return { state: "ambiguous" };
+
+    for (let index = submittedIndex + 1; index < sameSession.length; index += 1) {
+      const turn = sameSession[index];
+      if (turn.role === "user") return { state: "ambiguous" };
+      if (turn.role !== "assistant" || !turn.hasText) continue;
+      const responseAt = observedAtMicros(turn.observedAt);
+      if (responseAt === null || responseAt <= submittedAt) return { state: "ambiguous" };
+      return {
+        state: "observed",
+        submittedEventId: submitted.id,
+        assistantEventId: turn.id,
+      };
+    }
+    return { state: "waiting" };
   }
 
   // Parses an AskUserQuestion tool_use block's `input` into the shape
@@ -17841,6 +18063,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     createTranscriptHistoryController,
     nextSinceObservedAt,
     mapTranscriptEvents,
+    observeReplyResponse,
     parseAskUserQuestionInput,
     latestAskUserQuestion,
     createSessionPoller,
@@ -18156,9 +18379,21 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // the control. It is not a receipt for the assistant's resulting turn.
   // Keep that boundary visible until the relay can link a response event to
   // the exact submitted action.
-  function statusPresentation(kind, status) {
+  function statusPresentation(kind, status, responseObservation = null) {
     const current = String(status || "queued");
     if (current !== "done") return { label: current, note: null };
+    if (kind === "reply" && responseObservation?.state === "observed") {
+      return {
+        label: "later assistant message observed",
+        note: "A later assistant message was recorded after this exact reply event. Sequence is visible; causation is not proven.",
+      };
+    }
+    if (kind === "reply" && responseObservation?.state === "ambiguous") {
+      return {
+        label: "reply submitted · response order unclear",
+        note: "Later transcript activity does not identify a reliable response to this reply.",
+      };
+    }
     const submitted = {
       reply: {
         label: "reply submitted",
@@ -18180,7 +18415,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return submitted[kind] || { label: current, note: null };
   }
 
-  return { reply, answerQuestion, startSession, stopTurn, createRetryCoordinator, statusPresentation, ANSWER_KEYS };
+  // A delayed action-status response must only update the pending action whose
+  // ID was polled. React can commit a newer action before the prior effect's
+  // cleanup flips its `alive` flag, so the caller also guards inside the
+  // state updater with this identity check.
+  function applyPolledStatus(pending, polledActionId, status, record = null) {
+    if (!pending || !polledActionId || pending.actionId !== polledActionId) return pending;
+    return { ...pending, status: String(status || "queued"), error: record?.error_code || null };
+  }
+
+  return { reply, answerQuestion, startSession, stopTurn, createRetryCoordinator, statusPresentation, applyPolledStatus, ANSWER_KEYS };
 });
 
 
@@ -24102,7 +24346,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-09-26.22";
+  const WB_VERSION = "2026-09-28.20";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -31095,7 +31339,7 @@ function HomeRendererPanel({
       next.destroy();
       controller.current = null;
     };
-  }, [snapshot]);
+  }, []);
   React.useEffect(() => {
     if (!floors.some(floor => floor.id === floorId)) setFloorId(floors[0]?.id || null);else if (controller.current && floorId) controller.current.load(snapshot, floorId);
   }, [snapshot, floorId]);
@@ -37540,7 +37784,7 @@ function useActionStatusPoll(actionId, onStatus) {
         }
         const record = await seam.actionStatus(actionId);
         const status = String(record?.status || 'queued');
-        if (alive) onStatus(status, record);
+        if (alive) onStatus(actionId, status, record);
         if (status === 'done' || status === 'failed') poller.stop();
         return {};
       },
@@ -37685,8 +37929,8 @@ function SessionDialog({
   const authConfig = typeof authApi?.config === 'function' ? authApi.config() : null;
   const authUrl = authConfig?.url || null;
   const authKey = authConfig?.anonKey || null;
-  const authToken = typeof authApi?.accessToken === 'function' ? authApi.accessToken() : null;
-  const bindingContextKey = JSON.stringify([nativeSessionUid, nativeSessionId, nativeMachineId, nativeIde, nativeEditor, authUrl, authKey, authToken]);
+  const authGeneration = typeof authApi?.generation === 'function' ? authApi.generation() : 0;
+  const bindingContextKey = JSON.stringify([nativeSessionUid, nativeSessionId, nativeMachineId, nativeIde, nativeEditor, authUrl, authKey, authGeneration]);
   const mobile = useViewport();
   const [turns, setTurns] = React.useState([]);
   const [conversationBinding, setConversationBinding] = React.useState({
@@ -37694,8 +37938,12 @@ function SessionDialog({
     contextKey: null
   });
   const [taskChecklist, setTaskChecklist] = React.useState({
-    state: 'idle'
+    state: 'idle',
+    contextKey: null
   });
+  const visibleTaskChecklist = taskChecklist.contextKey === bindingContextKey ? taskChecklist : {
+    state: 'loading'
+  };
   const [linkSourceUid, setLinkSourceUid] = React.useState('');
   const [linkingConversation, setLinkingConversation] = React.useState(false);
   const [linkFailure, setLinkFailure] = React.useState(null);
@@ -37767,13 +38015,14 @@ function SessionDialog({
       alive = false;
       bindingGenerationRef.current += 1;
     };
-  }, [nativeSessionUid, nativeSessionId, nativeMachineId, nativeIde, nativeEditor, authUrl, authKey, authToken]);
+  }, [nativeSessionUid, nativeSessionId, nativeMachineId, nativeIde, nativeEditor, authUrl, authKey, authGeneration]);
   React.useEffect(() => {
     let alive = true;
     const generation = ++checklistGenerationRef.current;
     if (!nativeIdentity || nativeIde !== 'codex' || nativeEditor !== 'codex') {
       setTaskChecklist({
-        state: 'unsupported'
+        state: 'unsupported',
+        contextKey: bindingContextKey
       });
       return () => {
         alive = false;
@@ -37782,14 +38031,16 @@ function SessionDialog({
     const fetchChecklist = LiveApi?.fetchSessionChecklist;
     if (typeof fetchChecklist !== 'function') {
       setTaskChecklist({
-        state: 'unavailable'
+        state: 'unavailable',
+        contextKey: bindingContextKey
       });
       return () => {
         alive = false;
       };
     }
     setTaskChecklist({
-      state: 'loading'
+      state: 'loading',
+      contextKey: bindingContextKey
     });
     fetchChecklist({
       sessionUid: nativeSessionUid,
@@ -37798,13 +38049,19 @@ function SessionDialog({
       ide: nativeIde,
       editor: nativeEditor
     }).then(result => {
-      if (alive && generation === checklistGenerationRef.current) setTaskChecklist(result || {
-        state: 'unavailable'
-      });
+      if (alive && generation === checklistGenerationRef.current) {
+        setTaskChecklist({
+          ...(result || {
+            state: 'unavailable'
+          }),
+          contextKey: bindingContextKey
+        });
+      }
     }).catch(error => {
       if (!alive || generation !== checklistGenerationRef.current) return;
       setTaskChecklist({
-        state: error?.code === 'authRequired' ? 'auth_required' : 'unavailable'
+        state: error?.code === 'authRequired' ? 'auth_required' : 'unavailable',
+        contextKey: bindingContextKey
       });
     });
     return () => {
@@ -37931,12 +38188,8 @@ function SessionDialog({
   const loadEarlier = () => {
     historyControllerRef.current?.loadOlder();
   };
-  useActionStatusPoll(pendingAction?.actionId, (status, record) => {
-    setPendingAction(prev => prev ? {
-      ...prev,
-      status,
-      error: record?.error_code || null
-    } : prev);
+  useActionStatusPoll(pendingAction?.actionId, (polledActionId, status, record) => {
+    setPendingAction(prev => window.WorkbenchPendingActions?.applyPolledStatus?.(prev, polledActionId, status, record) ?? prev);
   });
   if (!session) return null;
   const machine = machineName(session.machine || session.host || session.hostname || session.machineId || 'Unknown');
@@ -37984,7 +38237,8 @@ function SessionDialog({
   };
   const sendCapability = capabilityView.capabilities.send_steer;
   const interruptCapability = capabilityView.capabilities.interrupt;
-  const pendingActionView = pendingAction ? window.WorkbenchPendingActions?.statusPresentation?.(pendingAction.kind, pendingAction.status) : null;
+  const replyObservation = pendingAction?.kind === 'reply' ? SessionTranscript.observeReplyResponse(pendingAction, turns, sessionUid) : null;
+  const pendingActionView = pendingAction ? window.WorkbenchPendingActions?.statusPresentation?.(pendingAction.kind, pendingAction.status, replyObservation) : null;
 
   // Every refusal here is a toast, and the reason a control might be
   // blocked is ALSO checked inside the handler, not only via a
@@ -38063,6 +38317,7 @@ function SessionDialog({
       setComposerText('');
       if (record?.actionId) setPendingAction({
         actionId: record.actionId,
+        sessionUid,
         kind: 'reply',
         status: 'queued'
       });
@@ -38120,22 +38375,22 @@ function SessionDialog({
     items: [['Summary', todoSummaryText(session.todoCounts) || '—'], ['Active task', session.activeTodo?.content || session.activeTodo?.activeForm || '—'], ['Live state', liveStateLabel(session)], ['Attention', String(session.attentionLevel || 'monitor').replace(/_/g, ' ')]]
   })), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Private task checklist",
-    title: taskChecklist.state === 'available' ? taskChecklist.checklist.title : 'Session checklist'
-  }, taskChecklist.state === 'loading' ? /*#__PURE__*/React.createElement("p", {
+    title: visibleTaskChecklist.state === 'available' ? visibleTaskChecklist.checklist.title : 'Session checklist'
+  }, visibleTaskChecklist.state === 'loading' ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Loading the checklist for this Codex task…") : null, taskChecklist.state === 'missing' ? /*#__PURE__*/React.createElement("p", {
+  }, "Loading the checklist for this Codex task…") : null, visibleTaskChecklist.state === 'missing' ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "No task checklist has synced for this session yet.") : null, taskChecklist.state === 'auth_required' ? /*#__PURE__*/React.createElement("p", {
+  }, "No task checklist has synced for this session yet.") : null, visibleTaskChecklist.state === 'auth_required' ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Sign in to view this private checklist.") : null, taskChecklist.state === 'unsupported' ? /*#__PURE__*/React.createElement("p", {
+  }, "Sign in to view this private checklist.") : null, visibleTaskChecklist.state === 'unsupported' ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "A checklist is available only when this session has an exact Codex task identity.") : null, taskChecklist.state === 'unavailable' ? /*#__PURE__*/React.createElement("p", {
+  }, "A checklist is available only when this session has an exact Codex task identity.") : null, visibleTaskChecklist.state === 'unavailable' ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "The private checklist could not be loaded. Session costs and checklist data stay behind Workbench sign-in.") : null, taskChecklist.state === 'available' ? /*#__PURE__*/React.createElement(Stack, {
+  }, "The private checklist could not be loaded. Session costs and checklist data stay behind Workbench sign-in.") : null, visibleTaskChecklist.state === 'available' ? /*#__PURE__*/React.createElement(Stack, {
     gap: 3
-  }, taskChecklist.checklist.subtitle ? /*#__PURE__*/React.createElement("p", {
+  }, visibleTaskChecklist.checklist.subtitle ? /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, taskChecklist.checklist.subtitle) : null, taskChecklist.checklist.groups.map((group, groupIndex) => /*#__PURE__*/React.createElement("section", {
+  }, visibleTaskChecklist.checklist.subtitle) : null, visibleTaskChecklist.checklist.groups.map((group, groupIndex) => /*#__PURE__*/React.createElement("section", {
     key: `${group.title}-${groupIndex}`
   }, /*#__PURE__*/React.createElement("h4", {
     style: {
@@ -38158,7 +38413,7 @@ function SessionDialog({
   })))), /*#__PURE__*/React.createElement("p", {
     className: "tiny",
     style: muted
-  }, "Updated ", fmtFullStamp(Date.parse(taskChecklist.sourceUpdatedAt || taskChecklist.checklist.updatedAt)), " · private Workbench Live record")) : null), /*#__PURE__*/React.createElement(Grid, {
+  }, "Updated ", fmtFullStamp(Date.parse(visibleTaskChecklist.sourceUpdatedAt || visibleTaskChecklist.checklist.updatedAt)), " · private Workbench Live record")) : null), /*#__PURE__*/React.createElement(Grid, {
     cols: 2,
     gap: 4
   }, /*#__PURE__*/React.createElement(Card, {
@@ -38413,12 +38668,8 @@ function StartSessionDialog({
     setBusy(false);
     setPendingAction(null);
   }, [machineId]);
-  useActionStatusPoll(pendingAction?.actionId, (status, record) => {
-    setPendingAction(prev => prev ? {
-      ...prev,
-      status,
-      error: record?.error_code || null
-    } : prev);
+  useActionStatusPoll(pendingAction?.actionId, (polledActionId, status, record) => {
+    setPendingAction(prev => window.WorkbenchPendingActions?.applyPolledStatus?.(prev, polledActionId, status, record) ?? prev);
   });
   const blockedReason = composerBlockedReason(machineId, machineLabel);
   const pendingActionView = pendingAction ? window.WorkbenchPendingActions?.statusPresentation?.(pendingAction.kind, pendingAction.status) : null;
@@ -40297,7 +40548,6 @@ window.__WBReactRender = function () {
     const match = LiveApi?.exactSessionMetricsMatch?.(
       session,
       state.sessionMetrics?.sessions || [],
-      state.sessionMetrics?.updated || jsonSourceMeta("hydrate.session-metrics").updatedMs,
       Date.now(),
     ) || { state: "missing", row: null, asOfMs: null, ageMs: null };
     const usageSession = match.row
