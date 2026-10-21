@@ -1084,6 +1084,38 @@ html.wb-booting #app .mobile-tabs,
 html.wb-booting #view {
   visibility: hidden;
 }
+.auth-screen {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: var(--canvas);
+}
+.auth-panel {
+  width: min(100%, 420px);
+  padding: 40px 0;
+}
+.auth-brand { margin-bottom: 56px; }
+.auth-panel h1 {
+  margin: 0 0 12px;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+.auth-panel .lede {
+  max-width: 36ch;
+  margin-bottom: 28px;
+  color: var(--text-2);
+}
+.auth-submit { min-height: 44px; }
+.auth-footnote {
+  max-width: 40ch;
+  margin-top: 20px;
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+}
 .wb-boot-card {
   width: min(360px, 100%);
   padding: 28px 24px 22px;
@@ -3951,6 +3983,168 @@ button.metric-card:hover {
 .home-model-ready { position: absolute; z-index: 2; left: 12px; bottom: 12px; padding: 5px 9px; border: 1px solid color-mix(in srgb, var(--border-subtle) 76%, transparent); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--surface-card) 88%, transparent); color: var(--text-muted); font-size: 12px; backdrop-filter: blur(8px); pointer-events: none; }
 .home-model-footnote { margin: 0; color: var(--text-muted); font-size: 12px; }
 
+/* Focus Split: a persistent briefing beside the real Workbench views. */
+.focus-split {
+  --focus-split-motion: 210ms;
+  display: grid;
+  grid-template-columns: minmax(280px, 35%) minmax(0, 1fr);
+  min-height: calc(100vh - 72px);
+  color: var(--text-strong);
+}
+.focus-split-brief {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 42px clamp(24px, 3vw, 48px);
+  border-right: 1px solid var(--border-subtle);
+  background: var(--surface-subtle);
+}
+.focus-split-mobile-summary { display: none; }
+.focus-split-brief-details { min-width: 0; }
+.focus-split-date { margin: 0 0 24px; color: var(--text-secondary); font-size: 13px; }
+.focus-split-brief h1 { max-width: 11ch; margin: 0; font-size: 38px; font-weight: 650; letter-spacing: -.035em; line-height: 1.12; text-wrap: balance; }
+.focus-split-intro { max-width: 34ch; margin: 18px 0 0; color: var(--text-secondary); font-size: 15px; line-height: 1.55; }
+.focus-split-priorities { margin-top: 48px; }
+.focus-split-priorities h2 { margin: 0 0 10px; font-size: 15px; font-weight: 650; }
+.focus-split-source { margin: 0 0 12px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; }
+.focus-split-coverage { margin: 12px 0; color: var(--text-secondary); font-size: 13px; line-height: 1.5; }
+.focus-split-priority {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 64px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.focus-split-priority strong, .focus-split-priority small { display: block; overflow-wrap: anywhere; }
+.focus-split-priority strong { font-size: 14px; font-weight: 620; line-height: 1.35; }
+.focus-split-priority small { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
+.focus-split-priority > svg { color: var(--text-secondary); opacity: .45; transition: transform var(--focus-split-motion) var(--ease-out-soft), opacity var(--focus-split-motion) var(--ease-out-soft); }
+.focus-split-priority:hover > svg, .focus-split-priority:focus-visible > svg { transform: translateX(3px); opacity: 1; }
+.focus-split-priority:focus-visible, .focus-split-brief-footer button:focus-visible, .focus-split-nav button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.focus-split-brief-footer { display: flex; gap: 16px; flex-wrap: wrap; margin-top: auto; padding-top: 40px; }
+.focus-split-brief-footer button { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 13px; }
+.focus-split-brief-footer button:hover { color: var(--text-strong); }
+.focus-split-workspace { min-width: 0; background: var(--surface-page); }
+.focus-split-nav { position: relative; display: flex; gap: 2px; min-width: 0; margin: 0 28px; border-bottom: 1px solid var(--border-subtle); overflow-x: auto; }
+.focus-split-nav button { z-index: 1; flex: none; min-height: 56px; padding: 0 14px; border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; font: inherit; font-size: 14px; }
+.focus-split-nav button:hover, .focus-split-nav button[aria-current="page"] { color: var(--text-strong); }
+.focus-split-nav button[aria-current="page"] { font-weight: 650; }
+.focus-split-indicator { position: absolute; left: 0; bottom: 0; width: 0; height: 2px; background: var(--text-strong); opacity: 0; pointer-events: none; transition: transform var(--focus-split-motion) var(--ease-out-soft), width var(--focus-split-motion) var(--ease-out-soft), opacity var(--focus-split-motion) ease; }
+.focus-split-return { display: flex; align-items: center; gap: 9px; min-height: 56px; margin: 0 28px; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-size: 13px; }
+.focus-split-return button { display: inline-flex; align-items: center; gap: 5px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: var(--text-strong); cursor: pointer; font: inherit; font-weight: 600; }
+.focus-split-return button:hover { color: var(--accent); }
+.focus-split-return button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.focus-split-return strong { color: var(--text-strong); font-weight: 600; }
+.focus-split-content { min-width: 0; }
+.focus-split-content .hub-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.focus-split-content .hub-aside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.focus-split-content .hub-header h1 { font-size: 32px; letter-spacing: -.025em; }
+@media (max-width: 1180px) {
+  .focus-split { grid-template-columns: minmax(250px, 32%) minmax(0, 1fr); }
+  .focus-split-brief { padding: 32px 22px; }
+  .focus-split-brief h1 { font-size: 32px; }
+  .focus-split-content .hub-aside { grid-template-columns: 1fr; }
+}
+@media (max-width: 900px) {
+  .focus-split {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: calc(100vh - 140px);
+    color: var(--text-strong);
+  }
+  .focus-split-brief {
+    position: sticky;
+    top: 58px;
+    z-index: 30;
+    display: block;
+    padding: 0 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface-subtle);
+  }
+  .focus-split-mobile-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 54px;
+  }
+  .focus-split-mobile-summary > span { display: grid; min-width: 0; gap: 2px; }
+  .focus-split-mobile-summary strong { font-size: 13px; font-weight: 650; }
+  .focus-split-mobile-summary small { overflow: hidden; color: var(--text-secondary); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  .focus-split-mobile-summary button {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 44px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-strong);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .focus-split-mobile-summary button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .focus-split-brief-details { display: none; }
+  .focus-split-brief[data-expanded="true"] .focus-split-brief-details {
+    position: static;
+    display: block;
+    max-height: min(54vh, 420px);
+    overflow-y: auto;
+    padding: 16px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-pop);
+    overscroll-behavior: contain;
+  }
+  .focus-split-brief[data-expanded="true"] { position: relative; top: auto; }
+  .focus-split-brief[data-expanded="true"] .focus-split-brief-details[aria-hidden="true"] { display: none; }
+  .focus-split-date { margin: 0 0 10px; font-size: 12px; }
+  .focus-split-brief h1 { max-width: 18ch; font-size: 24px; }
+  .focus-split-intro { margin-top: 8px; font-size: 13px; }
+  .focus-split-priorities { margin-top: 18px; }
+  .focus-split-priorities h2 { font-size: 14px; }
+  .focus-split-brief-footer { gap: 16px; margin-top: 18px; padding-top: 0; }
+  .focus-split-workspace { min-width: 0; }
+  .focus-split-nav {
+    position: sticky;
+    top: 112px;
+    z-index: 19;
+    width: calc(100% - 24px);
+    margin: 0 12px;
+    gap: 0;
+    background: var(--surface-page);
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  .focus-split-nav::-webkit-scrollbar { display: none; }
+  .focus-split-nav button { min-height: 50px; padding: 0 12px; font-size: 13px; white-space: nowrap; }
+  .focus-split-return { min-height: 50px; margin: 0 12px; }
+  .focus-split-content .hub-header h1 { font-size: 27px; }
+  .focus-split-content .hub-aside { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .focus-split-indicator, .focus-split-priority > svg { transition-duration: 1ms; transform: none; }
+  .focus-split-nav { scroll-behavior: auto; }
+}
+
   </style>
 </head>
 <body>
@@ -3961,28 +4155,15 @@ button.metric-card:hover {
       <div class="wb-boot-status" id="wbBootStatus">Starting…</div>
     </div>
   </div>
-  <section id="landing" class="modal-scrim">
-    <div class="modal-card" role="dialog" aria-labelledby="landingTitle">
-      <div class="modal-head" style="margin-bottom:0">
-        <div class="brand"><span class="wordmark">Workbench</span></div>
-        <button class="iconbtn" type="button" id="landingClose" aria-label="Close" title="Close">×</button>
-      </div>
-      <h1 id="landingTitle">Connect the workbench</h1>
-      <p class="lede" id="landingNote">Connect the private workbench repo to get started.</p>
-      <div class="grid" style="margin-top:20px">
-        <div class="card">
-          <h3>Sign in with GitHub</h3>
-          <p class="muted">One sign-in per device, no token to paste. Access is scoped by the workbench GitHub App to repository contents only.</p>
-          <button class="btn primary" id="sbSignIn">Sign in with GitHub</button>
-        </div>
-        <div class="card">
-          <h3>Use a token instead</h3>
-          <p class="muted">Fallback for a device where sign-in will not work. Paste a fine-grained PAT; it stays in this browser.</p>
-          <button class="btn" id="ghMode">Connect with a token</button>
-        </div>
-      </div>
+  <main id="landing" class="auth-screen" aria-labelledby="landingTitle">
+    <div class="auth-panel">
+      <div class="brand auth-brand"><span class="wordmark">Workbench</span></div>
+      <h1 id="landingTitle">Sign in to Workbench</h1>
+      <p class="lede" id="landingNote">Open your private workspace with GitHub. Workbench remembers your sign-in on this browser.</p>
+      <button class="btn primary auth-submit" id="sbSignIn">Continue with GitHub</button>
+      <p class="auth-footnote">Your repository stays private. You can sign out from Workbench at any time.</p>
     </div>
-  </section>
+  </main>
 
   <!-- React owns the connected shell (DesktopShell / MobileShell). Legacy markup
        here caused the mobile CSS frame to flash or persist when the React tree
@@ -3991,16 +4172,15 @@ button.metric-card:hover {
   <script>
   (function () {
     try {
-      var cfg = JSON.parse(localStorage.getItem("workbench-gh-config") || "null");
-      var tok = localStorage.getItem("workbench-gh-token");
-      if (cfg && cfg.owner && cfg.repo && tok && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
+      var saved = JSON.parse(localStorage.getItem("workbench-sb-session") || "null");
+      if (saved && saved.access_token && (location.protocol === "file:" || location.protocol.startsWith("http"))) {
         document.documentElement.classList.add("wb-autoconnect");
         var landing = document.getElementById("landing");
         var app = document.getElementById("app");
         if (landing) landing.classList.add("hidden");
         if (app) app.classList.remove("hidden");
         var status = document.getElementById("wbBootStatus");
-        if (status) status.textContent = "Connecting to GitHub…";
+        if (status) status.textContent = "Opening your workspace…";
       }
     } catch (e) {}
   })();
@@ -4336,10 +4516,15 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 window.__DS = window.__DS || {};
 ;(function(){
 /**
+
  * KnowsMore Motion helpers — mirrored from the Vibe motion system at full
+
  * liveliness. usePressable(): hover = soft lift/pop with a small RANDOMIZED
+
  * tilt (so repeated interactions never feel mechanical), press = quick
+
  * compression, release = springy rebound. Disabled under prefers-reduced-motion.
+
  */
 
 function prefersReducedMotion() {
@@ -4399,8 +4584,11 @@ function riseIn(index = 0, step = 40) {
 }
 
 /**
+
  * usePresence(open, exitMs) — keeps a floating surface mounted for `exitMs`
+
  * after `open` goes false so it can animate closed. Returns { mounted, entered }.
+
  */
 function usePresence(open, exitMs = 160) {
   const [mounted, setMounted] = React.useState(open);
@@ -4425,9 +4613,13 @@ function usePresence(open, exitMs = 160) {
 }
 
 /**
+
  * Tactile icon/text press-split — the "Invite button" effect: on press an
+
  * icon and its adjacent label compress/move independently instead of as one
+
  * rigid block. Adds real liveliness to primary buttons.
+
  */
 function useTactilePress() {
   const [state, setState] = React.useState('rest');
@@ -4476,15 +4668,25 @@ function textPartStyle(state, {
 }
 
 /**
+
  * useRimLight() — the ONE button hover treatment, system-wide. A cursor-tracking
+
  * rim edge-light rides the border under the pointer. On light fills it's an accent
+
  * rim (reads great on white). On solid/dark fills (`light`) it's a three-part
+
  * treatment so it never blends into the fill: a faint always-on perimeter, a
+
  * bright white arc that catches under the cursor, and a subtle refraction in the
+
  * fill's own colour on the OPPOSITE edge (like glass catching light front and back).
+
  * Pair with a hover lift + press compress + spring rebound. `refractColor` sets the
+
  * fill hue for that opposite glow (defaults to the accent).
+
  * Returns { ref, hover, press, handlers, rim }.
+
  */
 function useRimLight({
   light = false,
@@ -4596,14 +4798,23 @@ function useRimLight({
 }
 
 /**
+
  * useSlideHighlight() — the ONE dropdown/list hover treatment, system-wide.
+
  * A single indicator element springs to the hovered row with a slight overshoot
+
  * and bounce (--ease-spring) instead of the fill disappearing and reappearing.
+
  * Rows call onItemEnter; the container calls onLeave. A row may set data-tone
+
  * ("danger" | "accent") to recolor the indicator. Render <span style={hiStyle}/>
+
  * as the first child of a position:relative container. moveTo(el) lets callers
+
  * drive it from the keyboard or the current selection.
+
  * Returns { containerRef, hiStyle, onItemEnter, onLeave, moveTo, box }.
+
  */
 function useSlideHighlight({
   tone = 'hover'
@@ -4660,8 +4871,11 @@ function useSlideHighlight({
 }
 
 /**
+
  * flyArc() — send a glyph along a parabola from one element into another and
+
  * resolve when it lands. The commit gesture behind the date picker's day-select.
+
  */
 function flyArc(fromEl, toEl, text, opt = {}) {
   return new Promise(res => {
@@ -4717,12 +4931,16 @@ Object.assign(window.__DS,{prefersReducedMotion,randTilt,usePressable,riseIn,use
 })();
 ;(function(){
 /* Resolve a gap/size prop: a number 0–13 maps to the --space-N ramp; anything
+
    else (string like "12px", "2rem", or a var()) passes through untouched. */
 const sp = v => typeof v === 'number' ? v >= 0 && v <= 13 ? `var(--space-${v})` : v + 'px' : v;
 
 /**
+
  * Stack — vertical rhythm. Children flow top-to-bottom with a consistent gap.
+
  * The default vertical layout primitive. gap defaults to --stack-gap.
+
  */
 function Stack({
   gap,
@@ -4748,8 +4966,11 @@ function Stack({
 }
 
 /**
+
  * Cluster — horizontal group that wraps. For button rows, tag/chip runs,
+
  * toolbars, meta lines. Uses gap (never margins) so it survives reordering.
+
  */
 function Cluster({
   gap = 2,
@@ -4776,9 +4997,13 @@ function Cluster({
 }
 
 /**
+
  * Grid — responsive auto-grid. By default cards gain columns instead of
+
  * stretching (repeat(auto-fill, minmax(min, 1fr))). Pass `cols` for a fixed
+
  * column count instead.
+
  */
 function Grid({
   min = 'var(--col-min)',
@@ -4805,9 +5030,13 @@ function Grid({
 }
 
 /**
+
  * Container — OPT-IN bounded width for reading/marketing/auth layouts. Product
+
  * surfaces should stay fluid; use size="fluid" (default padding only) for those.
+
  * size: sm | md | lg | xl | fluid, or an explicit max width.
+
  */
 function Container({
   size = 'lg',
@@ -4841,8 +5070,11 @@ function Container({
 }
 
 /**
+
  * Split — a fixed-width side column beside a fluid main column (the sidebar
+
  * layout). side="start"|"end"; collapses to a stack below `at` (px).
+
  */
 function Split({
   side = 'start',
@@ -4876,8 +5108,11 @@ function Split({
 }
 
 /**
+
  * Center — center a block horizontally and cap its reading measure so prose
+
  * never runs to fatiguing line lengths. measure: 'narrow' | 'body' | 'wide'.
+
  */
 function Center({
   measure = 'body',
@@ -4931,8 +5166,11 @@ function Spacer({
 }
 
 /**
+
  * Divider — hairline separator, horizontal (default) or vertical, with an
+
  * optional centered label ("OR", "MORE").
+
  */
 function Divider({
   vertical = false,
@@ -4993,9 +5231,13 @@ function Divider({
 }
 
 /**
+
  * Box — generic surface: token-driven padding, background, radius, border,
+
  * shadow. The escape hatch for one-off containers so pages stop hand-rolling
+
  * the same card div. `bg`/`radius`/`shadow` take token step names.
+
  */
 function Box({
   p,
@@ -5494,10 +5736,15 @@ function ContextRail({
 }
 
 /**
+
  * AppShell — the canonical three-zone frame: optional Sidebar, sticky TopBar,
+
  * fully-fluid content column, optional ContextRail. Compose with the slot
+
  * components above. Content NEVER gets a fixed max-width (product surfaces are
+
  * fluid); cap reading blocks inside with <Center> instead.
+
  */
 function AppShell({
   sidebar,
@@ -5540,8 +5787,11 @@ Object.assign(window.__DS,{NavList,Sidebar,TopBar,ContextRail,AppShell});
 })();
 ;(function(){
 /**
+
  * Signed, directional finance value. Auto-colors by sign (favorable = under/positive,
+
  * unfavorable = over/negative) unless tone is forced. Tabular figures always.
+
  */
 function VarianceValue({
   value,
@@ -5669,8 +5919,11 @@ Object.assign(window.__DS,{Avatar});
 })();
 ;(function(){
 /* Curated Lucide-style path set (1.75px stroke, 24×24). The house icon
+
    vocabulary, vendored so the system has no CDN dependency. Pass a name from
+
    this set, or a custom `path` (string) / `paths` (string[]) for anything else.
+
    Keep new glyphs in the Lucide line style so the set stays coherent. */
 const ICONS = {
   home: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10',
@@ -5762,21 +6015,37 @@ Object.assign(window.__DS,{Icon,ICONS});
 })();
 ;(function(){
 /**
+
  * KnowsMore data grid — the center of gravity. Column-config driven, tabular
+
  * figures on numeric columns, hairline dividers, sticky header, hover row
+
  * highlight, and a totals footer. Cells render any node (VarianceValue, Badge,
+
  * TraceStamp) via column.render(value, row, isSubtotal).
+
  *
+
  * Two looks:
+
  *  - default: a bordered card (self-contained widget).
+
  *  - `report`: FRAMELESS — no outer box, no card fill, transparent header;
+
  *    hairlines do all the structural work. This is the light, whitespace-
+
  *    forward look for a full budget/ledger surface.
+
  *
+
  * Special rows: `{_group: 'Section title'}` renders a section header spanning
+
  * all columns; `{_subtotal: true, ...}` renders a subtotal row (top rule on
+
  * numeric cells, no hover). Column extras: `indent`, `margin` (left rule +
+
  * inset), `wrap` (multi-line cell), `strong`, `muted`, `mono`, `numeric`.
+
  */
 function DataTable({
   columns = [],
@@ -5937,10 +6206,15 @@ Object.assign(window.__DS,{DataTable});
 })();
 ;(function(){
 /**
+
  * Traceability stamp: who changed what and when, with staleness. The face is the
+
  * UI sans (Avenir Next) at micro size with tabular figures — names and relative
+
  * times ("2h ago") are human-readable, not codes, so mono is reserved for true
+
  * IDs/PO numbers. Muted; the backbone of KnowsMore's trust language.
+
  */
 function TraceStamp({
   owner,
@@ -5994,9 +6268,13 @@ const DV = ['var(--dv-1)', 'var(--dv-2)', 'var(--dv-3)', 'var(--dv-4)', 'var(--d
 const fmt = n => Math.abs(n) >= 1000 ? (n / 1000).toFixed(n % 1000 ? 1 : 0) + 'k' : '' + n;
 
 /**
+
  * BarChart — restrained vertical bars on the data-viz ramp. data: [{label,value,
+
  * color?}] or [number]. The accent bar can be highlighted via `highlight` index.
+
  * Bars grow from zero on mount (the house motion), reduced-motion aware.
+
  */
 function BarChart({
   data = [],
@@ -6076,9 +6354,13 @@ function BarChart({
 }
 
 /**
+
  * LineChart / Sparkline — a single trend line with an optional area fill. data:
+
  * [number] or [{value}]. Set `area` for a filled sparkline; `dots` to mark
+
  * points. Scales to its container width via viewBox.
+
  */
 function LineChart({
   data = [],
@@ -6141,8 +6423,11 @@ function Sparkline(props) {
 }
 
 /**
+
  * Donut — a single ratio as a ring (e.g. % of budget committed). value 0–1.
+
  * Shows the percentage in the middle unless `label` overrides.
+
  */
 function Donut({
   value = 0,
@@ -6710,8 +6995,11 @@ function ListItem({
 }
 
 /**
+
  * DescriptionList — aligned key/value pairs (semantic dl/dt/dd). `items` is
+
  * [[key, value], …] or [{ term, detail }]. layout: 'rows' (default) | 'inline'.
+
  */
 function DescriptionList({
   items = [],
@@ -7031,10 +7319,15 @@ Object.assign(window.__DS,{Tag});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Banner — an inline, in-flow message that scopes to a section (not a
+
  * transient toast). Tone-tinted: `warn` (attention), `fav` (positive/on-track),
+
  * `info` (neutral). Dismissible via `onDismiss`. Use for standing conditions:
+
  * "estimate is stale", "pacing is under plan".
+
  */
 function Banner({
   variant = 'info',
@@ -7098,10 +7391,15 @@ Object.assign(window.__DS,{Banner});
 })();
 ;(function(){
 /**
+
  * KnowsMore Breadcrumb — shows where a value sits in the LOB → year → forecast →
+
  * line hierarchy and walks back up. The last crumb is the current location (bold,
+
  * non-interactive); ancestors are links. `items` is an array of strings, or
+
  * { label, href, onClick } objects. Deep paths can collapse the middle upstream.
+
  */
 function Breadcrumb({
   items = [],
@@ -7203,10 +7501,15 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore CommandPalette — the ⌘K launcher. A frosted scrim, a field that
+
  * autofocuses, and results that stagger in; ↑/↓ move the highlight and ↵ runs.
+
  * Self-manages the ⌘K / Escape hotkeys by default (`hotkey`), and can also be
+
  * driven with `open` + `onOpenChange`. Each command: {icon,title,subtitle,onRun}.
+
  */
 function CommandPalette({
   commands = [],
@@ -7426,10 +7729,15 @@ Object.assign(window.__DS,{CommandPalette});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * ConfirmDialog — decision modal for confirming an action. Self-contained (own
+
  * scrim + panel, no external deps). `variant="danger"` frames destructive
+
  * actions in the unfavorable red; `hold` requires a deliberate press-and-hold
+
  * to confirm (irreversible actions), matching the destructive-action pattern.
+
  */
 function ConfirmDialog({
   open,
@@ -7779,10 +8087,15 @@ function usePresence(open, exitMs = 240) {
 }
 
 /**
+
  * KnowsMore Drawer — a side rail that slides in over a scrim for context and
+
  * detail without leaving the page (line detail, filters, activity). Slides from
+
  * the right by default with a soft settle (`km-drawer-in`); Escape and scrim
+
  * click close it. Controlled via `open` + `onClose`.
+
  */
 function Drawer({
   open,
@@ -7944,11 +8257,17 @@ const uploadIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore Dropzone — a drag-and-drop import target. The frame lifts + lights
+
  * accent on drag-over; on drop it shows a progress bar, then a favorable "done"
+
  * card with a Replace affordance. Wire real uploads with `uploadFn(files,
+
  * onProgress) => Promise`; omit it and the zone simulates progress (useful for
+
  * demos). `onFiles` fires with the chosen FileList either way.
+
  */
 function Dropzone({
   onFiles,
@@ -8149,9 +8468,13 @@ Object.assign(window.__DS,{Dropzone});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore EmptyState — a centered, low-key prompt for a zero-data view. A
+
  * quiet framed icon, a plain-spoken title, one line of guidance, and a single
+
  * next action. Never a dead end: always give the user the one thing to do next.
+
  */
 function EmptyState({
   icon,
@@ -8240,13 +8563,21 @@ const linkIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore ImageInput — add an image three ways: drop / browse a file, paste
+
  * an image URL, or paste from the clipboard (⌘V) anywhere over the control. The
+
  * frame lifts + lights accent on drag-over; once an image is set it shows a
+
  * preview with its source and a Replace / Remove pair. Files read to a data URL
+
  * locally (no upload) unless you wire `uploadFn(file) => Promise<url>`.
+
  * `onChange(src)` fires with the resolved src either way. Controlled (`value`)
+
  * or uncontrolled (`defaultValue`).
+
  */
 function ImageInput({
   value,
@@ -8568,10 +8899,15 @@ Object.assign(window.__DS,{ImageInput});
 })();
 ;(function(){
 /**
+
  * KnowsMore Pagination — numbered pager with an accent-tint indicator that
+
  * slides between pages. Controlled (`page`) or uncontrolled (`defaultPage`).
+
  * Prev/next chevrons clamp at the ends. Keeps figures tabular so widths don't
+
  * jitter as you move.
+
  */
 function Pagination({
   total,
@@ -8689,11 +9025,17 @@ Object.assign(window.__DS,{Pagination});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Popover — the generic anchored floating panel that sits under Select,
+
  * Combobox, Menu and DatePicker, exposed on its own for detail-on-demand. Anchors
+
  * to its trigger with a caret, springs open, collapses back toward the trigger on
+
  * close, and dismisses on outside-click or Escape. `trigger` is the anchor node;
+
  * `children` is the panel body. Controlled (open/onOpenChange) or uncontrolled.
+
  */
 function Popover({
   trigger,
@@ -8770,11 +9112,17 @@ Object.assign(window.__DS,{Popover});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Progress — one accent-driven progress primitive in four shapes,
+
  * chosen by context: `linear` (inline/upload), `circular` (compact tiles),
+
  * `indeterminate` (unknown total), `segmented` (discrete steps). `value` is
+
  * 0–1. All fill with the live --accent and collapse to a static bar under
+
  * reduced motion.
+
  */
 function Progress({
   variant = 'linear',
@@ -8920,10 +9268,15 @@ Object.assign(window.__DS,{Progress});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Skeleton — a quiet shimmer placeholder that holds layout while data
+
  * loads. Use as a single bar/block (`width`/`height`/`circle`) or pass `lines`
+
  * (an array of widths) for a stacked text placeholder. The shimmer uses sunken
+
  * surface tokens so it re-themes automatically; reduced-motion holds it static.
+
  */
 function Skeleton({
   width = '100%',
@@ -9139,10 +9492,15 @@ function Check({
 }
 
 /**
+
  * KnowsMore Toast — a transient confirmation that rises from the bottom center
+
  * on a dark ink surface. `success` shows a spring ✓. Auto-dismisses after
+
  * `duration` (0 keeps it up); an optional `action` (Undo / View) keeps it
+
  * actionable. Controlled via `open` + `onClose`.
+
  */
 function Toast({
   open,
@@ -9322,10 +9680,15 @@ Object.assign(window.__DS,{Tooltip});
 })();
 ;(function(){
 /**
+
  * KnowsMore Tree — a browsable hierarchy (nav rail or roll-up explorer). Rows
+
  * disclose with a spring caret; each branch can carry a `meta` value (e.g. a
+
  * subtotal) so structure and numbers read together. `nodes` is a nested array of
+
  * { label, meta?, defaultOpen?, children?: [...] }.
+
  */
 function TreeNode({
   node,
@@ -9443,12 +9806,19 @@ function Check({
 }
 
 /**
+
  * KnowsMore VerticalStepper — a longer / detail-heavy flow than the horizontal
+
  * Wizard. Each step expands in place to reveal its own content; the connector
+
  * fills as steps complete; done + current dots both carry the brand hero accent
+
  * (done = ✓, current = number with a focus ring) — never green. Click any dot to
+
  * jump. steps: [{ title, desc, detail | render(i) }]. Controlled via value/onChange
+
  * or uncontrolled via defaultValue.
+
  */
 function VerticalStepper({
   steps = [],
@@ -9611,11 +9981,17 @@ function Check({
 }
 
 /**
+
  * KnowsMore Wizard — a horizontal stepper for a short, ordered task (scope →
+
  * allocate → review). Completed steps flip to a favorable ✓ and their connector
+
  * fills; the active step wears the accent. Controlled (`current`) or
+
  * uncontrolled (`defaultCurrent`); renders `children` as the current step body
+
  * and, unless `controls={false}`, a Back / Continue row.
+
  */
 function Wizard({
   steps = [],
@@ -9783,12 +10159,19 @@ function Check({
 }
 
 /**
+
  * KnowsMore AsyncButton — a commit action that carries its own
+
  * idle → saving → done lifecycle so the user always knows their action landed.
+
  * Press compresses; on success the label morphs into a ✓ and the fill flips to
+
  * the favorable green, then resets. Use for the ONE value-committing action on
+
  * a view (Approve & save, Lock close). `onAction` may return a Promise; the
+
  * spinner holds until it resolves.
+
  */
 function AsyncButton({
   children = 'Approve & save',
@@ -9894,12 +10277,19 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore Button — the primary action primitive.
+
  * Restrained, tactile: a cursor-tracking **rim edge-light** rides the border
+
  * under the pointer on hover (a thin bright ring masked to the cursor, tapering
+
  * along the rim), the button lifts on hover and compresses on press. Accent-
+
  * driven so it reorients under any [data-lob] scope. Reduced-motion → plain
+
  * state changes only.
+
  */
 function Button({
   children,
@@ -10163,7 +10553,9 @@ function Check({
 }
 
 /** Searchable combo box — type to filter, click to select. On hover the highlight
+
  *  slides to the pointer's row with a slight overshoot (system dropdown behavior);
+
  *  the picked row flashes an accent ✓ before the popover collapses. Options: {value,label,hint}. */
 function Combobox({
   options = [],
@@ -10362,13 +10754,21 @@ const searchIcon = /*#__PURE__*/React.createElement("svg", {
 }));
 
 /**
+
  * KnowsMore CommittedSearch — a search field that RUNS on Enter or the Search
+
  * button, not on every keystroke. Unlike SearchField (live in-page filter),
+
  * this is for queries that hit a service or reload a table: the button lights
+
  * accent while the query differs from the last run, dims once results match,
+
  * and shows a spinner while `onSearch` is in flight (return a Promise). Focus
+
  * lights the field + glyph accent and lifts it 1px. Controlled (`value`) or
+
  * uncontrolled (`defaultValue`).
+
  */
 function CommittedSearch({
   value,
@@ -10538,10 +10938,15 @@ Object.assign(window.__DS,{CommittedSearch});
 })();
 ;(function(){
 /**
+
  * KnowsMore CurrencyStepper — a ± stepper for a single bounded number
+
  * (extra investment, unit counts). Each committed value rolls up or down in
+
  * place (digit-roll), and the buttons compress on press. Controlled (`value`)
+
  * or uncontrolled (`defaultValue`). Figures are tabular so the width is stable.
+
  */
 function CurrencyStepper({
   value,
@@ -10672,10 +11077,15 @@ const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 
 const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 /**
+
  * KnowsMore DatePicker — calendar popover. On select the chosen day flies on an
+
  * arc out of the grid and drops into the field, bumping the month left and the
+
  * year right before it nestles into place (the signature commit gesture). Reduced
+
  * motion collapses straight to the value. value/onChange use YYYY-MM-DD strings.
+
  */
 function DatePicker({
   value,
@@ -10938,11 +11348,17 @@ Object.assign(window.__DS,{DatePicker});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore FilterBar — a row of active filter chips plus a dashed "add filter"
+
  * affordance. Adding a filter springs the chip in and slides the add button
+
  * right to make room; removing one (or clearing all, chip by chip) collapses its
+
  * width so the row slides left to close the gap. Options are `{key,label}`; the
+
  * active set is the list of keys. Controlled (`value`) or uncontrolled (`defaultValue`).
+
  */
 function Chip({
   label,
@@ -11193,7 +11609,9 @@ const {
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** Square icon-only button. Ghost by default; used in toolbars, grid rows, rails.
+
  *  Carries the same system button interaction as Button: a cursor-tracking rim
+
  *  edge-light on hover, a hover lift, and a press-compress + spring pop. */
 function IconButton({
   icon,
@@ -11324,15 +11742,25 @@ function applyCase(s, mode) {
 }
 
 /**
+
  * KnowsMore InlineEdit — click a value to edit it in place. Numbers group with
+
  * commas + fixed decimals LIVE as you type, and per the house rule negatives
+
  * render in parentheses, never with a minus (type '-' anywhere to toggle sign).
+
  * Text can auto-case on commit ('title' | 'sentence'). On commit: the value
+
  * pops (`km-value-pop`), the field flashes accent (`km-cell-flash`) and a ✓
+
  * confirms. Controlled (`value`) or uncontrolled (`defaultValue`).
+
  *
+
  * Layout: pass `label` for a full label⇄value row; omit it for a bare editable
+
  * value you can drop into your own row/table.
+
  */
 function InlineEdit({
   value,
@@ -11563,8 +11991,11 @@ Object.assign(window.__DS,{InlineEdit});
 })();
 ;(function(){
 /**
+
  * Text input with editorial label, optional prefix (e.g. $), helper/error text,
+
  * and an optional trace line for "who last changed this".
+
  */
 function Input({
   label,
@@ -11695,9 +12126,13 @@ let _id = 0;
 const useId = given => React.useMemo(() => given || 'fld-' + ++_id, [given]);
 
 /**
+
  * Field — the label + control + help/error wrapper every form control composes
+
  * into. Wires htmlFor / aria-describedby / aria-invalid to the child control by
+
  * cloning it, so accessibility is automatic. Pass any control as the child.
+
  */
 function Field({
   label,
@@ -11792,8 +12227,11 @@ function Field({
 }
 
 /**
+
  * FormRow — horizontal label / control layout for settings-style forms: label
+
  * (+ description) on the left, control on the right. Stacks under `at` px.
+
  */
 function FormRow({
   label,
@@ -11895,8 +12333,11 @@ function Fieldset({
 }
 
 /**
+
  * FormError — a submit-time summary that lists the fields that failed, so the
+
  * user sees everything wrong at once. `errors` is [{ label, message, href? }].
+
  */
 function FormError({
   title = 'Please fix the following',
@@ -11962,10 +12403,15 @@ function pulse(el) {
 }
 
 /**
+
  * Dropdown menu — a trigger + popover list of actions. Animates in/out. On hover
+
  * the highlight slides to the pointer's row with a slight overshoot + bounce
+
  * (the system dropdown behavior via useSlideHighlight), turning red over a
+
  * destructive item. items: {label, icon?, onClick?, danger?, disabled?} or {divider:true}.
+
  */
 function Menu({
   trigger,
@@ -12152,6 +12598,7 @@ function RadioItem({
 }
 
 /** Vertical radio group with springy dot + ring pulse on select. Re-picking the
+
  *  already-selected option re-fires the same micro-animation. Options: strings or {value,label,hint,disabled}. */
 function RadioGroup({
   options = [],
@@ -12189,9 +12636,13 @@ Object.assign(window.__DS,{RadioGroup});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * RangeSlider — dual-thumb range selector. value is [low, high]; controlled via
+
  * value/onChange or uncontrolled via defaultValue. Accent fill spans the range;
+
  * thumbs pop on grab. Shows the two values unless showValues is false.
+
  */
 function RangeSlider({
   min = 0,
@@ -12314,11 +12765,17 @@ Object.assign(window.__DS,{RangeSlider});
 })();
 ;(function(){
 /**
+
  * KnowsMore SearchField — a text field for on-page filtering. On focus the
+
  * whole field and its glyph light up accent and it lifts 1px; a live result
+
  * count pill and the clear button spring in whenever there's a query. Pass
+
  * `count` to show a real match count (omit to hide the pill). Controlled
+
  * (`value`) or uncontrolled (`defaultValue`).
+
  */
 function SearchField({
   value,
@@ -12558,11 +13015,17 @@ function Check({
 }
 
 /**
+
  * KnowsMore Select — a custom popover dropdown (the native control never matched
+
  * the field styling). Opens a bordered menu; the highlight slides to the hovered
+
  * row with a slight overshoot + bounce (system dropdown behavior), and the picked
+
  * row confirms with an accent ✓ that pops before the menu collapses and the field
+
  * pulses. Controlled (`value` + `onChange`) or uncontrolled (`defaultValue`).
+
  */
 function Select({
   label,
@@ -12763,10 +13226,15 @@ Object.assign(window.__DS,{Select});
 })();
 ;(function(){
 /**
+
  * KnowsMore Slider — a labeled range for exploratory "what-if" inputs
+
  * ("if we invest more…"). The accent fills the track behind the thumb; the
+
  * readout pops while dragging and the thumb springs on release. Controlled or
+
  * uncontrolled. Renders a native range so keyboard + a11y come for free.
+
  */
 function Slider({
   value,
@@ -12936,13 +13404,21 @@ function Check({
 }
 
 /**
+
  * KnowsMore Textarea — an auto-growing note field. The box grows with its
+
  * content up to `maxHeight`, then scrolls. Pass `onSave` to enable the lock-in
+
  * workflow: while there are edits the field shows "Unsaved changes" and an
+
  * accent Save button; on save the field flashes favorable green, the border and
+
  * fill settle to a calm "Saved" state, and a transient "Saved · locked in"
+
  * confirms. Omit `onSave` for a plain auto-grow field (accent focus only).
+
  * Controlled (`value`) or uncontrolled (`defaultValue`).
+
  */
 function Textarea({
   value,
@@ -13086,11 +13562,17 @@ Object.assign(window.__DS,{Textarea});
 const reduced = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
+
  * KnowsMore TokenInput — a multi-select chip field. Click to open the pool,
+
  * pick to add (the chip springs in with `km-chip-in`), press × to remove (the
+
  * chip scales out with `km-chip-out` before the value updates). Accent-driven,
+
  * so chips reorient under any [data-lob] scope. Controlled (`value`) or
+
  * uncontrolled (`defaultValue`).
+
  */
 function TokenInput({
   value,
@@ -13295,20 +13777,35 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     session = null;
   }
 
-  function save(next) {
+  function save(next, { persist = true, source = 'local' } = {}) {
+    const previousOwner = canonicalUserId(session?.user?.id) || accessTokenUserId(session?.access_token);
+    const nextOwner = canonicalUserId(next?.user?.id) || accessTokenUserId(next?.access_token);
+    const sameKnownOwner = !!(previousOwner && nextOwner && previousOwner === nextOwner);
     session = next;
     authGeneration += 1;
-    try {
-      if (next) localStorage.setItem(KEY, JSON.stringify(next));
-      else localStorage.removeItem(KEY);
-    } catch {
-      // Private mode: the session stays in memory for this tab only.
+    if (persist) {
+      try {
+        if (next) localStorage.setItem(KEY, JSON.stringify(next));
+        else localStorage.removeItem(KEY);
+      } catch {
+        // Private mode: the session stays in memory for this tab only.
+      }
     }
     if (typeof globalThis.dispatchEvent === "function" && typeof globalThis.CustomEvent === "function") {
       globalThis.dispatchEvent(new globalThis.CustomEvent("workbench-auth-change", {
-        detail: { generation: authGeneration, hasSession: !!next?.access_token },
+        detail: { generation: authGeneration, hasSession: !!next?.access_token, ownerChanged: !sameKnownOwner, previousOwner, source },
       }));
     }
+  }
+
+  if (typeof globalThis.addEventListener === 'function') {
+    globalThis.addEventListener('storage', event => {
+      if (event.key !== KEY) return;
+      let next = null;
+      try { next = event.newValue ? JSON.parse(event.newValue) : null; } catch {}
+      save(next, { persist: false, source: 'storage' });
+      if (!next?.access_token) globalThis.WorkbenchLiveApi?.clearCachedBundle?.();
+    });
   }
 
   function generation() {
@@ -13531,6 +14028,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   async function ensureFresh() {
     if (!session?.refresh_token) return signedIn();
     if (Date.now() < (session.expires_at || 0) - REFRESH_SKEW_MS) return true;
+    const admittedSession = session;
+    const admittedGeneration = authGeneration;
+    const stillAdmitted = () => session === admittedSession && authGeneration === admittedGeneration;
     try {
       const res = await fetch(`${CONFIG.url}/auth/v1/token?grant_type=refresh_token`, {
         method: "POST",
@@ -13538,17 +14038,19 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
           apikey: CONFIG.anonKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ refresh_token: session.refresh_token }),
+        body: JSON.stringify({ refresh_token: admittedSession.refresh_token }),
       });
+      if (!stillAdmitted()) return false;
       if (!res.ok) {
         if (res.status === 400 || res.status === 401) save(null);
         return false;
       }
       const j = await res.json();
+      if (!stillAdmitted()) return false;
       save({
-        ...session,
-        access_token: j.access_token || session.access_token,
-        refresh_token: j.refresh_token || session.refresh_token,
+        ...admittedSession,
+        access_token: j.access_token || admittedSession.access_token,
+        refresh_token: j.refresh_token || admittedSession.refresh_token,
         expires_at: Date.now() + Number(j.expires_in || 3600) * 1000,
       });
       return true;
@@ -13756,20 +14258,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return cfg;
     }
 
-    async function request(path, { method = "GET", headers = {}, body, expectedAuthContext } = {}) {
-      const fresh = await auth.ensureFresh();
+    async function request(path, { method = "GET", headers = {}, body } = {}) {
+      await auth.ensureFresh();
       const cfg = readConfig();
       const token = typeof auth.accessToken === "function" ? auth.accessToken() : "";
-      if (fresh === false || typeof token !== "string" || !token.trim()) {
-        throw new PostgrestError(401, { code: "AUTH_REQUIRED", message: "Sign in again to reconnect." });
-      }
-      if (expectedAuthContext && !sameAuthContext(expectedAuthContext, {
-        url: cfg.url,
-        anonKey: cfg.anonKey,
-        accessToken: token,
-      })) {
-        throw new PostgrestError(401, { code: "AUTH_CHANGED", message: "Authentication context changed." });
-      }
 
       // A rejected fetch (offline, DNS, CORS) is deliberately left
       // unwrapped: a thrown TypeError with no `.status` is exactly how the
@@ -13795,9 +14287,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return parsed;
     }
 
-    async function select(table, { columns, filters, order, limit, expectedAuthContext } = {}) {
+    async function select(table, { columns, filters, order, limit } = {}) {
       const query = buildSelectQuery({ columns, filters, order, limit });
-      return request(`/rest/v1/${table}?${query}`, { method: "GET", expectedAuthContext });
+      return request(`/rest/v1/${table}?${query}`, { method: "GET" });
     }
 
     // A partial change to an existing row is a PATCH, never an upsert.
@@ -13854,212 +14346,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       });
     }
 
-    // Database RPCs keep the existing signed-in Supabase identity. Authority
-    // is checked by each function/RLS; there is no shared-token fallback or retry.
-    async function rpc(name, parameters = {}, { expectedAuthContext } = {}) {
-      if (typeof name !== "string" || !/^[a-z][a-z0-9_]*$/.test(name)) {
-        throw new Error("supabase-data RPC requires a plain function name.");
-      }
-      if (!parameters || typeof parameters !== "object" || Array.isArray(parameters)) {
-        throw new Error("supabase-data RPC parameters must be an object.");
-      }
-      return request(`/rest/v1/rpc/${name}`, { method: "POST", body: parameters, expectedAuthContext });
-    }
-
-    function readAuthContext() {
-      const cfg = readConfig();
-      const token = typeof auth.accessToken === "function" ? auth.accessToken() : "";
-      return {
-        url: cfg.url,
-        anonKey: cfg.anonKey,
-        accessToken: token,
-      };
-    }
-
-    function sameAuthContext(left, right) {
-      return !!left && !!right && left.url === right.url && left.anonKey === right.anonKey &&
-        left.accessToken === right.accessToken;
-    }
-
-    function canonicalUuid(value) {
-      return typeof value === "string" &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value);
-    }
-
-    function validIdentity(identity) {
-      if (!identity || typeof identity !== "object") return false;
-      const { sessionUid, nativeSessionId, machineId, ide, editor } = identity;
-      return typeof sessionUid === "string" && sessionUid.length > 0 && sessionUid.trim() === sessionUid &&
-        typeof machineId === "string" && machineId.length > 0 && machineId.trim() === machineId &&
-        canonicalUuid(nativeSessionId) && ide === "codex" && editor === "codex";
-    }
-
-    function safeContinuation(value, sessionUid) {
-      return value === null ||
-        (typeof value === "string" && value.length > 0 && value.trim() === value && value !== sessionUid);
-    }
-
-    function bindingResult(state, fields = {}) {
-      return {
-        state,
-        ...fields,
-        executionAuthorized: false,
-        transferAccepted: false,
-      };
-    }
-
-    function classifyBindingFailure(error) {
-      if (error?.status === 401 || error?.status === 403) return bindingResult("auth_required");
-      const schemaError = error?.status === 404 || error?.code === "PGRST205" || error?.code === "42P01";
-      if (schemaError) return bindingResult("unavailable", { reason: "schema_unavailable" });
-      return bindingResult("unavailable");
-    }
-
-    async function readConversationBinding(identity) {
-      if (!validIdentity(identity)) return bindingResult("unsupported");
-      const requestedIdentity = {
-        sessionUid: identity.sessionUid,
-        nativeSessionId: identity.nativeSessionId,
-        machineId: identity.machineId,
-        ide: identity.ide,
-        editor: identity.editor,
-      };
-      let before;
-      try {
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        before = readAuthContext();
-      } catch {
-        return bindingResult("auth_required");
-      }
-      if (typeof before.accessToken !== "string" || !before.accessToken.trim()) {
-        return bindingResult("auth_required");
-      }
-
-      let owner;
-      try {
-        owner = await rpc("is_owner", {}, { expectedAuthContext: before });
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
-      } catch (error) {
-        return error?.code === "AUTH_CHANGED" ? bindingResult("unavailable", { reason: "auth_changed" }) : classifyBindingFailure(error);
-      }
-      if (owner !== true) return bindingResult("auth_required");
-
-      let rows;
-      try {
-        rows = await select("conversation_native_bindings", {
-          columns: "session_uid,conversation_id,native_session_id,machine_id,harness,continuation_source_uid",
-          filters: { session_uid: `eq."${requestedIdentity.sessionUid.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` },
-          limit: 2,
-          expectedAuthContext: before,
-        });
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
-      } catch (error) {
-        return error?.code === "AUTH_CHANGED" ? bindingResult("unavailable", { reason: "auth_changed" }) : classifyBindingFailure(error);
-      }
-      if (!Array.isArray(rows)) return bindingResult("invalid");
-      if (rows.length === 0) return bindingResult("unlinked");
-      if (rows.length !== 1) return bindingResult("invalid");
-
-      const row = rows[0];
-      const validRow = row && typeof row === "object" &&
-        row.session_uid === requestedIdentity.sessionUid &&
-        row.native_session_id === requestedIdentity.nativeSessionId &&
-        row.machine_id === requestedIdentity.machineId &&
-        row.harness === "codex" && canonicalUuid(row.conversation_id) &&
-        canonicalUuid(row.native_session_id) && safeContinuation(row.continuation_source_uid, requestedIdentity.sessionUid);
-      if (!validRow) return bindingResult("invalid");
-      return bindingResult("linked", {
-        sessionUid: row.session_uid,
-        conversationId: row.conversation_id,
-        nativeSessionId: row.native_session_id,
-        machineId: row.machine_id,
-        harness: row.harness,
-        continuationSourceUid: row.continuation_source_uid,
-      });
-    }
-
-    async function linkConversationContinuation(input) {
-      const requestId = input?.requestId;
-      const source = input?.source;
-      const target = input?.target;
-      if (!canonicalUuid(requestId) || !validIdentity(source) || !validIdentity(target) ||
-          source.sessionUid === target.sessionUid || source.nativeSessionId === target.nativeSessionId) {
-        return bindingResult("unsupported");
-      }
-
-      const requested = {
-        requestId,
-        source: {
-          sessionUid: source.sessionUid,
-          nativeSessionId: source.nativeSessionId,
-          machineId: source.machineId,
-          ide: source.ide,
-          editor: source.editor,
-        },
-        target: {
-          sessionUid: target.sessionUid,
-          nativeSessionId: target.nativeSessionId,
-          machineId: target.machineId,
-          ide: target.ide,
-          editor: target.editor,
-        },
-      };
-      let before;
-      try {
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        before = readAuthContext();
-      } catch {
-        return bindingResult("auth_required");
-      }
-      if (typeof before.accessToken !== "string" || !before.accessToken.trim()) {
-        return bindingResult("auth_required");
-      }
-
-      try {
-        const owner = await rpc("is_owner", {}, { expectedAuthContext: before });
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
-        if (owner !== true) return bindingResult("auth_required");
-
-        const receipt = await rpc("link_codex_conversation_v1", {
-          p_request_id: requested.requestId,
-          p_source_session_uid: requested.source.sessionUid,
-          p_source_native_id: requested.source.nativeSessionId,
-          p_source_machine_id: requested.source.machineId,
-          p_target_session_uid: requested.target.sessionUid,
-          p_target_native_id: requested.target.nativeSessionId,
-          p_target_machine_id: requested.target.machineId,
-        }, { expectedAuthContext: before });
-        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
-        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
-
-        const validReceipt = receipt && typeof receipt === "object" &&
-          receipt.requestId === requested.requestId && canonicalUuid(receipt.conversationId) &&
-          receipt.provenance === "explicit_owner_continuation" && receipt.metadataLinked === true &&
-          receipt.executionAuthorized === false && receipt.transferAccepted === false;
-        if (!validReceipt) return bindingResult("invalid");
-        return bindingResult("linked", {
-          requestId: requested.requestId,
-          conversationId: receipt.conversationId,
-          provenance: receipt.provenance,
-          metadataLinked: true,
-          sourceSessionUid: requested.source.sessionUid,
-          targetSessionUid: requested.target.sessionUid,
-          continuationSourceUid: requested.source.sessionUid,
-        });
-      } catch (error) {
-        if (error?.code === "AUTH_CHANGED") return bindingResult("unavailable", { reason: "auth_changed" });
-        if (error?.status === 401 || error?.status === 403) return bindingResult("auth_required");
-        if (error?.status === 404 || error?.code === "PGRST205" || error?.code === "42P01") {
-          return bindingResult("unavailable", { reason: "schema_unavailable" });
-        }
-        return bindingResult("unavailable", { reason: error instanceof PostgrestError ? "link_refused" : "network_unavailable" });
-      }
-    }
-
-    return { select, update, upsert, delete: remove, rpc, readConversationBinding, linkConversationContinuation };
+    return { select, update, upsert, delete: remove };
   }
 
   return {
@@ -15279,9 +15566,16 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // same gap the old notes-inbox.md write had, since applyOutboxNote never
   // called writeCaptureAttachments either.
   function toCaptureRow(record, ownerUid) {
+    const capturedOwnerUid = String(record?.ownerUid || "");
+    if (!capturedOwnerUid) {
+      throw new Error("Capture has no authenticated owner; it cannot be synced safely.");
+    }
+    if (arguments.length > 1 && String(ownerUid || "") !== capturedOwnerUid) {
+      throw new Error("Capture belongs to a different Supabase account.");
+    }
     return {
       id: record?.captureId,
-      owner_uid: ownerUid,
+      owner_uid: capturedOwnerUid,
       text: String(record?.text || ""),
       kind: "note",
       project: record?.project?.projectName || null,
@@ -15369,6 +15663,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       lastError: null,
       project,
       deliveryMode,
+      ownerUid: String(seed?.ownerUid || "") || null,
       ownerContext: seed?.ownerContext ? clone(seed.ownerContext) : null,
       attachments,
       paths,
@@ -15555,6 +15850,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     const now = typeof options.now === "function" ? options.now : Date.now;
     const mintId = typeof options.uuidv7 === "function" ? options.uuidv7 : undefined;
     const applyRecord = options.applyRecord;
+    const getOwnerUid = typeof options.getOwnerUid === "function"
+      ? options.getOwnerUid
+      : () => null;
     const submittedLimit = Math.max(0, toNumber(options.submittedLimit, 120));
     const failedLimit = Math.max(0, toNumber(options.failedLimit, 120));
     const onChange = typeof options.onChange === "function" ? options.onChange : null;
@@ -15571,8 +15869,62 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     let snapshot = { version: OUTBOX_VERSION, updatedAt: now(), records: [] };
     let drainPromise = Promise.resolve();
 
+    function isOwnerBoundRecord(record) {
+      return record?.type === "note" && record?.deliveryMode === "direct";
+    }
+
+    function canAccessRecord(record, ownerUid) {
+      if (!isOwnerBoundRecord(record)) return true;
+      return !!ownerUid && !!record.ownerUid && record.ownerUid === ownerUid;
+    }
+
+    function ownerUidNow() {
+      try {
+        const value = getOwnerUid();
+        return typeof value === "string" ? value : "";
+      } catch {
+        return "";
+      }
+    }
+
+    async function activeOwnerUid() {
+      return ownerUidNow();
+    }
+
+    function ownerUnknownView(record) {
+      const safe = clone(record);
+      safe.ownerUid = null;
+      safe.ownerUnknown = true;
+      safe.text = "Owner unknown — review to recover";
+      safe.project = null;
+      safe.ownerContext = null;
+      safe.attachments = [];
+      safe.meta = {};
+      safe.state = "failed";
+      safe.lastError = "Ownership is unknown and nothing will sync automatically. Select Review ownerless note to decide whether to copy the text for manual review and recreation.";
+      return safe;
+    }
+
+    function visibleRecords(records, ownerUid) {
+      const visible = [];
+      for (const record of records || []) {
+        if (!isOwnerBoundRecord(record)) {
+          visible.push(clone(record));
+        } else if (record.ownerUid && record.ownerUid === ownerUid) {
+          visible.push(clone(record));
+        } else if (!record.ownerUid) {
+          // Legacy notes have no trustworthy account attribution. Expose a
+          // redacted recovery row; explicit recovery reads the text separately.
+          visible.push(ownerUnknownView(record));
+        }
+      }
+      return visible;
+    }
+
     function notify() {
-      if (onChange) onChange(clone(snapshot.records), summary(snapshot.records));
+      if (!onChange) return;
+      const records = visibleRecords(snapshot.records, ownerUidNow());
+      onChange(records, summary(records));
     }
 
     async function persist() {
@@ -15626,23 +15978,65 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     async function list() {
       await ensureLoaded();
       await refresh();
-      return clone(snapshot.records);
+      return visibleRecords(snapshot.records, await activeOwnerUid());
     }
 
     async function get(captureId) {
       await ensureLoaded();
       await refresh();
-      return clone(snapshot.records.find((r) => r.captureId === captureId) || null);
+      const record = snapshot.records.find((r) => r.captureId === captureId) || null;
+      if (!record) return null;
+      return visibleRecords([record], await activeOwnerUid())[0] || null;
+    }
+
+    async function recoverOwnerUnknown(captureId, options = {}) {
+      await ensureLoaded();
+      await refresh();
+      const record = snapshot.records.find((r) => r.captureId === captureId) || null;
+      if (!record || !isOwnerBoundRecord(record) || record.ownerUid) {
+        return { status: "unavailable", captureId };
+      }
+      if (typeof options.confirm !== "function" || typeof options.copy !== "function") {
+        return { status: "confirmation-required", captureId };
+      }
+      const warning = "This note's owner is unknown. Nothing will be synced. Copy its text for local review and possible manual recreation under the intended account? Cancel leaves it unchanged and copies nothing.";
+      if (!await options.confirm({ captureId, createdAt: record.createdAt, warning })) {
+        return { status: "declined", captureId };
+      }
+      await refresh();
+      const current = snapshot.records.find((r) => r.captureId === captureId) || null;
+      if (!current || !isOwnerBoundRecord(current) || current.ownerUid) {
+        return { status: "unavailable", captureId };
+      }
+      await options.copy(String(current.text || ""), { captureId, createdAt: current.createdAt });
+      return { status: "copied", captureId };
     }
 
     async function enqueue(seed) {
       await ensureLoaded();
-      const record = createCaptureRecord(seed, { now, uuidv7: mintId });
+      let capturedSeed = seed;
+      if (isOwnerBoundRecord({
+        type: seed?.type,
+        deliveryMode: seed?.deliveryMode || "direct",
+      })) {
+        const ownerUid = await activeOwnerUid();
+        if (!ownerUid) {
+          throw new Error("Sign in before saving a loose note so it stays with your account.");
+        }
+        if (seed?.ownerUid && seed.ownerUid !== ownerUid) {
+          throw new Error("This capture belongs to a different Supabase account.");
+        }
+        capturedSeed = { ...seed, ownerUid };
+      }
+      const record = createCaptureRecord(capturedSeed, { now, uuidv7: mintId });
       let queued;
       await mutate((current) => {
         const idx = current.records.findIndex((r) => r.captureId === record.captureId);
         if (idx >= 0) {
           const existing = current.records[idx];
+          if (isOwnerBoundRecord(existing) && existing.ownerUid !== record.ownerUid) {
+            throw new Error("This capture id is already bound to a different Supabase account.");
+          }
           if (existing.state === "failed") current.records[idx] = transitionRecord(existing, "pending", {}, { now });
           queued = { record: clone(current.records[idx]), duplicate: true };
           return queued;
@@ -15656,10 +16050,15 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
     async function markForRetry(captureId) {
       await ensureLoaded();
+      const ownerUid = await activeOwnerUid();
       let result = null;
       await mutate((current) => {
         const idx = current.records.findIndex((r) => r.captureId === captureId);
         if (idx < 0) return null;
+        if (!canAccessRecord(current.records[idx], ownerUid)) {
+          result = clone(current.records[idx]);
+          return result;
+        }
         if (current.records[idx].state === "submitting" &&
             toNumber(current.records[idx].leaseUntil, 0) > now()) {
           result = clone(current.records[idx]);
@@ -15676,10 +16075,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 
     async function markAllFailedForRetry() {
       await ensureLoaded();
+      const ownerUid = await activeOwnerUid();
       let changed = false;
       await mutate((current) => {
         current.records = current.records.map((record) => {
-          if (record.state !== "failed") return record;
+          if (record.state !== "failed" || !canAccessRecord(record, ownerUid)) return record;
           changed = true;
           return transitionRecord(record, "pending", {}, { now });
         });
@@ -15694,12 +16094,13 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return next;
     }
 
-    async function claim(targetCaptureId, includeFailed, excluded = new Set()) {
+    async function claim(targetCaptureId, includeFailed, ownerUid, excluded = new Set()) {
       let claimed = null;
       await mutate((current) => {
         const record = current.records.find((candidate) => {
           if (targetCaptureId && candidate.captureId !== targetCaptureId) return false;
           if (excluded.has(candidate.captureId)) return false;
+          if (!canAccessRecord(candidate, ownerUid)) return false;
           const eligible = candidate.state === "pending" || (includeFailed && candidate.state === "failed");
           if (!eligible) return false;
           return candidate.state !== "submitting" || toNumber(candidate.leaseUntil, 0) <= now();
@@ -15758,7 +16159,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         const attempted = new Set();
 
         while (true) {
-          const record = await claim(targetCaptureId, includeFailed, attempted);
+          const record = await claim(targetCaptureId, includeFailed, await activeOwnerUid(), attempted);
           if (!record) break;
           attempted.add(record.captureId);
 
@@ -15811,7 +16212,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
         return {
           processed,
           errors,
-          summary: summary(snapshot.records),
+          summary: summary(visibleRecords(snapshot.records, await activeOwnerUid())),
         };
       });
     }
@@ -15819,6 +16220,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     async function retry(captureId) {
       const record = await markForRetry(captureId);
       if (!record) return null;
+      if (isOwnerBoundRecord(record) && !record.ownerUid) return get(captureId);
       await drain({ targetCaptureId: captureId, includeFailed: true });
       return get(captureId);
     }
@@ -15831,7 +16233,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     async function stats() {
       await ensureLoaded();
       await refresh();
-      return summary(snapshot.records);
+      return summary(visibleRecords(snapshot.records, await activeOwnerUid()));
     }
 
     return {
@@ -15842,6 +16244,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       retry,
       retryAllFailed,
       stats,
+      recoverOwnerUnknown,
       deriveCaptureId,
     };
   }
@@ -16205,6 +16608,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   // nothing will ever claim. Matches the 15-minute figure in the
   // 2026-09-03 web-session-control plan.
   const DAEMON_STALE_MS = 15 * 60 * 1000;
+  // Flip only with the reviewed backend migration/Edge release and live acceptance.
+  const PENDING_ACTIONS_RELEASED = false;
+  const pendingActionsReleased = () => PENDING_ACTIONS_RELEASED;
   let refreshInFlight = null;
 
   function getConfig() {
@@ -16264,6 +16670,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
   }
 
   async function request(path, { method = "GET", body = null, requireSession = false } = {}) {
+    const normalizedMethod = String(method || "GET").toUpperCase();
+    if (normalizedMethod === "POST" && path === "/v1/pending-actions" && !PENDING_ACTIONS_RELEASED) {
+      throw Object.assign(new Error("Session and gate actions await the reviewed Workbench Live backend release."), { code: "releaseHeld" });
+    }
     const auth = globalThis.WBSupabaseAuth;
     const normalized = value => String(value || '').replace(/\/$/, '');
     if (auth?.hasSession?.() && normalized(getConfig()?.supabaseUrl) === normalized(auth.config?.()?.url)
@@ -16291,7 +16701,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       Authorization: `Bearer ${token}`,
       Accept: "application/json",
     };
-    const init = { method, headers };
+    const init = { method: normalizedMethod, headers };
     if (body != null) {
       headers["Content-Type"] = "application/json";
       init.body = JSON.stringify(body);
@@ -17181,6 +17591,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     fetchLifeGoalRecommendationDecisions,
     recordLifeGoalRecommendationDecision,
     fetchLifeGoalRecommendationFollowThrough,
+    pendingActionsReleased,
     createLifeGoalPendingAction,
     createLifeGoalTask,
     fetchLifeGoal,
@@ -17721,7 +18132,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return out;
   }
 
-  function derive(session, machine, now = Date.now(), context = {}) {
+  function derive(session, machine, now = Date.now()) {
     const harness = harnessOf(session);
     const source = sourceOf(session) || machineContract(session, machine);
     const live = Boolean(machine?.daemonLastSeenAt) && Number.isFinite(Date.parse(machine.daemonLastSeenAt))
@@ -17734,11 +18145,8 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       capabilities[name] = explicit || (storedTranscript ? { allowed: true, reason: "Stored server transcript events are readable." } : null)
         || { allowed: false, reason: live ? "Capability not reported by this adapter." : "Target machine daemon is offline or stale." };
       if (explicit && !live && name !== "transcript_read") capabilities[name] = { allowed: false, reason: "Target machine daemon is offline or stale." };
-      if (context?.dataSource === "cached-offline" && name !== "transcript_read") {
-        capabilities[name] = { allowed: false, reason: "Cached session data is read-only until Workbench Live reconnects." };
-      }
     }
-    return { harness, live: context?.dataSource === "cached-offline" ? false : live, capabilities, reported: Boolean(source) };
+    return { harness, live, capabilities, reported: Boolean(source) };
   }
 
   return { NAMES, derive };
@@ -18259,10 +18667,10 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 #endif`,_f=`#ifdef USE_AOMAP
 	float ambientOcclusion = ( texture2D( aoMap, vAoMapUv ).r - 1.0 ) * aoMapIntensity + 1.0;
 	reflectedLight.indirectDiffuse *= ambientOcclusion;
-	#if defined( USE_CLEARCOAT ) 
+	#if defined( USE_CLEARCOAT )
 		clearcoatSpecularIndirect *= ambientOcclusion;
 	#endif
-	#if defined( USE_SHEEN ) 
+	#if defined( USE_SHEEN )
 		sheenSpecularIndirect *= ambientOcclusion;
 	#endif
 	#if defined( USE_ENVMAP ) && defined( STANDARD )
@@ -18747,7 +19155,7 @@ vec4 sRGBTransferOETF( in vec4 value ) {
 		#define ENV_WORLDPOS
 	#endif
 	#ifdef ENV_WORLDPOS
-		
+
 		varying vec3 vWorldPosition;
 	#else
 		varying vec3 vReflect;
@@ -19414,17 +19822,17 @@ void RE_Direct_Physical( const in IncidentLight directLight, const in vec3 geome
 		clearcoatSpecularDirect += ccIrradiance * BRDF_GGX_Clearcoat( directLight.direction, geometryViewDir, geometryClearcoatNormal, material );
 	#endif
 	#ifdef USE_SHEEN
- 
- 		sheenSpecularDirect += irradiance * BRDF_Sheen( directLight.direction, geometryViewDir, geometryNormal, material.sheenColor, material.sheenRoughness );
- 
- 		float sheenAlbedoV = IBLSheenBRDF( geometryNormal, geometryViewDir, material.sheenRoughness );
- 		float sheenAlbedoL = IBLSheenBRDF( geometryNormal, directLight.direction, material.sheenRoughness );
- 
- 		float sheenEnergyComp = 1.0 - max3( material.sheenColor ) * max( sheenAlbedoV, sheenAlbedoL );
- 
- 		irradiance *= sheenEnergyComp;
- 
- 	#endif
+
+		sheenSpecularDirect += irradiance * BRDF_Sheen( directLight.direction, geometryViewDir, geometryNormal, material.sheenColor, material.sheenRoughness );
+
+		float sheenAlbedoV = IBLSheenBRDF( geometryNormal, geometryViewDir, material.sheenRoughness );
+		float sheenAlbedoL = IBLSheenBRDF( geometryNormal, directLight.direction, material.sheenRoughness );
+
+		float sheenEnergyComp = 1.0 - max3( material.sheenColor ) * max( sheenAlbedoV, sheenAlbedoL );
+
+		irradiance *= sheenEnergyComp;
+
+	#endif
 	vec3 specularBRDF = BRDF_GGX( directLight.direction, geometryViewDir, geometryNormal, material );
 	#ifdef USE_RETROREFLECTION
 		vec3 retroViewDir = reflect( - geometryViewDir, geometryNormal );
@@ -19466,7 +19874,7 @@ void RE_IndirectSpecular_Physical( const in vec3 radiance, const in vec3 irradia
 	#endif
 	#ifdef USE_SHEEN
 		sheenSpecularIndirect += irradiance * material.sheenColor * IBLSheenBRDF( geometryNormal, geometryViewDir, material.sheenRoughness ) * RECIPROCAL_PI;
- 	#endif
+	#endif
 	vec3 singleScatteringDielectric = vec3( 0.0 );
 	vec3 multiScatteringDielectric = vec3( 0.0 );
 	vec3 singleScatteringMetallic = vec3( 0.0 );
@@ -20012,7 +20420,7 @@ float viewZToOrthographicDepth( const in float viewZ, const in float near, const
 }
 float orthographicDepthToViewZ( const in float depth, const in float near, const in float far ) {
 	#ifdef USE_REVERSED_DEPTH_BUFFER
-	
+
 		return depth * ( far - near ) - far;
 	#else
 		return depth * ( near - far ) - near;
@@ -20022,7 +20430,7 @@ float viewZToPerspectiveDepth( const in float viewZ, const in float near, const 
 	return ( ( near + viewZ ) * far ) / ( ( far - near ) * viewZ );
 }
 float perspectiveDepthToViewZ( const in float depth, const in float near, const in float far ) {
-	
+
 	#ifdef USE_REVERSED_DEPTH_BUFFER
 		return ( near * far ) / ( ( near - far ) * depth - near );
 	#else
@@ -20181,7 +20589,7 @@ gl_Position = projectionMatrix * mvPosition;`,Gp=`#ifdef DITHERING
 				#else
 					float hard_shadow = step( shadowCoord.z, mean );
 				#endif
-				
+
 				if ( hard_shadow == 1.0 ) {
 					shadow = 1.0;
 				} else {
@@ -21776,10 +22184,10 @@ void main() {
 	#include <transmission_fragment>
 	vec3 outgoingLight = totalDiffuse + totalSpecular + totalEmissiveRadiance;
 	#ifdef USE_SHEEN
- 
+
 		outgoingLight = outgoingLight + sheenSpecularDirect + sheenSpecularIndirect;
- 
- 	#endif
+
+	#endif
 	#ifdef USE_CLEARCOAT
 		float dotNVcc = saturate( dot( geometryClearcoatNormal, geometryViewDir ) );
 		vec3 Fcc = F_Schlick( material.clearcoatF0, material.clearcoatF90, dotNVcc );
@@ -22857,7 +23265,11 @@ void main() {
     validate(value);
     const snapshot = value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : value;
     if (snapshot && typeof snapshot === 'object') delete snapshot._workbenchPersistence;
-    return canonical(snapshot);
+    const json = canonical(snapshot);
+    if (new TextEncoder().encode(json).length > maximumPersistenceBytes) {
+      throw new Error('Choose a finance snapshot smaller than 2 MB.');
+    }
+    return json;
   };
   function adapterFromIndexedDB() {
     if (!globalThis.indexedDB) throw persistenceError('IndexedDB is unavailable on this device.');
@@ -23496,16 +23908,16 @@ void main() {
       coverageIncomplete: rawRate.coverageIncomplete,
       basis: rawRate.basis,
     } : unavailableRate;
-    const hasUnifiedBudget = normalize(project) === "personal/projects/workbench-os";
-    const threshold = hasUnifiedBudget ? 958.33 : null;
     return {
       status: ["estimated", "incomplete", "unavailable"].includes(lifetime.status) ? lifetime.status : "incomplete",
       knownCost,
       currentKnownCost: currentValues && currentValues.length && currentValues.every((value) => value != null)
         ? currentValues.reduce((sum, value) => sum + value, 0) : null,
-      baseline: hasUnifiedBudget ? 158.33 : null,
-      reviewThreshold: threshold,
-      remainingUpperBound: knownCost == null || threshold == null ? null : Number((threshold - knownCost).toFixed(2)),
+      // This project report is not the shared, route-backed Azure admission
+      // checkpoint. Its project allocation cannot establish remaining credit.
+      baseline: null,
+      reviewThreshold: null,
+      remainingUpperBound: null,
       coverage: plainObject(lifetime.coverage) ? lifetime.coverage : {},
       freshness: plainObject(lifetime.freshness) ? lifetime.freshness : {},
       spendRate,
@@ -23891,12 +24303,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-10-18.75";
-  // Build-time list of project base paths ("Personal/Projects/Foo") that carry
-  // an intent.md, computed by build-dashboard.py walking the project folders
-  // directly -- see intent_project_bases() there. Not part of the GitHub tree
-  // index, so it is baked in at build time rather than looked up per project.
-  const WB_INTENT_PROJECTS = new Set(JSON.parse('["Work/Projects/FSHelp-Knowledge-Base", "Work/Projects/Marketing-Platform", "Work/Projects/Marquee", "Work/Projects/Scrooge", "Work/Projects/Scrooge-SOX-Readiness", "Personal/Projects/Closer-Conversations", "Personal/Projects/Dating", "Personal/Projects/HOA-Community-Platform", "Personal/Projects/Lane-Broker", "Personal/Projects/Local-LLM-Testing-Suite", "Personal/Projects/Media-Server", "Personal/Projects/Phone-Agent", "Personal/Projects/Rise-Lark", "Personal/Projects/Spend-Optimizer", "Personal/Projects/Tower", "Personal/Projects/Workbench-Dashboard", "Personal/Projects/Workbench-OS"]'));
+  const WB_VERSION = "2026-10-19.30";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -23932,7 +24339,9 @@ void main() {
   const SUBS = ["Glossary", "Processes", "Decisions"];
   const HELPER = "http://127.0.0.1:7787";
   const GH_CONFIG_KEY = "workbench-gh-config";
+  // Removed during migration from the old hand-pasted PAT sign-in.
   const GH_TOKEN_KEY = "workbench-gh-token";
+  const GH_REAUTH_KEY = "workbench-github-reauth-at";
   const GH_TREE_KEY = "workbench-gh-tree-cache";
   const GH_TREE_TTL = 10 * 60 * 1000;
   const LIVE_ACTION_POLL_MS = 30 * 1000;
@@ -24134,6 +24543,7 @@ void main() {
     liveActionRows: [],
     captures: [],
   };
+  const initialState = structuredClone(state);
   const ghShaCache = new Map();
   // path -> blob sha from the last tree read; lets ghGetFile serve unchanged
   // files from IndexedDB instead of refetching the whole repo every load.
@@ -24373,18 +24783,13 @@ void main() {
   window.__WBFinanceIDB = idb;
   window.__WBFinanceScope = financeScope;
   function ghToken() {
-    // Supabase sign-in wins when present: that token comes from the GitHub App
-    // and is scoped to Contents + Metadata, where a pasted classic PAT is not.
-    // The PAT path stays as a fallback so an existing device keeps working.
-    const viaSupabase = window.WBSupabaseAuth?.githubToken?.() || "";
-    if (viaSupabase) return viaSupabase;
-    return localStorage.getItem(GH_TOKEN_KEY) || "";
+    return window.WBSupabaseAuth?.githubToken?.() || "";
   }
   function ghSaveConfig(cfg) {
     const { pat, ...safe } = cfg;
     localStorage.setItem(GH_CONFIG_KEY, JSON.stringify(safe));
-    if (pat) localStorage.setItem(GH_TOKEN_KEY, pat);
-    idb.set("gh-config", { ...safe, ...(pat ? { pat } : {}) }).catch(() => {});
+    localStorage.removeItem(GH_TOKEN_KEY);
+    idb.set("gh-config", safe).catch(() => {});
     notifyFinanceScopeChanged();
   }
   async function ghDisconnect() {
@@ -24395,10 +24800,14 @@ void main() {
       delete window.__WBFinanceSnapshot;
     }
     window.WBSupabaseAuth?.signOut?.();
+    // A legacy manually configured Live bearer must not outlive account sign-out.
+    LiveApi?.forgetConfig?.();
     localStorage.removeItem(GH_CONFIG_KEY);
     localStorage.removeItem(GH_TOKEN_KEY);
     localStorage.removeItem(GH_TREE_KEY);
+    localStorage.removeItem(BOOT_SNAP_KEY);
     idb.del("gh-config").catch(() => {});
+    await idb.del(SCAN_SNAPSHOT_KEY).catch(() => {});
     notifyFinanceScopeChanged();
     ghShaCache.clear();
     for (const url of binaryURLs.values()) URL.revokeObjectURL(url);
@@ -24448,14 +24857,13 @@ void main() {
   async function ghLoadConfig() {
     try {
       const saved = await idb.get("gh-config");
-      if (saved?.owner && saved?.repo && (saved.pat || ghToken())) {
+      if (saved?.owner && saved?.repo) {
         ghSaveConfig(saved);
-        return { ...saved, pat: saved.pat || ghToken() };
+        const { pat, ...safe } = saved;
+        return safe;
       }
     } catch {}
-    const cfg = ghConfig();
-    const tok = ghToken();
-    return cfg && tok ? { ...cfg, pat: tok } : null;
+    return ghConfig();
   }
   function b64FromBytes(bytes) {
     let bin = "";
@@ -24782,6 +25190,9 @@ void main() {
     );
   }
   function liveActionsBlockedReason() {
+    // The pending-action/active-intent backend has not passed live rollout.
+    // Keep central actions read-only in this web-shell candidate.
+    if (!LiveApi?.pendingActionsReleased?.()) return "Session and gate actions await the reviewed Workbench Live backend release.";
     if (state.workbenchLive?.loading || !state.workbenchLive?.source || state.workbenchLive.source === "loading") {
       return "Workbench Live status is still loading; actions stay unavailable until the connection state is known.";
     }
@@ -25400,10 +25811,11 @@ void main() {
         if (rateLimited) {
           toast("GitHub rate limit hit — data may be stale for a bit.", "warning");
           setTimeout(() => (state._authPrompted = false), 5 * 60 * 1000);
+        } else if (res.status === 401) {
+          toast("Refreshing GitHub access…", "warning");
+          beginGitHubSignIn(true);
         } else {
-          toast("GitHub token expired or revoked — reconnect.", "danger");
-          dismissBootOverlay();
-          setTimeout(openGithubConnect, 700);
+          toast("GitHub access was denied. Check Workbench app access.", "danger");
         }
       }
     }
@@ -25439,14 +25851,17 @@ void main() {
   }
   async function ghGetTree(force = false) {
     const cfg = ghConfig();
+    const account = window.WBSupabaseAuth?.userId?.();
     if (!cfg?.owner || !cfg?.repo || !cfg?.branch) {
       throw new Error("Not connected to GitHub");
     }
+    if (!account) throw new Error("Authenticated owner is unavailable.");
     if (!force) {
       try {
         const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
         if (
           c &&
+          c.account === account &&
           c.owner === cfg.owner &&
           c.repo === cfg.repo &&
           c.branch === cfg.branch &&
@@ -25533,6 +25948,7 @@ void main() {
       localStorage.setItem(
         GH_TREE_KEY,
         JSON.stringify({
+          account,
           owner: cfg.owner,
           repo: cfg.repo,
           branch: cfg.branch,
@@ -25555,9 +25971,12 @@ void main() {
   function patchTreeCache(path, sha) {
     try {
       const cfg = ghConfig();
+      const account = window.WBSupabaseAuth?.userId?.();
       const c = JSON.parse(localStorage.getItem(GH_TREE_KEY) || "null");
       if (
         !c ||
+        !account ||
+        c.account !== account ||
         c.owner !== cfg.owner ||
         c.repo !== cfg.repo ||
         c.branch !== cfg.branch
@@ -26166,7 +26585,7 @@ void main() {
             logo:
               LOGO_NAMES.map((n) => `${base}/${n}`).find((x) => set.has(x)) ||
               null,
-            hasIntent: WB_INTENT_PROJECTS.has(base),
+            hasIntent: set.has(`${base}/intent.md`),
             _shotPaths: tree
               .filter(
                 (t) =>
@@ -27227,7 +27646,7 @@ void main() {
         out.push({ ...parsed.value, _path: p });
       },
     );
-  
+
     state.sessionsLoadFailed = failed;
     const deduped = dedupeByLatest(
       out,
@@ -27376,7 +27795,7 @@ void main() {
         out.push({ ...parsed.value, _path: p });
       },
     );
-  
+
     state.machinesLoadFailed = failed;
     const newest = out.reduce(
       (m, row) => Math.max(m, Number(row.updated || row.lastSeen || 0)),
@@ -27506,7 +27925,7 @@ void main() {
         out.push({ ...parsed.value, _path: p });
       },
     );
-  
+
     coverage.stale = out.filter((row) => {
       const ts = Number(row.updatedMs || row.updated || 0);
       return !ts || Date.now() - ts > 2 * 60 * 60 * 1000;
@@ -27596,7 +28015,7 @@ void main() {
         indexes.push(parsed.value);
       },
     );
-  
+
     // merge per scope, freshest machine's view wins
     const scopes = {};
     for (const idx of indexes)
@@ -28119,9 +28538,10 @@ void main() {
           const label = b.textContent;
           setLoading(b, true, "Retrying…");
           try {
-            await retryCaptureOutbox(id);
+            const retried = await retryCaptureOutbox(id);
+            if (retried?.recoveryCancelled) return;
             await pendingIntake().then((v) => (state.intake = v));
-            toast("Retried capture.", "success");
+            toast(retried?.ownerUnknown ? retried.lastError : "Retried capture.", retried?.ownerUnknown ? "warning" : "success");
           } catch (err) {
             toast(err.message || "Retry failed.", "danger");
           } finally {
@@ -28418,9 +28838,11 @@ void main() {
   async function saveScanSnapshot() {
     if (state.backend !== "github") return;
     const cfg = ghConfig();
-    if (!cfg?.owner || !cfg?.repo || !cfg?.branch) return;
+    const account = window.WBSupabaseAuth?.userId?.();
+    if (!account || !cfg?.owner || !cfg?.repo || !cfg?.branch) return;
     await idb.set(SCAN_SNAPSHOT_KEY, {
-      v: 1,
+      v: 2,
+      account,
       at: Date.now(),
       owner: cfg.owner,
       repo: cfg.repo,
@@ -28436,9 +28858,12 @@ void main() {
   async function restoreScanSnapshot(cfg) {
     try {
       const snap = await idb.get(SCAN_SNAPSHOT_KEY);
+      const account = window.WBSupabaseAuth?.userId?.();
       if (
         !snap ||
-        snap.v !== 1 ||
+        snap.v !== 2 ||
+        !account ||
+        snap.account !== account ||
         snap.owner !== cfg?.owner ||
         snap.repo !== cfg?.repo ||
         snap.branch !== cfg?.branch ||
@@ -28460,6 +28885,8 @@ void main() {
   }
   function saveBootSnapshot() {
     if (state.backend !== "github") return;
+    const account = window.WBSupabaseAuth?.userId?.();
+    if (!account) return;
     try {
       const st = globalStats();
       const projects = state.projects.slice(0, 12).map((p) => {
@@ -28473,7 +28900,7 @@ void main() {
       });
       localStorage.setItem(
         BOOT_SNAP_KEY,
-        JSON.stringify({ at: Date.now(), st, projects }),
+        JSON.stringify({ account, at: Date.now(), st, projects }),
       );
     } catch {}
   }
@@ -28482,6 +28909,7 @@ void main() {
     try {
       snap = JSON.parse(localStorage.getItem(BOOT_SNAP_KEY) || "null");
     } catch {}
+    if (snap?.account !== window.WBSupabaseAuth?.userId?.()) snap = null;
     const chip = `<span class="chip refreshing"><span class="spin" aria-hidden="true"></span>Refreshing${snap?.at ? ` · as of ${shortAge(snap.at)}` : ""}</span>`;
     const status = `<div class="boot-status tiny" id="bootStatus">${esc(progress || (snap ? "Fetching the latest…" : "Fetching the repo tree…"))}</div>`;
     if (snap && snap.st) {
@@ -28575,7 +29003,7 @@ void main() {
         sessionStorage.setItem("wb-force-tree", "1");
         location.reload();
       });
-      $("#wbBootReconnect")?.addEventListener("click", () => openGithubConnect());
+      $("#wbBootReconnect")?.addEventListener("click", () => beginGitHubSignIn());
       $("#wbBootReset")?.addEventListener("click", () => doReset());
     }
     $("#landing")?.classList.add("hidden");
@@ -28622,7 +29050,7 @@ void main() {
       .filter((r) => r.state !== "submitted")
       .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))
       .slice(0, 16);
-    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Intake</div><h1>Capture first, classify later</h1><p class="lede">Raw notes, queued phone captures, attachments, and triage signals stay visible until the triage workflow files them.</p></div><button class="btn primary" data-capture>New capture</button></div><div class="grid cols-2"><div class="card"><h3>Universal capture</h3><p class="muted">Use the same capture flow for tasks, ideas, project seeds, knowledge notes, screenshots, and voice-note attachments.</p><button class="btn primary" data-capture>Open capture</button></div><div class="card"><h3>Triage workflow</h3><p class="muted">${items.length ? `${items.length} item${items.length === 1 ? "" : "s"} waiting for /triage-intake.` : "No pending intake detected."}</p><button type="button" class="btn" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.">Copy triage prompt</button></div></div><div class="card compact"><div class="cardhead"><div><h3>Capture outbox</h3><p class="section-note">Writes are persisted locally first, then sent serially to repo files.</p></div><span class="chip">${activeOutbox.length}</span></div><div class="refined-list">${activeOutbox.map((r) => `<div class="refined-row"><span><span class="refined-title">${esc(displayText(r.text, 130))}</span><span class="refined-sub">${esc(r.type)} · ${esc(r.state)}${r.lastError ? ` · ${esc(displayText(r.lastError, 120))}` : ""}</span></span><span class="refined-meta">${r.project ? `<button type="button" class="btn tertiary" data-outbox-open-project="${esc(r.project.dirName)}" data-outbox-section="${esc(r.project.section)}">Open project</button>` : ""}${r.state === "failed" ? `<button type="button" class="btn" data-outbox-retry="${esc(r.captureId)}">Retry</button>` : ""}<button type="button" class="btn tertiary" data-outbox-copy="${esc(`Capture ${r.captureId} (${r.state})`)}">Copy id</button></span></div>`).join("") || '<div class="empty-state">No pending outbox captures.</div>'}</div></div><div class="card compact"><div class="cardhead"><div><h3>Raw inbox</h3><p class="section-note">Suggested type and destination are handled by the triage skill.</p></div><span class="chip">${items.length}</span></div><div class="refined-list">${items.map((it) => `<div class="refined-row"><span><span class="refined-title">${esc(displayText(it.text, 150))}</span><span class="refined-sub">${esc(it.kind || "capture")} · unverified until triaged</span></span><span class="chip warn">needs triage</span></div>`).join("") || '<div class="empty-state">No raw captures are waiting.</div>'}</div></div></section>`;
+    return `<section class="page reveal"><div class="hero"><div><div class="kicker">Intake</div><h1>Capture first, classify later</h1><p class="lede">Raw notes, queued phone captures, attachments, and triage signals stay visible until the triage workflow files them.</p></div><button class="btn primary" data-capture>New capture</button></div><div class="grid cols-2"><div class="card"><h3>Universal capture</h3><p class="muted">Use the same capture flow for tasks, ideas, project seeds, knowledge notes, screenshots, and voice-note attachments.</p><button class="btn primary" data-capture>Open capture</button></div><div class="card"><h3>Triage workflow</h3><p class="muted">${items.length ? `${items.length} item${items.length === 1 ? "" : "s"} waiting for /triage-intake.` : "No pending intake detected."}</p><button type="button" class="btn" data-copy-text="Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.">Copy triage prompt</button></div></div><div class="card compact"><div class="cardhead"><div><h3>Capture outbox</h3><p class="section-note">Writes are persisted locally first, then sent serially to repo files.</p></div><span class="chip">${activeOutbox.length}</span></div><div class="refined-list">${activeOutbox.map((r) => `<div class="refined-row"><span><span class="refined-title">${esc(displayText(r.text, 130))}</span><span class="refined-sub">${esc(r.type)} · ${esc(r.state)}${r.lastError ? ` · ${esc(displayText(r.lastError, 120))}` : ""}</span></span><span class="refined-meta">${r.project ? `<button type="button" class="btn tertiary" data-outbox-open-project="${esc(r.project.dirName)}" data-outbox-section="${esc(r.project.section)}">Open project</button>` : ""}${r.state === "failed" ? `<button type="button" class="btn" data-outbox-retry="${esc(r.captureId)}">${r.ownerUnknown ? "Review ownerless note" : "Retry"}</button>` : ""}<button type="button" class="btn tertiary" data-outbox-copy="${esc(`Capture ${r.captureId} (${r.state})`)}">Copy id</button></span></div>`).join("") || '<div class="empty-state">No pending outbox captures.</div>'}</div></div><div class="card compact"><div class="cardhead"><div><h3>Raw inbox</h3><p class="section-note">Suggested type and destination are handled by the triage skill.</p></div><span class="chip">${items.length}</span></div><div class="refined-list">${items.map((it) => `<div class="refined-row"><span><span class="refined-title">${esc(displayText(it.text, 150))}</span><span class="refined-sub">${esc(it.kind || "capture")} · unverified until triaged</span></span><span class="chip warn">needs triage</span></div>`).join("") || '<div class="empty-state">No raw captures are waiting.</div>'}</div></div></section>`;
   }
   function followupsHTML() {
     const acts = actionItems();
@@ -28906,7 +29334,7 @@ void main() {
         seen.add(m[1]);
       }
     }
-  
+
     for (const [slug, info] of Object.entries(state.skillsLock?.skills || {}))
       if (!seen.has(slug))
         store.push(
@@ -29779,6 +30207,10 @@ function outboxTone(status) {
   return status === 'failed' ? 'unfavorable' : status === 'submitted' || status === 'pending' ? 'favorable' : 'info';
 }
 function captureOutboxStatus(record) {
+  if (record.ownerUnknown) return {
+    label: 'Owner unknown',
+    detail: 'manual review required; nothing will sync'
+  };
   switch (record.state) {
     case 'pending':
       return {
@@ -29841,7 +30273,7 @@ function CaptureOutboxPanel({
 }) {
   const records = (state.captureOutboxRecords || []).slice().sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
   const active = records.filter(record => ['pending', 'submitting', 'failed'].includes(record.state));
-  const failed = Number(state.captureOutboxSummary?.failed || 0);
+  const failed = records.filter(record => record.state === 'failed' && !record.ownerUnknown).length;
   const advisory = window.WorkbenchCaptureOutbox?.captureOutboxAdvisory ? window.WorkbenchCaptureOutbox.captureOutboxAdvisory(records, {
     now: Date.now()
   }) : {
@@ -29856,6 +30288,7 @@ function CaptureOutboxPanel({
   const retryOne = async captureId => {
     try {
       const record = await retryCaptureOutbox(captureId);
+      if (record?.recoveryCancelled) return;
       if (record?.state === 'submitted') toast('Capture submitted.', 'success');else toast(record?.lastError || 'Capture is still waiting to submit.', 'warning');
     } catch (error) {
       toast(error.message || 'Retry failed — the capture remains in the outbox.', 'danger');
@@ -29907,7 +30340,7 @@ function CaptureOutboxPanel({
         variant: "ghost",
         size: "sm",
         onClick: () => retryOne(record.captureId)
-      }, "Retry"))
+      }, record.ownerUnknown ? 'Review ownerless note' : 'Retry'))
     });
   })));
 }
@@ -29943,6 +30376,7 @@ function TodayView() {
     gates: pendingGateRequests()
   });
   const personalReady = state.personalTasksHealth?.status === 'ok';
+  const gatesReady = (state.workbenchLive?.source === 'supabase-live' || state.workbenchLive?.source === 'local-live') && Array.isArray(state.workbenchLive?.status?.pendingGates);
   const sessions = hub.sessions.slice(0, 5);
   const personal = hub.personal.slice(0, 6);
   const projects = hub.projects;
@@ -29953,21 +30387,7 @@ function TodayView() {
     className: "today-page hub-page"
   }, /*#__PURE__*/React.createElement("header", {
     className: "hub-header"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    className: "hub-date"
-  }, new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric'
-  })), /*#__PURE__*/React.createElement("h1", null, greeting(), ", Jared."), /*#__PURE__*/React.createElement("p", {
-    className: "hub-subtitle"
-  }, "Your day, your work, and the agents moving it forward.")), /*#__PURE__*/React.createElement(Button, {
-    onClick: openCaptureActual,
-    leftIcon: /*#__PURE__*/React.createElement(Icon, {
-      name: "plus",
-      size: 18
-    })
-  }, "Capture a thought")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h1", null, "The work ahead")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
     className: "hub-layout"
   }, /*#__PURE__*/React.createElement("main", {
     className: "hub-main"
@@ -29989,12 +30409,12 @@ function TodayView() {
   }, /*#__PURE__*/React.createElement(Icon, {
     name: "check",
     size: 20
-  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machineId || gate.machine_id || ''), " · Waiting for you")), /*#__PURE__*/React.createElement(Icon, {
+  }), /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, gate.title || gate.gate_name || 'Agent decision'), /*#__PURE__*/React.createElement("small", null, machineName(gate.machineId || gate.machine_id || ''), " · ", gatesReady ? 'Waiting for you' : 'Last known; refresh to confirm')), /*#__PURE__*/React.createElement(Icon, {
     name: "chevronRight",
     size: 18
   }))) : /*#__PURE__*/React.createElement("p", {
     className: "hub-empty"
-  }, LiveApi?.enabled?.() ? 'No pending decisions in the latest fleet snapshot.' : 'Connect Workbench Live to see pending agent decisions.')), /*#__PURE__*/React.createElement("section", {
+  }, gatesReady ? 'No pending decisions in the latest fleet snapshot.' : 'Agent decisions are unavailable or stale. Reconnect Workbench Live to check.')), /*#__PURE__*/React.createElement("section", {
     className: "hub-section",
     "aria-labelledby": "hub-personal"
   }, /*#__PURE__*/React.createElement("div", {
@@ -30169,9 +30589,43 @@ function MoneyView() {
   const input = React.useRef(null);
   const imported = React.useRef(null);
   const remoteRevision = React.useRef(null);
+  const importGeneration = React.useRef(0);
   const resetRemote = () => {
     remoteRevision.current = null;
     imported.current = null;
+  };
+  const discardIfScopeChanged = item => {
+    try {
+      persistence.assertScope(item.scope);
+      return false;
+    } catch {
+      resetRemote();
+      return true;
+    }
+  };
+  const prepareImportedUpload = async item => {
+    if (item.logical) return item.logical;
+    // Read the current revision without applying an older remote payload
+    // over the import the user just chose. A failed GET leaves the copy
+    // device-local; a later retry resolves the revision before any PUT.
+    persistence.assertScope(item.scope);
+    const currentRemote = await remote.restore();
+    persistence.assertScope(item.scope);
+    if (imported.current !== item || window.__WBFinanceSnapshot !== item.snapshot) {
+      const error = new Error('A newer finance import replaced this attempt.');
+      error.code = 'import_changed';
+      throw error;
+    }
+    remoteRevision.current = currentRemote?.revision ?? null;
+    item.logical = {
+      body: {
+        expectedRevision: remoteRevision.current,
+        savedAt: new Date().toISOString(),
+        device: null,
+        payload: JSON.parse(window.WorkbenchFinance.canonicalJSON(item.snapshot))
+      }
+    };
+    return item.logical;
   };
   const resetTransactionFilters = () => {
     setTransactionText('');
@@ -30215,6 +30669,8 @@ function MoneyView() {
       generation = 0;
     const restore = async () => {
       const currentGeneration = ++generation;
+      const admittedImport = importGeneration.current;
+      const accepts = () => alive && currentGeneration === generation && importGeneration.current === admittedImport;
       remote?.invalidate?.();
       resetRemote();
       resetTransactionFilters();
@@ -30230,57 +30686,66 @@ function MoneyView() {
         try {
           restored = remote ? await remote.restore() : null;
         } catch (err) {
+          if (!accepts()) return;
           if (err?.code === 'auth_changed') resetRemote();
           if (err?.code !== 'auth_required') setSyncState(err?.code === 'unavailable' ? 'offline' : 'local-only');
         }
-        if (restored && alive && currentGeneration === generation) {
+        if (!accepts()) return;
+        if (restored) {
           remoteRevision.current = restored.revision;
           await persistence.save(restored.payload, admittedScope);
-          if (!alive || currentGeneration !== generation) return;
+          if (!accepts()) return;
           window.__WBFinanceSnapshot = restored.payload;
           setData(restored.payload);
           setSavedAt(restored.savedAt);
           setSyncState('synced');
           try {
             const cached = await persistence.restoreHistory(restored.payload);
-            if (cached && alive && currentGeneration === generation && window.__WBFinanceSnapshot === restored.payload) {
+            if (cached && accepts() && window.__WBFinanceSnapshot === restored.payload) {
               setHistoryTransactions(cached.transactions);
               setHistoryCursor(cached.nextCursor);
               setHistoryState(cached.nextCursor ? 'ready' : 'end');
               setHistoryRecovered(true);
             }
           } catch (historyErr) {
-            if (alive && currentGeneration === generation) setHistoryError(historyErr.message || 'Saved transaction history is unavailable.');
+            if (accepts()) setHistoryError(historyErr.message || 'Saved transaction history is unavailable.');
           }
         } else {
           const local = await persistence.restore();
-          if (!alive || currentGeneration !== generation) return;
+          if (!accepts()) return;
           if (local) {
             window.__WBFinanceSnapshot = local.snapshot;
             setData(local.snapshot);
             setSavedAt(local.savedAt);
             try {
               const cached = await persistence.restoreHistory(local.snapshot);
-              if (cached && alive && currentGeneration === generation && window.__WBFinanceSnapshot === local.snapshot) {
+              if (cached && accepts() && window.__WBFinanceSnapshot === local.snapshot) {
                 setHistoryTransactions(cached.transactions);
                 setHistoryCursor(cached.nextCursor);
                 setHistoryState(cached.nextCursor ? 'ready' : 'end');
                 setHistoryRecovered(true);
               }
             } catch (historyErr) {
-              if (alive && currentGeneration === generation) setHistoryError(historyErr.message || 'Saved transaction history is unavailable.');
+              if (accepts()) setHistoryError(historyErr.message || 'Saved transaction history is unavailable.');
             }
           }
         }
       } catch (err) {
-        if (err?.code === 'scope_changed') resetRemote();
-        if (alive && currentGeneration === generation) setError(err.message || 'Could not restore the finance snapshot.');
+        if (accepts()) {
+          if (err?.code === 'scope_changed') resetRemote();
+          setError(err.message || 'Could not restore the finance snapshot.');
+        }
       } finally {
         if (alive && currentGeneration === generation) setRestoring(false);
       }
     };
     restore();
-    const onScopeChange = () => restore();
+    const onScopeChange = event => {
+      // A refreshed JWT changes the request generation, not the owner or
+      // the finance scope. Keep an in-progress import visible.
+      if (event?.type === 'workbench-auth-change' && event.detail?.ownerChanged === false) return;
+      restore();
+    };
     window.addEventListener('workbench-finance-scope-change', onScopeChange);
     window.addEventListener('workbench-auth-change', onScopeChange);
     return () => {
@@ -30299,6 +30764,8 @@ function MoneyView() {
       const admittedScope = persistence.scopeIdentity();
       if (file.size > 2 * 1024 * 1024) throw new Error('Choose a finance snapshot smaller than 2 MB.');
       const parsed = window.WorkbenchFinance.validate(JSON.parse(await file.text()));
+      // An import wins over a restore admitted before the user chose it.
+      importGeneration.current += 1;
       remote?.invalidate?.();
       const persistedAt = await persistence.save(parsed, admittedScope);
       resetTransactionFilters();
@@ -30307,29 +30774,27 @@ function MoneyView() {
       setData(parsed);
       setSavedAt(persistedAt);
       setError('');
-      const logical = {
-        body: {
-          expectedRevision: remoteRevision.current,
-          savedAt: new Date().toISOString(),
-          device: null,
-          payload: JSON.parse(window.WorkbenchFinance.canonicalJSON(parsed))
-        }
-      };
-      imported.current = {
+      const pending = {
         snapshot: parsed,
-        logical,
+        logical: null,
         scope: admittedScope
       };
+      imported.current = pending;
       if (remote) {
         try {
           persistence.assertScope(admittedScope);
-          const synced = await remote.upload(parsed, remoteRevision.current, logical, admittedScope);
-          remoteRevision.current = synced?.revision ?? remoteRevision.current;
-          setSyncState('synced');
+          const logical = await prepareImportedUpload(pending);
+          const synced = await remote.upload(parsed, logical.body.expectedRevision, logical, admittedScope);
+          if (imported.current === pending) {
+            remoteRevision.current = synced?.revision ?? remoteRevision.current;
+            setSyncState('synced');
+          }
         } catch (err) {
-          if (err?.code === 'auth_changed') resetRemote();
-          setSyncState(err?.code === 'conflict' ? 'conflict' : 'offline');
-          setError(err.message || 'Snapshot saved locally; remote sync is unavailable.');
+          if (imported.current === pending && err?.code !== 'import_changed') {
+            if (err?.code === 'auth_changed' || err?.code === 'scope_changed') discardIfScopeChanged(pending);
+            setSyncState(err?.code === 'conflict' ? 'conflict' : 'offline');
+            setError(err.message || 'Snapshot saved locally; remote sync is unavailable.');
+          }
         }
       }
     } catch (err) {
@@ -30374,13 +30839,17 @@ function MoneyView() {
   };
   const retryUpload = async () => {
     if (!remote || !imported.current || syncState === 'conflict') return;
+    const pending = imported.current;
     try {
-      const synced = await remote.upload(imported.current.snapshot, remoteRevision.current, imported.current.logical, imported.current.scope);
+      const logical = await prepareImportedUpload(pending);
+      const synced = await remote.upload(pending.snapshot, logical.body.expectedRevision, logical, pending.scope);
+      if (imported.current !== pending) return;
       remoteRevision.current = synced?.revision ?? remoteRevision.current;
       setSyncState('synced');
       setError('');
     } catch (err) {
-      if (err?.code === 'auth_changed') resetRemote();
+      if (imported.current !== pending || err?.code === 'import_changed') return;
+      if (err?.code === 'auth_changed' || err?.code === 'scope_changed') discardIfScopeChanged(pending);
       setSyncState(err?.code === 'conflict' ? 'conflict' : 'offline');
       setError(err.message || 'Snapshot remains saved locally; retry when Workbench Live is available.');
     }
@@ -32212,7 +32681,7 @@ function UsageProjectPanel({
     style: muted
   }, costSummary.localSavings.status === 'unavailable' ? 'Local impact unavailable: no attributable, parent-verified broker outcomes are stored in this report.' : costSummary.localSavings.status === 'incomplete' ? `Local impact incomplete: ${costSummary.localSavings.unknownAcceptedTasks} accepted task${costSummary.localSavings.unknownAcceptedTasks === 1 ? '' : 's'} lack a comparator and ${costSummary.localSavings.cloudReviewCostUsdUnknown} lack cloud review cost.` : `Counterfactual savings are compared with ${costText(costSummary.localSavings.cloudReviewCostUsdKnown)} of recorded cloud review/fix cost. Negative net means local work increased measured cloud cost.`), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, costSummary.reviewThreshold == null ? 'No project-specific operating budget is configured for this project.' : /*#__PURE__*/React.createElement(React.Fragment, null, "Operational budget baseline: ", costText(costSummary.baseline), " · review threshold: ", costText(costSummary.reviewThreshold), " · ", costSummary.remainingUpperBound == null ? 'remaining unavailable' : costSummary.remainingUpperBound >= 0 ? `at most ${costText(costSummary.remainingUpperBound)} remaining from stored known cash` : `${costText(Math.abs(costSummary.remainingUpperBound))} over the review threshold`, ". Missing, unpriced, or not-yet-uploaded task families can reduce the true remaining amount.")), /*#__PURE__*/React.createElement("div", {
+  }, costSummary.reviewThreshold == null ? "Shared Azure budget remaining isn't connected to this view yet." : /*#__PURE__*/React.createElement(React.Fragment, null, "Operational budget baseline: ", costText(costSummary.baseline), " · review threshold: ", costText(costSummary.reviewThreshold), " · ", costSummary.remainingUpperBound == null ? 'remaining unavailable' : costSummary.remainingUpperBound >= 0 ? `at most ${costText(costSummary.remainingUpperBound)} remaining from stored known cash` : `${costText(Math.abs(costSummary.remainingUpperBound))} over the review threshold`, ". Missing, unpriced, or not-yet-uploaded task families can reduce the true remaining amount.")), /*#__PURE__*/React.createElement("div", {
     className: "usage-table project-cost-table"
   }, /*#__PURE__*/React.createElement("div", {
     className: "usage-table-row head"
@@ -32823,6 +33292,7 @@ function MachinesView() {
   const subsystemLabel = subsystemBad ? `${subsystemBad} failing` : subsystemStale ? `${subsystemStale} not reporting` : 'steady';
   const subsystemSummary = subsystemRows.length ? subsystemBad || subsystemStale ? 'A check that stopped running is not a check that passed.' : 'Every machine reporting, every check passing.' : 'No machine has published subsystem health yet.';
   const statusCounts = [['ok', coverage.ok || 0, 'favorable'], ['stale', coverage.stale || 0, 'warning'], ['missing', coverage.missing || 0, 'warning'], ['malformed', coverage.malformed || 0, 'unfavorable'], ['unreachable', coverage.unreachable || 0, 'unfavorable']].filter(([, count]) => count > 0);
+  const gateActionBlockedReason = liveActionsBlockedReason();
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(ProviderRail, null), /*#__PURE__*/React.createElement(PageHeader, {
@@ -32844,7 +33314,9 @@ function MachinesView() {
     gap: 3
   }, /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "An /agency run paused before an irreversible action. It will not proceed until you approve or reject each one below."), /*#__PURE__*/React.createElement(List, {
+  }, "An /agency run paused before an irreversible action. It will not proceed until you approve or reject each one below."), gateActionBlockedReason && /*#__PURE__*/React.createElement(Banner, {
+    variant: "warn"
+  }, /*#__PURE__*/React.createElement("span", null, gateActionBlockedReason)), /*#__PURE__*/React.createElement(List, {
     bordered: true
   }, pendingGates.map(g => {
     const gateKey = `${g.run_id}::${g.gate_name}`;
@@ -32858,11 +33330,13 @@ function MachinesView() {
     }, /*#__PURE__*/React.createElement(Button, {
       size: "sm",
       variant: "secondary",
-      disabled: busy,
+      disabled: busy || !!gateActionBlockedReason,
+      title: gateActionBlockedReason || undefined,
       onClick: () => decideGate(g, 'rejected')
     }, gateBusy === `${gateKey}::rejected` ? '…' : 'Reject'), /*#__PURE__*/React.createElement(Button, {
       size: "sm",
-      disabled: busy,
+      disabled: busy || !!gateActionBlockedReason,
+      title: gateActionBlockedReason || undefined,
       onClick: () => decideGate(g, 'approved')
     }, gateBusy === `${gateKey}::approved` ? '…' : 'Approve'));
     return /*#__PURE__*/React.createElement(ListItem, {
@@ -33865,10 +34339,7 @@ function SimpleView({
       state.mobileVersion = await fetchMobileVersion();
       forceRender();
     }
-  }, "Re-check mobile version"), state.backend === 'github' ? /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    onClick: disconnectGithub
-  }, "Revoke GitHub token") : null, /*#__PURE__*/React.createElement(Button, {
+  }, "Re-check mobile version"), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: doReset
   }, "Clear cached tree")), pub.syncMessage ? /*#__PURE__*/React.createElement(Banner, {
@@ -33879,7 +34350,7 @@ function SimpleView({
     items: [["Supabase sign-in", window.WBSupabaseAuth?.configured?.() ? window.WBSupabaseAuth?.hasSession?.() ? 'signed in' : 'not signed in' : 'not configured in this build'], ["Captures", window.WBSupabaseAuth?.hasSession?.() ? 'syncing' : 'queued on this device until you sign in']]
   }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Loose notes are stored in Supabase, not the repo, so they need this sign-in as well as repo access. A GitHub token alone authenticates the repo and will leave captures stuck in the outbox."), /*#__PURE__*/React.createElement(Cluster, {
+  }, "Your GitHub sign-in connects the private workspace and its saved notes on this device."), /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap'
@@ -33887,14 +34358,10 @@ function SimpleView({
   }, window.WBSupabaseAuth?.hasSession?.() ? /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
     onClick: async () => {
-      try {
-        await window.__WBDisconnectAccount();
-        forceRender();
-      } catch (err) {
-        toast(String(err.message || err), 'danger');
-      }
+      await disconnectGithub();
+      forceRender();
     }
-  }, "Sign out and clear local finance data") : /*#__PURE__*/React.createElement(Button, {
+  }, "Sign out of Workbench") : /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
     onClick: () => {
       if (!window.WBSupabaseAuth?.configured?.()) {
@@ -33912,51 +34379,16 @@ function SimpleView({
   }, "GitHub Pages can lag the raw workbench-mobile repo by minutes. Compare repo vs live version before assuming phone users see the latest build.")), /*#__PURE__*/React.createElement(Card, {
     title: "Workbench Live"
   }, /*#__PURE__*/React.createElement(DescriptionList, {
-    items: [["Live source", workbenchLiveDataSourceLabel()], ["Configured", LiveApi?.enabled?.() ? 'yes' : 'no']]
-  }), /*#__PURE__*/React.createElement(Stack, {
-    gap: 2,
-    style: {
-      marginTop: 12
-    }
-  }, /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Supabase URL", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveSupabaseUrl",
-    defaultValue: LiveApi?.getConfig?.()?.supabaseUrl || '',
-    placeholder: "https://YOUR_PROJECT.supabase.co"
-  })), /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Function name", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveFunctionName",
-    defaultValue: LiveApi?.getConfig?.()?.functionName || 'workbench-live'
-  })), /*#__PURE__*/React.createElement("label", {
-    className: "form-row"
-  }, "Dashboard token", /*#__PURE__*/React.createElement("input", {
-    className: "input",
-    id: "liveDashboardToken",
-    type: "password",
-    placeholder: liveDashboardToken() ? 'Saved token — leave blank to keep' : 'dashboard bearer token'
-  })), /*#__PURE__*/React.createElement("p", {
+    items: [["Connection", LiveApi?.enabled?.() ? 'connected' : 'not connected'], ["Source", workbenchLiveDataSourceLabel()]]
+  }), /*#__PURE__*/React.createElement("p", {
     style: muted
-  }, "Token stays on this device only. Helpers use WB_LIVE_MACHINE_TOKEN on each machine; never put service-role keys here."), /*#__PURE__*/React.createElement(Cluster, {
+  }, "Workbench Live can use your GitHub sign-in. Reset connection clears older manual settings; no token entry is needed."), /*#__PURE__*/React.createElement(Cluster, {
     gap: 2,
     style: {
       flexWrap: 'wrap'
     }
   }, /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
-    onClick: async () => {
-      try {
-        await saveWorkbenchLiveSettings();
-        forceRender();
-      } catch (err) {
-        toast(String(err.message || err), 'danger');
-      }
-    }
-  }, "Save Live config"), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
     onClick: async () => {
       try {
         await testWorkbenchLiveSettings();
@@ -33970,7 +34402,7 @@ function SimpleView({
       forgetWorkbenchLiveSettings();
       forceRender();
     }
-  }, "Forget Live config")))), /*#__PURE__*/React.createElement(Card, {
+  }, "Reset connection"))), /*#__PURE__*/React.createElement(Card, {
     title: "Tracked"
   }, /*#__PURE__*/React.createElement(List, null, /*#__PURE__*/React.createElement(ListItem, {
     title: "Project files and task counts"
@@ -35598,6 +36030,14 @@ function LifeGoalsView() {
     }).sort((a, b) => Number(b.liveObservedAt || b.updated || 0) - Number(a.liveObservedAt || a.updated || 0));
   };
   const beginAction = (recommendation, suggestion, decision) => {
+    const blocked = liveActionsBlockedReason();
+    if (blocked) {
+      setActionStatus({
+        loading: false,
+        error: blocked
+      });
+      return;
+    }
     const key = `workbench.life-goal-action.${decision.decisionId}:${recommendation.recommendationId}:${suggestion.id}`;
     let restored = null;
     try {
@@ -35623,6 +36063,14 @@ function LifeGoalsView() {
     persistActionDraft(draft);
   };
   const submitAction = async () => {
+    const blocked = liveActionsBlockedReason();
+    if (blocked) {
+      setActionStatus({
+        loading: false,
+        error: blocked
+      });
+      return;
+    }
     const session = eligibleActionSessions().find(row => (row.session_uid || row.sessionFull || row.session_full || row.session) === actionDraft?.selectedSessionUid);
     if (!actionDraft || !session || actionStatus.loading) return;
     const attempted = {
@@ -35886,6 +36334,8 @@ function LifeGoalsView() {
       }, taskRetry ? taskStatus.loading ? 'Creating…' : 'Retry task' : 'Create task'), /*#__PURE__*/React.createElement(Button, {
         variant: "secondary",
         size: "sm",
+        disabled: !!liveActionsBlockedReason(),
+        title: liveActionsBlockedReason() || undefined,
         onClick: () => beginAction(item, suggestion, decided)
       }, "Start in a session")) : null, taskRetry && taskStatus.error ? /*#__PURE__*/React.createElement("small", {
         style: {
@@ -35934,7 +36384,8 @@ function LifeGoalsView() {
     gap: 2
   }, /*#__PURE__*/React.createElement(Button, {
     variant: "secondary",
-    disabled: !actionDraft.selectedSessionUid || !eligibleActionSessions().length || actionStatus.loading,
+    disabled: !!liveActionsBlockedReason() || !actionDraft.selectedSessionUid || !eligibleActionSessions().length || actionStatus.loading,
+    title: liveActionsBlockedReason() || undefined,
     onClick: submitAction
   }, actionStatus.loading ? 'Starting…' : actionDraft.submissionAttempted ? 'Retry same action' : 'Start in selected session'), /*#__PURE__*/React.createElement(Button, {
     variant: "ghost",
@@ -36201,28 +36652,241 @@ function LifeGoalsView() {
     onClick: () => setReviewing(false)
   }, "Cancel"))) : null);
 }
-function Content() {
-  if (state.view === 'frametv') return /*#__PURE__*/React.createElement(FrameTVView, null);
-  if (state.view === 'transcripts') return /*#__PURE__*/React.createElement(TranscriptsView, null);
-  if (state.view === 'overview') return /*#__PURE__*/React.createElement(TodayView, null);
-  if (state.view === 'focus') return /*#__PURE__*/React.createElement(FocusView, null);
-  if (state.view === 'projects') return /*#__PURE__*/React.createElement(ProjectsView, null);
-  if (state.view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
-  if (state.view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
-  if (state.view === 'todo') return /*#__PURE__*/React.createElement(ToDoView, null);
-  if (state.view === 'money') return /*#__PURE__*/React.createElement(MoneyView, null);
-  if (state.view === 'home') return /*#__PURE__*/React.createElement(HomeView, null);
-  if (state.view === 'goals') return /*#__PURE__*/React.createElement(LifeGoalsView, null);
-  if (state.view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
-  if (state.view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
-  if (state.view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
-  if (state.view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
+function Content({
+  view = state.view
+} = {}) {
+  if (view === 'frametv') return /*#__PURE__*/React.createElement(FrameTVView, null);
+  if (view === 'transcripts') return /*#__PURE__*/React.createElement(TranscriptsView, null);
+  if (view === 'overview') return /*#__PURE__*/React.createElement(TodayView, null);
+  if (view === 'focus') return /*#__PURE__*/React.createElement(FocusView, null);
+  if (view === 'projects') return /*#__PURE__*/React.createElement(ProjectsView, null);
+  if (view === 'project') return /*#__PURE__*/React.createElement(ProjectRoomView, null);
+  if (view === 'intake') return /*#__PURE__*/React.createElement(IntakeView, null);
+  if (view === 'todo') return /*#__PURE__*/React.createElement(ToDoView, null);
+  if (view === 'money') return /*#__PURE__*/React.createElement(MoneyView, null);
+  if (view === 'home') return /*#__PURE__*/React.createElement(HomeView, null);
+  if (view === 'goals') return /*#__PURE__*/React.createElement(LifeGoalsView, null);
+  if (view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
+  if (view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
+  if (view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
+  if (view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
   return /*#__PURE__*/React.createElement(SimpleView, {
-    kind: state.view
+    kind: view
   });
 }
+const focusSplitViews = [['overview', 'Pulse'], ['focus', 'Focus'], ['sessions', 'Sessions'], ['todo', 'Tasks'], ['money', 'Money'], ['usage', 'Costs']];
+function FocusSplitNav({
+  activeView
+}) {
+  const navRef = React.useRef(null);
+  const [indicator, setIndicator] = React.useState(null);
+  React.useLayoutEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const update = () => {
+      const selected = nav.querySelector('[aria-current="page"]');
+      if (!selected) {
+        setIndicator(null);
+        return;
+      }
+      setIndicator({
+        left: selected.offsetLeft,
+        width: selected.offsetWidth
+      });
+    };
+    update();
+    nav.querySelector('[aria-current="page"]')?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest'
+    });
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
+    if (observer) observer.observe(nav);
+    window.addEventListener('resize', update);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [activeView]);
+  const moveFocus = (event, index) => {
+    const last = focusSplitViews.length - 1;
+    const nextIndex = event.key === 'ArrowRight' ? (index + 1) % focusSplitViews.length : event.key === 'ArrowLeft' ? (index + last) % focusSplitViews.length : event.key === 'Home' ? 0 : event.key === 'End' ? last : -1;
+    if (nextIndex < 0) return;
+    event.preventDefault();
+    const next = navRef.current?.querySelectorAll('[role="tab"]')[nextIndex];
+    next?.focus();
+    setView(focusSplitViews[nextIndex][0]);
+  };
+  return /*#__PURE__*/React.createElement("nav", {
+    ref: navRef,
+    className: "focus-split-nav",
+    role: "tablist",
+    "aria-label": "Focus workspace"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "focus-split-indicator",
+    "aria-hidden": "true",
+    style: indicator ? {
+      transform: `translateX(${indicator.left}px)`,
+      width: indicator.width,
+      opacity: 1
+    } : undefined
+  }), focusSplitViews.map(([id, label], index) => /*#__PURE__*/React.createElement("button", {
+    key: id,
+    type: "button",
+    role: "tab",
+    id: `focus-split-tab-${id}`,
+    "aria-controls": "focus-split-panel",
+    "aria-selected": activeView === id,
+    "aria-current": activeView === id ? 'page' : undefined,
+    tabIndex: activeView === id ? 0 : -1,
+    onKeyDown: event => moveFocus(event, index),
+    onClick: () => setView(id)
+  }, label)));
+}
+function FocusSplitBrief() {
+  const mobile = useViewport();
+  const [briefingOpen, setBriefingOpen] = React.useState(false);
+  const actions = actionItems();
+  const hub = window.WorkbenchHub.build({
+    personalTasks: state.personalTasks,
+    actions,
+    sessions: state.workbenchLive?.status?.liveSessions || state.sessions,
+    machines: state.workbenchLive?.machines,
+    gates: pendingGateRequests()
+  });
+  const personalReady = state.personalTasksHealth?.status === 'ok';
+  const liveSource = state.workbenchLive?.source;
+  const gatesReady = (liveSource === 'supabase-live' || liveSource === 'local-live') && Array.isArray(state.workbenchLive?.status?.pendingGates);
+  const priorities = [...hub.gates.slice(0, 2).map(gate => ({
+    key: `gate:${gate.run_id}:${gate.gate_name}`,
+    title: gate.title || gate.gate_name || 'Agent decision',
+    detail: gatesReady ? 'Waiting for your decision' : 'Last known; refresh to confirm',
+    open: () => setView('machines')
+  })), ...hub.personal.slice(0, 2).map(({
+    task,
+    overdue
+  }) => ({
+    key: `task:${task.id}`,
+    title: task.title || task.name || 'Personal task',
+    detail: overdue ? 'Overdue personal task' : 'Personal task',
+    open: () => setView('todo')
+  })), ...hub.projects.slice(0, 2).map(item => ({
+    key: `project:${actionKey(item)}`,
+    title: displayText(item.text, 90),
+    detail: projectTitle(item.p),
+    open: () => openProject(item.p)
+  }))].slice(0, 3);
+  const partial = !personalReady || !gatesReady;
+  const refreshedAt = Number(state.workbenchLive?.status?.refreshedAt || state.workbenchLive?.status?.heartbeatAt || 0);
+  const refreshedLabel = Number.isFinite(refreshedAt) && refreshedAt > 0 ? ` · Updated ${new Date(refreshedAt).toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit'
+  })}` : '';
+  const sourceName = liveSource === 'supabase-live' ? 'Supabase Workbench Live' : liveSource === 'local-live' ? 'local Workbench Live' : liveSource === 'supabase-stale' ? 'stale Supabase snapshot' : liveSource === 'local-live-stale' ? 'stale local snapshot' : liveSource === 'cached-offline' ? 'cached offline snapshot' : 'Workbench Live not refreshed';
+  const sourceSummary = liveSource === 'supabase-live' ? 'Supabase Live' : liveSource === 'local-live' ? 'local Live' : liveSource === 'supabase-stale' || liveSource === 'local-live-stale' ? 'Live stale' : liveSource === 'cached-offline' ? 'Cached offline' : 'Live unavailable';
+  return /*#__PURE__*/React.createElement("aside", {
+    className: "focus-split-brief",
+    "aria-label": "Today briefing",
+    "data-expanded": mobile && briefingOpen ? 'true' : 'false'
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-mobile-summary"
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, "Today"), /*#__PURE__*/React.createElement("small", null, partial ? 'Partial feeds' : 'Tasks and gates only', " · ", sourceSummary)), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    "aria-expanded": briefingOpen,
+    "aria-controls": "focus-split-brief-details",
+    onClick: () => setBriefingOpen(open => !open)
+  }, briefingOpen ? 'Hide briefing' : 'Briefing')), /*#__PURE__*/React.createElement("div", {
+    id: "focus-split-brief-details",
+    className: "focus-split-brief-details",
+    "aria-hidden": mobile && !briefingOpen
+  }, /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-date"
+  }, new Date().toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric'
+  })), /*#__PURE__*/React.createElement("h1", null, "Today, with room to think."), /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-intro"
+  }, "Your priorities stay in sight while you move through the work."), /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-priorities"
+  }, /*#__PURE__*/React.createElement("h2", null, "Needs your attention"), /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-source"
+  }, "Sources: Personal task refresh · Agent decisions from ", sourceName, refreshedLabel, "."), !personalReady ? /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-coverage"
+  }, "Personal tasks have not refreshed. This is a partial view.") : null, !gatesReady ? /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-coverage"
+  }, "Agent decisions are unavailable or stale. This is a partial view.") : null, /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-coverage"
+  }, "Calendar and meeting commitments are not connected to this briefing."), priorities.length ? priorities.map(item => /*#__PURE__*/React.createElement("button", {
+    key: item.key,
+    type: "button",
+    className: "focus-split-priority",
+    onClick: item.open
+  }, /*#__PURE__*/React.createElement("span", null, /*#__PURE__*/React.createElement("strong", null, item.title), /*#__PURE__*/React.createElement("small", null, item.detail)), /*#__PURE__*/React.createElement(Icon, {
+    name: "chevronRight",
+    size: 16
+  }))) : /*#__PURE__*/React.createElement("p", {
+    className: "focus-split-coverage"
+  }, personalReady && gatesReady ? 'Nothing needs attention in the latest available snapshot.' : 'Connect and refresh to see current priorities.')), /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-brief-footer"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: () => setView('goals')
+  }, "Life goals ", /*#__PURE__*/React.createElement(Icon, {
+    name: "chevronRight",
+    size: 14
+  })), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: openCaptureActual
+  }, "Capture a thought ", /*#__PURE__*/React.createElement(Icon, {
+    name: "plus",
+    size: 14
+  })))));
+}
+function FocusSplitWorkspace() {
+  const view = state.view;
+  const inMainNav = focusSplitViews.some(([id]) => id === view);
+  const drilldownTitle = {
+    project: 'Project',
+    projects: 'Projects',
+    goals: 'Life goals',
+    machines: 'Machines',
+    home: 'Home',
+    intake: 'Intake',
+    weekly: 'Weekly review'
+  }[view] || 'Workspace';
+  const returnToPulse = () => {
+    setView('overview');
+    requestAnimationFrame(() => document.getElementById('focus-split-tab-overview')?.focus());
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "focus-split",
+    "data-testid": "focus-split-workspace"
+  }, /*#__PURE__*/React.createElement(FocusSplitBrief, null), /*#__PURE__*/React.createElement("section", {
+    className: "focus-split-workspace",
+    "aria-label": "Active workspace"
+  }, inMainNav ? /*#__PURE__*/React.createElement(FocusSplitNav, {
+    activeView: view
+  }) : /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-return"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: returnToPulse
+  }, /*#__PURE__*/React.createElement(Icon, {
+    name: "arrowLeft",
+    size: 16
+  }), " Back to Pulse"), /*#__PURE__*/React.createElement("span", {
+    "aria-hidden": "true"
+  }, "/"), /*#__PURE__*/React.createElement("strong", null, drilldownTitle)), /*#__PURE__*/React.createElement("div", {
+    className: "focus-split-content",
+    id: "focus-split-panel",
+    role: inMainNav ? 'tabpanel' : undefined,
+    "aria-labelledby": inMainNav ? `focus-split-tab-${view}` : undefined
+  }, /*#__PURE__*/React.createElement(Content, {
+    view: view
+  }))));
+}
 function MobileShell() {
-  const tabs = [['today', 'Today', 'home'], ['focus', 'Focus', 'trend'], ['projects', 'Projects', 'folder'], ['sessions', 'Sessions', 'list']];
+  const tabs = [['overview', 'Workspace', 'home'], ['projects', 'Projects', 'folder'], ['goals', 'Goals', 'trend']];
   return /*#__PURE__*/React.createElement("div", {
     style: {
       minHeight: '100vh',
@@ -36287,7 +36951,7 @@ function MobileShell() {
       right: 0,
       padding: '0 10px'
     }
-  }), /*#__PURE__*/React.createElement(Content, null), /*#__PURE__*/React.createElement(Button, {
+  }), /*#__PURE__*/React.createElement(FocusSplitWorkspace, null), /*#__PURE__*/React.createElement(Button, {
     onClick: openCaptureActual,
     size: "md",
     style: {
@@ -36304,7 +36968,8 @@ function MobileShell() {
       name: "plus",
       size: 18
     })
-  }, "Intake"), /*#__PURE__*/React.createElement("div", {
+  }, "Capture"), /*#__PURE__*/React.createElement("nav", {
+    "aria-label": "Main navigation",
     style: {
       position: 'fixed',
       left: 0,
@@ -36318,11 +36983,33 @@ function MobileShell() {
       borderTop: '1px solid var(--border-subtle)',
       zIndex: 'var(--z-nav)'
     }
-  }, tabs.map(([id, label, icon]) => /*#__PURE__*/React.createElement(Button, {
-    key: id,
-    variant: viewName() === id ? 'subtle' : 'ghost',
+  }, tabs.map(([id, label, icon]) => {
+    const active = id === 'overview' ? focusSplitViews.some(([view]) => view === state.view) : state.view === id;
+    return /*#__PURE__*/React.createElement(Button, {
+      key: id,
+      "aria-current": active ? 'page' : undefined,
+      variant: active ? 'subtle' : 'ghost',
+      size: "sm",
+      onClick: () => setView(id),
+      style: {
+        flexDirection: 'column',
+        gap: 2,
+        minHeight: 48,
+        padding: '5px 4px'
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: icon,
+      size: 17
+    }), /*#__PURE__*/React.createElement("span", {
+      style: {
+        fontSize: 11
+      }
+    }, label));
+  }), /*#__PURE__*/React.createElement(Button, {
+    "aria-label": "More sections",
+    variant: "ghost",
     size: "sm",
-    onClick: () => setView(id),
+    onClick: openMoreActual,
     style: {
       flexDirection: 'column',
       gap: 2,
@@ -36330,13 +37017,13 @@ function MobileShell() {
       padding: '5px 4px'
     }
   }, /*#__PURE__*/React.createElement(Icon, {
-    name: icon,
+    name: "list",
     size: 17
   }), /*#__PURE__*/React.createElement("span", {
     style: {
       fontSize: 11
     }
-  }, label)))));
+  }, "More"))));
 }
 function DesktopShell() {
   return /*#__PURE__*/React.createElement(AppShell, {
@@ -36389,7 +37076,7 @@ function DesktopShell() {
         onClick: reconnectSource
       }, "Reconnect"))
     })
-  }, /*#__PURE__*/React.createElement(Content, null));
+  }, /*#__PURE__*/React.createElement(FocusSplitWorkspace, null));
 }
 function OverlayHost() {
   const [paletteOpen, setPaletteOpen] = React.useState(false);
@@ -37625,7 +38312,7 @@ function SessionDialog({
       className: "wb-composer-notice"
     }, "Sending disabled: ", sendCapability.reason), askQuestion ? /*#__PURE__*/React.createElement(AskUserQuestionComposer, {
       prompt: askQuestion,
-      disabled: sending || !sendCapability.allowed,
+      disabled: sending || !!blockedReason || !sendCapability.allowed,
       onSubmit: submitAnswer
     }) : /*#__PURE__*/React.createElement("div", {
       className: "wb-composer"
@@ -37634,12 +38321,12 @@ function SessionDialog({
       value: composerText,
       onChange: e => setComposerText(e.target.value),
       placeholder: "Reply to this session…",
-      disabled: sending || !sendCapability.allowed,
+      disabled: sending || !!blockedReason || !sendCapability.allowed,
       rows: 2
     }), /*#__PURE__*/React.createElement(Button, {
       onClick: sendReply,
-      disabled: sending || !sendCapability.allowed,
-      title: sendCapability.reason
+      disabled: sending || !!blockedReason || !sendCapability.allowed,
+      title: blockedReason || sendCapability.reason
     }, sending ? 'Sending…' : 'Send')), /*#__PURE__*/React.createElement(Cluster, {
       gap: 2,
       style: {
@@ -37649,8 +38336,8 @@ function SessionDialog({
       variant: "secondary",
       size: "sm",
       onClick: interruptSession,
-      disabled: !interruptCapability.allowed,
-      title: interruptCapability.reason
+      disabled: !!blockedReason || !interruptCapability.allowed,
+      title: blockedReason || interruptCapability.reason
     }, "Interrupt"), /*#__PURE__*/React.createElement(Button, {
       variant: "secondary",
       size: "sm",
@@ -37682,10 +38369,10 @@ function SessionDialog({
   }, Object.entries(capabilityView.capabilities).map(([name, value]) => /*#__PURE__*/React.createElement(ListItem, {
     key: name,
     title: name.replace(/_/g, ' '),
-    description: value.reason,
+    description: value.allowed && blockedReason && name !== 'transcript_read' ? `${value.reason} ${blockedReason}` : value.reason,
     trailing: /*#__PURE__*/React.createElement(Badge, {
-      tone: value.allowed ? 'favorable' : 'neutral'
-    }, value.allowed ? 'available' : 'disabled')
+      tone: value.allowed && !(blockedReason && name !== 'transcript_read') ? 'favorable' : 'neutral'
+    }, value.allowed ? blockedReason && name !== 'transcript_read' ? 'adapter only' : 'available' : 'disabled')
   })))), /*#__PURE__*/React.createElement(Card, {
     eyebrow: "Transcript",
     title: "Latest turns"
@@ -41001,15 +41688,23 @@ window.__WBReactRender = function () {
     // needs the Supabase access token, which survives a refresh. signedIn() is
     // provider_token and goes false on the next visit, which is what left
     // captures queued on-device since the first refresh.
-    if (!Auth?.hasSession?.()) {
-      throw new Error("Sign in again to sync captures.");
+    const ownerUid = String(record.ownerUid || "");
+    const matchesCapturedOwner = (userId, verifyServerUser = false) =>
+      !!ownerUid && !!Auth?.hasSession?.() && Auth.userId?.() === ownerUid &&
+      (!verifyServerUser || userId === ownerUid);
+    if (!matchesCapturedOwner()) {
+      const error = new Error("Sign in with the account that created this capture to sync it.");
+      error.retryable = true;
+      throw error;
     }
     await Auth.ensureFresh();
     const user = await Auth.currentUser();
-    if (!user?.id) {
-      throw new Error("Sign in again to sync captures.");
+    if (!matchesCapturedOwner(user?.id, true)) {
+      const error = new Error("The signed-in account changed; this capture is still waiting to sync.");
+      error.retryable = true;
+      throw error;
     }
-    const row = CaptureOutbox.toCaptureRow(record, user.id);
+    const row = CaptureOutbox.toCaptureRow(record, Auth.userId());
     try {
       await ensureSupabaseDataClient().upsert("captures", [row], {
         onConflict: "id",
@@ -41386,14 +42081,55 @@ window.__WBReactRender = function () {
   async function disconnectGithub() {
     try {
       await ghDisconnect();
-      state.backend = null;
-      state.connected = false;
-      toast("GitHub token, finance recovery, and cached tree cleared.");
+      clearPrivateLoadedState();
+      toast("Signed out and cleared private device data.");
       showLanding();
     } catch (error) {
       toast(error?.message || "Could not safely disconnect this account.", "danger");
     }
   }
+  function clearPrivateLoadedState() {
+    const initialKeys = new Set(Object.keys(initialState));
+    for (const key of Object.keys(state)) {
+      if (!initialKeys.has(key)) delete state[key];
+    }
+    for (const [key, value] of Object.entries(initialState)) {
+      state[key] = structuredClone(value);
+    }
+    state.backend = null;
+    delete window.__WBFinanceSnapshot;
+    workbenchLiveLoadGeneration += 1;
+    ghShaCache.clear();
+    ghTreeShas = {};
+    ghIndexTasks = {};
+    for (const url of binaryURLs.values()) URL.revokeObjectURL(url);
+    binaryURLs.clear();
+  }
+  window.addEventListener('workbench-auth-change', event => {
+    if (event?.detail?.source !== 'storage' || event.detail.ownerChanged !== true) return;
+    LiveApi?.forgetConfig?.();
+    const previousOwner = event.detail.previousOwner;
+    const cfg = ghConfig();
+    const previousScope = previousOwner && cfg?.owner && cfg?.repo && cfg?.branch
+      ? { account: previousOwner, owner: cfg.owner, repo: cfg.repo, branch: cfg.branch }
+      : null;
+    clearPrivateLoadedState();
+    localStorage.removeItem(GH_TREE_KEY);
+    localStorage.removeItem(BOOT_SNAP_KEY);
+    void idb.del(SCAN_SNAPSHOT_KEY).catch(() => {});
+    showLanding();
+    if (previousScope && window.WorkbenchFinance?.createPersistence) {
+      void window.WorkbenchFinance.createPersistence(idb, previousScope)
+        .clearAccount(previousOwner).catch(() => toast('Prior account finance recovery could not be cleared on this device.', 'danger'));
+    }
+    if (!event.detail.hasSession) {
+      localStorage.removeItem(GH_CONFIG_KEY);
+      localStorage.removeItem(GH_TOKEN_KEY);
+      localStorage.removeItem(GH_TREE_KEY);
+      void idb.del('gh-config').catch(() => {});
+    }
+    notifyFinanceScopeChanged();
+  });
   async function applyCaptureOutboxRecord(record) {
     if (!record || !record.captureId)
       throw new Error("Invalid outbox capture record.");
@@ -41429,6 +42165,13 @@ window.__WBReactRender = function () {
         if (state.connected) render();
       } catch {}
     };
+    const authChanged = (event) => {
+      if (event?.detail?.ownerChanged !== false) {
+        updateOutboxState([], outboxStateSummary([]));
+        if (state.connected) render();
+      }
+      void refresh();
+    };
     if (typeof BroadcastChannel === "function") {
       try {
         captureOutboxChannel = new BroadcastChannel("workbench-capture-outbox-v1");
@@ -41438,6 +42181,7 @@ window.__WBReactRender = function () {
       } catch {}
     }
     window.addEventListener("focus", refresh);
+    window.addEventListener("workbench-auth-change", authChanged);
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible") void refresh();
     });
@@ -41455,6 +42199,10 @@ window.__WBReactRender = function () {
         key: "capture-outbox-v1",
       }),
       applyRecord: applyCaptureOutboxRecord,
+      getOwnerUid: () => {
+        const auth = window.WBSupabaseAuth;
+        return auth?.hasSession?.() ? auth.userId?.() || null : null;
+      },
       submittedLimit: 120,
       failedLimit: 120,
       onChange: (records, summary) => {
@@ -41463,12 +42211,24 @@ window.__WBReactRender = function () {
         if (state.connected) render();
       },
     });
-    updateOutboxState(await captureOutbox.list(), await captureOutbox.stats());
+    await publishCaptureOutboxSnapshot(captureOutbox);
     return captureOutbox;
+  }
+  function captureOutboxAuthStamp() {
+    const auth = window.WBSupabaseAuth;
+    return [auth?.generation?.() ?? null, auth?.hasSession?.() ? auth.userId?.() || null : null];
+  }
+  async function publishCaptureOutboxSnapshot(outbox) {
+    const admitted = captureOutboxAuthStamp();
+    const records = await outbox.list();
+    const current = captureOutboxAuthStamp();
+    if (admitted[0] !== current[0] || admitted[1] !== current[1]) return false;
+    updateOutboxState(records, outboxStateSummary(records));
+    return true;
   }
   async function refreshCaptureOutboxState() {
     const outbox = await ensureCaptureOutbox();
-    updateOutboxState(await outbox.list(), await outbox.stats());
+    return publishCaptureOutboxSnapshot(outbox);
   }
   async function drainCaptureOutbox(opts = {}) {
     const outbox = await ensureCaptureOutbox();
@@ -41479,7 +42239,24 @@ window.__WBReactRender = function () {
   async function retryCaptureOutbox(captureId) {
     if (!captureId) return null;
     const outbox = await ensureCaptureOutbox();
-    const record = await outbox.retry(captureId);
+    const current = await outbox.get(captureId);
+    let record;
+    if (current?.ownerUnknown) {
+      const recovery = await outbox.recoverOwnerUnknown(captureId, {
+        confirm: ({ warning }) => Promise.resolve(window.confirm(warning)),
+        copy: (text) => copyText(
+          `Legacy capture ${captureId}: owner unknown. Review this text and recreate it manually under the intended account. This capture was not sent.\n\n${text}`,
+          "Owner unknown: text copied for review; nothing was synced.",
+        ),
+      });
+      if (recovery.status !== "copied") return { ...current, recoveryCancelled: true };
+      record = {
+        ...current,
+        lastError: "Copied for manual review. Owner is unknown; recreate only after confirming the intended account. Nothing was synced.",
+      };
+    } else {
+      record = await outbox.retry(captureId);
+    }
     await refreshCaptureOutboxState();
     if (state.connected) render();
     return record;
@@ -42683,14 +43460,13 @@ window.__WBReactRender = function () {
     const owner = String(cfg?.owner || "").trim();
     const repo = String(cfg?.repo || "").trim();
     const branch = String(cfg?.branch || "main").trim() || "main";
-    const pat = String(cfg?.pat || "").trim() || ghToken();
     if (!owner || !repo) {
       throw new Error("Owner and repo are required.");
     }
-    if (!pat) {
-      throw new Error("GitHub personal access token is required.");
+    if (!ghToken()) {
+      throw new Error("Sign in with GitHub to open this workspace.");
     }
-    ghSaveConfig({ owner, repo, branch, pat });
+    ghSaveConfig({ owner, repo, branch });
     state.backend = "github";
     state.helperUp = false;
     ghShaCache.clear();
@@ -42704,8 +43480,9 @@ window.__WBReactRender = function () {
       await ghGetTree(!!opts.forceTree);
       if (!warmStart) updateBootProgress("Loading projects…");
       await scan();
+      sessionStorage.removeItem(GH_REAUTH_KEY);
     } catch (e) {
-      if (!state.connected) {
+      if (!state.connected && e?.status !== 401) {
         showLanding(
           e?.message || "GitHub connect failed. Reconnect below.",
         );
@@ -42755,13 +43532,8 @@ window.__WBReactRender = function () {
         return;
       }
       if (e.status === 401 || e.status === 403) {
-        try { await ghDisconnect(); }
-        catch (clearError) {
-          showBootFailure(clearError?.message || "Could not safely clear local finance recovery before disconnecting.");
-          return;
-        }
-        clearAutoconnectShell();
-        showLanding("Saved GitHub token was rejected. Reconnect below.");
+        if (e.status === 401) beginGitHubSignIn(true);
+        else showBootFailure("GitHub denied repository access. Check the Workbench GitHub App connection, then reconnect.");
         return;
       }
       if (e.status === 404) {
@@ -42788,71 +43560,38 @@ window.__WBReactRender = function () {
     dismissBootOverlay();
     clearAutoconnectShell();
     msg ||=
-      "Connect the private workbench repo with a fine-grained personal access token.";
+      "Open your private workspace with GitHub. Workbench remembers your sign-in on this browser.";
     $("#landing").classList.remove("hidden");
     $("#app").classList.add("hidden");
     $("#landingNote").textContent = msg;
   }
-  function openGithubConnect() {
-    const cfg = ghConfig() || {
-      owner: "jaredfowkes",
-      repo: "workbench",
-      branch: "main",
-    };
-    modal(
-      "Connect via GitHub",
-      `<div class="capture-grid"><label class="form-row">Owner<input class="input" id="ghOwner" value="${esc(cfg.owner)}"></label><label class="form-row">Repo<input class="input" id="ghRepo" value="${esc(cfg.repo)}"></label><label class="form-row">Branch<input class="input" id="ghBranch" value="${esc(cfg.branch)}"></label><label class="form-row">Personal access token<input class="input" id="ghPat" type="password" placeholder="${ghToken() ? "Saved token — leave blank to keep" : "github_pat_…"}"></label><p class="muted">Token is stored only on this device in localStorage and IndexedDB. Use a fine-grained token with Contents read/write for this repo.</p><button class="btn primary" id="ghConnect">Connect</button><button class="btn danger" id="ghForget">Forget saved token</button></div>`,
-    );
-    $("#ghForget").onclick = async () => {
-      try {
-        await ghDisconnect();
-        toast("Saved GitHub connection and finance recovery cleared.");
-      } catch (error) {
-        toast(error?.message || "Could not safely clear the saved connection.", "danger");
-      }
-    };
-    $("#ghConnect").onclick = async () => {
-      const btn = $("#ghConnect");
-      const nextCfg = {
-        owner: $("#ghOwner").value.trim(),
-        repo: $("#ghRepo").value.trim(),
-        branch: $("#ghBranch").value.trim() || "main",
-        pat: $("#ghPat").value.trim() || ghToken(),
-      };
-      if (!nextCfg.owner || !nextCfg.repo) {
-        toast("Owner and repo are required.", "danger");
+  let githubSignInStarting = false;
+  function beginGitHubSignIn(automatic = false) {
+    const Auth = window.WBSupabaseAuth;
+    if (!Auth?.configured?.()) {
+      showLanding("GitHub sign-in is unavailable in this build.");
+      return;
+    }
+    if (githubSignInStarting) return;
+    if (automatic) {
+      const lastAttempt = Number(sessionStorage.getItem(GH_REAUTH_KEY) || 0);
+      if (Date.now() - lastAttempt < 60 * 1000) {
+        showLanding("GitHub could not restore repository access. Sign in again to retry.");
         return;
       }
-      if (!nextCfg.pat) {
-        toast("GitHub personal access token is required.", "danger");
-        return;
-      }
-      setLoading(btn, true, "Checking…");
-      try {
-        closeModal();
-        await connectGithub(nextCfg, { forceTree: true });
-      } catch (e) {
-        toast(e?.message || "GitHub connect failed.", "danger");
-      }
-    };
-  }
-  function hideLanding() {
-    $("#landing")?.classList.add("hidden");
+      sessionStorage.setItem(GH_REAUTH_KEY, String(Date.now()));
+    } else {
+      sessionStorage.removeItem(GH_REAUTH_KEY);
+    }
+    githubSignInStarting = true;
+    Auth.signIn().catch((error) => {
+      githubSignInStarting = false;
+      showLanding(error?.message || "GitHub sign-in could not start. Try again.");
+    });
   }
   function bindShell() {
     setupNavIndicator();
-    $("#landingClose")?.addEventListener("click", hideLanding);
-    $("#landing")?.addEventListener("click", (e) => {
-      if (e.target?.id === "landing") hideLanding();
-    });
-    $("#ghMode")?.addEventListener("click", openGithubConnect);
-    $("#sbSignIn")?.addEventListener("click", () => {
-      if (!window.WBSupabaseAuth?.configured?.()) {
-        toast("Supabase sign-in is not configured in this build.", "danger");
-        return;
-      }
-      window.WBSupabaseAuth.signIn();
-    });
+    $("#sbSignIn")?.addEventListener("click", () => beginGitHubSignIn());
     $("#themeBtn")?.addEventListener("click", () => {
       document.documentElement.dataset.theme =
         document.documentElement.dataset.theme === "dark" ? "light" : "dark";
@@ -42919,7 +43658,6 @@ window.__WBReactRender = function () {
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if ($(".modal-scrim.dyn")) closeModal();
-        else if (!$("#landing")?.classList.contains("hidden")) hideLanding();
       }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -43071,7 +43809,11 @@ window.__WBReactRender = function () {
       cfg = { owner: "jaredfowkes", repo: "workbench", branch: "main" };
       ghSaveConfig(cfg);
     }
-    if (cfg && (Auth?.signedIn?.() || ghToken())) {
+    if (Auth?.hasSession?.() && !Auth?.signedIn?.() && !Auth?.lastAuthError?.()) {
+      beginGitHubSignIn(true);
+      return;
+    }
+    if (cfg && Auth?.signedIn?.()) {
       // Paint from the last scan before touching the network at all.
       await restoreScanSnapshot(cfg);
       // A push tap for a gate approval must not wait on the GitHub scan:
@@ -43090,186 +43832,6 @@ window.__WBReactRender = function () {
   })();
 })();
 
-  </script>
-  <!-- The daily review is a private view inside this signed-in Pages shell.
-       Its data comes only from owner-scoped Supabase tables after GitHub login. -->
-  <style>
-  html.wb-daily-review #app,html.wb-daily-review #landing,html.wb-daily-review #wbBootOverlay,
-  html.wb-daily-review #toast{display:none!important}
-  #wbDailyReview{position:relative;z-index:1000;min-height:100vh;background:#fff;color:#20232a;
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-  #wbDailyReview *{box-sizing:border-box}
-  #wbDailyReview .daily-shell{max-width:980px;margin:auto;padding:30px 32px 70px}
-  #wbDailyReview .daily-mast{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #20232a;
-    padding-bottom:13px;font-size:12px;font-weight:650;letter-spacing:.05em}
-  #wbDailyReview .daily-intro{display:flex;justify-content:space-between;align-items:end;gap:25px;padding:40px 0 28px}
-  #wbDailyReview h1{font-size:38px;line-height:1.1;letter-spacing:-.025em;margin:0 0 12px}
-  #wbDailyReview h2{font-size:18px;margin:0}
-  #wbDailyReview p{margin:5px 0;color:#62666f}
-  #wbDailyReview button{font:inherit;cursor:pointer}
-  #wbDailyReview .daily-primary{min-height:44px;border:1px solid #20232a;border-radius:8px;
-    padding:9px 16px;background:#20232a;color:#fff;font-weight:650}
-  #wbDailyReview .daily-text{border:0;background:transparent;color:#275a91;font-weight:650;
-    min-height:44px;padding:8px 10px}
-  #wbDailyReview .daily-section{border-bottom:1px solid #20232a;padding:12px 0;display:flex;justify-content:space-between}
-  #wbDailyReview .daily-row{border-bottom:1px solid #e1e3e7;padding:15px 0}
-  #wbDailyReview .daily-row-head{display:flex;align-items:start;gap:14px;justify-content:space-between}
-  #wbDailyReview .daily-row-main{flex:1;min-width:0}
-  #wbDailyReview .daily-row strong{font-size:16px;line-height:1.4}
-  #wbDailyReview .daily-meta{font-size:13px;color:#62666f;margin-top:4px}
-  #wbDailyReview .daily-actions{display:flex;gap:4px}
-  #wbDailyReview .daily-form{display:grid;gap:10px;margin-top:12px;max-width:650px}
-  #wbDailyReview .daily-form label{font-size:13px;font-weight:650}
-  #wbDailyReview .daily-form input,#wbDailyReview .daily-form textarea{display:block;width:100%;font:inherit;
-    color:#20232a;background:#fff;border:1px solid #94969c;border-radius:7px;padding:10px 12px;margin-top:4px}
-  #wbDailyReview .daily-form textarea{resize:vertical}
-  #wbDailyReview .daily-add{margin-top:36px;border:1px solid #c7c9ce;border-radius:10px;padding:20px}
-  #wbDailyReview .daily-message{min-height:24px;color:#275a91;font-size:13px;font-weight:650}
-  #wbDailyReview button:focus-visible,#wbDailyReview input:focus-visible,#wbDailyReview textarea:focus-visible,
-  #wbDailyReview a:focus-visible{outline:3px solid #275a91;outline-offset:3px}
-  #wbDailyReview button:disabled{opacity:.55;cursor:wait}
-  @media(max-width:680px){#wbDailyReview .daily-shell{padding:18px 18px 50px}
-    #wbDailyReview .daily-intro{display:block;padding:32px 0 22px}
-    #wbDailyReview h1{font-size:32px}
-    #wbDailyReview .daily-intro .daily-primary{margin-top:20px;width:100%}
-    #wbDailyReview .daily-row-head{display:block}
-    #wbDailyReview .daily-actions{margin-top:5px}}
-  </style>
-  <script>
-  (function(){
-    const params=new URLSearchParams(location.search);
-    let returning=false;
-    try{returning=sessionStorage.getItem('wb-briefing-return')==='1'}catch{}
-    if(params.get('view')!=='daily-briefing'&&!returning)return;
-    if(returning){
-      try{sessionStorage.removeItem('wb-briefing-return')}catch{}
-      history.replaceState(null,'',location.pathname+'?view=daily-briefing');
-    }
-    document.documentElement.classList.add('wb-daily-review');
-    const root=document.createElement('main');root.id='wbDailyReview';
-    root.innerHTML='<div class="daily-shell"><header class="daily-mast"><span>Workbench Daily</span><a href="./">Back to dashboard</a></header><section class="daily-intro"><div><h1>Review before print</h1><p>Update the work list, then print the full briefing.</p></div><button id="dailyPrint" class="daily-primary" type="button" disabled>Print reviewed briefing</button></section><div id="dailyMessage" class="daily-message" role="status" aria-live="polite"></div><div id="dailyBody"></div></div>';
-    document.body.append(root);
-    const byId=id=>document.getElementById(id),auth=window.WBSupabaseAuth;
-    let source=null,rows=[],busy=false;
-    function node(tag,cls,value){const n=document.createElement(tag);if(cls)n.className=cls;if(value!=null)n.textContent=value;return n}
-    function say(value){byId('dailyMessage').textContent=value||''}
-    async function api(path,method='GET',body){
-      if(!auth?.hasSession?.()||!await auth.ensureFresh?.())throw Error('Sign in with GitHub to review the briefing.');
-      const cfg=auth.config(),headers={apikey:cfg.anonKey,Authorization:'Bearer '+auth.accessToken(),Accept:'application/json'};
-      if(body!==undefined){headers['Content-Type']='application/json';headers.Prefer='return=representation'}
-      const response=await fetch(cfg.url+'/rest/v1/'+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});
-      if(!response.ok)throw Error('Briefing review request failed ('+response.status+').');
-      return response.status===204?[]:await response.json();
-    }
-    function formField(label,value,max,required,multiline){
-      const wrap=node('label','',label),field=node(multiline?'textarea':'input');
-      field.value=value||'';field.maxLength=max;field.required=!!required;if(multiline)field.rows=2;
-      wrap.append(field);return{wrap,field};
-    }
-    function editForm(row,action){
-      document.querySelectorAll('#wbDailyReview .daily-row .daily-form').forEach(n=>n.remove());
-      const host=byId('daily-task-'+row.task_id);if(!host)return;
-      const form=node('form','daily-form');
-      const task=formField('Task',row.task,500,true,false),why=formField('Context',row.why,1000,false,true);
-      const reason=formField(action==='complete'?'Why is this complete?':'Why change it? (optional)','',1000,action==='complete',true);
-      if(action==='edit')form.append(task.wrap,why.wrap);
-      form.append(reason.wrap);
-      const buttons=node('div'),save=node('button','daily-primary',action==='complete'?'Mark complete':'Save change'),cancel=node('button','daily-text','Cancel');
-      save.type='submit';cancel.type='button';cancel.onclick=()=>form.remove();buttons.append(save,cancel);form.append(buttons);
-      form.onsubmit=async event=>{
-        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
-        try{
-          const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
-          const changes=action==='complete'?{status:'closed',review_reason:reason.field.value.trim()}:
-            {task:task.field.value.trim(),why:why.field.value.trim(),review_reason:reason.field.value.trim()||'Edited during briefing review'};
-          const result=await api(path,'PATCH',changes);
-          if(!result.length)throw Error('This list changed on another device. Reload and try again.');
-          await load();say('Saved. The correction is available for the next briefing audit.');
-        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
-      };
-      host.append(form);reason.field.focus();
-    }
-    async function reopen(row){
-      if(busy)return;busy=true;say('');
-      try{
-        const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
-        const result=await api(path,'PATCH',{status:'open',review_reason:'Reopened during briefing review'});
-        if(!result.length)throw Error('This list changed on another device. Reload and try again.');
-        await load();say('Task reopened.');
-      }catch(error){say(error.message)}finally{busy=false}
-    }
-    function taskRow(row,closed){
-      const outer=node('article','daily-row');outer.id='daily-task-'+row.task_id;
-      const head=node('div','daily-row-head'),main=node('div','daily-row-main'),actions=node('div','daily-actions');
-      main.append(node('strong','',row.task));
-      main.append(node('div','daily-meta',(row.source_kind==='project'?(row.project||'Project'):row.task_id)+(row.why?' · '+row.why:'')));
-      if(closed){if(row.review_reason)main.append(node('div','daily-meta','Completed: '+row.review_reason));
-        const reopenButton=node('button','daily-text','Reopen');reopenButton.onclick=()=>reopen(row);actions.append(reopenButton)}
-      else{const complete=node('button','daily-text','Complete'),edit=node('button','daily-text','Edit');
-        complete.onclick=()=>editForm(row,'complete');edit.onclick=()=>editForm(row,'edit');actions.append(complete,edit)}
-      head.append(main,actions);outer.append(head);return outer;
-    }
-    function render(){
-      const body=byId('dailyBody');body.replaceChildren();
-      const open=rows.filter(r=>r.status==='open'),closed=rows.filter(r=>r.status==='closed');
-      const heading=node('div','daily-section');heading.append(node('h2','','Outstanding work'),node('span','',open.length+' open'));body.append(heading);
-      if(!open.length)body.append(node('p','','No outstanding work. Add a task below if something is missing.'));
-      for(const row of open)body.append(taskRow(row,false));
-      const add=node('form','daily-form daily-add');add.append(node('h2','','Add missing work'));
-      const task=formField('Task','',500,true,false),why=formField('Context','',1000,false,true),reason=formField('Why was it missed? (optional)','',1000,false,false);
-      const save=node('button','daily-primary','Add to briefing');save.type='submit';add.append(task.wrap,why.wrap,reason.wrap,save);
-      add.onsubmit=async event=>{
-        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
-        try{
-          const row={owner_uid:auth.userId(),briefing_date:source.briefing_date,task_id:'R'+crypto.randomUUID().replace(/-/g,''),
-            source_kind:'manual',order_index:Math.max(-1,...rows.map(r=>r.order_index))+1,
-            task:task.field.value.trim(),why:why.field.value.trim(),status:'open',review_reason:reason.field.value.trim()||'Added during briefing review'};
-          await api('daily_briefing_tasks','POST',row);await load();say('Task added to the reviewed briefing.');
-        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
-      };body.append(add);
-      const done=node('div','daily-section');done.append(node('h2','','Completed in review'),node('span','',closed.length+' completed'));body.append(done);
-      for(const row of closed)body.append(taskRow(row,true));
-      body.append(node('p','daily-meta','Project task changes update this briefing. The correction audit checks their source plans separately.'));
-      byId('dailyPrint').disabled=false;
-    }
-    async function load(){
-      if(!auth?.hasSession?.()){
-        const body=byId('dailyBody');body.replaceChildren();const p=node('p','','Sign in with GitHub to review the private briefing.');
-        const button=node('button','daily-primary','Sign in with GitHub');
-        button.onclick=()=>{try{sessionStorage.setItem('wb-briefing-return','1')}catch{}auth.signIn()};
-        body.append(p,button);return;
-      }
-      say('Loading the private briefing…');
-      try{
-        const docs=await api('daily_briefing_documents?select=briefing_date,source_html&order=briefing_date.desc&limit=1');
-        if(!docs.length){byId('dailyBody').replaceChildren(node('p','','No daily briefing has been published for review yet.'));say('');return}
-        source=docs[0];rows=await api('daily_briefing_tasks?select=owner_uid,briefing_date,task_id,source_kind,project,order_index,task,why,status,review_reason,revision&briefing_date=eq.'+source.briefing_date+'&order=order_index.asc');
-        render();say('');
-      }catch(error){say(error.message);byId('dailyBody').replaceChildren(node('p','','Review is unavailable. Please try again.'))}
-    }
-    function printReviewed(){
-      if(!source)return;
-      const doc=new DOMParser().parseFromString(source.source_html,'text/html');
-      doc.querySelectorAll('script,iframe,object,embed').forEach(n=>n.remove());
-      const work=doc.querySelector('[data-briefing-work]'),list=work?.querySelector('ol');
-      if(!list){say('The printable briefing is missing its work section.');return}
-      for(const child of [...work.children])if(child!==list&&child.tagName!=='H2')child.remove();
-      list.replaceChildren();
-      for(const row of rows.filter(r=>r.status==='open')){
-        const li=doc.createElement('li'),box=doc.createElement('span'),p=doc.createElement('p'),label=doc.createElement('span'),meta=doc.createElement('span');
-        box.className='box';box.setAttribute('aria-hidden','true');p.className='task-text';
-        label.className='task-meta';label.textContent=row.source_kind==='project'?row.project||'':row.task_id;
-        meta.className='task-meta';meta.textContent=row.why||'';
-        p.append(label,doc.createTextNode(' '+row.task),meta);li.append(box,p);list.append(li);
-      }
-      const popup=window.open('','_blank');if(!popup){say('Allow pop-ups to open the print copy.');return}
-      popup.addEventListener('load',()=>popup.print(),{once:true});
-      popup.document.open();popup.document.write('<!doctype html>'+doc.documentElement.outerHTML);popup.document.close();
-    }
-    byId('dailyPrint').onclick=printReviewed;
-    window.addEventListener('workbench-auth-change',load);
-    load();
-  })();
   </script>
 </body>
 </html>
