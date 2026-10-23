@@ -3245,6 +3245,29 @@ button.metric-card:hover {
 .hub-overdue { display: block; padding: 0 14px 8px 44px; color: var(--unfav-ink, var(--text-strong)); }
 @media (max-width: 1100px) { .hub-layout { grid-template-columns: 1fr; } .hub-aside { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; } }
 @media (max-width: 600px) { .hub-header { align-items: flex-start; flex-direction: column; } .hub-aside { display: block; } .hub-row time { display: none; } }
+/* In progress: one block per active work session (Tools/Progress writer),
+   shown near the top of the home screen. Hidden entirely when state.machines
+   carries no sessionProgress rows -- see InProgressSection(). */
+.in-progress-section { padding-top: 6px; }
+.in-progress-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.ip-card { border: 1px solid var(--border-subtle); border-radius: var(--radius-md, 10px); background: var(--surface-card); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ip-card.is-stale { border-color: var(--warn); box-shadow: 0 0 0 1px color-mix(in srgb, var(--warn) 25%, transparent); }
+.ip-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ip-title { font-size: 14px; font-weight: 600; color: var(--text-strong); line-height: 1.35; overflow-wrap: anywhere; }
+.ip-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.ip-bar-track { height: 8px; border-radius: 99px; background: var(--surface-inset); overflow: hidden; }
+.ip-bar-fill { height: 100%; border-radius: 99px; background: var(--accent); transition: width var(--motion-emphasized, .3s ease) var(--ease-settle, ease); }
+.ip-bar-meta { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--text-muted); margin-top: 4px; font-variant-numeric: tabular-nums; gap: 8px; }
+.ip-note { font-size: 12.5px; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+.ip-todo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.ip-todo li { display: flex; align-items: flex-start; gap: 6px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.4; }
+.ip-todo li.done { color: var(--text-muted); text-decoration: line-through; }
+.ip-todo-marker { flex: none; margin-top: 1px; color: var(--text-muted); }
+.ip-todo li.done .ip-todo-marker { color: var(--fav); }
+.ip-footer { font-size: 11.5px; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 10px; }
+.ip-link { color: var(--accent-ink, var(--accent)); text-decoration: none; }
+.ip-link:hover { text-decoration: underline; }
+@media (max-width: 420px) { .in-progress-grid { grid-template-columns: 1fr; } }
 .today-page {
   gap: 28px;
 }
@@ -14258,10 +14281,20 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return cfg;
     }
 
-    async function request(path, { method = "GET", headers = {}, body } = {}) {
-      await auth.ensureFresh();
+    async function request(path, { method = "GET", headers = {}, body, expectedAuthContext } = {}) {
+      const fresh = await auth.ensureFresh();
       const cfg = readConfig();
       const token = typeof auth.accessToken === "function" ? auth.accessToken() : "";
+      if (fresh === false || typeof token !== "string" || !token.trim()) {
+        throw new PostgrestError(401, { code: "AUTH_REQUIRED", message: "Sign in again to reconnect." });
+      }
+      if (expectedAuthContext && !sameAuthContext(expectedAuthContext, {
+        url: cfg.url,
+        anonKey: cfg.anonKey,
+        accessToken: token,
+      })) {
+        throw new PostgrestError(401, { code: "AUTH_CHANGED", message: "Authentication context changed." });
+      }
 
       // A rejected fetch (offline, DNS, CORS) is deliberately left
       // unwrapped: a thrown TypeError with no `.status` is exactly how the
@@ -14287,9 +14320,9 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       return parsed;
     }
 
-    async function select(table, { columns, filters, order, limit } = {}) {
+    async function select(table, { columns, filters, order, limit, expectedAuthContext } = {}) {
       const query = buildSelectQuery({ columns, filters, order, limit });
-      return request(`/rest/v1/${table}?${query}`, { method: "GET" });
+      return request(`/rest/v1/${table}?${query}`, { method: "GET", expectedAuthContext });
     }
 
     // A partial change to an existing row is a PATCH, never an upsert.
@@ -14346,7 +14379,212 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       });
     }
 
-    return { select, update, upsert, delete: remove };
+    // Database RPCs keep the existing signed-in Supabase identity. Authority
+    // is checked by each function/RLS; there is no shared-token fallback or retry.
+    async function rpc(name, parameters = {}, { expectedAuthContext } = {}) {
+      if (typeof name !== "string" || !/^[a-z][a-z0-9_]*$/.test(name)) {
+        throw new Error("supabase-data RPC requires a plain function name.");
+      }
+      if (!parameters || typeof parameters !== "object" || Array.isArray(parameters)) {
+        throw new Error("supabase-data RPC parameters must be an object.");
+      }
+      return request(`/rest/v1/rpc/${name}`, { method: "POST", body: parameters, expectedAuthContext });
+    }
+
+    function readAuthContext() {
+      const cfg = readConfig();
+      const token = typeof auth.accessToken === "function" ? auth.accessToken() : "";
+      return {
+        url: cfg.url,
+        anonKey: cfg.anonKey,
+        accessToken: token,
+      };
+    }
+
+    function sameAuthContext(left, right) {
+      return !!left && !!right && left.url === right.url && left.anonKey === right.anonKey &&
+        left.accessToken === right.accessToken;
+    }
+
+    function canonicalUuid(value) {
+      return typeof value === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value);
+    }
+
+    function validIdentity(identity) {
+      if (!identity || typeof identity !== "object") return false;
+      const { sessionUid, nativeSessionId, machineId, ide, editor } = identity;
+      return typeof sessionUid === "string" && sessionUid.length > 0 && sessionUid.trim() === sessionUid &&
+        typeof machineId === "string" && machineId.length > 0 && machineId.trim() === machineId &&
+        canonicalUuid(nativeSessionId) && ide === "codex" && editor === "codex";
+    }
+
+    function safeContinuation(value, sessionUid) {
+      return value === null ||
+        (typeof value === "string" && value.length > 0 && value.trim() === value && value !== sessionUid);
+    }
+
+    function bindingResult(state, fields = {}) {
+      return {
+        state,
+        ...fields,
+        executionAuthorized: false,
+        transferAccepted: false,
+      };
+    }
+
+    function classifyBindingFailure(error) {
+      if (error?.status === 401 || error?.status === 403) return bindingResult("auth_required");
+      const schemaError = error?.status === 404 || error?.code === "PGRST205" || error?.code === "42P01";
+      if (schemaError) return bindingResult("unavailable", { reason: "schema_unavailable" });
+      return bindingResult("unavailable");
+    }
+
+    async function readConversationBinding(identity) {
+      if (!validIdentity(identity)) return bindingResult("unsupported");
+      const requestedIdentity = {
+        sessionUid: identity.sessionUid,
+        nativeSessionId: identity.nativeSessionId,
+        machineId: identity.machineId,
+        ide: identity.ide,
+        editor: identity.editor,
+      };
+      let before;
+      try {
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        before = readAuthContext();
+      } catch {
+        return bindingResult("auth_required");
+      }
+      if (typeof before.accessToken !== "string" || !before.accessToken.trim()) {
+        return bindingResult("auth_required");
+      }
+
+      let owner;
+      try {
+        owner = await rpc("is_owner", {}, { expectedAuthContext: before });
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
+      } catch (error) {
+        return error?.code === "AUTH_CHANGED" ? bindingResult("unavailable", { reason: "auth_changed" }) : classifyBindingFailure(error);
+      }
+      if (owner !== true) return bindingResult("auth_required");
+
+      let rows;
+      try {
+        rows = await select("conversation_native_bindings", {
+          columns: "session_uid,conversation_id,native_session_id,machine_id,harness,continuation_source_uid",
+          filters: { session_uid: `eq."${requestedIdentity.sessionUid.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"` },
+          limit: 2,
+          expectedAuthContext: before,
+        });
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
+      } catch (error) {
+        return error?.code === "AUTH_CHANGED" ? bindingResult("unavailable", { reason: "auth_changed" }) : classifyBindingFailure(error);
+      }
+      if (!Array.isArray(rows)) return bindingResult("invalid");
+      if (rows.length === 0) return bindingResult("unlinked");
+      if (rows.length !== 1) return bindingResult("invalid");
+
+      const row = rows[0];
+      const validRow = row && typeof row === "object" &&
+        row.session_uid === requestedIdentity.sessionUid &&
+        row.native_session_id === requestedIdentity.nativeSessionId &&
+        row.machine_id === requestedIdentity.machineId &&
+        row.harness === "codex" && canonicalUuid(row.conversation_id) &&
+        canonicalUuid(row.native_session_id) && safeContinuation(row.continuation_source_uid, requestedIdentity.sessionUid);
+      if (!validRow) return bindingResult("invalid");
+      return bindingResult("linked", {
+        sessionUid: row.session_uid,
+        conversationId: row.conversation_id,
+        nativeSessionId: row.native_session_id,
+        machineId: row.machine_id,
+        harness: row.harness,
+        continuationSourceUid: row.continuation_source_uid,
+      });
+    }
+
+    async function linkConversationContinuation(input) {
+      const requestId = input?.requestId;
+      const source = input?.source;
+      const target = input?.target;
+      if (!canonicalUuid(requestId) || !validIdentity(source) || !validIdentity(target) ||
+          source.sessionUid === target.sessionUid || source.nativeSessionId === target.nativeSessionId) {
+        return bindingResult("unsupported");
+      }
+
+      const requested = {
+        requestId,
+        source: {
+          sessionUid: source.sessionUid,
+          nativeSessionId: source.nativeSessionId,
+          machineId: source.machineId,
+          ide: source.ide,
+          editor: source.editor,
+        },
+        target: {
+          sessionUid: target.sessionUid,
+          nativeSessionId: target.nativeSessionId,
+          machineId: target.machineId,
+          ide: target.ide,
+          editor: target.editor,
+        },
+      };
+      let before;
+      try {
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        before = readAuthContext();
+      } catch {
+        return bindingResult("auth_required");
+      }
+      if (typeof before.accessToken !== "string" || !before.accessToken.trim()) {
+        return bindingResult("auth_required");
+      }
+
+      try {
+        const owner = await rpc("is_owner", {}, { expectedAuthContext: before });
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
+        if (owner !== true) return bindingResult("auth_required");
+
+        const receipt = await rpc("link_codex_conversation_v1", {
+          p_request_id: requested.requestId,
+          p_source_session_uid: requested.source.sessionUid,
+          p_source_native_id: requested.source.nativeSessionId,
+          p_source_machine_id: requested.source.machineId,
+          p_target_session_uid: requested.target.sessionUid,
+          p_target_native_id: requested.target.nativeSessionId,
+          p_target_machine_id: requested.target.machineId,
+        }, { expectedAuthContext: before });
+        if (await auth.ensureFresh() === false) return bindingResult("auth_required");
+        if (!sameAuthContext(before, readAuthContext())) return bindingResult("unavailable", { reason: "auth_changed" });
+
+        const validReceipt = receipt && typeof receipt === "object" &&
+          receipt.requestId === requested.requestId && canonicalUuid(receipt.conversationId) &&
+          receipt.provenance === "explicit_owner_continuation" && receipt.metadataLinked === true &&
+          receipt.executionAuthorized === false && receipt.transferAccepted === false;
+        if (!validReceipt) return bindingResult("invalid");
+        return bindingResult("linked", {
+          requestId: requested.requestId,
+          conversationId: receipt.conversationId,
+          provenance: receipt.provenance,
+          metadataLinked: true,
+          sourceSessionUid: requested.source.sessionUid,
+          targetSessionUid: requested.target.sessionUid,
+          continuationSourceUid: requested.source.sessionUid,
+        });
+      } catch (error) {
+        if (error?.code === "AUTH_CHANGED") return bindingResult("unavailable", { reason: "auth_changed" });
+        if (error?.status === 401 || error?.status === 403) return bindingResult("auth_required");
+        if (error?.status === 404 || error?.code === "PGRST205" || error?.code === "42P01") {
+          return bindingResult("unavailable", { reason: "schema_unavailable" });
+        }
+        return bindingResult("unavailable", { reason: error instanceof PostgrestError ? "link_refused" : "network_unavailable" });
+      }
+    }
+
+    return { select, update, upsert, delete: remove, rpc, readConversationBinding, linkConversationContinuation };
   }
 
   return {
@@ -18132,7 +18370,7 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
     return out;
   }
 
-  function derive(session, machine, now = Date.now()) {
+  function derive(session, machine, now = Date.now(), context = {}) {
     const harness = harnessOf(session);
     const source = sourceOf(session) || machineContract(session, machine);
     const live = Boolean(machine?.daemonLastSeenAt) && Number.isFinite(Date.parse(machine.daemonLastSeenAt))
@@ -18145,8 +18383,11 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
       capabilities[name] = explicit || (storedTranscript ? { allowed: true, reason: "Stored server transcript events are readable." } : null)
         || { allowed: false, reason: live ? "Capability not reported by this adapter." : "Target machine daemon is offline or stale." };
       if (explicit && !live && name !== "transcript_read") capabilities[name] = { allowed: false, reason: "Target machine daemon is offline or stale." };
+      if (context?.dataSource === "cached-offline" && name !== "transcript_read") {
+        capabilities[name] = { allowed: false, reason: "Cached session data is read-only until Workbench Live reconnects." };
+      }
     }
-    return { harness, live, capabilities, reported: Boolean(source) };
+    return { harness, live: context?.dataSource === "cached-offline" ? false : live, capabilities, reported: Boolean(source) };
   }
 
   return { NAMES, derive };
@@ -24303,7 +24544,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-10-19.30";
+  const WB_VERSION = "2026-10-22.20";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -30365,6 +30606,104 @@ function IntakeBanner() {
     onClick: () => copyText('Run /triage-intake in this workbench session. Merge obvious items automatically; interview me only for ambiguous destinations.')
   }, "Copy triage prompt"))));
 }
+
+// One block per active work session, written by the Progress
+// data writer (Tools/Progress, Tools/Sync/machine-heartbeat.py) onto
+// each machine row as sessionProgress. Hidden entirely when nothing is
+// in progress. Recomputed from state.machines on every render, so it
+// refreshes exactly when the Machines card does.
+const IP_STATE_TONE = {
+  running: 'favorable',
+  stalled: 'warning',
+  blocked: 'unfavorable',
+  finished: 'neutral'
+};
+const IP_STATE_LABEL = {
+  running: 'Running',
+  stalled: 'Stalled',
+  blocked: 'Blocked',
+  finished: 'Finished'
+};
+function InProgressTodo({
+  items
+}) {
+  if (!items.length) return null;
+  return /*#__PURE__*/React.createElement("ul", {
+    className: "ip-todo"
+  }, items.map((it, i) => {
+    const status = it?.status === 'done' ? 'done' : it?.status === 'running' ? 'running' : 'open';
+    return /*#__PURE__*/React.createElement("li", {
+      key: i,
+      className: status === 'done' ? 'done' : ''
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ip-todo-marker"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: status === 'done' ? 'check' : status === 'running' ? 'clock' : 'minus',
+      size: 13
+    })), /*#__PURE__*/React.createElement("span", null, it?.text));
+  }));
+}
+function InProgressCard({
+  row
+}) {
+  const r = row;
+  const pct = r.pct != null && Number.isFinite(Number(r.pct)) ? Math.max(0, Math.min(1, Number(r.pct))) : r.done != null && r.total ? Math.max(0, Math.min(1, Number(r.done) / Number(r.total))) : null;
+  const eta = r.eta ? fmtPacific(r.eta) : null;
+  const link = typeof r.link === 'string' && /^https:\/\//i.test(r.link) ? r.link : null;
+  const items = Array.isArray(r.items) ? r.items : [];
+  const hasCounts = r.done != null && r.total != null;
+  return /*#__PURE__*/React.createElement("div", {
+    className: 'ip-card' + (r._stale ? ' is-stale' : '')
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ip-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "ip-title"
+  }, r.title || 'Untitled session'), /*#__PURE__*/React.createElement("div", {
+    className: "ip-sub"
+  }, machineName(r._machineKey), r._stale ? ' · stale' : '')), /*#__PURE__*/React.createElement(Badge, {
+    tone: IP_STATE_TONE[r.state] || 'neutral'
+  }, IP_STATE_LABEL[r.state] || r.state || 'Unknown')), /*#__PURE__*/React.createElement("div", null, pct != null ? /*#__PURE__*/React.createElement("div", {
+    className: "ip-bar-track"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ip-bar-fill",
+    style: {
+      width: pct * 100 + '%'
+    }
+  })) : /*#__PURE__*/React.createElement(Progress, {
+    variant: "indeterminate",
+    showLabel: false
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ip-bar-meta"
+  }, /*#__PURE__*/React.createElement("span", null, hasCounts ? `${r.done} of ${r.total}` : pct == null ? 'Progress unknown' : ''), /*#__PURE__*/React.createElement("span", null, pct != null ? Math.round(pct * 100) + '%' : ''))), r.note && /*#__PURE__*/React.createElement("p", {
+    className: "ip-note"
+  }, r.note), /*#__PURE__*/React.createElement(InProgressTodo, {
+    items: items
+  }), /*#__PURE__*/React.createElement("div", {
+    className: "ip-footer"
+  }, eta && /*#__PURE__*/React.createElement("span", null, "ETA ", eta), /*#__PURE__*/React.createElement("span", null, "updated ", shortAge(r._updatedMs)), link && /*#__PURE__*/React.createElement("a", {
+    className: "ip-link",
+    href: link,
+    target: "_blank",
+    rel: "noopener noreferrer"
+  }, "Open ↗")));
+}
+function InProgressSection() {
+  const rows = sessionProgressRows();
+  if (!rows.length) return null;
+  return /*#__PURE__*/React.createElement("section", {
+    className: "hub-section in-progress-section",
+    "aria-labelledby": "hub-in-progress"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "hub-section-head"
+  }, /*#__PURE__*/React.createElement("h2", {
+    id: "hub-in-progress"
+  }, "In progress")), /*#__PURE__*/React.createElement("div", {
+    className: "in-progress-grid"
+  }, rows.map((r, i) => /*#__PURE__*/React.createElement(InProgressCard, {
+    key: (r.sessionUid || r._machineKey || 'row') + ':' + i,
+    row: r
+  }))));
+}
 function TodayView() {
   const acts = actionItems();
   state._acts = acts;
@@ -30387,7 +30726,7 @@ function TodayView() {
     className: "today-page hub-page"
   }, /*#__PURE__*/React.createElement("header", {
     className: "hub-header"
-  }, /*#__PURE__*/React.createElement("h1", null, "The work ahead")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("h1", null, "The work ahead")), /*#__PURE__*/React.createElement(IntakeBanner, null), /*#__PURE__*/React.createElement(InProgressSection, null), /*#__PURE__*/React.createElement("div", {
     className: "hub-layout"
   }, /*#__PURE__*/React.createElement("main", {
     className: "hub-main"
@@ -38864,6 +39203,52 @@ window.__WBReactRender = function () {
           a.name.localeCompare(b.name),
       );
   }
+  // Flattens every machine's sessionProgress array (written by
+  // machine-heartbeat.py / Tools/Progress, spread onto each machine row by
+  // loadMachinesFromSupabase) into one list for the home screen's
+  // "In progress" section, newest updatedAt first. A machine not yet updated
+  // by the writer simply has no sessionProgress -- treat missing as [].
+  const SESSION_PROGRESS_STALE_MS = 30 * 60 * 1000;
+  function sessionProgressRows() {
+    const out = [];
+    for (const m of state.machines || []) {
+      const list = Array.isArray(m.sessionProgress) ? m.sessionProgress : [];
+      for (const p of list) {
+        if (!p || typeof p !== "object") continue;
+        const updatedAt = Date.parse(p.updatedAt) || 0;
+        out.push({
+          ...p,
+          _machineKey: p.machine || m.hostname || m.machine || "unknown",
+          _updatedMs: updatedAt,
+          _stale:
+            p.state === "running" &&
+            updatedAt > 0 &&
+            Date.now() - updatedAt > SESSION_PROGRESS_STALE_MS,
+        });
+      }
+    }
+    return out.sort((a, b) => b._updatedMs - a._updatedMs);
+  }
+  // Formats an ISO timestamp in US/Pacific regardless of the viewer's own
+  // timezone, since the writer's machines may be anywhere but Jared reads
+  // the dashboard against Pacific time.
+  function fmtPacific(iso) {
+    const ms = Date.parse(iso);
+    if (!ms) return null;
+    try {
+      return (
+        new Intl.DateTimeFormat("en-US", {
+          timeZone: "America/Los_Angeles",
+          month: "numeric",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        }).format(new Date(ms)) + " PT"
+      );
+    } catch {
+      return null;
+    }
+  }
   function machinesRailHTML() {
     if (state.machinesLoadFailed) {
       return `<button type="button" class="rail-card ops-card interactive-lift" id="machinesRailBtn" data-rail-action><div class="rail-title">Machines <span class="tiny">0</span></div><div class="machine-strip"><span class="chip warn">Couldn't read machines</span></div></button>`;
@@ -43832,6 +44217,186 @@ window.__WBReactRender = function () {
   })();
 })();
 
+  </script>
+  <!-- The daily review is a private view inside this signed-in Pages shell.
+       Its data comes only from owner-scoped Supabase tables after GitHub login. -->
+  <style>
+  html.wb-daily-review #app,html.wb-daily-review #landing,html.wb-daily-review #wbBootOverlay,
+  html.wb-daily-review #toast{display:none!important}
+  #wbDailyReview{position:relative;z-index:1000;min-height:100vh;background:#fff;color:#20232a;
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+  #wbDailyReview *{box-sizing:border-box}
+  #wbDailyReview .daily-shell{max-width:980px;margin:auto;padding:30px 32px 70px}
+  #wbDailyReview .daily-mast{display:flex;justify-content:space-between;gap:16px;border-bottom:2px solid #20232a;
+    padding-bottom:13px;font-size:12px;font-weight:650;letter-spacing:.05em}
+  #wbDailyReview .daily-intro{display:flex;justify-content:space-between;align-items:end;gap:25px;padding:40px 0 28px}
+  #wbDailyReview h1{font-size:38px;line-height:1.1;letter-spacing:-.025em;margin:0 0 12px}
+  #wbDailyReview h2{font-size:18px;margin:0}
+  #wbDailyReview p{margin:5px 0;color:#62666f}
+  #wbDailyReview button{font:inherit;cursor:pointer}
+  #wbDailyReview .daily-primary{min-height:44px;border:1px solid #20232a;border-radius:8px;
+    padding:9px 16px;background:#20232a;color:#fff;font-weight:650}
+  #wbDailyReview .daily-text{border:0;background:transparent;color:#275a91;font-weight:650;
+    min-height:44px;padding:8px 10px}
+  #wbDailyReview .daily-section{border-bottom:1px solid #20232a;padding:12px 0;display:flex;justify-content:space-between}
+  #wbDailyReview .daily-row{border-bottom:1px solid #e1e3e7;padding:15px 0}
+  #wbDailyReview .daily-row-head{display:flex;align-items:start;gap:14px;justify-content:space-between}
+  #wbDailyReview .daily-row-main{flex:1;min-width:0}
+  #wbDailyReview .daily-row strong{font-size:16px;line-height:1.4}
+  #wbDailyReview .daily-meta{font-size:13px;color:#62666f;margin-top:4px}
+  #wbDailyReview .daily-actions{display:flex;gap:4px}
+  #wbDailyReview .daily-form{display:grid;gap:10px;margin-top:12px;max-width:650px}
+  #wbDailyReview .daily-form label{font-size:13px;font-weight:650}
+  #wbDailyReview .daily-form input,#wbDailyReview .daily-form textarea{display:block;width:100%;font:inherit;
+    color:#20232a;background:#fff;border:1px solid #94969c;border-radius:7px;padding:10px 12px;margin-top:4px}
+  #wbDailyReview .daily-form textarea{resize:vertical}
+  #wbDailyReview .daily-add{margin-top:36px;border:1px solid #c7c9ce;border-radius:10px;padding:20px}
+  #wbDailyReview .daily-message{min-height:24px;color:#275a91;font-size:13px;font-weight:650}
+  #wbDailyReview button:focus-visible,#wbDailyReview input:focus-visible,#wbDailyReview textarea:focus-visible,
+  #wbDailyReview a:focus-visible{outline:3px solid #275a91;outline-offset:3px}
+  #wbDailyReview button:disabled{opacity:.55;cursor:wait}
+  @media(max-width:680px){#wbDailyReview .daily-shell{padding:18px 18px 50px}
+    #wbDailyReview .daily-intro{display:block;padding:32px 0 22px}
+    #wbDailyReview h1{font-size:32px}
+    #wbDailyReview .daily-intro .daily-primary{margin-top:20px;width:100%}
+    #wbDailyReview .daily-row-head{display:block}
+    #wbDailyReview .daily-actions{margin-top:5px}}
+  </style>
+  <script>
+  (function(){
+    const params=new URLSearchParams(location.search);
+    let returning=false;
+    try{returning=sessionStorage.getItem('wb-briefing-return')==='1'}catch{}
+    if(params.get('view')!=='daily-briefing'&&!returning)return;
+    if(returning){
+      try{sessionStorage.removeItem('wb-briefing-return')}catch{}
+      history.replaceState(null,'',location.pathname+'?view=daily-briefing');
+    }
+    document.documentElement.classList.add('wb-daily-review');
+    const root=document.createElement('main');root.id='wbDailyReview';
+    root.innerHTML='<div class="daily-shell"><header class="daily-mast"><span>Workbench Daily</span><a href="./">Back to dashboard</a></header><section class="daily-intro"><div><h1>Review before print</h1><p>Update the work list, then print the full briefing.</p></div><button id="dailyPrint" class="daily-primary" type="button" disabled>Print reviewed briefing</button></section><div id="dailyMessage" class="daily-message" role="status" aria-live="polite"></div><div id="dailyBody"></div></div>';
+    document.body.append(root);
+    const byId=id=>document.getElementById(id),auth=window.WBSupabaseAuth;
+    let source=null,rows=[],busy=false;
+    function node(tag,cls,value){const n=document.createElement(tag);if(cls)n.className=cls;if(value!=null)n.textContent=value;return n}
+    function say(value){byId('dailyMessage').textContent=value||''}
+    async function api(path,method='GET',body){
+      if(!auth?.hasSession?.()||!await auth.ensureFresh?.())throw Error('Sign in with GitHub to review the briefing.');
+      const cfg=auth.config(),headers={apikey:cfg.anonKey,Authorization:'Bearer '+auth.accessToken(),Accept:'application/json'};
+      if(body!==undefined){headers['Content-Type']='application/json';headers.Prefer='return=representation'}
+      const response=await fetch(cfg.url+'/rest/v1/'+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'});
+      if(!response.ok)throw Error('Briefing review request failed ('+response.status+').');
+      return response.status===204?[]:await response.json();
+    }
+    function formField(label,value,max,required,multiline){
+      const wrap=node('label','',label),field=node(multiline?'textarea':'input');
+      field.value=value||'';field.maxLength=max;field.required=!!required;if(multiline)field.rows=2;
+      wrap.append(field);return{wrap,field};
+    }
+    function editForm(row,action){
+      document.querySelectorAll('#wbDailyReview .daily-row .daily-form').forEach(n=>n.remove());
+      const host=byId('daily-task-'+row.task_id);if(!host)return;
+      const form=node('form','daily-form');
+      const task=formField('Task',row.task,500,true,false),why=formField('Context',row.why,1000,false,true);
+      const reason=formField(action==='complete'?'Why is this complete?':'Why change it? (optional)','',1000,action==='complete',true);
+      if(action==='edit')form.append(task.wrap,why.wrap);
+      form.append(reason.wrap);
+      const buttons=node('div'),save=node('button','daily-primary',action==='complete'?'Mark complete':'Save change'),cancel=node('button','daily-text','Cancel');
+      save.type='submit';cancel.type='button';cancel.onclick=()=>form.remove();buttons.append(save,cancel);form.append(buttons);
+      form.onsubmit=async event=>{
+        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
+        try{
+          const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
+          const changes=action==='complete'?{status:'closed',review_reason:reason.field.value.trim()}:
+            {task:task.field.value.trim(),why:why.field.value.trim(),review_reason:reason.field.value.trim()||'Edited during briefing review'};
+          const result=await api(path,'PATCH',changes);
+          if(!result.length)throw Error('This list changed on another device. Reload and try again.');
+          await load();say('Saved. The correction is available for the next briefing audit.');
+        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
+      };
+      host.append(form);reason.field.focus();
+    }
+    async function reopen(row){
+      if(busy)return;busy=true;say('');
+      try{
+        const path='daily_briefing_tasks?owner_uid=eq.'+encodeURIComponent(row.owner_uid)+'&briefing_date=eq.'+row.briefing_date+'&task_id=eq.'+encodeURIComponent(row.task_id)+'&revision=eq.'+row.revision;
+        const result=await api(path,'PATCH',{status:'open',review_reason:'Reopened during briefing review'});
+        if(!result.length)throw Error('This list changed on another device. Reload and try again.');
+        await load();say('Task reopened.');
+      }catch(error){say(error.message)}finally{busy=false}
+    }
+    function taskRow(row,closed){
+      const outer=node('article','daily-row');outer.id='daily-task-'+row.task_id;
+      const head=node('div','daily-row-head'),main=node('div','daily-row-main'),actions=node('div','daily-actions');
+      main.append(node('strong','',row.task));
+      main.append(node('div','daily-meta',(row.source_kind==='project'?(row.project||'Project'):row.task_id)+(row.why?' · '+row.why:'')));
+      if(closed){if(row.review_reason)main.append(node('div','daily-meta','Completed: '+row.review_reason));
+        const reopenButton=node('button','daily-text','Reopen');reopenButton.onclick=()=>reopen(row);actions.append(reopenButton)}
+      else{const complete=node('button','daily-text','Complete'),edit=node('button','daily-text','Edit');
+        complete.onclick=()=>editForm(row,'complete');edit.onclick=()=>editForm(row,'edit');actions.append(complete,edit)}
+      head.append(main,actions);outer.append(head);return outer;
+    }
+    function render(){
+      const body=byId('dailyBody');body.replaceChildren();
+      const open=rows.filter(r=>r.status==='open'),closed=rows.filter(r=>r.status==='closed');
+      const heading=node('div','daily-section');heading.append(node('h2','','Outstanding work'),node('span','',open.length+' open'));body.append(heading);
+      if(!open.length)body.append(node('p','','No outstanding work. Add a task below if something is missing.'));
+      for(const row of open)body.append(taskRow(row,false));
+      const add=node('form','daily-form daily-add');add.append(node('h2','','Add missing work'));
+      const task=formField('Task','',500,true,false),why=formField('Context','',1000,false,true),reason=formField('Why was it missed? (optional)','',1000,false,false);
+      const save=node('button','daily-primary','Add to briefing');save.type='submit';add.append(task.wrap,why.wrap,reason.wrap,save);
+      add.onsubmit=async event=>{
+        event.preventDefault();if(busy)return;busy=true;save.disabled=true;say('');
+        try{
+          const row={owner_uid:auth.userId(),briefing_date:source.briefing_date,task_id:'R'+crypto.randomUUID().replace(/-/g,''),
+            source_kind:'manual',order_index:Math.max(-1,...rows.map(r=>r.order_index))+1,
+            task:task.field.value.trim(),why:why.field.value.trim(),status:'open',review_reason:reason.field.value.trim()||'Added during briefing review'};
+          await api('daily_briefing_tasks','POST',row);await load();say('Task added to the reviewed briefing.');
+        }catch(error){say(error.message);save.disabled=false}finally{busy=false}
+      };body.append(add);
+      const done=node('div','daily-section');done.append(node('h2','','Completed in review'),node('span','',closed.length+' completed'));body.append(done);
+      for(const row of closed)body.append(taskRow(row,true));
+      body.append(node('p','daily-meta','Project task changes update this briefing. The correction audit checks their source plans separately.'));
+      byId('dailyPrint').disabled=false;
+    }
+    async function load(){
+      if(!auth?.hasSession?.()){
+        const body=byId('dailyBody');body.replaceChildren();const p=node('p','','Sign in with GitHub to review the private briefing.');
+        const button=node('button','daily-primary','Sign in with GitHub');
+        button.onclick=()=>{try{sessionStorage.setItem('wb-briefing-return','1')}catch{}auth.signIn()};
+        body.append(p,button);return;
+      }
+      say('Loading the private briefing…');
+      try{
+        const docs=await api('daily_briefing_documents?select=briefing_date,source_html&order=briefing_date.desc&limit=1');
+        if(!docs.length){byId('dailyBody').replaceChildren(node('p','','No daily briefing has been published for review yet.'));say('');return}
+        source=docs[0];rows=await api('daily_briefing_tasks?select=owner_uid,briefing_date,task_id,source_kind,project,order_index,task,why,status,review_reason,revision&briefing_date=eq.'+source.briefing_date+'&order=order_index.asc');
+        render();say('');
+      }catch(error){say(error.message);byId('dailyBody').replaceChildren(node('p','','Review is unavailable. Please try again.'))}
+    }
+    function printReviewed(){
+      if(!source)return;
+      const doc=new DOMParser().parseFromString(source.source_html,'text/html');
+      doc.querySelectorAll('script,iframe,object,embed').forEach(n=>n.remove());
+      const work=doc.querySelector('[data-briefing-work]'),list=work?.querySelector('ol');
+      if(!list){say('The printable briefing is missing its work section.');return}
+      for(const child of [...work.children])if(child!==list&&child.tagName!=='H2')child.remove();
+      list.replaceChildren();
+      for(const row of rows.filter(r=>r.status==='open')){
+        const li=doc.createElement('li'),box=doc.createElement('span'),p=doc.createElement('p'),label=doc.createElement('span'),meta=doc.createElement('span');
+        box.className='box';box.setAttribute('aria-hidden','true');p.className='task-text';
+        label.className='task-meta';label.textContent=row.source_kind==='project'?row.project||'':row.task_id;
+        meta.className='task-meta';meta.textContent=row.why||'';
+        p.append(label,doc.createTextNode(' '+row.task),meta);li.append(box,p);list.append(li);
+      }
+      const popup=window.open('','_blank');if(!popup){say('Allow pop-ups to open the print copy.');return}
+      popup.addEventListener('load',()=>popup.print(),{once:true});
+      popup.document.open();popup.document.write('<!doctype html>'+doc.documentElement.outerHTML);popup.document.close();
+    }
+    byId('dailyPrint').onclick=printReviewed;
+    window.addEventListener('workbench-auth-change',load);
+    load();
+  })();
   </script>
 </body>
 </html>
