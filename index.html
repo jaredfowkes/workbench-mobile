@@ -23965,6 +23965,147 @@ void main() {
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
+  root.WorkbenchSessionPreviews = api;
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  // Tower Previews, web-shell slice
+  // (Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
+  // slice 7). Pure read model over session_previews rows -- no DOM, no fetch,
+  // so every branch here is covered by node:test rather than the browser
+  // smoke suite. Loading the table and sending mutations both live in
+  // app.js/react-dashboard.jsx, which hand this module raw rows and get back
+  // view-ready shapes, same DI split as hub-model.js and session-capabilities.js.
+
+  // Same idiom as supabase-data.js's classifyBindingFailure: until slice 2's
+  // migration is applied, every select against session_previews 404s
+  // (PGRST205) or trips 42P01. That is the one signal this view hides behind
+  // -- there is no feature flag to flip by hand once the table lands.
+  function isSchemaMissing(error) {
+    return !!error && (error.status === 404 || error.code === "PGRST205" || error.code === "42P01");
+  }
+
+  function timestamp(value) {
+    if (value == null) return null;
+    const n = typeof value === "number" ? value : Date.parse(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function normalizeRow(row) {
+    if (!row || typeof row !== "object") return null;
+    if (typeof row.id !== "string" || !row.id) return null;
+    return {
+      id: row.id,
+      sessionUid: row.session_uid || "",
+      machineId: row.machine_id || "",
+      title: row.title || row.url || row.id,
+      url: row.url || "",
+      mechanism: row.mechanism || "static",
+      rev: row.rev || null,
+      createdAt: timestamp(row.created_at),
+      updatedAt: timestamp(row.updated_at),
+      expiresAt: timestamp(row.expires_at),
+      revokedAt: timestamp(row.revoked_at),
+    };
+  }
+
+  function normalizeRows(rows) {
+    return (Array.isArray(rows) ? rows : []).map(normalizeRow).filter(Boolean);
+  }
+
+  // Mirrors the app's SessionPreviewsLogic.visible (Tower build 43, the design
+  // of record): revoked and expired rows are hidden everywhere, newest first
+  // by created_at.
+  function visibleRows(rows, now = Date.now()) {
+    return normalizeRows(rows)
+      .filter((row) => !row.revokedAt && !(row.expiresAt != null && row.expiresAt <= now))
+      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  }
+
+  function rowsForSession(rows, sessionUid, now = Date.now()) {
+    if (!sessionUid) return [];
+    return visibleRows(rows, now).filter((row) => row.sessionUid === sessionUid);
+  }
+
+  function countForSession(rows, sessionUid, now = Date.now()) {
+    return rowsForSession(rows, sessionUid, now).length;
+  }
+
+  function rowStatus(row, now = Date.now()) {
+    if (!row) return "revoked";
+    if (row.revokedAt) return "revoked";
+    if (row.expiresAt == null) return "pinned";
+    return row.expiresAt <= now ? "expired" : "active";
+  }
+
+  function relativeAge(ms, now = Date.now()) {
+    if (ms == null) return "unknown";
+    const delta = Math.max(0, now - ms);
+    if (delta < 60000) return "just now";
+    const minutes = Math.round(delta / 60000);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.round(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    if (days < 30) return `${days}d ago`;
+    return `${Math.round(days / 30)}mo ago`;
+  }
+
+  // Trailing gray expiry, as the app's SessionPreviewsLogic.expiryLabel:
+  // "Pinned", else minutes under an hour, hours under a day, then days, rounded.
+  function expiryLabel(row, now = Date.now()) {
+    if (!row || row.expiresAt == null) return "Pinned";
+    const seconds = Math.max(0, (row.expiresAt - now) / 1000);
+    if (seconds < 3600) return `${Math.max(1, Math.round(seconds / 60))}m`;
+    if (seconds < 86400) return `${Math.max(1, Math.round(seconds / 3600))}h`;
+    return `${Math.max(1, Math.round(seconds / 86400))}d`;
+  }
+
+  function sessionLabel(row) {
+    return row && row.sessionUid ? row.sessionUid.slice(0, 8) : "unknown session";
+  }
+
+  // "The row shows the title, then session · machine · relative time, with
+  // the expiry trailing. It's identical for every output type" -- mechanism
+  // (static/live/link) never branches this shape.
+  function subtitle(row, { machineLabel, now = Date.now() } = {}) {
+    return `${sessionLabel(row)} · ${machineLabel || row.machineId || "unknown machine"} · ${relativeAge(row.createdAt, now)}`;
+  }
+
+  // Patch bodies only -- the caller sends these through supabase-data.js's
+  // owner update path. session_previews' RLS (migration
+  // 20261024040000_session_previews.sql, session_previews_owner_update_guard)
+  // lets the owner change only expires_at and revoked_at; anything else in
+  // the patch is rejected by the trigger, so these never include another field.
+  function pinPatch() {
+    return { expires_at: null };
+  }
+
+  function revokePatch(now = Date.now()) {
+    return { revoked_at: new Date(now).toISOString() };
+  }
+
+  return {
+    isSchemaMissing,
+    normalizeRow,
+    normalizeRows,
+    visibleRows,
+    rowsForSession,
+    countForSession,
+    rowStatus,
+    relativeAge,
+    expiryLabel,
+    sessionLabel,
+    subtitle,
+    pinPatch,
+    revokePatch,
+  };
+});
+
+
+(function (root, factory) {
+  const api = factory();
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.WorkbenchTranscriptAttribution = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
@@ -24242,7 +24383,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-10-23.23";
+  const WB_VERSION = "2026-10-25.21";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -27365,6 +27506,7 @@ void main() {
           state.personalTasksHealth = { ...state.personalTasksHealth, status: "unavailable" };
         }),
       loadSessions().then((v) => (state.sessions = v)),
+      loadSessionPreviews().then((v) => (state.sessionPreviews = v)),
       loadMachines().then((v) => (state.machines = v)),
       workbenchLiveLoad.then(() => null),
       loadSyncStatus().then((v) => (state.syncStatus = v)),
@@ -27510,6 +27652,28 @@ void main() {
       }));
     } catch {
       return null;
+    }
+  }
+
+  // Tower Previews, web-shell slice (plan at
+  // Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
+  // slice 7). Read the same way sessions are read above -- a direct
+  // PostgREST select under the owner session, no Edge Function. Slice 7
+  // ships before slice 2's migration is applied, so every select 404s until
+  // session_previews exists; that is the capability gate the view hides
+  // behind, not a feature flag anyone flips by hand.
+  async function loadSessionPreviews() {
+    if (!window.WBSupabaseAuth?.hasSession?.()) return { available: false, rows: [] };
+    try {
+      const rows = await ensureSupabaseDataClient().select("session_previews", {
+        columns:
+          "id,session_uid,machine_id,title,url,mechanism,rev,created_at,updated_at,expires_at,revoked_at",
+        order: "updated_at.desc",
+        limit: 200,
+      });
+      return { available: true, rows: Array.isArray(rows) ? rows : [] };
+    } catch {
+      return { available: false, rows: [] };
     }
   }
 
@@ -29716,6 +29880,143 @@ const commitAndPush = async () => {
 };
 const reconnectSource = () => state.backend === 'github' ? openGithubConnect() : connectFolder(true);
 const sessionFiles = r => Array.isArray(r.filesEdited) ? r.filesEdited : Array.isArray(r.filesChanged) ? r.filesChanged : Array.isArray(r.changedFiles) ? r.changedFiles : Array.isArray(r.files) ? r.files : [];
+// Tower Previews (Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
+// slice 7). A second, dedicated PostgREST client -- app.js's own client is
+// module-private, and the mutation here (owner update of expires_at/
+// revoked_at only) is simple enough not to warrant threading a new prop
+// through every view. Same DI shape as supabase-data.js elsewhere: one
+// `auth`, memoized.
+let previewsDataClientInstance = null;
+const previewsDataClient = () => {
+  if (!previewsDataClientInstance && window.WBSupabaseData && window.WBSupabaseAuth) {
+    previewsDataClientInstance = window.WBSupabaseData.createClient({
+      auth: window.WBSupabaseAuth
+    });
+  }
+  return previewsDataClientInstance;
+};
+const previewsModel = () => window.WorkbenchSessionPreviews;
+const previewsAvailable = () => !!state.sessionPreviews?.available;
+const previewRowsForSession = sessionUid => previewsModel() ? previewsModel().rowsForSession(state.sessionPreviews?.rows, sessionUid) : [];
+const previewCountForSession = sessionUid => previewsModel() ? previewsModel().countForSession(state.sessionPreviews?.rows, sessionUid) : 0;
+const patchPreview = async (id, patch) => {
+  const client = previewsDataClient();
+  if (!client) return;
+  await client.update('session_previews', patch, {
+    filters: {
+      id: `eq.${id}`
+    }
+  });
+  state.sessionPreviews = await loadSessionPreviews();
+  forceRender();
+};
+const copyPreviewLink = async url => {
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('Link copied.', 'success');
+  } catch (err) {
+    toast(String(err?.message || err), 'warn');
+  }
+};
+// One row shape for the global list and the per-session block (plan,
+// "Every output gets the same row") -- mechanism never branches it.
+// Not a ListItem: that component's trailing slot is a fixed, non-wrapping
+// flex child (DS List.jsx), which overlapped the title at 390px -- the
+// Duo's folded width -- the first time this was screenshotted. A plain
+// wrapping row keeps both widths usable without a DS change.
+function PreviewRow({
+  row,
+  machineLabel
+}) {
+  const model = previewsModel();
+  if (!model) return null;
+  const status = model.rowStatus(row);
+  return /*#__PURE__*/React.createElement("div", {
+    style: {
+      padding: '11px 14px',
+      display: 'grid',
+      gap: 6
+    }
+  }, /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      minWidth: 0
+    }
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 14,
+      fontWeight: 600,
+      color: 'var(--text-strong)'
+    }
+  }, row.title), /*#__PURE__*/React.createElement("div", {
+    style: {
+      fontSize: 12.5,
+      color: 'var(--text-muted)',
+      marginTop: 1
+    }
+  }, model.subtitle(row, {
+    machineLabel
+  }))), /*#__PURE__*/React.createElement(Badge, {
+    tone: "neutral"
+  }, model.expiryLabel(row))), /*#__PURE__*/React.createElement(Cluster, {
+    gap: 2,
+    style: {
+      flexWrap: 'wrap'
+    }
+  }, /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => window.open(row.url, '_blank', 'noopener')
+  }, "Open"), /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => copyPreviewLink(row.url)
+  }, "Copy link"), /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => patchPreview(row.id, model.pinPatch()),
+    disabled: status === 'pinned' || status === 'revoked'
+  }, "Pin"), /*#__PURE__*/React.createElement(Button, {
+    variant: "ghost",
+    size: "sm",
+    onClick: () => patchPreview(row.id, model.revokePatch()),
+    disabled: status === 'revoked'
+  }, "Revoke")));
+}
+function PreviewsView() {
+  if (!previewsAvailable()) return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(EmptyState, {
+    title: "Previews not available",
+    description: "This Workbench has not applied the session_previews migration yet."
+  }));
+  const model = previewsModel();
+  const rows = model.visibleRows(state.sessionPreviews?.rows);
+  return /*#__PURE__*/React.createElement("div", {
+    style: pagePad
+  }, /*#__PURE__*/React.createElement(PageHeader, {
+    eyebrow: "Previews",
+    title: "Published previews",
+    lede: "Every viewable output an agent published, newest first."
+  }), /*#__PURE__*/React.createElement(Stack, {
+    gap: 4
+  }, /*#__PURE__*/React.createElement(Card, null, rows.length ? /*#__PURE__*/React.createElement(List, {
+    bordered: true
+  }, rows.map(row => /*#__PURE__*/React.createElement(PreviewRow, {
+    key: row.id,
+    row: row,
+    machineLabel: machineName(row.machineId)
+  }))) : /*#__PURE__*/React.createElement(EmptyState, {
+    title: "No previews yet",
+    description: "Published previews will appear here."
+  }))));
+}
 const sessionProjectsText = r => Array.isArray(r.projects) && r.projects.length ? r.projects.join(', ') : cwdBasename(r.cwd) || 'Unknown';
 function cleanSessionHeadline(text, r) {
   let t = String(text || '').replace(/<[^>]+>/g, ' ').replace(/[`*_#]/g, '').replace(/\s+/g, ' ').trim();
@@ -29901,7 +30202,14 @@ function navItems() {
       id: 'sessions',
       label: 'Sessions',
       active: state.view === 'sessions'
-    }, {
+    },
+    // Hidden cleanly behind the capability gate until session_previews
+    // is applied (plan slice 2) -- no placeholder nav item, no error.
+    ...(previewsAvailable() ? [{
+      id: 'previews',
+      label: 'Previews',
+      active: state.view === 'previews'
+    }] : []), {
       id: 'machines',
       label: 'Machines & sync',
       active: state.view === 'machines'
@@ -33406,13 +33714,22 @@ function MachinesView() {
   }, liveSessions.map(s => {
     const routeLbl = sessionRouteLabel(s);
     const ideBadge = sessionIdeBadge(s);
+    const previewCount = previewsAvailable() ? previewCountForSession(s.session_uid || s.sessionFull || s.session) : 0;
     return /*#__PURE__*/React.createElement(ListItem, {
       key: s.session_uid || s.sessionFull || s.session,
       title: sessionHeadline(s),
       description: `${ideBadge !== 'Claude' ? ideBadge + ' · ' : ''}${routeLbl ? routeLbl + ' · ' : ''}${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
-      trailing: /*#__PURE__*/React.createElement(Badge, {
+      trailing: /*#__PURE__*/React.createElement(Cluster, {
+        gap: 2,
+        style: {
+          alignItems: 'center'
+        }
+      }, previewCount > 0 ? /*#__PURE__*/React.createElement(Badge, {
+        tone: "neutral",
+        title: `${previewCount} preview${previewCount === 1 ? '' : 's'}`
+      }, previewCount) : null, /*#__PURE__*/React.createElement(Badge, {
         tone: attentionTone(s.attentionLevel)
-      }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
+      }, String(s.attentionLevel || 'monitor').replace(/_/g, ' '))),
       onClick: () => window.__WBOpenSession && window.__WBOpenSession(s)
     });
   })) : /*#__PURE__*/React.createElement(EmptyState, {
@@ -36706,6 +37023,9 @@ function Content({
   if (view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
   if (view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
   if (view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
+  if (view === 'previews') return previewsAvailable() ? /*#__PURE__*/React.createElement(PreviewsView, null) : /*#__PURE__*/React.createElement(SimpleView, {
+    kind: view
+  });
   if (view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
   return /*#__PURE__*/React.createElement(SimpleView, {
     kind: view
@@ -38462,7 +38782,22 @@ function SessionDialog({
   })) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No transcript yet",
     description: "Turns will appear here once the session posts activity."
-  }))), /*#__PURE__*/React.createElement(Accordion, {
+  }))), previewsAvailable() ? /*#__PURE__*/React.createElement(Card, {
+    eyebrow: "Previews",
+    title: "Published previews"
+  }, (() => {
+    const rows = previewRowsForSession(sessionUid);
+    return rows.length ? /*#__PURE__*/React.createElement(List, {
+      bordered: true
+    }, rows.map(row => /*#__PURE__*/React.createElement(PreviewRow, {
+      key: row.id,
+      row: row,
+      machineLabel: machine
+    }))) : /*#__PURE__*/React.createElement(EmptyState, {
+      title: "No previews yet",
+      description: "Previews this session publishes will appear here."
+    });
+  })()) : null, /*#__PURE__*/React.createElement(Accordion, {
     items: [{
       title: 'Session details',
       content: metadata
