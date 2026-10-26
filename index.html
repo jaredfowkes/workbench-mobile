@@ -23977,6 +23977,8 @@ void main() {
   // app.js/react-dashboard.jsx, which hand this module raw rows and get back
   // view-ready shapes, same DI split as hub-model.js and session-capabilities.js.
 
+  const DAY_MS = 24 * 60 * 60 * 1000;
+
   // Same idiom as supabase-data.js's classifyBindingFailure: until slice 2's
   // migration is applied, every select against session_previews 404s
   // (PGRST205) or trips 42P01. That is the one signal this view hides behind
@@ -24013,22 +24015,25 @@ void main() {
     return (Array.isArray(rows) ? rows : []).map(normalizeRow).filter(Boolean);
   }
 
-  // Mirrors the app's SessionPreviewsLogic.visible (Tower build 43, the design
-  // of record): revoked and expired rows are hidden everywhere, newest first
-  // by created_at.
-  function visibleRows(rows, now = Date.now()) {
-    return normalizeRows(rows)
-      .filter((row) => !row.revokedAt && !(row.expiresAt != null && row.expiresAt <= now))
-      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+  function sortedRows(rows) {
+    return normalizeRows(rows).sort((a, b) => (b.updatedAt ?? b.createdAt ?? 0) - (a.updatedAt ?? a.createdAt ?? 0));
   }
 
-  function rowsForSession(rows, sessionUid, now = Date.now()) {
+  function rowsForSession(rows, sessionUid) {
     if (!sessionUid) return [];
-    return visibleRows(rows, now).filter((row) => row.sessionUid === sessionUid);
+    return sortedRows(rows).filter((row) => row.sessionUid === sessionUid);
   }
 
-  function countForSession(rows, sessionUid, now = Date.now()) {
-    return rowsForSession(rows, sessionUid, now).length;
+  // A revoked preview is gone -- the glyph is ambient inventory, not an
+  // attention signal (design pref: gray everywhere, one accent reserved for
+  // "needs you"), so revoked rows do not add to the count.
+  function activeRows(rows) {
+    return normalizeRows(rows).filter((row) => !row.revokedAt);
+  }
+
+  function countForSession(rows, sessionUid) {
+    if (!sessionUid) return 0;
+    return activeRows(rows).filter((row) => row.sessionUid === sessionUid).length;
   }
 
   function rowStatus(row, now = Date.now()) {
@@ -24051,14 +24056,16 @@ void main() {
     return `${Math.round(days / 30)}mo ago`;
   }
 
-  // Trailing gray expiry, as the app's SessionPreviewsLogic.expiryLabel:
-  // "Pinned", else minutes under an hour, hours under a day, then days, rounded.
+  // Trailing expiry label -- always gray, never the accent (design pref).
   function expiryLabel(row, now = Date.now()) {
-    if (!row || row.expiresAt == null) return "Pinned";
-    const seconds = Math.max(0, (row.expiresAt - now) / 1000);
-    if (seconds < 3600) return `${Math.max(1, Math.round(seconds / 60))}m`;
-    if (seconds < 86400) return `${Math.max(1, Math.round(seconds / 3600))}h`;
-    return `${Math.max(1, Math.round(seconds / 86400))}d`;
+    const status = rowStatus(row, now);
+    if (status === "revoked") return "revoked";
+    if (status === "pinned") return "pinned";
+    if (status === "expired") return "expired";
+    const days = Math.round((row.expiresAt - now) / DAY_MS);
+    if (days <= 0) return "expires today";
+    if (days === 1) return "expires in 1d";
+    return `expires in ${days}d`;
   }
 
   function sessionLabel(row) {
@@ -24069,7 +24076,7 @@ void main() {
   // the expiry trailing. It's identical for every output type" -- mechanism
   // (static/live/link) never branches this shape.
   function subtitle(row, { machineLabel, now = Date.now() } = {}) {
-    return `${sessionLabel(row)} · ${machineLabel || row.machineId || "unknown machine"} · ${relativeAge(row.createdAt, now)}`;
+    return `${sessionLabel(row)} · ${machineLabel || row.machineId || "unknown machine"} · ${relativeAge(row.updatedAt ?? row.createdAt, now)}`;
   }
 
   // Patch bodies only -- the caller sends these through supabase-data.js's
@@ -24089,8 +24096,9 @@ void main() {
     isSchemaMissing,
     normalizeRow,
     normalizeRows,
-    visibleRows,
+    sortedRows,
     rowsForSession,
+    activeRows,
     countForSession,
     rowStatus,
     relativeAge,
@@ -24383,7 +24391,7 @@ void main() {
 
 (() => {
   "use strict";
-  const WB_VERSION = "2026-10-25.21";
+  const WB_VERSION = "2026-10-25.20";
   const ArtifactModel = window.WorkbenchArtifacts;
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -29997,7 +30005,7 @@ function PreviewsView() {
     description: "This Workbench has not applied the session_previews migration yet."
   }));
   const model = previewsModel();
-  const rows = model.visibleRows(state.sessionPreviews?.rows);
+  const rows = model.sortedRows(state.sessionPreviews?.rows);
   return /*#__PURE__*/React.createElement("div", {
     style: pagePad
   }, /*#__PURE__*/React.createElement(PageHeader, {
