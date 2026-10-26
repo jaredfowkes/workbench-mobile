@@ -11,7 +11,7 @@
   <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.webmanifest">
   <title>Workbench Dashboard</title>
-  <script>window.WB_VERSION = "2026-10-26.21";</script>
+  <script>window.WB_VERSION = "2026-10-26.22";</script>
 <link rel="preload" href="app.9079e184ad.js" as="script">
   <style>
 /* KnowsMore Design System — global entry point.
@@ -4263,7 +4263,7 @@ button.metric-card:hover {
         // Ask the worker whether a newer build is already cached: a reload's
         // revalidation can finish before this page exists to hear about it.
         var w = navigator.serviceWorker.controller || reg.active;
-        if (w) w.postMessage({ type: "wb-check", version: "2026-10-26.21" });
+        if (w) w.postMessage({ type: "wb-check", version: "2026-10-26.22" });
       }).catch(function (e) {
         console.warn("service worker registration failed", e);
       });
