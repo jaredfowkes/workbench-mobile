@@ -11,7 +11,6 @@
   <meta name="theme-color" content="#202020" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.webmanifest">
   <title>Workbench Dashboard</title>
-  <script>window.WB_VERSION = "2026-10-27.21";</script>
   <style>
 /* KnowsMore Design System — global entry point.
    Consumers link this single file. Keep it @import-only. */
@@ -2928,10 +2927,8 @@ button.metric-card:hover {
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  bottom: 24px;
   transform: translateX(-50%);
-  width: max-content;
-  max-width: calc(100vw - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
   background: #37352f;
   color: #fff;
   padding: 8px 14px;
@@ -2950,14 +2947,6 @@ button.metric-card:hover {
 .toast.show {
   opacity: 1;
   pointer-events: auto;
-}
-.toast.instant {
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .toast {
-    transition: none;
-  }
 }
 .toast.success {
   background: var(--positive-deep);
@@ -4237,33 +4226,8 @@ button.metric-card:hover {
       return;
     }
     if (location.protocol !== "https:" && location.hostname !== "localhost") return;
-    // sw.js posts wb-updated when a newer build is cached behind the one on
-    // screen. Offer the reload rather than swapping the page under the user.
-    navigator.serviceWorker.addEventListener("message", function (e) {
-      if (!e.data || e.data.type !== "wb-updated") return;
-      var t = document.getElementById("toast");
-      if (!t) return;
-      t.textContent = "Updated \u2014 ";
-      var b = document.createElement("button");
-      b.className = "toast-action";
-      b.textContent = "reload";
-      b.onclick = function () { location.reload(); };
-      t.appendChild(b);
-      // "instant" skips the fade: a throttled or backgrounded tab never
-      // advances the opacity transition, which left the toast at opacity 0.
-      t.className = "toast show instant";
-      clearTimeout(t._to);
-      t._to = setTimeout(function () { t.classList.remove("show"); }, 12000);
-    });
     window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").then(function () {
-        return navigator.serviceWorker.ready;
-      }).then(function (reg) {
-        // Ask the worker whether a newer build is already cached: a reload's
-        // revalidation can finish before this page exists to hear about it.
-        var w = navigator.serviceWorker.controller || reg.active;
-        if (w) w.postMessage({ type: "wb-check", version: "2026-10-27.21" });
-      }).catch(function (e) {
+      navigator.serviceWorker.register("sw.js").catch(function (e) {
         console.warn("service worker registration failed", e);
       });
     });
@@ -18577,99 +18541,6 @@ document.dispatchEvent(new CustomEvent('ds:ready', { detail: window.__DS }));
 });
 
 
-(function (root, factory) {
-  const api = factory();
-  if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  root.WorkbenchLazyScript = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  'use strict';
-
-  // Returns load(): a function that injects `src` once and resolves when
-  // isReady() reports the script's global is defined. Concurrent callers share
-  // one request; a failed load clears itself so the next call retries.
-  function createScriptLoader({ document, src, isReady }) {
-    let pending = null;
-    return function load() {
-      if (isReady()) return Promise.resolve();
-      if (pending) return pending;
-      if (!src) return Promise.reject(new Error('This build does not ship a separate script for this feature.'));
-      pending = new Promise((resolve, reject) => {
-        const el = document.createElement('script');
-        const fail = (message) => { pending = null; el.remove?.(); reject(new Error(message)); };
-        el.src = src;
-        el.async = true;
-        el.onload = () => (isReady() ? resolve() : fail(`${src} loaded but did not define its API.`));
-        el.onerror = () => fail(`Could not load ${src}.`);
-        document.head.appendChild(el);
-      });
-      return pending;
-    };
-  }
-
-  return { createScriptLoader };
-});
-
-
-(function (root, factory) {
-  const api = factory();
-  if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  root.WorkbenchIndexParts = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
-  'use strict';
-
-  // Returns load(path): the text of one dashboard-index*.json file, or null
-  // when it does not exist. The body and its ETag are kept in `store`, so a
-  // repeat load sends If-None-Match and a 304 costs no body (and no GitHub rate
-  // limit). Any failure falls back to the stored copy: an out-of-date index is
-  // better than none, and the tree's own TTL decides when to look again.
-  //
-  //   fetchPart(path, etag) -> Promise<{ status, etag, text }>
-  //   store.get(key) / store.set(key, string) -> Promise
-  function createConditionalLoader({ fetchPart, store }) {
-    const textKey = (path) => 'idxp:' + path;
-    const etagKey = (path) => 'idxe:' + path;
-
-    return async function load(path) {
-      const [text, etag] = await Promise.all([
-        Promise.resolve(store.get(textKey(path))).catch(() => null),
-        Promise.resolve(store.get(etagKey(path))).catch(() => null),
-      ]);
-      const cached = typeof text === 'string' && text ? text : null;
-      // An ETag with no body behind it (the body write failed) cannot satisfy a 304.
-      let res;
-      try { res = await fetchPart(path, cached && etag ? etag : null); } catch { return cached; }
-      if (res.status === 304) {
-        if (cached) return cached;
-        try { res = await fetchPart(path, null); } catch { return null; }
-      }
-      if (res.status === 404) return null;
-      if (res.status === 200 && typeof res.text === 'string') {
-        if (res.etag) {
-          // Body first: a lone ETag would turn the next 304 into a miss.
-          Promise.resolve(store.set(textKey(path), res.text))
-            .then(() => store.set(etagKey(path), res.etag))
-            .catch(() => {});
-        }
-        return res.text;
-      }
-      return cached;
-    };
-  }
-
-  // Runs `run` at most once while it is pending or has succeeded. A failure
-  // clears itself so the next caller retries.
-  function createOnce(run) {
-    let pending = null;
-    return () => {
-      if (!pending) pending = Promise.resolve().then(run).catch((error) => { pending = null; throw error; });
-      return pending;
-    };
-  }
-
-  return { createConditionalLoader, createOnce };
-});
-
-
 (()=>{/**
  * @license
  * Copyright 2010-2026 Three.js Authors
@@ -24094,147 +23965,6 @@ void main() {
 (function (root, factory) {
   const api = factory();
   if (typeof module !== "undefined" && module.exports) module.exports = api;
-  root.WorkbenchSessionPreviews = api;
-})(typeof globalThis !== "undefined" ? globalThis : this, function () {
-  "use strict";
-
-  // Tower Previews, web-shell slice
-  // (Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
-  // slice 7). Pure read model over session_previews rows -- no DOM, no fetch,
-  // so every branch here is covered by node:test rather than the browser
-  // smoke suite. Loading the table and sending mutations both live in
-  // app.js/react-dashboard.jsx, which hand this module raw rows and get back
-  // view-ready shapes, same DI split as hub-model.js and session-capabilities.js.
-
-  // Same idiom as supabase-data.js's classifyBindingFailure: until slice 2's
-  // migration is applied, every select against session_previews 404s
-  // (PGRST205) or trips 42P01. That is the one signal this view hides behind
-  // -- there is no feature flag to flip by hand once the table lands.
-  function isSchemaMissing(error) {
-    return !!error && (error.status === 404 || error.code === "PGRST205" || error.code === "42P01");
-  }
-
-  function timestamp(value) {
-    if (value == null) return null;
-    const n = typeof value === "number" ? value : Date.parse(value);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  function normalizeRow(row) {
-    if (!row || typeof row !== "object") return null;
-    if (typeof row.id !== "string" || !row.id) return null;
-    return {
-      id: row.id,
-      sessionUid: row.session_uid || "",
-      machineId: row.machine_id || "",
-      title: row.title || row.url || row.id,
-      url: row.url || "",
-      mechanism: row.mechanism || "static",
-      rev: row.rev || null,
-      createdAt: timestamp(row.created_at),
-      updatedAt: timestamp(row.updated_at),
-      expiresAt: timestamp(row.expires_at),
-      revokedAt: timestamp(row.revoked_at),
-    };
-  }
-
-  function normalizeRows(rows) {
-    return (Array.isArray(rows) ? rows : []).map(normalizeRow).filter(Boolean);
-  }
-
-  // Mirrors the app's SessionPreviewsLogic.visible (Tower build 43, the design
-  // of record): revoked and expired rows are hidden everywhere, newest first
-  // by created_at.
-  function visibleRows(rows, now = Date.now()) {
-    return normalizeRows(rows)
-      .filter((row) => !row.revokedAt && !(row.expiresAt != null && row.expiresAt <= now))
-      .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
-  }
-
-  function rowsForSession(rows, sessionUid, now = Date.now()) {
-    if (!sessionUid) return [];
-    return visibleRows(rows, now).filter((row) => row.sessionUid === sessionUid);
-  }
-
-  function countForSession(rows, sessionUid, now = Date.now()) {
-    return rowsForSession(rows, sessionUid, now).length;
-  }
-
-  function rowStatus(row, now = Date.now()) {
-    if (!row) return "revoked";
-    if (row.revokedAt) return "revoked";
-    if (row.expiresAt == null) return "pinned";
-    return row.expiresAt <= now ? "expired" : "active";
-  }
-
-  function relativeAge(ms, now = Date.now()) {
-    if (ms == null) return "unknown";
-    const delta = Math.max(0, now - ms);
-    if (delta < 60000) return "just now";
-    const minutes = Math.round(delta / 60000);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.round(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    return `${Math.round(days / 30)}mo ago`;
-  }
-
-  // Trailing gray expiry, as the app's SessionPreviewsLogic.expiryLabel:
-  // "Pinned", else minutes under an hour, hours under a day, then days, rounded.
-  function expiryLabel(row, now = Date.now()) {
-    if (!row || row.expiresAt == null) return "Pinned";
-    const seconds = Math.max(0, (row.expiresAt - now) / 1000);
-    if (seconds < 3600) return `${Math.max(1, Math.round(seconds / 60))}m`;
-    if (seconds < 86400) return `${Math.max(1, Math.round(seconds / 3600))}h`;
-    return `${Math.max(1, Math.round(seconds / 86400))}d`;
-  }
-
-  function sessionLabel(row) {
-    return row && row.sessionUid ? row.sessionUid.slice(0, 8) : "unknown session";
-  }
-
-  // "The row shows the title, then session · machine · relative time, with
-  // the expiry trailing. It's identical for every output type" -- mechanism
-  // (static/live/link) never branches this shape.
-  function subtitle(row, { machineLabel, now = Date.now() } = {}) {
-    return `${sessionLabel(row)} · ${machineLabel || row.machineId || "unknown machine"} · ${relativeAge(row.createdAt, now)}`;
-  }
-
-  // Patch bodies only -- the caller sends these through supabase-data.js's
-  // owner update path. session_previews' RLS (migration
-  // 20261024040000_session_previews.sql, session_previews_owner_update_guard)
-  // lets the owner change only expires_at and revoked_at; anything else in
-  // the patch is rejected by the trigger, so these never include another field.
-  function pinPatch() {
-    return { expires_at: null };
-  }
-
-  function revokePatch(now = Date.now()) {
-    return { revoked_at: new Date(now).toISOString() };
-  }
-
-  return {
-    isSchemaMissing,
-    normalizeRow,
-    normalizeRows,
-    visibleRows,
-    rowsForSession,
-    countForSession,
-    rowStatus,
-    relativeAge,
-    expiryLabel,
-    sessionLabel,
-    subtitle,
-    pinPatch,
-    revokePatch,
-  };
-});
-
-
-(function (root, factory) {
-  const api = factory();
-  if (typeof module !== "undefined" && module.exports) module.exports = api;
   root.WorkbenchTranscriptAttribution = api;
 })(typeof globalThis !== "undefined" ? globalThis : this, function () {
   "use strict";
@@ -24512,20 +24242,8 @@ void main() {
 
 (() => {
   "use strict";
-  // Set by an inline script in the shell. It lives there, not here, so the
-  // build id does not change this file's bytes: app.<hash>.js stays cached
-  // across builds that only changed the shell.
-  const WB_VERSION = window.WB_VERSION;
+  const WB_VERSION = "2026-10-23.23";
   const ArtifactModel = window.WorkbenchArtifacts;
-  // The three.js runtime is a separate content-hashed file in split builds
-  // (empty in a single-file build, where it is already inlined). The Home view
-  // calls this on first render; nothing else pays for the 640 KB.
-  const WB_THREE_SRC = "";
-  window.WorkbenchLoadHomeThree = window.WorkbenchLazyScript.createScriptLoader({
-    document,
-    src: WB_THREE_SRC ? new URL(WB_THREE_SRC, document.baseURI).href : "",
-    isReady: () => typeof window.WorkbenchHomeGLBRenderer === "function",
-  });
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = (s) =>
@@ -24777,11 +24495,6 @@ void main() {
   // at a time before this existed.
   let ghIndexTexts = {};
   const WB_INDEX_PATH = "Tools/Dashboard/dashboard-index.json";
-  // Knowledge-base bodies (Glossary/Processes/Decisions markdown) live in their
-  // own index parts and load the first time one of those files is read, not at
-  // boot: the first view needs projects and their status text, not the KB.
-  // `re` comes from the index itself so the build's pattern stays the only copy.
-  let ghKb = { done: true };
   // When the tree was cached (ms epoch) - lets the UI stamp GitHub-backend
   // reads as "as of Xm ago" instead of presenting a cached tree as live.
   let ghTreeCacheAt = null;
@@ -26075,44 +25788,6 @@ void main() {
     }
     return sha;
   }
-  // One dashboard-index*.json file through the Contents API with a conditional
-  // request. The ETag and body are kept in IndexedDB, so once the tree cache's
-  // TTL lapses an unchanged index costs a 304 instead of up to 2.7 MB.
-  async function fetchIndexPart(path, etag) {
-    const cfg = ghConfig();
-    const res = await ghFetch(
-      `/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(cfg.branch)}`,
-      etag ? { headers: { "If-None-Match": etag } } : {},
-    );
-    if (res.status === 304 || res.status === 404) return { status: res.status };
-    if (!res.ok) return { status: res.status };
-    const j = await res.json();
-    const inlined = j.encoding === "base64" && typeof j.content === "string" && j.content.length > 0;
-    return { status: 200, etag: res.headers.get("etag"), text: inlined ? decUtf8(j.content) : j.size === 0 ? "" : null };
-  }
-  const loadIndexPart = window.WorkbenchIndexParts.createConditionalLoader({
-    fetchPart: fetchIndexPart,
-    store: idb,
-  });
-  // Load the knowledge-base parts once, the first time a KB markdown file is
-  // read. A failed or malformed part is not fatal: the file falls through to
-  // a direct fetch, which is what an un-inlined file always did.
-  function ghEnsureKbTexts() {
-    const kb = ghKb;
-    if (kb.done) return Promise.resolve();
-    kb.ensure ||= Promise.all(
-      kb.parts.map((p) => loadIndexPart(p).catch(() => null)),
-    ).then((parts) => {
-      for (const text of parts) {
-        try {
-          const t = text ? JSON.parse(text) : null;
-          if (t?.generated && ghKb === kb) Object.assign(ghIndexTexts, t.texts || {});
-        } catch {}
-      }
-      kb.done = true;
-    });
-    return kb.ensure;
-  }
   async function ghGetTree(force = false) {
     const cfg = ghConfig();
     const account = window.WBSupabaseAuth?.userId?.();
@@ -26147,7 +25822,7 @@ void main() {
     let tree = null;
     if (!force) {
       try {
-        const idx = { text: await loadIndexPart(WB_INDEX_PATH) };
+        const idx = await ghGetFile(WB_INDEX_PATH, { allowMissing: true });
         if (idx?.text) {
           const parsed = JSON.parse(idx.text);
           if (parsed?.generated && Array.isArray(parsed.paths)) {
@@ -26159,7 +25834,7 @@ void main() {
             // find inlined.
             const tasksParts = await Promise.all(
               (parsed.taskParts || []).map((p) =>
-                loadIndexPart(p).then((text) => ({ text })).catch(() => null),
+                ghGetFile(p, { allowMissing: true }).catch(() => null),
               ),
             );
             ghIndexTasks = {};
@@ -26171,7 +25846,7 @@ void main() {
             }
             const textsParts = await Promise.all(
               (parsed.textParts || []).map((p) =>
-                loadIndexPart(p).then((text) => ({ text })).catch(() => null),
+                ghGetFile(p, { allowMissing: true }).catch(() => null),
               ),
             );
             ghIndexTexts = {};
@@ -26179,13 +25854,6 @@ void main() {
               try {
                 const t = part?.text ? JSON.parse(part.text) : null;
                 if (t?.generated) Object.assign(ghIndexTexts, t.texts || {});
-              } catch {}
-            }
-            // An index without kbParts (older build) inlines the KB above.
-            ghKb = { done: true };
-            if (Array.isArray(parsed.kbParts) && parsed.kbParts.length && parsed.kbPattern) {
-              try {
-                ghKb = { done: false, parts: parsed.kbParts, re: new RegExp(parsed.kbPattern), ensure: null };
               } catch {}
             }
           }
@@ -26199,7 +25867,6 @@ void main() {
       // branch that predates it. Correct but slow -- not the normal path.
       ghIndexTasks = {};
       ghIndexTexts = {};
-      ghKb = { done: true };
       const treeSha = await ghResolveBranchTreeSha(cfg.branch);
       const res = await ghFetch(
         `/git/trees/${encodeURIComponent(treeSha)}?recursive=1`,
@@ -26272,9 +25939,6 @@ void main() {
     const fresh = !!opts.fresh;
     // Bodies the build index already carries. Skipped on a forced refresh so
     // "Reload" still reaches the live file.
-    if (!fresh && !ghKb.done && path.endsWith(".md") && ghKb.re.test(path)) {
-      await ghEnsureKbTexts();
-    }
     if (!fresh && Object.prototype.hasOwnProperty.call(ghIndexTexts, path)) {
       return { text: ghIndexTexts[path], sha: ghTreeShas[path] || null };
     }
@@ -27701,7 +27365,6 @@ void main() {
           state.personalTasksHealth = { ...state.personalTasksHealth, status: "unavailable" };
         }),
       loadSessions().then((v) => (state.sessions = v)),
-      loadSessionPreviews().then((v) => (state.sessionPreviews = v)),
       loadMachines().then((v) => (state.machines = v)),
       workbenchLiveLoad.then(() => null),
       loadSyncStatus().then((v) => (state.syncStatus = v)),
@@ -27847,28 +27510,6 @@ void main() {
       }));
     } catch {
       return null;
-    }
-  }
-
-  // Tower Previews, web-shell slice (plan at
-  // Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
-  // slice 7). Read the same way sessions are read above -- a direct
-  // PostgREST select under the owner session, no Edge Function. Slice 7
-  // ships before slice 2's migration is applied, so every select 404s until
-  // session_previews exists; that is the capability gate the view hides
-  // behind, not a feature flag anyone flips by hand.
-  async function loadSessionPreviews() {
-    if (!window.WBSupabaseAuth?.hasSession?.()) return { available: false, rows: [] };
-    try {
-      const rows = await ensureSupabaseDataClient().select("session_previews", {
-        columns:
-          "id,session_uid,machine_id,title,url,mechanism,rev,created_at,updated_at,expires_at,revoked_at",
-        order: "updated_at.desc",
-        limit: 200,
-      });
-      return { available: true, rows: Array.isArray(rows) ? rows : [] };
-    } catch {
-      return { available: false, rows: [] };
     }
   }
 
@@ -30075,143 +29716,6 @@ const commitAndPush = async () => {
 };
 const reconnectSource = () => state.backend === 'github' ? openGithubConnect() : connectFolder(true);
 const sessionFiles = r => Array.isArray(r.filesEdited) ? r.filesEdited : Array.isArray(r.filesChanged) ? r.filesChanged : Array.isArray(r.changedFiles) ? r.changedFiles : Array.isArray(r.files) ? r.files : [];
-// Tower Previews (Personal/Projects/Workbench-OS/files/phone-previews-2026-10-24/plan.md,
-// slice 7). A second, dedicated PostgREST client -- app.js's own client is
-// module-private, and the mutation here (owner update of expires_at/
-// revoked_at only) is simple enough not to warrant threading a new prop
-// through every view. Same DI shape as supabase-data.js elsewhere: one
-// `auth`, memoized.
-let previewsDataClientInstance = null;
-const previewsDataClient = () => {
-  if (!previewsDataClientInstance && window.WBSupabaseData && window.WBSupabaseAuth) {
-    previewsDataClientInstance = window.WBSupabaseData.createClient({
-      auth: window.WBSupabaseAuth
-    });
-  }
-  return previewsDataClientInstance;
-};
-const previewsModel = () => window.WorkbenchSessionPreviews;
-const previewsAvailable = () => !!state.sessionPreviews?.available;
-const previewRowsForSession = sessionUid => previewsModel() ? previewsModel().rowsForSession(state.sessionPreviews?.rows, sessionUid) : [];
-const previewCountForSession = sessionUid => previewsModel() ? previewsModel().countForSession(state.sessionPreviews?.rows, sessionUid) : 0;
-const patchPreview = async (id, patch) => {
-  const client = previewsDataClient();
-  if (!client) return;
-  await client.update('session_previews', patch, {
-    filters: {
-      id: `eq.${id}`
-    }
-  });
-  state.sessionPreviews = await loadSessionPreviews();
-  forceRender();
-};
-const copyPreviewLink = async url => {
-  try {
-    await navigator.clipboard.writeText(url);
-    toast('Link copied.', 'success');
-  } catch (err) {
-    toast(String(err?.message || err), 'warn');
-  }
-};
-// One row shape for the global list and the per-session block (plan,
-// "Every output gets the same row") -- mechanism never branches it.
-// Not a ListItem: that component's trailing slot is a fixed, non-wrapping
-// flex child (DS List.jsx), which overlapped the title at 390px -- the
-// Duo's folded width -- the first time this was screenshotted. A plain
-// wrapping row keeps both widths usable without a DS change.
-function PreviewRow({
-  row,
-  machineLabel
-}) {
-  const model = previewsModel();
-  if (!model) return null;
-  const status = model.rowStatus(row);
-  return /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: '11px 14px',
-      display: 'grid',
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      minWidth: 0
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      color: 'var(--text-strong)'
-    }
-  }, row.title), /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 12.5,
-      color: 'var(--text-muted)',
-      marginTop: 1
-    }
-  }, model.subtitle(row, {
-    machineLabel
-  }))), /*#__PURE__*/React.createElement(Badge, {
-    tone: "neutral"
-  }, model.expiryLabel(row))), /*#__PURE__*/React.createElement(Cluster, {
-    gap: 2,
-    style: {
-      flexWrap: 'wrap'
-    }
-  }, /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => window.open(row.url, '_blank', 'noopener')
-  }, "Open"), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => copyPreviewLink(row.url)
-  }, "Copy link"), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => patchPreview(row.id, model.pinPatch()),
-    disabled: status === 'pinned' || status === 'revoked'
-  }, "Pin"), /*#__PURE__*/React.createElement(Button, {
-    variant: "ghost",
-    size: "sm",
-    onClick: () => patchPreview(row.id, model.revokePatch()),
-    disabled: status === 'revoked'
-  }, "Revoke")));
-}
-function PreviewsView() {
-  if (!previewsAvailable()) return /*#__PURE__*/React.createElement("div", {
-    style: pagePad
-  }, /*#__PURE__*/React.createElement(EmptyState, {
-    title: "Previews not available",
-    description: "This Workbench has not applied the session_previews migration yet."
-  }));
-  const model = previewsModel();
-  const rows = model.visibleRows(state.sessionPreviews?.rows);
-  return /*#__PURE__*/React.createElement("div", {
-    style: pagePad
-  }, /*#__PURE__*/React.createElement(PageHeader, {
-    eyebrow: "Previews",
-    title: "Published previews",
-    lede: "Every viewable output an agent published, newest first."
-  }), /*#__PURE__*/React.createElement(Stack, {
-    gap: 4
-  }, /*#__PURE__*/React.createElement(Card, null, rows.length ? /*#__PURE__*/React.createElement(List, {
-    bordered: true
-  }, rows.map(row => /*#__PURE__*/React.createElement(PreviewRow, {
-    key: row.id,
-    row: row,
-    machineLabel: machineName(row.machineId)
-  }))) : /*#__PURE__*/React.createElement(EmptyState, {
-    title: "No previews yet",
-    description: "Published previews will appear here."
-  }))));
-}
 const sessionProjectsText = r => Array.isArray(r.projects) && r.projects.length ? r.projects.join(', ') : cwdBasename(r.cwd) || 'Unknown';
 function cleanSessionHeadline(text, r) {
   let t = String(text || '').replace(/<[^>]+>/g, ' ').replace(/[`*_#]/g, '').replace(/\s+/g, ' ').trim();
@@ -30397,14 +29901,7 @@ function navItems() {
       id: 'sessions',
       label: 'Sessions',
       active: state.view === 'sessions'
-    },
-    // Hidden cleanly behind the capability gate until session_previews
-    // is applied (plan slice 2) -- no placeholder nav item, no error.
-    ...(previewsAvailable() ? [{
-      id: 'previews',
-      label: 'Previews',
-      active: state.view === 'previews'
-    }] : []), {
+    }, {
       id: 'machines',
       label: 'Machines & sync',
       active: state.view === 'machines'
@@ -31766,17 +31263,11 @@ function HomeRendererPanel({
       });
       return undefined;
     }
-    // Start fetching the three.js runtime now so it overlaps the model download.
-    window.WorkbenchLoadHomeThree().catch(() => {});
-    const rendererFactory = async options => {
-      await window.WorkbenchLoadHomeThree();
-      return window.WorkbenchHomeGLBRenderer(options);
-    };
     const next = renderer.createHomeRenderer({
       api: window.WorkbenchLiveApi,
       container: host.current,
       onStateChange: setModelState,
-      rendererFactory
+      rendererFactory: window.WorkbenchHomeGLBRenderer
     });
     controller.current = next;
     return () => {
@@ -33915,22 +33406,13 @@ function MachinesView() {
   }, liveSessions.map(s => {
     const routeLbl = sessionRouteLabel(s);
     const ideBadge = sessionIdeBadge(s);
-    const previewCount = previewsAvailable() ? previewCountForSession(s.session_uid || s.sessionFull || s.session) : 0;
     return /*#__PURE__*/React.createElement(ListItem, {
       key: s.session_uid || s.sessionFull || s.session,
       title: sessionHeadline(s),
       description: `${ideBadge !== 'Claude' ? ideBadge + ' · ' : ''}${routeLbl ? routeLbl + ' · ' : ''}${liveStateLabel(s)} · ${machineName(sessionMachine(s))}${todoSummaryText(s.todoCounts) ? ' · ' + todoSummaryText(s.todoCounts) : ''}${s.activeTodo?.content ? ' · ◉ ' + displayText(s.activeTodo.content, 72) : ''}`,
-      trailing: /*#__PURE__*/React.createElement(Cluster, {
-        gap: 2,
-        style: {
-          alignItems: 'center'
-        }
-      }, previewCount > 0 ? /*#__PURE__*/React.createElement(Badge, {
-        tone: "neutral",
-        title: `${previewCount} preview${previewCount === 1 ? '' : 's'}`
-      }, previewCount) : null, /*#__PURE__*/React.createElement(Badge, {
+      trailing: /*#__PURE__*/React.createElement(Badge, {
         tone: attentionTone(s.attentionLevel)
-      }, String(s.attentionLevel || 'monitor').replace(/_/g, ' '))),
+      }, String(s.attentionLevel || 'monitor').replace(/_/g, ' ')),
       onClick: () => window.__WBOpenSession && window.__WBOpenSession(s)
     });
   })) : /*#__PURE__*/React.createElement(EmptyState, {
@@ -37224,9 +36706,6 @@ function Content({
   if (view === 'usage') return /*#__PURE__*/React.createElement(UsageView, null);
   if (view === 'models') return /*#__PURE__*/React.createElement(ModelsView, null);
   if (view === 'sessions') return /*#__PURE__*/React.createElement(SessionsView, null);
-  if (view === 'previews') return previewsAvailable() ? /*#__PURE__*/React.createElement(PreviewsView, null) : /*#__PURE__*/React.createElement(SimpleView, {
-    kind: view
-  });
   if (view === 'machines') return /*#__PURE__*/React.createElement(MachinesView, null);
   return /*#__PURE__*/React.createElement(SimpleView, {
     kind: view
@@ -38983,22 +38462,7 @@ function SessionDialog({
   })) : /*#__PURE__*/React.createElement(EmptyState, {
     title: "No transcript yet",
     description: "Turns will appear here once the session posts activity."
-  }))), previewsAvailable() ? /*#__PURE__*/React.createElement(Card, {
-    eyebrow: "Previews",
-    title: "Published previews"
-  }, (() => {
-    const rows = previewRowsForSession(sessionUid);
-    return rows.length ? /*#__PURE__*/React.createElement(List, {
-      bordered: true
-    }, rows.map(row => /*#__PURE__*/React.createElement(PreviewRow, {
-      key: row.id,
-      row: row,
-      machineLabel: machine
-    }))) : /*#__PURE__*/React.createElement(EmptyState, {
-      title: "No previews yet",
-      description: "Previews this session publishes will appear here."
-    });
-  })()) : null, /*#__PURE__*/React.createElement(Accordion, {
+  }))), /*#__PURE__*/React.createElement(Accordion, {
     items: [{
       title: 'Session details',
       content: metadata
@@ -40953,7 +40417,7 @@ window.__WBReactRender = function () {
       if (savings != null) {
         return `<span class="cost-savings">${esc(fmtCostMaybe(savings))} savings</span>`;
       }
-      return '<span class="muted">$0.00 · savings unmeasured</span>';
+      return '<span class="muted">$0.00</span>';
     }
     const c = sessionCost(r);
     if (c == null) return '<span class="muted">untracked</span>';
@@ -41126,17 +40590,25 @@ window.__WBReactRender = function () {
   }
   function localSavedCost(r) {
     if (!isLocalRow(r) || !hasTelemetry(r)) return null;
-    const verdict = delegationVerdictRow(r);
-    // A local token price or accepted worker is not a measured displacement.
-    // Only the producer's production verdict with a matched paid control and
-    // net verification/rework accounting can support a savings claim.
-    if (
-      !verdict?.savingsEligible ||
-      !verdict.matchedBaselineEventId ||
-      verdict.matchedBaselineCostBasis !== "metered-model-pricing-estimate"
-    ) return null;
-    const net = Number(verdict.netSaving);
-    return verdict.netSaving != null && Number.isFinite(net) ? net : null;
+    const verdicted = verdictedSaving(r);
+    if (verdicted !== undefined) return verdicted;
+    const outcome = delegationOutcome(r);
+    if (r.delegationId && !DELEGATION_ACCEPTED.has(outcome)) return null;
+    if (r.delegationId) return null; // no parent verdict yet — claim nothing
+    const comparator =
+      r.parentEquivalentModel || r.comparisonModel || r.savingsBaselineModel;
+    if (r.savedEstimate != null) return Number(r.savedEstimate);
+    if (!comparator) return null;
+    // Re-price the whole session's raw tokens at Claude rates. Drop byModel so
+    // estimateSessionCost uses the row totals + the substituted Claude model
+    // rather than the recorded local ($0) per-model costs.
+    const clone = {
+      ...r,
+      backend: "anthropic",
+      model: String(comparator).trim(),
+      byModel: undefined,
+    };
+    return estimateSessionCost(clone);
   }
   function localSavedSum(rows) {
     let total = 0,
@@ -41402,7 +40874,7 @@ window.__WBReactRender = function () {
     // Kept for project/month rollups only. Session rows deliberately do not
     // use it — see sessionCostHTML.
     state._planShares = planShareMap(allRows, allRows);
-    return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Net estimated displacement for production delegations with a matched paid control and recorded review costs. Local API charges are $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${wastedTier > 0 ? `<div class="usage-card"><div class="tiny">Wasted-tier delegation spend</div><div class="usage-big cost-warning">${esc(fmtCostMaybe(wastedTier))}</div><p class="muted">Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up -- never a saving) in this time frame. Only sessions with a role-attributed byModel breakdown are included.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Delegation role mix", roleGroups, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions have $0 API charges; their tokens count toward volume. Savings are shown only for qualified production delegations with a matched paid control and review costs.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
+    return `<div class="usage-grid">${claudePlanCards()}<div class="usage-card"><div class="tiny">Cursor monthly allotment</div><div class="usage-big">${money(state.cursorUsage?.spend)} / ${money(state.cursorUsage?.limit)}</div>${creditLaneHTML("Cursor", state.cursorUsage, "cursor")}<p class="muted">${esc(ageLabel(state.cursorUsage?.updated))}${state.cursorUsage?.resetLabel ? ` · resets ${esc(state.cursorUsage.resetLabel)}` : ""}</p></div>${azureFoundryBillingCard()}${costAnomalyCard()}${modelFleetCard()}${savedLocal != null ? `<div class="usage-card"><div class="tiny">Local lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedLocal))}</div><p class="muted">Estimated avoided cloud spend for on-device tokens in this time frame; actual local cost is $0.</p></div>` : ""}${savedFree != null ? `<div class="usage-card"><div class="tiny">Free lane savings</div><div class="usage-big cost-savings">${esc(fmtCostMaybe(savedFree))}</div><p class="muted">What ${freeRows.length} free-model session${freeRows.length === 1 ? "" : "s"} would have cost on ${esc(FREE_LANE_BASELINE)} in this time frame. OpenRouter charged $0. Rejected delegations are not counted.</p></div>` : ""}${wastedTier > 0 ? `<div class="usage-card"><div class="tiny">Wasted-tier delegation spend</div><div class="usage-big cost-warning">${esc(fmtCostMaybe(wastedTier))}</div><p class="muted">Cost of subagent calls priced at the parent session's own tier or higher (same-tier or up -- never a saving) in this time frame. Only sessions with a role-attributed byModel breakdown are included.</p></div>` : ""}${usageWindowControl()}${comparisonTable(laneCompareRows(rows))}${projectBreakdownHTML(rows)}${mixRows("Model mix", models, totalMs)}${mixRows("Delegation role mix", roleGroups, totalMs)}${mixRows("Backend traffic share", backends, totalMs)}${mixRows("Harness mix", ides, totalMs)}${tipsHTML(allRows)}<div class="usage-card usage-full"><h3>What this means</h3><p class="muted">Claude runs on plan seats: session and weekly windows are what actually run out, and the only dollars billed are extra-usage overage. Claude session costs are therefore <span class="cost-notional">≈ notional</span> — API list-price equivalents shown so lanes stay comparable — and are never added to spend. Cursor spend comes from its usage snapshot. Azure Foundry spend comes from Azure Cost Management; CCR session rows remain token-based estimates from versioned model pricing across GPT-5.5, Codex, Nano, Sol, Terra, and Luna. Token totals include uncached input, output, cache reads, and cache creation. Azure actuals are reconciled only at aggregate model/month level and are never assigned to sessions. The selected time frame applies to session-based boxes. On-device local sessions run at $0; their tokens count toward volume and show <span class="cost-savings">green savings</span>.${incompleteCount ? ` ${incompleteCount} session${incompleteCount === 1 ? "" : "s"} still show no end time after 24h+ and are excluded from duration totals as incomplete.` : ""}</p></div></div><div class="card" style="margin-top:12px"><h3>Recent sessions · ${esc(usageWindowLabel())}</h3><div class="usage-table recent-sessions-table"><div class="usage-table-row head"><span>Session</span><span>Time</span><span>Machine</span><span>Backend</span><span>Editor</span><span>Harness</span><span>Model</span><span>Tokens</span><span>Cost</span><span>Length</span></div>${recent.map((r, i) => `<button type="button" class="usage-table-row pressable" data-session-idx="${i}"><span data-label="Session">${esc(sessionTitle(r))}${r.summary ? `<span class="session-summary">${esc(displayText(String(r.summary), 90))}</span>` : ""}${Array.isArray(r.projects) && r.projects.length ? `<span class="session-projects">${r.projects.slice(0, 4).map((p) => `<span class="session-proj-chip">${esc(p)}</span>`).join("")}</span>` : ""}</span><span data-label="Time">${esc(fmtStamp(r.started || r.ended))}</span><span data-label="Machine">${esc(machineName(r.machine || r.host || r.hostname || r.machineId || "Unknown"))}</span><span data-label="Backend">${brandLabel(backendLane(r))}</span><span data-label="Editor">${brandLabel(normalizeEditor(r))}</span><span data-label="Harness">${brandLabel(normalizeHarness(r.harness || r.ide))}</span><span data-label="Model">${brandLabel(sessionModelLabel(r))}</span><span data-label="Tokens">${esc(fmtTokens(cacheInclusiveTokens(r)))}</span><span data-label="Cost">${sessionCostHTML(r)}</span><span data-label="Length">${isIncompleteSession(r) ? "incomplete" : esc(fmtDuration(durationMs(r)))}</span></button>`).join("") || '<p class="muted">No sessions recorded for this time frame.</p>'}</div></div>`;
   }
   function fmtStamp(ms) {
     if (!ms) return "";
@@ -41530,8 +41002,14 @@ window.__WBReactRender = function () {
           ? `<span class="cost-savings">${esc(fmtCostMaybe(localSavedCost(r)))} savings</span> · $0.00 charged${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`
           : isFreeLaneRow(r)
             ? `${freeLaneSavedCost(r) != null ? `<span class="cost-savings">${esc(fmtCostMaybe(freeLaneSavedCost(r)))} savings</span> · ` : ""}$0.00 charged${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`
-            : `${esc(fmtCostMaybe(cost))}${isLocalRow(r) ? " · savings unmeasured" : ""}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
+            : `${esc(fmtCostMaybe(cost))}${esc(costNote)}${r.tokenSource ? ` · source: ${esc(r.tokenSource)}` : ""}`,
       ),
+      isLocalRow(r) && r.savedEstimate != null
+        ? sessionDetailRow(
+            "Avoided cloud spend",
+            `<span class="cost-savings">${esc(fmtCostMaybe(r.savedEstimate))}</span>`,
+          )
+        : "",
     ]
       .filter(Boolean)
       .join("")}</div>`;
@@ -42707,8 +42185,6 @@ window.__WBReactRender = function () {
     ghShaCache.clear();
     ghTreeShas = {};
     ghIndexTasks = {};
-    ghIndexTexts = {};
-    ghKb = { done: true };
     for (const url of binaryURLs.values()) URL.revokeObjectURL(url);
     binaryURLs.clear();
   }
